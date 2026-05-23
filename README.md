@@ -1,3 +1,9 @@
+<!-- llampart-readme-logo:start -->
+<p align="center">
+  <img src="server/webui/static/llampart.svg" alt="llampart logo" width="96" />
+</p>
+<!-- llampart-readme-logo:end -->
+
 # llampart
 
 llampart is a local-first chat Web UI designed for use with `llama-server`.
@@ -13,6 +19,30 @@ Current release:
 ```text
 llampart 1.0.0
 ```
+
+<!-- llampart-readme-screenshots:start -->
+
+## Screenshots
+
+### Frosted Glass start screen
+
+![llampart Frosted Glass start screen](docs/assets/screenshots/llampart-frosted-glass-main_page.png)
+
+### Frosted Glass chat
+
+![llampart Frosted Glass chat](docs/assets/screenshots/llampart-frosted-glass-chat.png)
+
+### Dark and light themes
+
+![llampart dark mode chat](docs/assets/screenshots/llampart-frosted-glass-chat-dark_mode.png)
+
+![llampart light mode chat](docs/assets/screenshots/llampart-frosted-glass-chat-light_mode.png)
+
+### Appearance settings
+
+![llampart Frosted Glass settings](docs/assets/screenshots/llampart-frosted-glass-settings.png)
+
+<!-- llampart-readme-screenshots:end -->
 
 ## Relationship to llama.cpp
 
@@ -107,6 +137,16 @@ npm run build
 ```
 
 The production Web UI build is generated into `server/public`.
+
+<!-- llampart-readme-caddy-deployment:start -->
+
+## Optional Caddy deployment
+
+llampart can also be served as a static frontend through Caddy, with selected API requests proxied to a local `llama-server`.
+
+See [Deploying llampart with Caddy](docs/deployment/caddy.md) for a practical local/LAN deployment example.
+
+<!-- llampart-readme-caddy-deployment:end -->
 
 ## Wallpapers
 
