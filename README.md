@@ -140,6 +140,16 @@ The production Web UI build is generated into `server/public`.
 
 <!-- llampart-readme-caddy-deployment:start -->
 
+<!-- llampart-readme-frontend-framework:start -->
+
+## Frontend framework
+
+llampart's frontend is built with Svelte and SvelteKit.
+
+Svelte and SvelteKit are MIT-licensed open-source projects. Their license information is preserved through npm package metadata, installed package license files, and the project third-party license notes.
+
+<!-- llampart-readme-frontend-framework:end -->
+
 ## Optional Caddy deployment
 
 llampart can also be served as a static frontend through Caddy, with selected API requests proxied to a local `llama-server`.

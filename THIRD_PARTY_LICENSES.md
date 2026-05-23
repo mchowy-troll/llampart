@@ -76,3 +76,22 @@ but the installed package files contained local MIT license/readme evidence:
 
 If `server/webui/package-lock.json` changes before release, repeat the dependency
 license review using the final lockfile.
+
+<!-- llampart-third-party-svelte-sveltekit:start -->
+
+## Frontend framework
+
+llampart's frontend is built with Svelte and SvelteKit.
+
+The following framework packages are MIT-licensed open-source projects and are included through npm dependency metadata:
+
+| Package                        | License | Project                                          |
+| ------------------------------ | ------- | ------------------------------------------------ |
+| `svelte`                       | MIT     | `https://github.com/sveltejs/svelte`             |
+| `@sveltejs/kit`                | MIT     | `https://github.com/sveltejs/kit`                |
+| `@sveltejs/adapter-static`     | MIT     | `https://github.com/sveltejs/kit`                |
+| `@sveltejs/vite-plugin-svelte` | MIT     | `https://github.com/sveltejs/vite-plugin-svelte` |
+
+Their license notices are preserved through npm package metadata and installed package license files. The full npm dependency tree is recorded in `server/webui/package-lock.json`.
+
+<!-- llampart-third-party-svelte-sveltekit:end -->
