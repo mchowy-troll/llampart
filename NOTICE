@@ -43,3 +43,9 @@ Additional notes
 
 This notice is intended to preserve attribution and third-party license
 information for the public llampart release. It is not legal advice.
+
+<!-- llampart-notice-svelte-sveltekit:start -->
+Svelte and SvelteKit
+
+The llampart frontend is built with Svelte and SvelteKit. Svelte and SvelteKit are MIT-licensed open-source projects. Their package metadata and license notices are preserved through the npm dependency metadata and installed package license files, and summarized in THIRD_PARTY_LICENSES.md.
+<!-- llampart-notice-svelte-sveltekit:end -->
