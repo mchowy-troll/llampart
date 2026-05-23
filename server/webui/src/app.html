@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		%sveltekit.head%
+		<script>
+			(() => {
+				try {
+					const rawConfig = localStorage.getItem('LlamaCppWebui.config');
+					const config = rawConfig ? JSON.parse(rawConfig) : {};
+
+					if (config?.theme !== 'frosted-glass') return;
+
+					const knownWallpapers = new Set([
+						'frosted-glass-01',
+						'frosted-glass-02',
+						'frosted-glass-03',
+						'frosted-glass-04',
+						'frosted-glass-05'
+					]);
+					const requestedWallpaper =
+						typeof config.frostedGlassWallpaper === 'string'
+							? config.frostedGlassWallpaper
+							: 'frosted-glass-01';
+					const wallpaper = knownWallpapers.has(requestedWallpaper)
+						? requestedWallpaper
+						: 'frosted-glass-01';
+
+					document.documentElement.classList.add('has-frosted-glass-theme');
+					document.documentElement.classList.remove('dark');
+					document.documentElement.classList.add('light');
+					document.documentElement.style.setProperty(
+						'--llampart-frosted-glass-wallpaper',
+						`url("/wallpapers/frosted-glass/${wallpaper}.jpg")`
+					);
+				} catch {
+					// Ignore malformed localStorage config and let Svelte fall back to normal settings.
+				}
+			})();
+		</script>
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div id="llampart-frosted-glass-preload-background" aria-hidden="true"></div>
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>

@@ -1,0 +1,45 @@
+llampart Notices
+
+llampart
+Copyright (c) 2026 Marcin Gluziński
+
+llampart is released under the MIT License. See LICENSE.
+
+Third-party and upstream acknowledgements
+-----------------------------------------
+
+llampart is based in part on work from the llama.cpp / llama-ui foundation.
+
+llama.cpp is an upstream project by the ggml authors and contributors. At the
+time this notice was prepared, llama.cpp was distributed under the MIT License.
+
+The full third-party license notice for llama.cpp is included in:
+
+  THIRD_PARTY_LICENSES.md
+
+llampart is not an official llama.cpp project.
+
+Wallpaper credits
+-----------------
+
+The bundled Frosted Glass wallpapers use the following photo credits:
+
+- Frosted Glass 01: Marcin Stefański (Gdańsk, Poland)
+- Frosted Glass 02: Photo by Royce Fonseca on Unsplash
+  https://unsplash.com/photos/white-sand-dunes-with-a-distant-mountain-range-48bRZya67Po
+- Frosted Glass 03: Photo by Pawel Czerwinski on Unsplash
+  https://unsplash.com/photos/a-pink-abstract-background-with-curved-shapes-iA4O2vAnieg
+- Frosted Glass 04: Photo by Pawel Czerwinski on Unsplash
+  https://unsplash.com/photos/a-close-up-of-a-book-with-a-white-background-jPR5yqkfxbM
+- Frosted Glass 05: Photo by Mason Field on Unsplash
+  https://unsplash.com/photos/a-lone-giraffe-standing-in-the-middle-of-a-field-HXccAaMfAxI
+
+Unsplash photos are covered by the Unsplash License:
+
+  https://unsplash.com/license
+
+Additional notes
+----------------
+
+This notice is intended to preserve attribution and third-party license
+information for the public llampart release. It is not legal advice.

@@ -1,0 +1,7 @@
+export const CONFIG_LOCALSTORAGE_KEY = 'LlamaCppWebui.config';
+export const USER_OVERRIDES_LOCALSTORAGE_KEY = 'LlamaCppWebui.userOverrides';
+export const FAVORITE_MODELS_LOCALSTORAGE_KEY = 'LlamaCppWebui.favoriteModels';
+export const MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY = 'LlamaCppWebui.mcpDefaultEnabled';
+export const LLAMPART_ABOUT_DISMISSED_VERSION_KEY = 'Llampart.aboutDismissedVersion';
+export const DISABLED_TOOLS_LOCALSTORAGE_KEY = 'LlamaCppWebui.disabledTools';
+export const ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY = 'LlamaCppWebui.alwaysAllowedTools';

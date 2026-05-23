@@ -1,0 +1,1215 @@
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* llampart-desktop-fluid-ui-scale
+   Punkt odniesienia: 5K z systemowym skalowaniem 200% daje 2560 CSS px.
+   2560 CSS px i więcej = 100% interfejsu.
+   1920 CSS px = 75% interfejsu.
+   Skalujemy rem-y globalnie, więc Tailwindowe fonty, odstępy, ikony i kafelki
+   zachowują proporcje bez ręcznego zmieniania pojedynczych komponentów. */
+@media (min-width: 1024px) {
+	html {
+		font-size: clamp(12px, 0.625vw, 16px);
+	}
+}
+/* /llampart-desktop-fluid-ui-scale */
+
+/* llampart-desktop-sidebar-width-scale
+   5K przy systemowym skalowaniu 200% daje 2560 CSS px, więc 25vw = 640px.
+   Na 1080p przeglądarka ma 1920 CSS px, więc wymuszamy tę samą szerokość sidebara,
+   żeby dwie kolumny kafelków miały taką samą logikę jak na 5K. */
+@media (min-width: 1024px) and (max-width: 2559.98px) {
+	[data-slot='sidebar-wrapper'] {
+		--sidebar-width: 25vw !important;
+	}
+}
+/* /llampart-desktop-sidebar-width-scale */
+
+/* llampart-desktop-sidebar-width-scale
+   5K przy systemowym skalowaniu 200% daje 2560 CSS px, więc 25vw = 640px.
+   Na 1080p przeglądarka ma 1920 CSS px, więc wymuszamy tę samą szerokość sidebara,
+   żeby dwie kolumny kafelków miały taką samą logikę jak na 5K. */
+@media (min-width: 1024px) and (max-width: 2559.98px) {
+	[data-slot='sidebar-wrapper'] {
+		--sidebar-width: 25vw !important;
+	}
+}
+/* /llampart-desktop-sidebar-width-scale */
+
+:root {
+	--radius: 0.625rem;
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.145 0 0);
+	--card: oklch(1 0 0);
+	--card-foreground: oklch(0.145 0 0);
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.145 0 0);
+	--primary: oklch(0.205 0 0);
+	--primary-foreground: oklch(0.985 0 0);
+	--secondary: oklch(0.95 0 0);
+	--secondary-foreground: oklch(0.205 0 0);
+	--muted: oklch(0.97 0 0);
+	--muted-foreground: oklch(0.556 0 0);
+	--accent: oklch(0.95 0 0);
+	--accent-foreground: oklch(0.205 0 0);
+	--destructive: oklch(0.577 0.245 27.325);
+	--border: oklch(0.875 0 0);
+	--input: oklch(0.92 0 0);
+	--ring: oklch(0.708 0 0);
+	--chart-1: oklch(0.646 0.222 41.116);
+	--chart-2: oklch(0.6 0.118 184.704);
+	--chart-3: oklch(0.398 0.07 227.392);
+	--chart-4: oklch(0.828 0.189 84.429);
+	--chart-5: oklch(0.769 0.188 70.08);
+	--sidebar: oklch(0.987 0 0);
+	--sidebar-foreground: oklch(0.145 0 0);
+	--sidebar-primary: oklch(0.205 0 0);
+	--sidebar-primary-foreground: oklch(0.985 0 0);
+	--sidebar-accent: oklch(0.97 0 0);
+	--sidebar-accent-foreground: oklch(0.205 0 0);
+	--sidebar-border: oklch(0.922 0 0);
+	--sidebar-ring: oklch(0.708 0 0);
+	--code-background: oklch(0.985 0 0);
+	--code-foreground: oklch(0.145 0 0);
+	--layer-popover: 1000000;
+
+	--chat-form-area-height: 8rem;
+	--chat-form-area-offset: 2rem;
+	--max-message-height: max(24rem, min(80dvh, calc(100dvh - var(--chat-form-area-height) - 12rem)));
+}
+
+@media (min-width: 640px) {
+	:root {
+		--chat-form-area-height: 24rem;
+		--chat-form-area-offset: 12rem;
+	}
+}
+
+.dark {
+	--background: oklch(0.16 0 0);
+	--foreground: oklch(0.985 0 0);
+	--card: oklch(0.205 0 0);
+	--card-foreground: oklch(0.985 0 0);
+	--popover: oklch(0.205 0 0);
+	--popover-foreground: oklch(0.985 0 0);
+	--primary: oklch(0.922 0 0);
+	--primary-foreground: oklch(0.205 0 0);
+	--secondary: oklch(0.29 0 0);
+	--secondary-foreground: oklch(0.985 0 0);
+	--muted: oklch(0.269 0 0);
+	--muted-foreground: oklch(0.708 0 0);
+	--accent: oklch(0.269 0 0);
+	--accent-foreground: oklch(0.985 0 0);
+	--destructive: oklch(0.704 0.191 22.216);
+	--border: oklch(1 0 0 / 30%);
+	--input: oklch(1 0 0 / 30%);
+	--ring: oklch(0.556 0 0);
+	--chart-1: oklch(0.488 0.243 264.376);
+	--chart-2: oklch(0.696 0.17 162.48);
+	--chart-3: oklch(0.769 0.188 70.08);
+	--chart-4: oklch(0.627 0.265 303.9);
+	--chart-5: oklch(0.645 0.246 16.439);
+	--sidebar: oklch(0.19 0 0);
+	--sidebar-foreground: oklch(0.985 0 0);
+	--sidebar-primary: oklch(0.488 0.243 264.376);
+	--sidebar-primary-foreground: oklch(0.985 0 0);
+	--sidebar-accent: oklch(0.269 0 0);
+	--sidebar-accent-foreground: oklch(0.985 0 0);
+	--sidebar-border: oklch(1 0 0 / 10%);
+	--sidebar-ring: oklch(0.556 0 0);
+	--code-background: oklch(0.225 0 0);
+	--code-foreground: oklch(0.875 0 0);
+}
+
+@theme inline {
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+
+	body {
+		@apply bg-background text-foreground;
+		scrollbar-width: thin;
+		scrollbar-gutter: stable;
+	}
+
+	/* Global scrollbar styling - visible only on hover */
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: transparent transparent;
+		transition: scrollbar-color 0.2s ease;
+	}
+
+	*:hover {
+		scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+	}
+
+	*::-webkit-scrollbar {
+		width: 6px;
+		height: 6px;
+	}
+
+	*::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	*::-webkit-scrollbar-thumb {
+		background: transparent;
+		border-radius: 3px;
+		transition: background 0.2s ease;
+	}
+
+	*:hover::-webkit-scrollbar-thumb {
+		background: hsl(var(--muted-foreground) / 0.3);
+	}
+}
+
+/* Frosted Glass pre-hydration background.
+   This prevents a short flash of the regular UI before Svelte settings hydrate. */
+#llampart-frosted-glass-preload-background {
+	pointer-events: none;
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	display: none;
+	background-image: var(--llampart-frosted-glass-wallpaper);
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+
+html.has-frosted-glass-theme #llampart-frosted-glass-preload-background {
+	display: block;
+}
+
+/* llampart Frosted Glass sidebar initial pass */
+html.has-frosted-glass-theme [data-slot='sidebar-wrapper'] {
+	background: transparent;
+	overflow: visible;
+}
+
+html.has-frosted-glass-theme [data-slot='sidebar-gap'] {
+	background: transparent;
+}
+
+html.has-frosted-glass-theme [data-slot='sidebar-container'] {
+	isolation: isolate;
+	overflow: visible;
+	z-index: 60;
+}
+
+html.has-frosted-glass-theme [data-slot='sidebar-container']::after {
+	display: none;
+}
+
+/* llampart sidebar redesign: clear the legacy desktop sidebar shell */
+@media (min-width: 768px) {
+	[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
+		background: transparent;
+		box-shadow: none;
+	}
+
+	[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		[data-sidebar='sidebar'][data-slot='sidebar-inner'] {
+		border-color: transparent;
+		background: transparent;
+		box-shadow: none;
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+
+	[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell [data-slot='sidebar-header'],
+	[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell [data-slot='sidebar-content'],
+	[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell [data-slot='sidebar-footer'],
+	[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell [data-slot='sidebar-group'],
+	[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		[data-slot='sidebar-group-content'] {
+		background: transparent;
+		box-shadow: none;
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+
+	html.has-frosted-glass-theme
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		[data-sidebar='sidebar'][data-slot='sidebar-inner'] {
+		border-color: transparent;
+		background: transparent;
+		box-shadow: none;
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+}
+
+html.has-frosted-glass-theme
+	[data-slot='sidebar'][data-collapsible='offcanvas']
+	[data-slot='sidebar-container']::after {
+	opacity: 0;
+}
+
+html.has-frosted-glass-theme [data-sidebar='sidebar'][data-slot='sidebar-inner'],
+html.has-frosted-glass-theme [data-sidebar='sidebar'][data-mobile='true'] {
+	position: relative;
+	z-index: 1;
+	overflow: visible;
+	border-right: 1px solid rgb(255 255 255 / 0.28);
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.28), rgb(255 255 255 / 0.18)),
+		color-mix(in oklch, white 20%, transparent);
+	box-shadow:
+		0 18px 52px rgb(15 23 42 / 0.14),
+		0 4px 18px rgb(15 23 42 / 0.08),
+		inset -1px 0 0 rgb(255 255 255 / 0.24),
+		inset 1px 0 0 rgb(255 255 255 / 0.16);
+	-webkit-backdrop-filter: blur(26px) saturate(145%);
+	backdrop-filter: blur(26px) saturate(145%);
+	transition:
+		box-shadow 200ms ease,
+		border-color 200ms ease;
+}
+
+html.has-frosted-glass-theme
+	[data-slot='sidebar'][data-collapsible='offcanvas']
+	[data-sidebar='sidebar'][data-slot='sidebar-inner'] {
+	box-shadow: none;
+}
+
+html.has-frosted-glass-theme [data-sidebar='sidebar'][data-mobile='true'] {
+	border-right-color: rgb(255 255 255 / 0.34);
+}
+
+html.has-frosted-glass-theme [data-slot='sidebar-header'],
+html.has-frosted-glass-theme [data-slot='sidebar-content'],
+html.has-frosted-glass-theme [data-slot='sidebar-footer'],
+html.has-frosted-glass-theme [data-slot='sidebar-group'],
+html.has-frosted-glass-theme [data-slot='sidebar-group-content'] {
+	background: transparent;
+}
+
+html.has-frosted-glass-theme [data-slot='sidebar-content'] {
+	padding-right: 0.9rem;
+	margin-right: -0.9rem;
+	padding-bottom: 1rem;
+}
+
+html.has-frosted-glass-theme [data-slot='sidebar-header'] :is(button, a),
+html.has-frosted-glass-theme [data-slot='sidebar-header'] input {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+
+html.has-frosted-glass-theme [data-slot='sidebar-header'] :is(button, a):is(:hover, :focus-visible),
+html.has-frosted-glass-theme [data-slot='sidebar-header'] input:is(:hover, :focus-visible) {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+}
+
+html.has-frosted-glass-theme [data-slot='sidebar-header'] :is(button, a):active {
+	background: rgb(255 255 255 / 0.1);
+}
+
+html.has-frosted-glass-theme [data-slot='sidebar-group-label'] {
+	color: rgb(40 40 40 / 0.72);
+	text-shadow: 0 1px 0 rgb(255 255 255 / 0.3);
+}
+
+html.has-frosted-glass-theme .conversation-item {
+	border-color: rgba(255, 255, 255, 0.19);
+	background: rgba(255, 255, 255, 0.14);
+	box-shadow: none;
+	-webkit-backdrop-filter: blur(18px) saturate(116%);
+	backdrop-filter: blur(18px) saturate(116%);
+}
+
+html.has-frosted-glass-theme .conversation-item:is(:hover, :focus-visible) {
+	border-color: rgba(255, 255, 255, 0.28);
+	background: rgba(255, 255, 255, 0.18);
+	box-shadow: none;
+}
+
+html.has-frosted-glass-theme .conversation-item.bg-accent\/45,
+html.has-frosted-glass-theme .conversation-item[class*='bg-accent'] {
+	border-color: rgba(255, 255, 255, 0.32);
+	background: rgba(255, 255, 255, 0.2);
+	box-shadow: none;
+}
+
+html.has-frosted-glass-theme .conversation-timestamp-badge {
+	border-color: rgb(255 255 255 / 0.24);
+	background: rgb(255 255 255 / 0.18);
+	box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22);
+	-webkit-backdrop-filter: blur(12px) saturate(130%);
+	backdrop-filter: blur(12px) saturate(130%);
+}
+
+html.has-frosted-glass-theme .conversation-timestamp-divider {
+	border-color: rgb(255 255 255 / 0.22);
+}
+
+html.has-frosted-glass-theme .conversation-title,
+html.has-frosted-glass-theme .conversation-action-button,
+html.has-frosted-glass-theme .conversation-timestamp-badge {
+	text-shadow: 0 1px 0 rgb(255 255 255 / 0.22);
+}
+
+html.has-frosted-glass-theme .llampart-sidebar-select-checkbox:not(:checked) {
+	border-color: rgb(60 60 60 / 0.48);
+	background-color: rgb(255 255 255 / 0.12);
+}
+
+html.has-frosted-glass-theme
+	.llampart-sidebar-select-checkbox:not(:checked):is(:hover, :focus-visible) {
+	border-color: rgb(60 60 60 / 0.62);
+	background-color: rgb(255 255 255 / 0.24);
+}
+
+html.has-frosted-glass-theme .llampart-sidebar-delete-button {
+	border: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	color: rgb(60 60 60 / 0.72);
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+}
+
+html.has-frosted-glass-theme .llampart-sidebar-delete-button:is(:hover, :focus-visible) {
+	border: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	color: #2b2b2b;
+}
+
+html.has-frosted-glass-theme .llampart-sidebar-delete-button:disabled,
+html.has-frosted-glass-theme .llampart-sidebar-delete-button:disabled:is(:hover, :focus-visible) {
+	border: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	color: rgb(60 60 60 / 0.44);
+}
+
+html.has-frosted-glass-theme [data-sidebar='trigger'] {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+
+html.has-frosted-glass-theme [data-sidebar='trigger']:is(:hover, :focus-visible, :active) {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+/* /llampart Frosted Glass sidebar initial pass */
+
+/* llampart-dialog-original-light-style-size-only */
+/*
+ * Model information and table preview keep their enlarged bounds,
+ * but use the regular light-theme dialog/table styling in Frosted Glass.
+ */
+html.has-frosted-glass-theme body [data-slot='dialog-content'].llampart-model-info-dialog {
+	width: 80vw !important;
+	max-width: 80vw !important;
+	max-height: 80dvh !important;
+}
+
+html.has-frosted-glass-theme body [data-slot='dialog-content'].table-preview-dialog-content {
+	width: 80vw !important;
+	max-width: 80vw !important;
+	max-height: 80dvh !important;
+}
+
+/* llampart-frosted-glass-user-input-text-glow */
+/*
+ * Frosted Glass: user message input text glow.
+ * Celowane w textarea/input pola rozmowy w nowym i istniejącym czacie.
+ */
+html.has-frosted-glass-theme textarea,
+html.has-frosted-glass-theme [contenteditable='true'],
+html.has-frosted-glass-theme [role='textbox'] {
+	color: #000000 !important;
+	text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.64),
+		0 0 8px rgba(255, 255, 255, 0.5),
+		0 0 16px rgba(255, 255, 255, 0.34) !important;
+}
+
+html.has-frosted-glass-theme textarea::placeholder,
+html.has-frosted-glass-theme input::placeholder {
+	color: rgba(0, 0, 0, 0.48) !important;
+	text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.5),
+		0 0 7px rgba(255, 255, 255, 0.36),
+		0 0 12px rgba(255, 255, 255, 0.22) !important;
+}
+
+/* llampart-frosted-glass-new-chat-subtitle-color-only */
+html.has-frosted-glass-theme h1 + p,
+html.has-frosted-glass-theme [data-llampart-new-chat-subtitle],
+html.has-frosted-glass-theme .llampart-new-chat-subtitle {
+	color: #3d3d3d !important;
+}
+
+/* llampart-frosted-glass-markdown-blockquote-card-radius-final */
+html.has-frosted-glass-theme .llampart-assistant-message blockquote,
+html.has-frosted-glass-theme .llampart-system-message-card blockquote,
+html.has-frosted-glass-theme .agentic-content blockquote,
+html.has-frosted-glass-theme .markdown-content blockquote {
+	border-left: 0 !important;
+	border-radius: 0.75rem !important;
+	border: 1px solid rgba(255, 255, 255, 0.24) !important;
+	background: rgba(255, 255, 255, 0.14) !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.18),
+		0 2px 8px rgba(0, 0, 0, 0.035) !important;
+	backdrop-filter: blur(12px) saturate(108%) !important;
+	-webkit-backdrop-filter: blur(12px) saturate(108%) !important;
+	padding: 1rem 1.125rem !important;
+	margin: 1rem 0 !important;
+	overflow: hidden !important;
+}
+
+html.has-frosted-glass-theme .llampart-assistant-message blockquote::before,
+html.has-frosted-glass-theme .llampart-system-message-card blockquote::before,
+html.has-frosted-glass-theme .agentic-content blockquote::before,
+html.has-frosted-glass-theme .markdown-content blockquote::before {
+	content: none !important;
+}
+
+html.has-frosted-glass-theme .llampart-assistant-message blockquote > :first-child,
+html.has-frosted-glass-theme .llampart-system-message-card blockquote > :first-child,
+html.has-frosted-glass-theme .agentic-content blockquote > :first-child,
+html.has-frosted-glass-theme .markdown-content blockquote > :first-child {
+	margin-top: 0 !important;
+}
+
+html.has-frosted-glass-theme .llampart-assistant-message blockquote > :last-child,
+html.has-frosted-glass-theme .llampart-system-message-card blockquote > :last-child,
+html.has-frosted-glass-theme .agentic-content blockquote > :last-child,
+html.has-frosted-glass-theme .markdown-content blockquote > :last-child {
+	margin-bottom: 0 !important;
+}
+
+/* llampart-frosted-glass-settings-select-content-light-only */
+html.has-frosted-glass-theme [data-slot='select-content'].llampart-settings-select-content {
+	border-color: oklch(0.875 0 0) !important;
+	background: oklch(1 0 0) !important;
+	color: oklch(0.145 0 0) !important;
+	box-shadow:
+		0 10px 15px -3px rgb(0 0 0 / 0.1),
+		0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}
+
+html.has-frosted-glass-theme
+	[data-slot='select-content'].llampart-settings-select-content
+	[data-slot='select-item'] {
+	background: transparent !important;
+	color: oklch(0.145 0 0) !important;
+	text-shadow: none !important;
+}
+
+html.has-frosted-glass-theme
+	[data-slot='select-content'].llampart-settings-select-content
+	[data-slot='select-item'][data-highlighted],
+html.has-frosted-glass-theme
+	[data-slot='select-content'].llampart-settings-select-content
+	[data-slot='select-item']:hover {
+	background: oklch(0.95 0 0) !important;
+	color: oklch(0.205 0 0) !important;
+}
+
+html.has-frosted-glass-theme
+	[data-slot='select-content'].llampart-settings-select-content
+	[data-slot='select-item'][data-selected] {
+	background: oklch(0.97 0 0) !important;
+	color: oklch(0.145 0 0) !important;
+}
+
+html.has-frosted-glass-theme
+	[data-slot='select-content'].llampart-settings-select-content
+	svg:not([class*='text-']) {
+	color: oklch(0.556 0 0) !important;
+}
+
+/* llampart-sidebar-constrained-single-column-width */
+@media (min-width: 768px) and (max-width: 2431px) {
+	[data-slot='sidebar-wrapper']:has(
+		[data-slot='sidebar'] > [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+	) {
+		--sidebar-width: 25vw !important;
+	}
+}
+
+/* llampart sidebar redesign: split light/dark fade from Frosted Glass blur path */
+@media (min-width: 768px) {
+	[data-slot='sidebar']:has(> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell)
+		[data-slot='sidebar-gap'] {
+		width: 0 !important;
+		min-width: 0 !important;
+	}
+
+	[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
+		left: 0 !important;
+		right: auto !important;
+		z-index: 700 !important;
+		will-change: auto;
+	}
+
+	[data-slot='sidebar']:has(
+			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		)[data-state='expanded']
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
+		pointer-events: auto;
+	}
+
+	[data-slot='sidebar']:has(
+			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		)[data-state='collapsed']
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
+		pointer-events: none;
+	}
+
+	/* Light/dark: no backdrop-filter, so normal opacity fade is safe and keeps children synced. */
+	html:not(.has-frosted-glass-theme)
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
+		opacity: 1;
+		transition: opacity 180ms ease !important;
+	}
+
+	html:not(.has-frosted-glass-theme)
+		[data-slot='sidebar']:has(
+			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		)[data-state='collapsed']
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
+		opacity: 0;
+	}
+
+	html:not(.has-frosted-glass-theme)
+		[data-slot='sidebar']:has(
+			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		)[data-state='expanded']
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
+		opacity: 1;
+	}
+
+	/* Frosted Glass: avoid opacity on the backdrop-filter path. */
+	html.has-frosted-glass-theme [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
+		opacity: 1 !important;
+		transition: none !important;
+	}
+
+	html.has-frosted-glass-theme
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		.llampart-sidebar-conversations-frame {
+		visibility: visible;
+		opacity: 1 !important;
+		transition:
+			background-color 180ms ease,
+			border-color 180ms ease,
+			box-shadow 180ms ease;
+		will-change: auto;
+		-webkit-backdrop-filter: blur(20px) saturate(140%);
+		backdrop-filter: blur(20px) saturate(140%);
+	}
+
+	html.has-frosted-glass-theme
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		.llampart-sidebar-conversations-frame
+		:where(
+			h2,
+			button,
+			input,
+			svg,
+			span,
+			p,
+			a,
+			.conversation-item,
+			.conversation-timestamp-badge,
+			.conversation-title,
+			.conversation-action-button,
+			.llampart-sidebar-select-checkbox
+		) {
+		transition-property: background-color, border-color, box-shadow, color, text-shadow;
+		transition-duration: 180ms;
+		transition-timing-function: ease;
+		will-change: auto;
+	}
+
+	html.has-frosted-glass-theme
+		[data-slot='sidebar']:has(
+			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		)[data-state='collapsed']
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		.llampart-sidebar-conversations-frame {
+		border-color: transparent !important;
+		background: transparent !important;
+		box-shadow: none !important;
+		-webkit-backdrop-filter: none !important;
+		backdrop-filter: none !important;
+	}
+
+	html.has-frosted-glass-theme
+		[data-slot='sidebar']:has(
+			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		)[data-state='collapsed']
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		.llampart-sidebar-conversations-frame
+		:where(
+			h2,
+			button,
+			input,
+			svg,
+			span,
+			p,
+			a,
+			.conversation-item,
+			.conversation-timestamp-badge,
+			.conversation-title,
+			.conversation-action-button,
+			.llampart-sidebar-select-checkbox
+		) {
+		border-color: transparent !important;
+		background: transparent !important;
+		box-shadow: none !important;
+		color: transparent !important;
+		text-shadow: none !important;
+		caret-color: transparent !important;
+	}
+
+	html.has-frosted-glass-theme
+		[data-slot='sidebar']:has(
+			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		)[data-state='collapsed']
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		.llampart-sidebar-conversations-frame
+		:where(input)::placeholder {
+		color: transparent !important;
+	}
+
+	html.has-frosted-glass-theme
+		[data-slot='sidebar']:has(
+			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		)[data-state='collapsed']
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		.llampart-sidebar-conversations-frame
+		:where(.llampart-sidebar-select-checkbox) {
+		background-image: none !important;
+	}
+}
+
+[data-sidebar='trigger'].llampart-sidebar-v-trigger {
+	color: #1a1a1a;
+}
+
+.dark [data-sidebar='trigger'].llampart-sidebar-v-trigger {
+	color: var(--foreground);
+}
+
+html.has-frosted-glass-theme [data-sidebar='trigger'].llampart-sidebar-v-trigger,
+html.has-frosted-glass-theme
+	[data-sidebar='trigger'].llampart-sidebar-v-trigger:is(:hover, :focus-visible, :active) {
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+}
+
+/* llampart-layout-top-actions-bare-controls */
+.llampart-layout-top-actions .llampart-layout-top-action,
+.llampart-layout-top-actions
+	.llampart-layout-top-action:is(:hover, :focus, :focus-visible, :active) {
+	box-sizing: border-box;
+	min-width: 0;
+	min-height: 0;
+	height: auto;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	outline: 0;
+	background: transparent;
+	background-color: transparent;
+	background-image: none;
+	box-shadow: none;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+	text-decoration: none;
+}
+
+html.has-frosted-glass-theme .llampart-layout-top-actions .llampart-layout-top-action,
+html.has-frosted-glass-theme
+	.llampart-layout-top-actions
+	.llampart-layout-top-action:is(:hover, :focus, :focus-visible, :active) {
+	border: 0 !important;
+	background: transparent !important;
+	background-color: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+	text-shadow: none !important;
+}
+
+/* llampart-frosted-glass-collapsed-sidebar-blur-cleanup */
+@media (min-width: 768px) {
+	html.has-frosted-glass-theme
+		[data-slot='sidebar']:has(
+			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		)[data-state='collapsed']
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		.llampart-sidebar-conversations-frame {
+		visibility: hidden !important;
+		opacity: 0 !important;
+		pointer-events: none !important;
+		border-color: transparent !important;
+		background: transparent !important;
+		background-color: transparent !important;
+		background-image: none !important;
+		box-shadow: none !important;
+		-webkit-backdrop-filter: none !important;
+		backdrop-filter: none !important;
+		filter: none !important;
+	}
+
+	html.has-frosted-glass-theme
+		[data-slot='sidebar']:has(
+			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		)[data-state='collapsed']
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
+		.llampart-sidebar-conversations-frame
+		* {
+		visibility: hidden !important;
+		opacity: 0 !important;
+		border-color: transparent !important;
+		background: transparent !important;
+		background-color: transparent !important;
+		background-image: none !important;
+		box-shadow: none !important;
+		-webkit-backdrop-filter: none !important;
+		backdrop-filter: none !important;
+		filter: none !important;
+		text-shadow: none !important;
+	}
+}
+
+/* llampart-sidebar-primary-actions-spacing-and-user-glow */
+.llampart-sidebar-search-action {
+	margin-top: 0.375rem;
+}
+
+html.has-frosted-glass-theme .llampart-sidebar-primary-action {
+	color: #000000 !important;
+}
+
+html.has-frosted-glass-theme .llampart-sidebar-primary-action .llampart-sidebar-primary-action-text,
+html.has-frosted-glass-theme
+	.llampart-sidebar-primary-action
+	.llampart-sidebar-primary-action-icon {
+	color: #000000 !important;
+	text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.64),
+		0 0 8px rgba(255, 255, 255, 0.5),
+		0 0 16px rgba(255, 255, 255, 0.34) !important;
+}
+
+html.has-frosted-glass-theme
+	.llampart-sidebar-primary-action
+	.llampart-sidebar-primary-action-icon {
+	filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.64))
+		drop-shadow(0 0 8px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.34)) !important;
+}
+
+/* llampart-frosted-glass-stage1-milky-overlays-dialog-shells */
+html.has-frosted-glass-theme body [data-slot='dialog-overlay'],
+html.has-frosted-glass-theme body [data-slot='alert-dialog-overlay'],
+html.has-frosted-glass-theme body [data-slot='sheet-overlay'] {
+	background: rgba(246, 249, 247, 0.38) !important;
+	background-color: rgba(246, 249, 247, 0.38) !important;
+	background-image:
+		radial-gradient(circle at 20% 12%, rgba(255, 255, 255, 0.34), transparent 32%),
+		linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(235, 242, 238, 0.12)) !important;
+	-webkit-backdrop-filter: blur(8px) saturate(108%) !important;
+	backdrop-filter: blur(8px) saturate(108%) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	[data-slot='dialog-content']:not(.llampart-model-info-dialog):not(.table-preview-dialog-content),
+html.has-frosted-glass-theme body [data-slot='alert-dialog-content'],
+html.has-frosted-glass-theme body [data-slot='sheet-content']:not(.llampart-composer-menu-content) {
+	border: 1px solid rgba(255, 255, 255, 0.56) !important;
+	background: rgba(246, 249, 247, 0.72) !important;
+	background-color: rgba(246, 249, 247, 0.72) !important;
+	background-image:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.14)),
+		linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(228, 238, 232, 0.1)) !important;
+	color: #111111 !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.58),
+		0 24px 64px rgba(15, 23, 42, 0.18),
+		0 8px 24px rgba(15, 23, 42, 0.08) !important;
+	-webkit-backdrop-filter: blur(22px) saturate(126%) !important;
+	backdrop-filter: blur(22px) saturate(126%) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	[data-slot='dialog-content']:not(.llampart-model-info-dialog):not(.table-preview-dialog-content)
+	:is([data-slot='dialog-title'], [data-slot='dialog-description']),
+html.has-frosted-glass-theme
+	body
+	[data-slot='alert-dialog-content']
+	:is([data-slot='alert-dialog-title'], [data-slot='alert-dialog-description']),
+html.has-frosted-glass-theme
+	body
+	[data-slot='sheet-content']:not(.llampart-composer-menu-content)
+	:is([data-slot='sheet-title'], [data-slot='sheet-description']) {
+	color: #111111 !important;
+	text-shadow:
+		0 0 0.35px rgba(255, 255, 255, 0.42),
+		0 0 8px rgba(255, 255, 255, 0.16) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	[data-slot='dialog-content']:not(.llampart-model-info-dialog):not(.table-preview-dialog-content)
+	.text-muted-foreground,
+html.has-frosted-glass-theme body [data-slot='alert-dialog-content'] .text-muted-foreground,
+html.has-frosted-glass-theme
+	body
+	[data-slot='sheet-content']:not(.llampart-composer-menu-content)
+	.text-muted-foreground {
+	color: rgba(17, 17, 17, 0.68) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is([data-slot='dialog-content'], [data-slot='alert-dialog-content'], [data-slot='sheet-content'])
+	button[class*='bg-destructive'],
+html.has-frosted-glass-theme
+	body
+	:is([data-slot='dialog-content'], [data-slot='alert-dialog-content'], [data-slot='sheet-content'])
+	[data-slot='button'][class*='bg-destructive'] {
+	border-color: hsl(var(--destructive)) !important;
+	background: hsl(var(--destructive)) !important;
+	background-color: hsl(var(--destructive)) !important;
+	background-image: none !important;
+	color: hsl(var(--destructive-foreground)) !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+	text-shadow: none !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is([data-slot='dialog-content'], [data-slot='alert-dialog-content'], [data-slot='sheet-content'])
+	button[class*='bg-destructive']:is(:hover, :focus-visible, :active),
+html.has-frosted-glass-theme
+	body
+	:is([data-slot='dialog-content'], [data-slot='alert-dialog-content'], [data-slot='sheet-content'])
+	[data-slot='button'][class*='bg-destructive']:is(:hover, :focus-visible, :active) {
+	border-color: hsl(var(--destructive)) !important;
+	background: hsl(var(--destructive)) !important;
+	background-color: hsl(var(--destructive)) !important;
+	color: hsl(var(--destructive-foreground)) !important;
+}
+
+/* llampart-frosted-glass-stage3-sonner-toasts */
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] {
+	border: 1px solid rgba(255, 255, 255, 0.54) !important;
+	border-radius: 0.875rem !important;
+	background: rgba(246, 249, 247, 0.74) !important;
+	background-color: rgba(246, 249, 247, 0.74) !important;
+	background-image:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.1)),
+		linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(229, 237, 232, 0.08)) !important;
+	color: #111111 !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.48),
+		0 12px 34px rgba(15, 23, 42, 0.12),
+		0 4px 14px rgba(15, 23, 42, 0.06) !important;
+	-webkit-backdrop-filter: blur(22px) saturate(122%) !important;
+	backdrop-filter: blur(22px) saturate(122%) !important;
+}
+
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='success'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='error'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='warning'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='info'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='loading'] {
+	border-color: rgba(255, 255, 255, 0.54) !important;
+	background: rgba(246, 249, 247, 0.74) !important;
+	background-color: rgba(246, 249, 247, 0.74) !important;
+	color: #111111 !important;
+}
+
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-title],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-description],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-content] {
+	color: currentColor !important;
+	text-shadow:
+		0 0 0.35px rgba(255, 255, 255, 0.4),
+		0 0 8px rgba(255, 255, 255, 0.14) !important;
+}
+
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-description] {
+	opacity: 0.76 !important;
+}
+
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-icon] {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: auto !important;
+	height: auto !important;
+	min-width: 1rem !important;
+	min-height: 1rem !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	background-color: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+}
+
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-icon] svg,
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] svg {
+	width: 1rem !important;
+	height: 1rem !important;
+	color: rgba(17, 17, 17, 0.68) !important;
+	stroke: rgba(17, 17, 17, 0.68) !important;
+	filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.16))
+		drop-shadow(0 0 4px rgba(255, 255, 255, 0.08)) !important;
+}
+
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-close-button],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] button {
+	border: 1px solid rgba(255, 255, 255, 0.44) !important;
+	background: rgba(255, 255, 255, 0.34) !important;
+	background-color: rgba(255, 255, 255, 0.34) !important;
+	background-image: none !important;
+	color: rgba(17, 17, 17, 0.82) !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: blur(10px) saturate(112%) !important;
+	backdrop-filter: blur(10px) saturate(112%) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	[data-sonner-toaster]
+	[data-sonner-toast]
+	[data-close-button]:is(:hover, :focus-visible),
+html.has-frosted-glass-theme
+	body
+	[data-sonner-toaster]
+	[data-sonner-toast]
+	button:is(:hover, :focus-visible) {
+	background: rgba(255, 255, 255, 0.48) !important;
+	background-color: rgba(255, 255, 255, 0.48) !important;
+	color: #111111 !important;
+}
+
+/* llampart-frosted-glass-stage3d-sonner-hide-icons */
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-icon] {
+	display: none !important;
+	width: 0 !important;
+	min-width: 0 !important;
+	height: 0 !important;
+	min-height: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+}
+
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-icon] *,
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-icon] svg {
+	display: none !important;
+}
+
+/* llampart-frosted-glass-stage3e-sonner-composer-surface */
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='success'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='error'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='warning'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='info'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='loading'] {
+	border: 1px solid rgba(255, 255, 255, 0.34) !important;
+	border-radius: 1.125rem !important;
+	background: rgba(255, 255, 255, 0.34) !important;
+	background-color: rgba(255, 255, 255, 0.34) !important;
+	background-image: none !important;
+	color: #111111 !important;
+	box-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.04),
+		0 8px 26px rgba(0, 0, 0, 0.036),
+		0 20px 48px rgba(0, 0, 0, 0.028) !important;
+	-webkit-backdrop-filter: blur(28px) saturate(132%) !important;
+	backdrop-filter: blur(28px) saturate(132%) !important;
+}
+
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-title],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-description],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-content] {
+	color: #111111 !important;
+	text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.42),
+		0 0 8px rgba(255, 255, 255, 0.22) !important;
+}
+
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-description] {
+	color: rgba(17, 17, 17, 0.74) !important;
+	opacity: 1 !important;
+}
+
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] [data-close-button],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast] button {
+	border: 0 !important;
+	background: transparent !important;
+	background-color: transparent !important;
+	background-image: none !important;
+	color: rgba(17, 17, 17, 0.72) !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	[data-sonner-toaster]
+	[data-sonner-toast]
+	[data-close-button]:is(:hover, :focus-visible),
+html.has-frosted-glass-theme
+	body
+	[data-sonner-toaster]
+	[data-sonner-toast]
+	button:is(:hover, :focus-visible) {
+	background: rgba(255, 255, 255, 0.18) !important;
+	background-color: rgba(255, 255, 255, 0.18) !important;
+	color: #111111 !important;
+}
+
+/* llampart-frosted-glass-stage3f-sonner-composer-border */
+html.has-frosted-glass-theme body [data-sonner-toaster] {
+	--normal-border: rgba(255, 255, 255, 0.34) !important;
+	--success-border: rgba(255, 255, 255, 0.34) !important;
+	--error-border: rgba(255, 255, 255, 0.34) !important;
+	--warning-border: rgba(255, 255, 255, 0.34) !important;
+	--info-border: rgba(255, 255, 255, 0.34) !important;
+}
+
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='success'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='error'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='warning'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='info'],
+html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data-type='loading'] {
+	box-sizing: border-box !important;
+	border-width: 1px !important;
+	border-style: solid !important;
+	border-color: rgba(255, 255, 255, 0.34) !important;
+	border-top-width: 1px !important;
+	border-right-width: 1px !important;
+	border-bottom-width: 1px !important;
+	border-left-width: 1px !important;
+	outline: 0 !important;
+}
+
+/* llampart-frosted-glass-wallpaper-milk-fullscreen-layer */
+html.has-frosted-glass-theme.has-frosted-glass-wallpaper-milk
+	#llampart-frosted-glass-preload-background {
+	position: fixed;
+	inset: 0;
+	overflow: hidden;
+	isolation: isolate;
+	background-color: hsl(var(--background));
+	background-image: none !important;
+}
+
+html.has-frosted-glass-theme.has-frosted-glass-wallpaper-milk
+	#llampart-frosted-glass-preload-background::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	background-image: var(--llampart-frosted-glass-wallpaper);
+	background-position: center;
+	background-size: cover;
+	background-repeat: no-repeat;
+}
+
+html.has-frosted-glass-theme.has-frosted-glass-wallpaper-milk
+	#llampart-frosted-glass-preload-background::after {
+	content: '';
+	position: fixed;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+	background:
+		linear-gradient(180deg, rgb(255 255 255 / 0.19), rgb(255 255 255 / 0.12)),
+		linear-gradient(0deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.12));
+}
+
+/* llampart-frosted-glass-main-message-frames-milk-boost */
+html.has-frosted-glass-theme
+	:is(.agentic-content.llampart-assistant-message, .llampart-system-message-card) {
+	background-image: linear-gradient(
+		0deg,
+		rgb(255 255 255 / 0.13),
+		rgb(255 255 255 / 0.13)
+	) !important;
+	background-clip: padding-box;
+}
