@@ -666,6 +666,12 @@
 		box-shadow: none;
 	}
 
+	/* llampart-standard-theme-composer-blur-restore */
+	:global(html:not(.has-frosted-glass-theme)) .llampart-chat-input-frame {
+		backdrop-filter: blur(18px) saturate(116%);
+		-webkit-backdrop-filter: blur(18px) saturate(116%);
+	}
+
 	/* llampart-frosted-glass-composer-compositing-stability */
 	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame {
 		position: relative !important;
