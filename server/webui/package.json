@@ -41,7 +41,7 @@
 		"@storybook/addon-vitest": "^10.2.4",
 		"@storybook/sveltekit": "^10.2.4",
 		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.48.4",
+		"@sveltejs/kit": "^2.60.1",
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/typography": "^0.5.15",
@@ -102,6 +102,8 @@
 	"overrides": {
 		"cookie": "^0.7.2",
 		"postcss": "^8.5.10",
-		"uuid": "^14.0.0"
+		"uuid": "^14.0.0",
+		"qs": "6.15.2",
+		"ws": "8.20.1"
 	}
 }
