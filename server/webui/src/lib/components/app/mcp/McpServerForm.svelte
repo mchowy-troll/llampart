@@ -87,7 +87,7 @@
 							>({t('mcp.runLlamaServerWith')}
 							<pre>llama-server</pre>
 							{t('common.with')}
-							<pre>--webui-mcp-proxy</pre>
+							<pre>--ui-mcp-proxy</pre>
 							{t('mcp.flag')})</span
 						>
 					{/if}

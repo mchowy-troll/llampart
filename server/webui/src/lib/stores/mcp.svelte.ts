@@ -104,7 +104,8 @@ class MCPStore {
 
 	/**
 	 * Probes the CORS proxy endpoint to determine availability.
-	 * The endpoint is only registered when llama-server runs with --webui-mcp-proxy.
+	 * The endpoint is registered when llama-server runs with --ui-mcp-proxy.
+	 * Older llama-server builds may also accept --webui-mcp-proxy as a deprecated alias.
 	 */
 	async probeProxy(): Promise<void> {
 		try {
