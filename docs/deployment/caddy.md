@@ -65,7 +65,7 @@ Example configuration:
 :8100 {
     root * /srv/llampart
 
-    @llama_api path /props /models /cors-proxy /v1/*
+    @llama_api path /props /models /cors-proxy /tools /tools/* /v1/*
     reverse_proxy @llama_api 127.0.0.1:8080
 
     file_server

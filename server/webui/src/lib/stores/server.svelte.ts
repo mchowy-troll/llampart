@@ -52,7 +52,7 @@ class ServerStore {
 	}
 
 	get webuiSettings(): Record<string, string | number | boolean> | undefined {
-		return this.props?.webui_settings;
+		return this.props?.ui_settings ?? this.props?.webui_settings;
 	}
 
 	get isRouterMode(): boolean {
