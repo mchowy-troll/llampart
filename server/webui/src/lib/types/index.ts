@@ -81,6 +81,7 @@ export type {
 	SettingsFieldGroup,
 	SettingsFieldLayout,
 	SettingsFieldGroupLayout,
+	SettingsFieldColumn,
 	SettingsChatServiceOptions,
 	SettingsConfigType,
 	ParameterValue,

@@ -56,6 +56,7 @@ import type {
 	SettingsFieldGroup,
 	SettingsFieldLayout,
 	SettingsFieldGroupLayout,
+	SettingsFieldColumn,
 	SettingsConfigType
 } from '$lib/types';
 
@@ -127,6 +128,7 @@ declare global {
 		SettingsFieldGroup,
 		SettingsFieldLayout,
 		SettingsFieldGroupLayout,
+		SettingsFieldColumn,
 		SettingsConfigType
 	};
 }
