@@ -15,14 +15,19 @@
 	import type { Component } from 'svelte';
 	import { t } from '$lib/i18n';
 
+	/**
+	 * Renders settings from declarative group and field metadata.
+	 * Layout decisions should come from explicit layout hints, not from detecting specific setting keys.
+	 */
 	interface Props {
 		fields: SettingsFieldConfig[];
+		layout?: SettingsFieldGroupLayout;
 		localConfig: SettingsConfigType;
 		onConfigChange: (key: string, value: string | boolean) => void;
 		onThemeChange?: (theme: string) => void;
 	}
 
-	let { fields, localConfig, onConfigChange, onThemeChange }: Props = $props();
+	let { fields, layout = 'default', localConfig, onConfigChange, onThemeChange }: Props = $props();
 
 	// server sampling defaults for placeholders
 	let sp = $derived.by(() => {
@@ -36,49 +41,10 @@
 		return (serverStore.defaultParams ?? {}) as Record<string, unknown>;
 	});
 
-	const threeColumnModelGroupKeys = new Set([
-		'temperature',
-		'top_k',
-		'top_p',
-		'min_p',
-		'typ_p',
-		'max_tokens',
-		'dynatemp_range',
-		'dynatemp_exponent',
-		'xtc_probability',
-		'xtc_threshold',
-		'samplers',
-		'backend_sampling',
-		'repeat_last_n',
-		'repeat_penalty',
-		'presence_penalty',
-		'frequency_penalty',
-		'dry_multiplier',
-		'dry_base',
-		'dry_allowed_length',
-		'dry_penalty_last_n'
-	]);
-
-	const twoColumnGroupKeys = new Set([
-		'serverBaseUrl',
-		'apiKey',
-		'showMessageStats',
-		'keepStatsVisible',
-		'showThoughtInProgress',
-		'minimalAgenticIndicators',
-		'renderUserContentAsMarkdown',
-		'fullHeightCodeBlocks',
-		'showRawModelNames',
-		'disableAutoScroll',
-		'disableReasoningParsing',
-		'excludeReasoningFromContext',
-		'showRawOutputSwitch',
-		'copyTextAttachmentsAsPlainText',
-		'pasteLongTextToFileLen',
-		'pdfAsImage',
-		'preEncodeConversation'
-	]);
-
+	/**
+	 * Message display keeps a deliberate left/right grouping for visual rhythm.
+	 * The group still opts into this layout explicitly through SettingsFieldGroup.layout.
+	 */
 	const messageDisplayLeftColumnKeys = [
 		SETTINGS_KEYS.SHOW_MESSAGE_STATS,
 		SETTINGS_KEYS.SHOW_THOUGHT_IN_PROGRESS,
@@ -93,42 +59,31 @@
 		SETTINGS_KEYS.SHOW_RAW_MODEL_NAMES
 	];
 
-	const messageDisplayFieldKeys = new Set([
-		...messageDisplayLeftColumnKeys,
-		...messageDisplayRightColumnKeys
-	]);
+	const isSidebarGroup = $derived(layout === 'sidebar');
+	const isThreeColumnModelGroup = $derived(layout === 'three-column');
+	const isTwoColumnGroup = $derived(layout === 'two-column');
+	const isMessageDisplayGroup = $derived(layout === 'message-display');
+	const isAttachmentsFilesGroup = $derived(layout === 'attachments-files');
 
-	const compactInlineNumberKeys = new Set<string>();
-	const compactPeerCheckboxKeys = new Set(['alwaysShowAgenticTurns', 'showToolCallInProgress']);
-	const alignedMcpNumberKeys = new Set(['agenticMaxTurns', 'agenticMaxToolPreviewLines']);
+	/**
+	 * Field layout helpers keep compact variants named and reusable across the template.
+	 * Avoid adding one-off key checks here; prefer SettingsFieldConfig.layout for new cases.
+	 */
+	function hasFieldLayout(field: SettingsFieldConfig, fieldLayout: SettingsFieldLayout): boolean {
+		return field.layout === fieldLayout;
+	}
 
-	const isSidebarGroup = $derived(
-		fields.length === 4 &&
-			fields[0]?.key === SETTINGS_KEYS.ALWAYS_SHOW_SIDEBAR_ON_DESKTOP &&
-			fields[1]?.key === SETTINGS_KEYS.AUTO_SHOW_SIDEBAR_ON_NEW_CHAT &&
-			fields[2]?.key === SETTINGS_KEYS.SHOW_CONVERSATION_TIMESTAMPS &&
-			fields[3]?.key === SETTINGS_KEYS.CONVERSATION_TIMESTAMP_FORMAT
-	);
+	function isCompactInlineNumberField(field: SettingsFieldConfig): boolean {
+		return hasFieldLayout(field, 'compact-inline-number');
+	}
 
-	const isThreeColumnModelGroup = $derived(
-		fields.length > 1 && fields.every((field) => threeColumnModelGroupKeys.has(field.key))
-	);
+	function isCompactPeerCheckboxField(field: SettingsFieldConfig): boolean {
+		return hasFieldLayout(field, 'compact-peer-checkbox');
+	}
 
-	const isTwoColumnGroup = $derived(
-		fields.length > 0 && fields.every((field) => twoColumnGroupKeys.has(field.key))
-	);
-
-	const isMessageDisplayGroup = $derived(
-		fields.length === messageDisplayFieldKeys.size &&
-			fields.every((field) => messageDisplayFieldKeys.has(field.key))
-	);
-
-	const isAttachmentsFilesGroup = $derived(
-		fields.length === 3 &&
-			fields[0]?.key === SETTINGS_KEYS.COPY_TEXT_ATTACHMENTS_AS_PLAIN_TEXT &&
-			fields[1]?.key === SETTINGS_KEYS.PASTE_LONG_TEXT_TO_FILE_LEN &&
-			fields[2]?.key === SETTINGS_KEYS.PDF_AS_IMAGE
-	);
+	function isAlignedMcpNumberField(field: SettingsFieldConfig): boolean {
+		return hasFieldLayout(field, 'aligned-mcp-number');
+	}
 
 	function getSettingInfo(fieldKey: string, fieldHelp?: string): string {
 		if (fieldHelp) return fieldHelp;
@@ -162,42 +117,42 @@
 		return labelOverride || field.label;
 	}
 
-	function getFieldContainerClass(extraClass = '', fieldKey = ''): string {
-		if (compactInlineNumberKeys.has(fieldKey) || compactPeerCheckboxKeys.has(fieldKey)) {
+	function getFieldContainerClass(extraClass = '', field?: SettingsFieldConfig): string {
+		if (field && (isCompactInlineNumberField(field) || isCompactPeerCheckboxField(field))) {
 			return ['grid grid-rows-[2rem_auto] gap-y-1', extraClass].filter(Boolean).join(' ');
 		}
 
-		if (alignedMcpNumberKeys.has(fieldKey)) {
+		if (field && isAlignedMcpNumberField(field)) {
 			return ['grid grid-rows-[2rem_auto_auto] gap-y-1 pl-7', extraClass].filter(Boolean).join(' ');
 		}
 
 		return ['space-y-2', extraClass].filter(Boolean).join(' ');
 	}
 
-	function getHelpClass(fieldKey: string): string {
-		return compactInlineNumberKeys.has(fieldKey) || alignedMcpNumberKeys.has(fieldKey)
+	function getHelpClass(field: SettingsFieldConfig): string {
+		return isCompactInlineNumberField(field) || isAlignedMcpNumberField(field)
 			? 'w-full text-xs text-muted-foreground'
 			: 'mt-1 w-full text-xs text-muted-foreground';
 	}
 
-	function getInputLabelRowClass(fieldKey: string): string {
-		return alignedMcpNumberKeys.has(fieldKey)
+	function getInputLabelRowClass(field: SettingsFieldConfig): string {
+		return isAlignedMcpNumberField(field)
 			? 'flex h-8 items-center gap-2'
 			: 'flex items-center gap-2';
 	}
 
-	function getInputLabelClass(fieldKey: string): string {
-		return alignedMcpNumberKeys.has(fieldKey)
+	function getInputLabelClass(field: SettingsFieldConfig): string {
+		return isAlignedMcpNumberField(field)
 			? 'flex h-8 items-center gap-1.5 text-sm leading-8 font-medium'
 			: 'flex items-center gap-1.5 text-sm font-medium';
 	}
 
-	function getInputWrapperClass(fieldKey: string): string {
-		return compactInlineNumberKeys.has(fieldKey) ? 'relative w-16' : 'relative w-full';
+	function getInputWrapperClass(field: SettingsFieldConfig): string {
+		return isCompactInlineNumberField(field) ? 'relative w-16' : 'relative w-full';
 	}
 
-	function getInputClass(fieldKey: string, isCustomRealTime: boolean): string {
-		return compactInlineNumberKeys.has(fieldKey)
+	function getInputClass(field: SettingsFieldConfig, isCustomRealTime: boolean): string {
+		return isCompactInlineNumberField(field)
 			? 'h-7 w-16 -translate-y-0.5 text-center shadow-none'
 			: [
 					'w-full shadow-none focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0',
@@ -226,7 +181,7 @@
 	hideHelp = false,
 	extraClass = ''
 )}
-	<div class={getFieldContainerClass(extraClass, field.key)}>
+	<div class={getFieldContainerClass(extraClass, field)}>
 		{#if field.type === SettingsFieldType.INPUT}
 			{@const currentValue = String(localConfig[field.key] ?? '')}
 			{@const serverDefault = sp[field.key]}
@@ -246,7 +201,7 @@
 				return normalizedInput !== normalizedDefault;
 			})()}
 
-			{#if compactInlineNumberKeys.has(field.key)}
+			{#if isCompactInlineNumberField(field)}
 				<div class="flex h-8 items-end gap-2">
 					<Label for={field.key} class="min-w-0 flex-1 text-sm leading-8 font-medium">
 						{getFieldLabel(field, labelOverride)}
@@ -285,8 +240,8 @@
 					</div>
 				</div>
 			{:else}
-				<div class={getInputLabelRowClass(field.key)}>
-					<Label for={field.key} class={getInputLabelClass(field.key)}>
+				<div class={getInputLabelRowClass(field)}>
+					<Label for={field.key} class={getInputLabelClass(field)}>
 						{getFieldLabel(field, labelOverride)}
 
 						{#if field.isExperimental}
@@ -298,7 +253,7 @@
 					{/if}
 				</div>
 
-				<div class={getInputWrapperClass(field.key)}>
+				<div class={getInputWrapperClass(field)}>
 					<Input
 						id={field.key}
 						value={currentValue}
@@ -308,7 +263,7 @@
 						placeholder={sp[field.key] != null
 							? `${t('settings.defaultPrefix')} ${normalizeFloatingPoint(sp[field.key])}`
 							: ''}
-						class={getInputClass(field.key, isCustomRealTime)}
+						class={getInputClass(field, isCustomRealTime)}
 					/>
 					{#if isCustomRealTime}
 						<button
@@ -329,7 +284,7 @@
 
 			{@const help = getFieldHelp(field, helpOverride, hideHelp)}
 			{#if help}
-				<p class={getHelpClass(field.key)}>
+				<p class={getHelpClass(field)}>
 					{@html help}
 				</p>
 			{/if}
@@ -458,7 +413,7 @@
 				</p>
 			{/if}
 		{:else if field.type === SettingsFieldType.CHECKBOX}
-			{#if compactPeerCheckboxKeys.has(field.key)}
+			{#if isCompactPeerCheckboxField(field)}
 				<div class="flex h-8 items-end gap-3">
 					<div class="flex h-8 items-center">
 						<Checkbox

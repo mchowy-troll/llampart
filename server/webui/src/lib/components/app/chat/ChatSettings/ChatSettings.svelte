@@ -103,16 +103,10 @@
 		}
 	}
 
-	type SettingsFieldGroup = {
-		id: string;
-		title?: string;
-		description?: string;
-		fields: SettingsFieldConfig[];
-		fullWidth?: boolean;
-		halfWidth?: boolean;
-		framed?: boolean;
-	};
-
+	/**
+	 * Settings metadata is the source of truth for both content and layout hints.
+	 * Keeping layout near the group definitions makes future settings easier to add safely.
+	 */
 	const settingSections: Array<{
 		fields: SettingsFieldConfig[];
 		groups?: SettingsFieldGroup[];
@@ -127,6 +121,7 @@
 				{
 					id: 'connection',
 					title: t('settings.groupConnection'),
+					layout: 'two-column',
 					fields: [
 						{
 							key: SETTINGS_KEYS.SERVER_BASE_URL,
@@ -182,6 +177,7 @@
 					id: 'sidebar',
 					title: t('settings.groupSidebar'),
 					halfWidth: true,
+					layout: 'sidebar',
 					fields: [
 						{
 							key: SETTINGS_KEYS.ALWAYS_SHOW_SIDEBAR_ON_DESKTOP,
@@ -209,6 +205,7 @@
 				{
 					id: 'message-display',
 					title: t('settings.groupMessageDisplay'),
+					layout: 'message-display',
 					fields: [
 						{
 							key: SETTINGS_KEYS.SHOW_MESSAGE_STATS,
@@ -308,6 +305,7 @@
 				{
 					id: 'attachments-files',
 					title: t('settings.groupAttachmentsFiles'),
+					layout: 'attachments-files',
 					fields: [
 						{
 							key: SETTINGS_KEYS.COPY_TEXT_ATTACHMENTS_AS_PLAIN_TEXT,
@@ -347,6 +345,7 @@
 			groups: [
 				{
 					id: 'basic-generation',
+					layout: 'three-column',
 					title: t('settings.groupBasicGeneration'),
 					fields: [
 						{
@@ -383,6 +382,7 @@
 				},
 				{
 					id: 'dynamic-temperature',
+					layout: 'three-column',
 					title: t('settings.groupDynamicTemperature'),
 					fields: [
 						{
@@ -399,6 +399,7 @@
 				},
 				{
 					id: 'xtc',
+					layout: 'three-column',
 					title: t('settings.groupXtc'),
 					fields: [
 						{
@@ -415,6 +416,7 @@
 				},
 				{
 					id: 'sampler-order',
+					layout: 'three-column',
 					title: t('settings.groupSamplerOrder'),
 					fields: [
 						{
@@ -431,6 +433,7 @@
 				},
 				{
 					id: 'repetition',
+					layout: 'three-column',
 					title: t('settings.groupRepetition'),
 					fields: [
 						{
@@ -447,6 +450,7 @@
 				},
 				{
 					id: 'presence-frequency',
+					layout: 'three-column',
 					title: t('settings.groupPresenceFrequency'),
 					fields: [
 						{
@@ -463,6 +467,7 @@
 				},
 				{
 					id: 'dry-penalty',
+					layout: 'three-column',
 					title: t('settings.groupDryPenalty'),
 					fields: [
 						{
@@ -502,12 +507,14 @@
 						{
 							key: SETTINGS_KEYS.ALWAYS_SHOW_AGENTIC_TURNS,
 							label: t('settings.fieldAlwaysShowAgenticTurnsInConversation'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							layout: 'compact-peer-checkbox'
 						},
 						{
 							key: SETTINGS_KEYS.AGENTIC_MAX_TURNS,
 							label: t('settings.fieldAgenticLoopMaxTurns'),
-							type: SettingsFieldType.INPUT
+							type: SettingsFieldType.INPUT,
+							layout: 'aligned-mcp-number'
 						}
 					]
 				},
@@ -519,12 +526,14 @@
 						{
 							key: SETTINGS_KEYS.SHOW_TOOL_CALL_IN_PROGRESS,
 							label: t('settings.fieldShowToolCallInProgress'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							layout: 'compact-peer-checkbox'
 						},
 						{
 							key: SETTINGS_KEYS.AGENTIC_MAX_TOOL_PREVIEW_LINES,
 							label: t('settings.fieldMaxLinesPerToolPreview'),
-							type: SettingsFieldType.INPUT
+							type: SettingsFieldType.INPUT,
+							layout: 'aligned-mcp-number'
 						}
 					]
 				}
@@ -548,6 +557,7 @@
 				{
 					id: 'reasoning',
 					title: t('settings.groupReasoning'),
+					layout: 'two-column',
 					fields: [
 						{
 							key: SETTINGS_KEYS.DISABLE_REASONING_PARSING,
@@ -569,6 +579,7 @@
 				{
 					id: 'performance-cache',
 					title: t('settings.groupPerformanceCache'),
+					layout: 'two-column',
 					fields: [
 						{
 							key: SETTINGS_KEYS.PRE_ENCODE_CONVERSATION,
@@ -911,6 +922,7 @@
 								<div class={groupSpanClass}>
 									<ChatSettingsFields
 										fields={group.fields}
+										layout={group.layout}
 										{localConfig}
 										onConfigChange={handleConfigChange}
 										onThemeChange={handleThemeChange}
@@ -936,6 +948,7 @@
 
 									<ChatSettingsFields
 										fields={group.fields}
+										layout={group.layout}
 										{localConfig}
 										onConfigChange={handleConfigChange}
 										onThemeChange={handleThemeChange}

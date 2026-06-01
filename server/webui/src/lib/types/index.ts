@@ -78,6 +78,9 @@ export type { ToolEntry, ToolGroup, ServerBuiltinToolInfo } from './tools';
 export type {
 	SettingsConfigValue,
 	SettingsFieldConfig,
+	SettingsFieldGroup,
+	SettingsFieldLayout,
+	SettingsFieldGroupLayout,
 	SettingsChatServiceOptions,
 	SettingsConfigType,
 	ParameterValue,
