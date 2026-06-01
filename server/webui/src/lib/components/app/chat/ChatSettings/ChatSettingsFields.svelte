@@ -67,6 +67,10 @@
 		return hasFieldLayout(field, 'aligned-mcp-number');
 	}
 
+	function isSidebarNestedField(field: SettingsFieldConfig): boolean {
+		return hasFieldLayout(field, 'sidebar-nested');
+	}
+
 	function getSettingInfo(fieldKey: string, fieldHelp?: string): string {
 		if (fieldHelp) return fieldHelp;
 
@@ -88,8 +92,16 @@
 		return fields.filter((field) => field.column === column);
 	}
 
+	function getFieldsWithoutCluster(): SettingsFieldConfig[] {
+		return fields.filter((field) => !field.cluster);
+	}
+
+	function getFieldsByCluster(cluster: SettingsFieldCluster): SettingsFieldConfig[] {
+		return fields.filter((field) => field.cluster === cluster);
+	}
+
 	function getFieldHelp(field: SettingsFieldConfig, helpOverride = '', hideHelp = false): string {
-		if (hideHelp) return '';
+		if (hideHelp || field.hideHelp) return '';
 		if (helpOverride) return helpOverride;
 
 		return getSettingInfo(field.key, field.help);
@@ -457,18 +469,20 @@
 
 {#if isSidebarGroup}
 	<div class="space-y-5">
-		{@render renderField(fields[0])}
-		{@render renderField(fields[1])}
+		{#each getFieldsWithoutCluster() as field (field.key)}
+			{@render renderField(field)}
+		{/each}
 
 		<div class="space-y-4">
-			{@render renderField(fields[2], '', t('settings.sidebarTimestampCombinedHelp'))}
-			{@render renderField(
-				fields[3],
-				t('settings.fieldChooseConversationTimestampFormat'),
-				'',
-				true,
-				'ml-[1.625rem]'
-			)}
+			{#each getFieldsByCluster('sidebar-timestamp') as field (field.key)}
+				{@render renderField(
+					field,
+					'',
+					'',
+					field.hideHelp,
+					isSidebarNestedField(field) ? 'ml-[1.625rem]' : ''
+				)}
+			{/each}
 		</div>
 	</div>
 {:else if isMessageDisplayGroup}

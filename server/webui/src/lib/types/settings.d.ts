@@ -15,7 +15,8 @@ export type SettingsFieldLayout =
 	| 'default'
 	| 'compact-inline-number'
 	| 'compact-peer-checkbox'
-	| 'aligned-mcp-number';
+	| 'aligned-mcp-number'
+	| 'sidebar-nested';
 
 /**
  * Describes the layout used by a complete settings group.
@@ -35,6 +36,12 @@ export type SettingsFieldGroupLayout =
  */
 export type SettingsFieldColumn = 'left' | 'right';
 
+/**
+ * Groups related fields inside a named settings group layout.
+ * Cluster ownership belongs to field metadata so renderers do not depend on field order.
+ */
+export type SettingsFieldCluster = 'sidebar-timestamp';
+
 export interface SettingsFieldConfig {
 	key: string;
 	label: string;
@@ -43,6 +50,8 @@ export interface SettingsFieldConfig {
 	help?: string;
 	layout?: SettingsFieldLayout;
 	column?: SettingsFieldColumn;
+	cluster?: SettingsFieldCluster;
+	hideHelp?: boolean;
 	options?: Array<{ value: string; label: string; icon?: typeof Icon }>;
 }
 
