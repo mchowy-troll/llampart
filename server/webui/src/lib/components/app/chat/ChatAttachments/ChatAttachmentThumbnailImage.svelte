@@ -32,7 +32,9 @@
 </script>
 
 <div
-	class="group relative overflow-hidden rounded-lg bg-muted shadow-lg dark:border dark:border-muted {className}"
+	class="llampart-attachment-thumbnail-image {readonly
+		? 'llampart-attachment-thumbnail-image-readonly'
+		: ''} group relative overflow-hidden rounded-lg bg-muted shadow-lg dark:border dark:border-muted {className}"
 >
 	{#if onClick}
 		<button
@@ -63,3 +65,18 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	/* llampart-block-b-image-thumbnail-polish */
+	:global(html.has-frosted-glass-theme) .llampart-attachment-thumbnail-image-readonly {
+		border: 1px solid rgba(255, 255, 255, 0.18) !important;
+		background: rgba(255, 255, 255, 0.12) !important;
+		box-shadow:
+			inset 0 1px 0 rgba(255, 255, 255, 0.14),
+			0 1px 2px rgba(0, 0, 0, 0.05),
+			0 4px 10px rgba(0, 0, 0, 0.04) !important;
+		backdrop-filter: blur(14px) saturate(110%) !important;
+		-webkit-backdrop-filter: blur(14px) saturate(110%) !important;
+	}
+	/* /llampart-block-b-image-thumbnail-polish */
+</style>

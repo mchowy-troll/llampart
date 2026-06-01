@@ -32,6 +32,7 @@ export const en: TranslationDictionary = {
 		codeIncomplete: 'Code incomplete',
 		copyCode: 'Copy code',
 		previewCode: 'Preview code',
+		previewMarkdown: 'Preview Markdown',
 		tablePreview: 'Preview table',
 		removeFile: 'Remove file',
 		copyToClipboard: 'Copy to clipboard',
@@ -170,7 +171,7 @@ export const en: TranslationDictionary = {
 		enterValidNumber: 'Please enter a valid number.',
 		invalidServerConnectionSettings: 'Invalid server connection settings.',
 		fieldShowMessageGenerationStatistics: 'Show message generation statistics',
-		fieldShowThoughtInProgress: 'Show thought in progress',
+		fieldShowThoughtInProgress: 'Show Reasoning while generating',
 		fieldMinimalAgenticIndicators: 'Minimalistic Reasoning and Tools mode',
 		fieldKeepStatsVisibleAfterGeneration: 'Keep stats visible after generation',
 		fieldShowMicrophoneOnEmptyInput: 'Show microphone on empty input',
@@ -410,8 +411,7 @@ export const en: TranslationDictionary = {
 				'DRY sampling reduces repetition across long contexts. This sets the DRY penalty window.',
 			maxTokens: 'Maximum number of output tokens. Use -1 for no limit.',
 			custom: 'Custom JSON parameters sent to the API. Must be valid JSON.',
-			showThoughtInProgress:
-				'Expand the thought process by default while messages are being generated.',
+			showThoughtInProgress: 'Expand Reasoning by default while messages are being generated.',
 			minimalAgenticIndicators:
 				'Replace Reasoning and Tools panels with small animated indicators in the message footer while they are active.',
 			disableReasoningParsing:
@@ -804,6 +804,7 @@ export const en: TranslationDictionary = {
 		aboutLlampartDescription: 'About this program and version.',
 		aboutLlampartVersionLabel: 'Version',
 		aboutLlampartAuthorLabel: 'Author',
+		aboutLlampartRepositoryLabel: 'Repository',
 		aboutLlampartAboutProgramTitle: 'About this program',
 		aboutLlampartAboutProgramBodyOne:
 			'llampart is an independent local web UI inspired by and built from the llama-ui foundation, but it is not directly affiliated with llama.cpp and can evolve separately from the original interface. It keeps the local-first character of llama-server while focusing on a more comfortable everyday chat experience.',

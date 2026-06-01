@@ -67,6 +67,8 @@
 	let previewLanguage = $state('text');
 	let tablePreviewDialogOpen = $state(false);
 	let tablePreviewHtml = $state('');
+	let markdownRenderedPreviewDialogOpen = $state(false);
+	let markdownRenderedPreviewHtml = $state('');
 	let streamingCodeScrollContainer = $state<HTMLDivElement>();
 
 	// Auto-scroll controller for streaming code block content
@@ -85,6 +87,8 @@
 	const MARKDOWN_CODE_LANGUAGES = new Set(['md', 'markdown', 'mdown', 'mkdn', 'mkd']);
 
 	const COPY_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
+
+	const PREVIEW_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>`;
 
 	function escapeHtml(value: string): string {
 		return value
@@ -270,7 +274,7 @@
 		const transformedRoot = (await processorInstance.run(innerAst)) as HastRoot;
 		const renderedMarkdown = processorInstance.stringify(transformedRoot);
 
-		return `<div class="code-block-wrapper markdown-rendered-code-block relative"><div class="code-block-header"><span class="code-language">${escapeHtml(language)}</span><div class="code-block-actions"><button class="copy-code-btn" data-code-id="${escapeHtml(codeId)}" title="Copy code" type="button"><span>${COPY_ICON_SVG}</span></button></div></div><div class="markdown-rendered-code-content"><code data-code-id="${escapeHtml(codeId)}" data-raw-code="${escapeHtml(rawCode)}" hidden></code>${renderedMarkdown}</div></div>`;
+		return `<div class="code-block-wrapper markdown-rendered-code-block relative"><div class="code-block-header"><span class="code-language">${escapeHtml(language)}</span><div class="code-block-actions"><button class="copy-code-btn" data-code-id="${escapeHtml(codeId)}" title="Copy code" type="button"><span>${COPY_ICON_SVG}</span></button><button class="preview-code-btn llampart-markdown-rendered-code-preview-btn" data-code-id="${escapeHtml(codeId)}" title="${escapeHtml(t('common.previewMarkdown'))}" aria-label="${escapeHtml(t('common.previewMarkdown'))}" type="button"><span>${PREVIEW_ICON_SVG}</span></button></div></div><div class="markdown-rendered-code-content markdown-rendered-code-scroll-container"><code data-code-id="${escapeHtml(codeId)}" data-raw-code="${escapeHtml(rawCode)}" hidden></code>${renderedMarkdown}</div></div>`;
 	}
 
 	/**
@@ -310,6 +314,24 @@
 		transformCache.set(hash, html);
 
 		return { html, hash };
+	}
+
+	function buildMarkdownRenderedPreviewHtml(wrapper: HTMLElement): string | null {
+		const content = wrapper.querySelector<HTMLElement>('.markdown-rendered-code-content');
+
+		if (!content) return null;
+
+		const clone = content.cloneNode(true) as HTMLElement;
+
+		clone
+			.querySelectorAll('code[data-code-id][hidden], .code-block-actions, .table-actions')
+			.forEach((node) => {
+				node.remove();
+			});
+
+		const bodyHtml = clone.innerHTML.trim();
+
+		return bodyHtml || null;
 	}
 
 	/**
@@ -369,6 +391,18 @@
 			return;
 		}
 
+		const wrapper = target.closest('.code-block-wrapper') as HTMLElement | null;
+
+		if (wrapper?.classList.contains('markdown-rendered-code-block')) {
+			const markdownPreviewHtml = buildMarkdownRenderedPreviewHtml(wrapper);
+
+			if (markdownPreviewHtml) {
+				markdownRenderedPreviewHtml = markdownPreviewHtml;
+				markdownRenderedPreviewDialogOpen = true;
+				return;
+			}
+		}
+
 		const info = getCodeInfoFromTarget(target);
 
 		if (!info) {
@@ -389,6 +423,14 @@
 
 		if (!open) {
 			tablePreviewHtml = '';
+		}
+	}
+
+	function handleMarkdownRenderedPreviewDialogOpenChange(open: boolean) {
+		markdownRenderedPreviewDialogOpen = open;
+
+		if (!open) {
+			markdownRenderedPreviewHtml = '';
 		}
 	}
 
@@ -553,6 +595,11 @@
 		for (const wrapper of wrappers) {
 			const copyButton = wrapper.querySelector<HTMLButtonElement>('.copy-code-btn');
 			const previewButton = wrapper.querySelector<HTMLButtonElement>('.preview-code-btn');
+
+			if (previewButton?.classList.contains('llampart-markdown-rendered-code-preview-btn')) {
+				previewButton.title = t('common.previewMarkdown');
+				previewButton.setAttribute('aria-label', t('common.previewMarkdown'));
+			}
 
 			if (copyButton && copyButton.dataset.listenerBound !== 'true') {
 				copyButton.dataset.listenerBound = 'true';
@@ -771,8 +818,29 @@
 			</div>
 
 			<div class="table-preview-body">
-				<div class="table-wrapper table-preview-wrapper">
+				<div class="table-preview-wrapper">
 					{@html tablePreviewHtml}
+				</div>
+			</div>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root
+	open={markdownRenderedPreviewDialogOpen}
+	onOpenChange={handleMarkdownRenderedPreviewDialogOpenChange}
+>
+	<Dialog.Content
+		class="table-preview-dialog-content markdown-rendered-preview-dialog-content z-[999999] flex !max-h-[80dvh] !w-[80vw] !max-w-[80vw] flex-col gap-0 overflow-hidden p-0"
+	>
+		<div class="table-preview-dialog markdown-rendered-preview-dialog">
+			<div class="table-preview-header">
+				<Dialog.Title class="table-preview-title">{t('common.previewMarkdown')}</Dialog.Title>
+			</div>
+
+			<div class="table-preview-body markdown-rendered-preview-body">
+				<div class="markdown-rendered-preview-wrapper">
+					{@html markdownRenderedPreviewHtml}
 				</div>
 			</div>
 		</div>
@@ -781,7 +849,22 @@
 
 <style>
 	:global(.markdown-rendered-code-block .markdown-rendered-code-content) {
+		box-sizing: border-box;
+		min-height: var(--min-message-height);
+		max-height: var(--max-message-height);
+		overflow-y: auto;
+		overflow-x: auto;
 		padding: 2.75rem 1.25rem 1.25rem;
+	}
+
+	.full-height-code-blocks :global(.markdown-rendered-code-block .markdown-rendered-code-content) {
+		max-height: none;
+		overflow-y: visible;
+	}
+
+	:global(.markdown-rendered-code-block .llampart-markdown-rendered-code-preview-btn svg) {
+		width: 1rem;
+		height: 1rem;
 	}
 
 	:global(.markdown-rendered-code-block .markdown-rendered-code-content > :first-child) {
@@ -800,6 +883,102 @@
 
 	.markdown-block--unstable {
 		display: contents;
+	}
+
+	:global(.markdown-rendered-preview-dialog-content) {
+		background: hsl(var(--background)) !important;
+		color: hsl(var(--foreground)) !important;
+	}
+
+	.markdown-rendered-preview-body {
+		overflow: hidden !important;
+	}
+
+	.markdown-rendered-preview-wrapper {
+		box-sizing: border-box;
+		width: 100%;
+		max-height: calc(80dvh - 5rem) !important;
+		overflow: auto !important;
+		border: 1px solid color-mix(in oklch, var(--border) 68%, transparent);
+		border-radius: 0.5rem;
+		background: hsl(var(--background));
+		color: hsl(var(--foreground));
+		padding: 1rem;
+	}
+
+	.markdown-rendered-preview-wrapper :global(> :first-child) {
+		margin-top: 0;
+	}
+
+	.markdown-rendered-preview-wrapper :global(> :last-child) {
+		margin-bottom: 0;
+	}
+
+	.markdown-rendered-preview-wrapper :global(.code-block-actions),
+	.markdown-rendered-preview-wrapper :global(.table-actions),
+	.markdown-rendered-preview-wrapper :global(code[data-code-id][hidden]) {
+		display: none !important;
+	}
+
+	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog-content),
+	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog),
+	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog .table-preview-header),
+	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog .table-preview-body),
+	:global(html.has-frosted-glass-theme .markdown-rendered-preview-body),
+	:global(html.has-frosted-glass-theme .markdown-rendered-preview-wrapper) {
+		background: #ffffff !important;
+		background-color: #ffffff !important;
+		background-image: none !important;
+		color: #111111 !important;
+		text-shadow: none !important;
+		box-shadow: none;
+		backdrop-filter: none !important;
+		-webkit-backdrop-filter: none !important;
+	}
+
+	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog-content) {
+		border: 1px solid rgba(0, 0, 0, 0.12) !important;
+		box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18) !important;
+	}
+
+	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog .table-preview-header) {
+		border-bottom: 1px solid rgba(0, 0, 0, 0.12) !important;
+	}
+
+	:global(html.has-frosted-glass-theme .markdown-rendered-preview-wrapper) {
+		border: 1px solid rgba(0, 0, 0, 0.12) !important;
+		border-radius: 0.5rem !important;
+		box-shadow: none !important;
+	}
+
+	:global(html.has-frosted-glass-theme .markdown-rendered-preview-wrapper *),
+	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog .table-preview-title) {
+		text-shadow: none !important;
+	}
+
+	div :global(.table-preview-button svg) {
+		width: 1rem !important;
+		height: 1rem !important;
+		stroke-width: 2 !important;
+	}
+
+	div :global(.table-actions) {
+		right: 1rem !important;
+	}
+
+	div :global(.table-preview-button) {
+		width: 1rem !important;
+		height: 1rem !important;
+		min-width: 1rem !important;
+		min-height: 1rem !important;
+		padding: 0 !important;
+		line-height: 1 !important;
+	}
+
+	div :global(.table-preview-button svg) {
+		width: 1rem !important;
+		height: 1rem !important;
+		stroke-width: 2 !important;
 	}
 
 	:global(.table-preview-dialog-content) {
@@ -1474,7 +1653,6 @@
 		background: rgba(255, 255, 255, 0.035) !important;
 	}
 
-	/* llampart-frosted-glass-markdown-quotes-images-preview-final */
 	:global(html.has-frosted-glass-theme) div :global(blockquote) {
 		border: 1px solid rgba(255, 255, 255, 0.14) !important;
 		border-left: 4px solid rgba(255, 255, 255, 0.28) !important;
@@ -1511,131 +1689,125 @@
 		-webkit-backdrop-filter: blur(10px) saturate(104%) !important;
 	}
 
-	/* llampart-frosted-glass-table-preview-light-like-with-visible-grid */
-	:global(html.has-frosted-glass-theme .table-preview-dialog-content .table-preview-body),
-	:global(html.has-frosted-glass-theme .table-preview-dialog-content .table-preview-body *) {
-		color: #111111 !important;
-		text-shadow: none !important;
-	}
-
-	:global(
-		html.has-frosted-glass-theme .table-preview-dialog-content .table-preview-body .table-wrapper
-	),
-	:global(
-		html.has-frosted-glass-theme
-			.table-preview-dialog-content
-			.table-preview-body
-			.table-preview-wrapper
-	),
-	:global(
-		html.has-frosted-glass-theme .table-preview-dialog-content .table-preview-body .overflow-auto
-	) {
-		border: 1px solid rgba(101, 111, 121, 0.28) !important;
-		border-radius: 0.75rem !important;
-		background: rgba(255, 255, 255, 0.96) !important;
-		box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .table-preview-dialog-content .table-preview-body table) {
-		border-collapse: separate !important;
-		border-spacing: 0 !important;
-		border: 1px solid rgba(101, 111, 121, 0.32) !important;
-		background: #ffffff !important;
-		box-shadow: none !important;
-		overflow: hidden !important;
-	}
-
-	:global(
-		html.has-frosted-glass-theme .table-preview-dialog-content .table-preview-body table tr > *
-	) {
-		border: 0 !important;
-		background: #ffffff !important;
+	:global(html.has-frosted-glass-theme) div :global(code:not(pre code)) {
+		border: 1px solid rgba(255, 255, 255, 0.16) !important;
+		background: rgba(255, 255, 255, 0.16) !important;
+		color: #000000 !important;
+		text-shadow:
+			0 0 2px rgba(255, 255, 255, 0.62),
+			0 0 7px rgba(255, 255, 255, 0.46),
+			0 0 14px rgba(255, 255, 255, 0.28) !important;
 		box-shadow:
-			inset -1px 0 0 rgba(101, 111, 121, 0.22),
-			inset 0 -1px 0 rgba(101, 111, 121, 0.22) !important;
-		color: #111111 !important;
+			inset 0 1px 0 rgba(255, 255, 255, 0.14),
+			0 1px 2px rgba(0, 0, 0, 0.035) !important;
+		backdrop-filter: blur(8px) saturate(108%) !important;
+		-webkit-backdrop-filter: blur(8px) saturate(108%) !important;
+	}
+
+	div :global(blockquote .table-preview-button),
+	div :global(blockquote .table-preview-button *) {
+		font-style: normal !important;
+	}
+
+	:global(.table-preview-body .table-preview-wrapper) {
+		max-width: 100%;
+		max-height: calc(80dvh - 5rem) !important;
+		overflow: auto !important;
+		margin: 0;
+		padding: 3rem 1rem 1rem;
+		border: none;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+		scrollbar-width: auto;
+		scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent) transparent;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	:global(.table-preview-body .table-preview-wrapper table) {
+		display: table;
+		width: max-content;
+		min-width: 100%;
+		max-width: none;
+		margin: 0;
+		border-collapse: collapse;
+		border-spacing: 0;
+		border: 1px solid color-mix(in oklch, var(--border) 68%, transparent);
+		border-radius: 0;
+		background: var(--background);
+		color: var(--foreground);
+		box-shadow: none;
+		table-layout: auto;
+	}
+
+	:global(.table-preview-body .table-preview-wrapper th) {
+		border: 1px solid color-mix(in oklch, var(--border) 68%, transparent);
+		background: color-mix(in oklch, var(--muted) 82%, var(--background));
+		padding: 0.55rem 0.75rem;
+		color: var(--foreground);
+		font-weight: 650;
+		letter-spacing: 0.01em;
+		text-align: left;
+		vertical-align: middle;
+		box-shadow: none;
+		text-shadow: none;
+	}
+
+	:global(.table-preview-body .table-preview-wrapper td) {
+		border: 1px solid color-mix(in oklch, var(--border) 68%, transparent);
+		background: var(--background);
+		padding: 0.38rem 0.75rem;
+		color: var(--foreground);
+		font-weight: 400;
+		letter-spacing: normal;
+		text-align: left;
+		vertical-align: middle;
+		box-shadow: none;
+		text-shadow: none;
+	}
+
+	:global(.table-preview-body .table-preview-wrapper tr:nth-child(even)) {
+		background: color-mix(in oklch, var(--muted) 24%, transparent);
+	}
+
+	:global(.table-preview-body .table-preview-wrapper tr:nth-child(even) td) {
+		background: color-mix(in oklch, var(--muted) 24%, transparent);
+	}
+
+	:global(.table-preview-body .table-preview-wrapper .table-cell-content) {
+		display: block;
+		max-width: 30rem;
+		white-space: normal;
+		word-break: normal;
+		overflow-wrap: break-word;
+	}
+
+	:global(.table-preview-body .table-preview-wrapper::-webkit-scrollbar) {
+		height: 0.4rem;
+	}
+
+	:global(.table-preview-body .table-preview-wrapper::-webkit-scrollbar-track) {
+		background: transparent;
+	}
+
+	:global(.table-preview-body .table-preview-wrapper::-webkit-scrollbar-thumb) {
+		background: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+		border-radius: 9999px;
+	}
+
+	:global(.table-preview-body .table-preview-wrapper::-webkit-scrollbar-thumb:hover) {
+		background: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+	}
+
+	:global(html.has-frosted-glass-theme .table-preview-dialog-content),
+	:global(html.has-frosted-glass-theme .table-preview-dialog),
+	:global(html.has-frosted-glass-theme .table-preview-header),
+	:global(html.has-frosted-glass-theme .table-preview-body),
+	:global(html.has-frosted-glass-theme .table-preview-wrapper) {
+		background-image: none !important;
 		text-shadow: none !important;
-	}
-
-	:global(
-		html.has-frosted-glass-theme
-			.table-preview-dialog-content
-			.table-preview-body
-			table
-			tr:first-child
-			> *
-	),
-	:global(
-		html.has-frosted-glass-theme
-			.table-preview-dialog-content
-			.table-preview-body
-			table
-			thead
-			tr
-			> *
-	) {
-		background: #eef2f5 !important;
-		font-weight: 600 !important;
-		box-shadow:
-			inset -1px 0 0 rgba(101, 111, 121, 0.24),
-			inset 0 -1px 0 rgba(101, 111, 121, 0.3) !important;
-	}
-
-	:global(
-		html.has-frosted-glass-theme
-			.table-preview-dialog-content
-			.table-preview-body
-			table
-			tbody
-			tr:nth-child(even)
-			> *
-	) {
-		background: #f7f9fb !important;
-	}
-
-	:global(
-		html.has-frosted-glass-theme
-			.table-preview-dialog-content
-			.table-preview-body
-			table
-			tbody
-			tr:nth-child(odd)
-			> *
-	) {
-		background: #ffffff !important;
-	}
-
-	:global(
-		html.has-frosted-glass-theme
-			.table-preview-dialog-content
-			.table-preview-body
-			table
-			tr
-			> *:last-child
-	) {
-		box-shadow: inset 0 -1px 0 rgba(101, 111, 121, 0.22) !important;
-	}
-
-	:global(
-		html.has-frosted-glass-theme
-			.table-preview-dialog-content
-			.table-preview-body
-			table
-			tr:last-child
-			> *
-	) {
-		box-shadow: inset -1px 0 0 rgba(101, 111, 121, 0.22) !important;
-	}
-
-	:global(
-		html.has-frosted-glass-theme
-			.table-preview-dialog-content
-			.table-preview-body
-			table
-			tr:last-child
-			> *:last-child
-	) {
-		box-shadow: none !important;
+		backdrop-filter: none !important;
+		-webkit-backdrop-filter: none !important;
 	}
 
 	/* Responsive adjustments */
@@ -1723,4 +1895,78 @@
 		background: var(--muted);
 		border-color: var(--primary);
 	}
+	div :global(.table-block .table-actions) {
+		top: 0.9375rem !important;
+	}
+
+	div :global(.table-block .table-preview-button),
+	div :global(.table-block .table-preview-button svg) {
+		line-height: 1 !important;
+		vertical-align: top !important;
+	}
+	/* Code/text/Markdown action icon sizing and Markdown rendered-frame scroll layout. */
+	div :global(.code-block-actions) {
+		flex: 0 0 auto;
+		line-height: 1;
+	}
+
+	div :global(.copy-code-btn),
+	div :global(.preview-code-btn) {
+		width: 1rem;
+		height: 1rem;
+		min-width: 1rem;
+		min-height: 1rem;
+		flex: 0 0 auto;
+		line-height: 1;
+	}
+
+	div :global(.copy-code-btn > span),
+	div :global(.preview-code-btn > span) {
+		display: flex;
+		width: 100%;
+		height: 100%;
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
+	}
+
+	div :global(.copy-code-btn svg),
+	div :global(.preview-code-btn svg) {
+		display: block;
+		width: 100%;
+		height: 100%;
+		flex: 0 0 auto;
+	}
+
+	div :global(.markdown-rendered-code-block) {
+		display: flex;
+		min-height: var(--min-message-height);
+		max-height: var(--max-message-height);
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	div :global(.markdown-rendered-code-block .code-block-header) {
+		position: static;
+		flex: 0 0 auto;
+		padding: 1rem 1rem 0.625rem;
+		z-index: 1;
+	}
+
+	div :global(.markdown-rendered-code-block .markdown-rendered-code-content) {
+		flex: 1 1 auto;
+		min-height: 0;
+		padding: 1rem 1.25rem 1.25rem;
+		overflow-x: auto;
+		overflow-y: auto;
+	}
+
+	.full-height-code-blocks :global(.markdown-rendered-code-block) {
+		max-height: none;
+	}
+
+	.full-height-code-blocks :global(.markdown-rendered-code-block .markdown-rendered-code-content) {
+		overflow-y: visible;
+	}
+	/* /Code/text/Markdown action icon sizing and Markdown rendered-frame scroll layout. */
 </style>

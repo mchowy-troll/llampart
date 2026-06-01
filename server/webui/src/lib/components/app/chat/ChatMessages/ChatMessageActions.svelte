@@ -247,4 +247,50 @@
 			0 0 14px rgba(255, 255, 255, 0.28) !important;
 	}
 	/* /llampart-frosted-glass-message-actions-icon-glow */
+
+	/* llampart-1-0-2-message-action-icons-standard-theme */
+	:global(html:not(.has-frosted-glass-theme) .llampart-message-actions-icons button),
+	:global(html:not(.has-frosted-glass-theme) .llampart-message-actions-icons a),
+	:global(html:not(.has-frosted-glass-theme) .llampart-message-actions-icons [role='button']) {
+		color: var(--muted-foreground) !important;
+		background: transparent !important;
+		background-color: transparent !important;
+		background-image: none !important;
+		border-color: transparent !important;
+		box-shadow: none !important;
+		filter: none !important;
+		text-shadow: none !important;
+		transform: none !important;
+		transition-property: none !important;
+		transition-duration: 0s !important;
+		animation: none !important;
+	}
+
+	:global(html:not(.has-frosted-glass-theme) .llampart-message-actions-icons button:hover),
+	:global(html:not(.has-frosted-glass-theme) .llampart-message-actions-icons button:focus-visible),
+	:global(html:not(.has-frosted-glass-theme) .llampart-message-actions-icons a:hover),
+	:global(html:not(.has-frosted-glass-theme) .llampart-message-actions-icons a:focus-visible),
+	:global(html:not(.has-frosted-glass-theme) .llampart-message-actions-icons [role='button']:hover),
+	:global(
+		html:not(.has-frosted-glass-theme) .llampart-message-actions-icons [role='button']:focus-visible
+	) {
+		color: var(--foreground) !important;
+		background: transparent !important;
+		background-color: transparent !important;
+		background-image: none !important;
+		border-color: transparent !important;
+		box-shadow: none !important;
+		filter: none !important;
+		text-shadow: none !important;
+		transform: none !important;
+	}
+
+	:global(html:not(.has-frosted-glass-theme) .llampart-message-actions-icons svg),
+	:global(html:not(.has-frosted-glass-theme) .llampart-message-actions-icons svg *) {
+		stroke: currentColor !important;
+		filter: none !important;
+		text-shadow: none !important;
+		box-shadow: none !important;
+	}
+	/* /llampart-1-0-2-message-action-icons-standard-theme */
 </style>

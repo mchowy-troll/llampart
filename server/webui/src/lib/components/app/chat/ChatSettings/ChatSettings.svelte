@@ -236,13 +236,13 @@
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
-							key: SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS,
-							label: t('settings.fieldUseFullHeightCodeBlocks'),
+							key: SETTINGS_KEYS.DISABLE_AUTO_SCROLL,
+							label: t('settings.fieldDisableAutomaticScroll'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
-							key: SETTINGS_KEYS.DISABLE_AUTO_SCROLL,
-							label: t('settings.fieldDisableAutomaticScroll'),
+							key: SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS,
+							label: t('settings.fieldUseFullHeightCodeBlocks'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
@@ -655,7 +655,17 @@
 	}
 
 	function handleConfigChange(key: string, value: string | boolean) {
-		localConfig[key] = value;
+		const nextConfig = { ...localConfig, [key]: value };
+
+		if (key === SETTINGS_KEYS.SHOW_THOUGHT_IN_PROGRESS && value === true) {
+			nextConfig[SETTINGS_KEYS.MINIMAL_AGENTIC_INDICATORS] = false;
+		}
+
+		if (key === SETTINGS_KEYS.MINIMAL_AGENTIC_INDICATORS && value === true) {
+			nextConfig[SETTINGS_KEYS.SHOW_THOUGHT_IN_PROGRESS] = false;
+		}
+
+		localConfig = nextConfig;
 	}
 
 	function handleReset() {

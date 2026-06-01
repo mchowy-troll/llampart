@@ -394,4 +394,11 @@
 	:global(.conversation-item button) {
 		border-radius: 0.75rem !important;
 	}
+
+	/* llampart-1-0-2-sidebar-card-dark-fill */
+	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item),
+	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item:is(:hover, :focus-visible)) {
+		background-color: #262626 !important;
+	}
+	/* /llampart-1-0-2-sidebar-card-dark-fill */
 </style>

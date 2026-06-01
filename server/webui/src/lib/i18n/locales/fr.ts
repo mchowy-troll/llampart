@@ -33,6 +33,7 @@ export const fr: TranslationDictionary = {
 		codeIncomplete: 'Code incomplet',
 		copyCode: 'Copier le code',
 		previewCode: 'Aperçu du code',
+		previewMarkdown: 'Aperçu Markdown',
 		tablePreview: 'Aperçu du tableau',
 		removeFile: 'Supprimer le fichier',
 		copyToClipboard: 'Copier dans le presse-papiers',
@@ -169,7 +170,7 @@ export const fr: TranslationDictionary = {
 		enterValidNumber: 'Veuillez saisir un nombre valide.',
 		invalidServerConnectionSettings: 'Paramètres de connexion au serveur invalides.',
 		fieldShowMessageGenerationStatistics: 'Afficher les statistiques de génération des messages',
-		fieldShowThoughtInProgress: 'Afficher le raisonnement en cours',
+		fieldShowThoughtInProgress: 'Afficher Reasoning pendant la génération',
 		fieldMinimalAgenticIndicators: 'Mode Minimalistic pour Reasoning et Tools',
 		fieldKeepStatsVisibleAfterGeneration: 'Garder les statistiques visibles après la génération',
 		fieldShowMicrophoneOnEmptyInput: 'Afficher le microphone si le champ est vide',
@@ -415,8 +416,7 @@ export const fr: TranslationDictionary = {
 				'Le sampling DRY réduit les répétitions sur les longs contextes. Ce paramètre définit la fenêtre de pénalité.',
 			maxTokens: 'Nombre maximal de tokens en sortie. Utilisez -1 pour aucune limite.',
 			custom: 'Paramètres JSON personnalisés envoyés à l’API. Doit être un JSON valide.',
-			showThoughtInProgress:
-				'Développe par défaut le raisonnement pendant la génération des messages.',
+			showThoughtInProgress: 'Développe Reasoning par défaut pendant la génération des messages.',
 			minimalAgenticIndicators:
 				'Remplace les panneaux Reasoning et Tools par de petits indicateurs animés dans le pied du message lorsqu’ils sont actifs.',
 			disableReasoningParsing:
@@ -827,6 +827,7 @@ export const fr: TranslationDictionary = {
 		aboutLlampartDescription: 'Informations sur ce programme et cette version.',
 		aboutLlampartVersionLabel: 'Version',
 		aboutLlampartAuthorLabel: 'Auteur',
+		aboutLlampartRepositoryLabel: 'Dépôt',
 		aboutLlampartAboutProgramTitle: 'À propos de ce programme',
 		aboutLlampartAboutProgramBodyOne:
 			'llampart est une interface web locale indépendante, inspirée de la base llama-ui, mais elle n’est pas directement affiliée à llama.cpp et peut évoluer séparément de l’interface d’origine. Elle conserve le caractère local de llama-server tout en se concentrant sur une expérience de chat quotidienne plus confortable.',

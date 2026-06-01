@@ -67,7 +67,7 @@
 	{#if readonly}
 		<!-- Readonly mode (ChatMessage) -->
 		<button
-			class="cursor-pointer rounded-lg border border-border bg-muted p-3 transition-shadow hover:shadow-md {className} w-full max-w-2xl"
+			class="llampart-attachment-thumbnail-file llampart-attachment-thumbnail-file-readonly w-full max-w-2xl cursor-pointer rounded-lg border border-border bg-muted p-3 transition-shadow hover:shadow-md {className}"
 			onclick={onClick}
 			aria-label={`${t('attachments.preview')} ${name}`}
 			type="button"
@@ -87,12 +87,6 @@
 							>
 								{getPreviewText(textContent)}
 							</div>
-
-							{#if textContent.length > 150}
-								<div
-									class="pointer-events-none absolute right-0 bottom-0 left-0 h-6 bg-gradient-to-t from-muted to-transparent"
-								></div>
-							{/if}
 						</div>
 					{/if}
 				</div>
@@ -101,7 +95,7 @@
 	{:else}
 		<!-- Non-readonly mode (ChatForm) -->
 		<button
-			class="group relative rounded-lg border border-border bg-muted p-3 {className} {textContent
+			class="llampart-attachment-thumbnail-file group relative rounded-lg border border-border bg-muted p-3 {className} {textContent
 				? 'max-h-24 max-w-72'
 				: 'max-w-36'} cursor-pointer text-left"
 			onclick={onClick}
@@ -121,12 +115,6 @@
 						>
 							{getPreviewText(textContent)}
 						</div>
-
-						{#if textContent.length > 150}
-							<div
-								class="pointer-events-none absolute right-0 bottom-0 left-0 h-4 bg-gradient-to-t from-muted to-transparent"
-							></div>
-						{/if}
 					</div>
 				{/if}
 			</div>
@@ -134,7 +122,9 @@
 	{/if}
 {:else}
 	<button
-		class="group flex items-center gap-3 rounded-lg border border-border bg-muted p-3 {className} relative"
+		class="llampart-attachment-thumbnail-file {readonly
+			? 'llampart-attachment-thumbnail-file-readonly'
+			: ''} group relative flex items-center gap-3 rounded-lg border border-border bg-muted p-3 {className}"
 		onclick={onClick}
 	>
 		<div
@@ -166,3 +156,44 @@
 		{/if}
 	</button>
 {/if}
+
+<style>
+	/* llampart-block-b-attachment-thumbnail-polish */
+	:global(html.has-frosted-glass-theme) .llampart-attachment-thumbnail-file-readonly {
+		border: 1px solid rgba(255, 255, 255, 0.18) !important;
+		background: rgba(255, 255, 255, 0.16) !important;
+		color: #000000 !important;
+		text-shadow:
+			0 0 2px rgba(255, 255, 255, 0.58),
+			0 0 7px rgba(255, 255, 255, 0.42),
+			0 0 14px rgba(255, 255, 255, 0.24) !important;
+		box-shadow:
+			inset 0 1px 0 rgba(255, 255, 255, 0.14),
+			0 1px 2px rgba(0, 0, 0, 0.05),
+			0 4px 10px rgba(0, 0, 0, 0.04) !important;
+		backdrop-filter: blur(14px) saturate(110%) !important;
+		-webkit-backdrop-filter: blur(14px) saturate(110%) !important;
+	}
+
+	:global(html.has-frosted-glass-theme) .llampart-attachment-thumbnail-file-readonly:hover {
+		box-shadow:
+			inset 0 1px 0 rgba(255, 255, 255, 0.16),
+			0 1px 2px rgba(0, 0, 0, 0.055),
+			0 5px 12px rgba(0, 0, 0, 0.045) !important;
+	}
+
+	:global(html.has-frosted-glass-theme) .llampart-attachment-thumbnail-file-readonly :global(*) {
+		color: #000000 !important;
+		text-shadow:
+			0 0 2px rgba(255, 255, 255, 0.58),
+			0 0 7px rgba(255, 255, 255, 0.42),
+			0 0 14px rgba(255, 255, 255, 0.24) !important;
+	}
+
+	:global(html.has-frosted-glass-theme)
+		.llampart-attachment-thumbnail-file-readonly
+		:global(.text-muted-foreground) {
+		color: rgba(0, 0, 0, 0.68) !important;
+	}
+	/* /llampart-block-b-attachment-thumbnail-polish */
+</style>

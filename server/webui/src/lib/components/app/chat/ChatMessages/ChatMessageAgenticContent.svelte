@@ -746,4 +746,42 @@
 		content: none !important;
 		display: none !important;
 	}
+
+	/* llampart-1-0-2-assistant-message-rhythm */
+	:global(html:not(.has-frosted-glass-theme) .agentic-content.llampart-assistant-message),
+	:global(html.has-frosted-glass-theme .agentic-content.llampart-assistant-message) {
+		padding: 1.5rem 1.5rem 3.5rem !important;
+	}
+
+	:global(html:not(.has-frosted-glass-theme) .agentic-footer-slot) {
+		position: absolute;
+		right: 1.5rem;
+		bottom: 0.375rem;
+		left: 1.5rem;
+		margin: 0 !important;
+		padding: 0 !important;
+	}
+
+	:global(html:not(.has-frosted-glass-theme) .agentic-footer-slot .assistant-message-footer) {
+		align-items: center !important;
+		margin: 0 !important;
+		padding: 0 !important;
+	}
+
+	:global(html:not(.has-frosted-glass-theme) .agentic-footer-slot .assistant-message-footer-left),
+	:global(html:not(.has-frosted-glass-theme) .agentic-footer-slot .assistant-message-footer-right),
+	:global(html:not(.has-frosted-glass-theme) .agentic-footer-slot .assistant-message-footer-meta) {
+		display: inline-flex !important;
+		align-items: center !important;
+		min-height: 2rem !important;
+		line-height: 1 !important;
+	}
+	:global(
+		html:not(.has-frosted-glass-theme) .agentic-content.llampart-assistant-message .agentic-text
+	),
+	:global(html.has-frosted-glass-theme .agentic-content.llampart-assistant-message .agentic-text) {
+		padding-inline: 0.125rem;
+	}
+
+	/* /llampart-1-0-2-assistant-message-rhythm */
 </style>
