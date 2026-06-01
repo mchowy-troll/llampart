@@ -192,12 +192,17 @@
 						{
 							key: SETTINGS_KEYS.SHOW_CONVERSATION_TIMESTAMPS,
 							label: t('settings.fieldShowConversationTimestamps'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							help: t('settings.sidebarTimestampCombinedHelp'),
+							cluster: 'sidebar-timestamp'
 						},
 						{
 							key: SETTINGS_KEYS.CONVERSATION_TIMESTAMP_FORMAT,
-							label: t('settings.fieldConversationTimestampFormat'),
+							label: t('settings.fieldChooseConversationTimestampFormat'),
 							type: SettingsFieldType.SELECT,
+							layout: 'sidebar-nested',
+							cluster: 'sidebar-timestamp',
+							hideHelp: true,
 							options: CONVERSATION_TIMESTAMP_FORMAT_OPTIONS
 						}
 					]
