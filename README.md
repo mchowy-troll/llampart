@@ -17,7 +17,7 @@ llampart is being prepared as an open-source project.
 Current release:
 
 ```text
-llampart 1.0.1
+llampart 1.0.2
 ```
 
 <!-- llampart-readme-screenshots:start -->
