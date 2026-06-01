@@ -12,6 +12,7 @@
 	const AUTHOR_NAME = 'Marcin Gluziński';
 	const AUTHOR_EMAIL = 'gluzinski.marcin@gmail.com';
 	const LLAMA_CPP_URL = 'https://github.com/ggml-org/llama.cpp';
+	const LLAMPART_REPOSITORY_URL = 'https://github.com/mchowy-troll/llampart';
 	const UNSPLASH_LICENSE_URL = 'https://unsplash.com/license';
 
 	type WallpaperCredit = Readonly<{
@@ -130,24 +131,44 @@
 				</Dialog.Description>
 
 				<div class="grid w-full grid-cols-3 gap-4 text-left">
-					<div class="col-span-2 rounded-lg border border-border/30 bg-background px-4 py-3">
+					<div
+						class="col-span-2 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3"
+					>
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 							{t('dialogs.aboutLlampartAuthorLabel')}
 						</div>
-						<div class="mt-2 text-base font-semibold">{AUTHOR_NAME}</div>
+						<div class="mt-2 text-base leading-snug font-semibold break-words">{AUTHOR_NAME}</div>
 						<a
 							href={`mailto:${AUTHOR_EMAIL}`}
-							class="mt-1 block border-0 bg-transparent p-0 text-sm text-muted-foreground no-underline decoration-transparent shadow-none ring-0 outline-none hover:text-foreground hover:no-underline focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
+							class="mt-1 block min-w-0 border-0 bg-transparent p-0 text-sm break-all whitespace-normal text-muted-foreground no-underline decoration-transparent shadow-none ring-0 outline-none hover:text-foreground hover:no-underline focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
 						>
 							{AUTHOR_EMAIL}
 						</a>
 					</div>
 
-					<div class="col-span-1 rounded-lg border border-border/30 bg-background px-4 py-3">
+					<div
+						class="col-span-1 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3"
+					>
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 							{t('dialogs.aboutLlampartVersionLabel')}
 						</div>
-						<div class="mt-2 text-base font-semibold">{APP_VERSION}</div>
+						<div class="mt-2 text-base leading-snug font-semibold break-words">{APP_VERSION}</div>
+					</div>
+
+					<div
+						class="col-span-3 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3"
+					>
+						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+							{t('dialogs.aboutLlampartRepositoryLabel')}
+						</div>
+						<a
+							href={LLAMPART_REPOSITORY_URL}
+							target="_blank"
+							rel="noreferrer"
+							class="mt-2 block min-w-0 border-0 bg-transparent p-0 text-sm font-medium break-all whitespace-normal text-muted-foreground no-underline decoration-transparent shadow-none ring-0 outline-none hover:text-foreground hover:no-underline focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
+						>
+							{LLAMPART_REPOSITORY_URL}
+						</a>
 					</div>
 				</div>
 			</div>
@@ -185,7 +206,9 @@
 								{LLAMA_CPP_URL}
 							</a>
 
-							<p class="mt-3 text-sm leading-relaxed text-muted-foreground">
+							<div class="my-4 border-t border-border/30" aria-hidden="true"></div>
+
+							<p class="text-sm leading-relaxed text-muted-foreground">
 								{t('dialogs.aboutLlampartSpecialThanksWallpapersBody')}
 							</p>
 

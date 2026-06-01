@@ -79,6 +79,25 @@
 		'preEncodeConversation'
 	]);
 
+	const messageDisplayLeftColumnKeys = [
+		SETTINGS_KEYS.SHOW_MESSAGE_STATS,
+		SETTINGS_KEYS.SHOW_THOUGHT_IN_PROGRESS,
+		SETTINGS_KEYS.MINIMAL_AGENTIC_INDICATORS,
+		SETTINGS_KEYS.KEEP_STATS_VISIBLE
+	];
+
+	const messageDisplayRightColumnKeys = [
+		SETTINGS_KEYS.RENDER_USER_CONTENT_AS_MARKDOWN,
+		SETTINGS_KEYS.DISABLE_AUTO_SCROLL,
+		SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS,
+		SETTINGS_KEYS.SHOW_RAW_MODEL_NAMES
+	];
+
+	const messageDisplayFieldKeys = new Set([
+		...messageDisplayLeftColumnKeys,
+		...messageDisplayRightColumnKeys
+	]);
+
 	const compactInlineNumberKeys = new Set<string>();
 	const compactPeerCheckboxKeys = new Set(['alwaysShowAgenticTurns', 'showToolCallInProgress']);
 	const alignedMcpNumberKeys = new Set(['agenticMaxTurns', 'agenticMaxToolPreviewLines']);
@@ -97,6 +116,11 @@
 
 	const isTwoColumnGroup = $derived(
 		fields.length > 0 && fields.every((field) => twoColumnGroupKeys.has(field.key))
+	);
+
+	const isMessageDisplayGroup = $derived(
+		fields.length === messageDisplayFieldKeys.size &&
+			fields.every((field) => messageDisplayFieldKeys.has(field.key))
 	);
 
 	const isAttachmentsFilesGroup = $derived(
@@ -121,6 +145,10 @@
 		}
 
 		return isTwoColumnGroup ? 'grid gap-5 lg:grid-cols-2' : 'space-y-5';
+	}
+
+	function getFieldByKey(fieldKey: string): SettingsFieldConfig | undefined {
+		return fields.find((field) => field.key === fieldKey);
 	}
 
 	function getFieldHelp(field: SettingsFieldConfig, helpOverride = '', hideHelp = false): string {
@@ -177,6 +205,17 @@
 				]
 					.filter(Boolean)
 					.join(' ');
+	}
+
+	function getTextareaClass(fieldKey: string): string {
+		return [
+			fieldKey === SETTINGS_KEYS.SYSTEM_MESSAGE
+				? 'min-h-[16rem] md:min-h-[20rem]'
+				: 'min-h-[10rem]',
+			'w-full shadow-none focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0'
+		]
+			.filter(Boolean)
+			.join(' ');
 	}
 </script>
 
@@ -308,7 +347,7 @@
 				value={String(localConfig[field.key] ?? '')}
 				onchange={(e) => onConfigChange(field.key, e.currentTarget.value)}
 				placeholder=""
-				class="min-h-[10rem] w-full shadow-none focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0"
+				class={getTextareaClass(field.key)}
 			/>
 
 			{@const help = getFieldHelp(field, helpOverride, hideHelp)}
@@ -455,10 +494,10 @@
 						class="mt-1"
 					/>
 
-					<div class="space-y-1">
+					<div class="min-w-0 space-y-1">
 						<label
 							for={field.key}
-							class="flex cursor-pointer items-center gap-1.5 pt-1 pb-0.5 text-sm leading-none font-medium"
+							class="flex min-w-0 cursor-pointer items-center gap-1.5 pt-1 pb-0.5 text-sm leading-none font-medium"
 						>
 							{getFieldLabel(field, labelOverride)}
 
@@ -468,7 +507,7 @@
 						</label>
 
 						{#if getFieldHelp(field, helpOverride, hideHelp)}
-							<p class="text-xs text-muted-foreground">
+							<p class="max-w-full text-xs break-words text-muted-foreground">
 								{@html getFieldHelp(field, helpOverride, hideHelp)}
 							</p>
 						{/if}
@@ -493,6 +532,26 @@
 				true,
 				'ml-[1.625rem]'
 			)}
+		</div>
+	</div>
+{:else if isMessageDisplayGroup}
+	<div class="grid gap-x-5 gap-y-4 lg:grid-cols-2">
+		<div class="space-y-4">
+			{#each messageDisplayLeftColumnKeys as fieldKey (fieldKey)}
+				{@const field = getFieldByKey(fieldKey)}
+				{#if field}
+					{@render renderField(field)}
+				{/if}
+			{/each}
+		</div>
+
+		<div class="space-y-4">
+			{#each messageDisplayRightColumnKeys as fieldKey (fieldKey)}
+				{@const field = getFieldByKey(fieldKey)}
+				{#if field}
+					{@render renderField(field)}
+				{/if}
+			{/each}
 		</div>
 	</div>
 {:else if isAttachmentsFilesGroup}

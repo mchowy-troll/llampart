@@ -529,4 +529,48 @@
 		filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.32)) !important;
 	}
 	/* /llampart-frosted-glass-user-footer-action-glow-final */
+
+	/* llampart-1-0-2-user-card-standard-theme-rhythm */
+	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card) {
+		border-radius: 0.75rem !important;
+	}
+
+	:global(html.dark:not(.has-frosted-glass-theme) .llampart-user-message-card) {
+		background: #262626 !important;
+	}
+	/* /llampart-1-0-2-user-card-standard-theme-rhythm */
+
+	/* llampart-1-0-2-user-message-padding-match-assistant */
+	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card),
+	:global(html.has-frosted-glass-theme .llampart-user-message-card) {
+		padding: 0.625rem 1.5rem 0.5rem !important;
+	}
+
+	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card[data-multiline]),
+	:global(html.has-frosted-glass-theme .llampart-user-message-card[data-multiline]) {
+		padding-top: 0.625rem !important;
+		padding-right: 1.5rem !important;
+		padding-left: 1.5rem !important;
+	}
+
+	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-content),
+	:global(html.has-frosted-glass-theme .llampart-user-message-content) {
+		display: block;
+		margin-top: 0 !important;
+		padding-inline: 0.125rem;
+	}
+
+	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card .markdown-user-content),
+	:global(html.has-frosted-glass-theme .llampart-user-message-card .markdown-user-content) {
+		margin-top: 0 !important;
+	}
+
+	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-footer),
+	:global(html.has-frosted-glass-theme .llampart-user-message-footer) {
+		margin-top: 0.5rem !important;
+		margin-right: -0.25rem !important;
+		margin-bottom: 0 !important;
+		padding: 0 !important;
+	}
+	/* /llampart-1-0-2-user-message-padding-match-assistant */
 </style>

@@ -33,6 +33,7 @@ export const de: TranslationDictionary = {
 		codeIncomplete: 'Code unvollständig',
 		copyCode: 'Code kopieren',
 		previewCode: 'Codevorschau',
+		previewMarkdown: 'Markdown-Vorschau',
 		tablePreview: 'Tabellenvorschau',
 		removeFile: 'Datei entfernen',
 		copyToClipboard: 'In Zwischenablage kopieren',
@@ -168,7 +169,7 @@ export const de: TranslationDictionary = {
 		enterValidNumber: 'Bitte geben Sie eine gültige Zahl ein.',
 		invalidServerConnectionSettings: 'Ungültige Server-Verbindungseinstellungen.',
 		fieldShowMessageGenerationStatistics: 'Statistiken zur Nachrichtengenerierung anzeigen',
-		fieldShowThoughtInProgress: 'Gedankengang während der Generierung anzeigen',
+		fieldShowThoughtInProgress: 'Reasoning während der Generierung anzeigen',
 		fieldMinimalAgenticIndicators: 'Minimalistic-Modus für Reasoning und Tools',
 		fieldKeepStatsVisibleAfterGeneration: 'Statistiken nach der Generierung sichtbar lassen',
 		fieldShowMicrophoneOnEmptyInput: 'Mikrofon bei leerem Eingabefeld anzeigen',
@@ -411,7 +412,7 @@ export const de: TranslationDictionary = {
 			maxTokens: 'Maximale Anzahl an Ausgabetoken. Verwenden Sie -1 für unbegrenzt.',
 			custom:
 				'Benutzerdefinierte JSON-Parameter, die an die API gesendet werden. Muss gültiges JSON sein.',
-			showThoughtInProgress: 'Den Gedankengang standardmäßig während der Generierung erweitern.',
+			showThoughtInProgress: 'Reasoning während der Generierung standardmäßig erweitern.',
 			minimalAgenticIndicators:
 				'Ersetzt Reasoning- und Tools-Bereiche durch kleine animierte Anzeigen in der Nachrichtenfußzeile, solange sie aktiv sind.',
 			disableReasoningParsing:
@@ -821,6 +822,7 @@ export const de: TranslationDictionary = {
 		aboutLlampartDescription: 'Informationen über dieses Programm und diese Version.',
 		aboutLlampartVersionLabel: 'Version',
 		aboutLlampartAuthorLabel: 'Autor',
+		aboutLlampartRepositoryLabel: 'Repository',
 		aboutLlampartAboutProgramTitle: 'Über dieses Programm',
 		aboutLlampartAboutProgramBodyOne:
 			'llampart ist eine unabhängige lokale Weboberfläche, die von der llama-ui-Grundlage inspiriert ist und darauf aufbaut, aber nicht direkt mit llama.cpp verbunden ist und sich unabhängig von der ursprünglichen Oberfläche weiterentwickeln kann. Es bewahrt den lokalen Charakter von llama-server und konzentriert sich zugleich auf ein komfortableres Chat-Erlebnis im Alltag.',

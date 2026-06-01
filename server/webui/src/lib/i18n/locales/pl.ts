@@ -33,6 +33,7 @@ export const pl: TranslationDictionary = {
 		codeIncomplete: 'Kod niekompletny',
 		copyCode: 'Kopiuj kod',
 		previewCode: 'Podgląd kodu',
+		previewMarkdown: 'Podgląd Markdown',
 		tablePreview: 'Podgląd tabeli',
 		removeFile: 'Usuń plik',
 		copyToClipboard: 'Kopiuj do schowka',
@@ -168,7 +169,7 @@ export const pl: TranslationDictionary = {
 		enterValidNumber: 'Wpisz prawidłową liczbę.',
 		invalidServerConnectionSettings: 'Nieprawidłowe ustawienia połączenia z serwerem.',
 		fieldShowMessageGenerationStatistics: 'Pokazuj statystyki generowania wiadomości',
-		fieldShowThoughtInProgress: 'Pokazuj rozumowanie w trakcie generowania',
+		fieldShowThoughtInProgress: 'Pokazuj Reasoning w trakcie generowania',
 		fieldMinimalAgenticIndicators: 'Tryb Minimalistic dla Reasoning i Tools',
 		fieldKeepStatsVisibleAfterGeneration: 'Pozostaw statystyki widoczne po generowaniu',
 		fieldShowMicrophoneOnEmptyInput: 'Pokazuj mikrofon przy pustym polu',
@@ -410,8 +411,7 @@ export const pl: TranslationDictionary = {
 				'Sampling DRY zmniejsza powtórzenia w długim kontekście. Ten parametr ustawia okno kary DRY.',
 			maxTokens: 'Maksymalna liczba tokenów wyjściowych. Użyj -1, aby zdjąć limit.',
 			custom: 'Niestandardowe parametry JSON wysyłane do API. Muszą być poprawnym JSON-em.',
-			showThoughtInProgress:
-				'Domyślnie rozwijaj proces rozumowania podczas generowania wiadomości.',
+			showThoughtInProgress: 'Domyślnie rozwijaj Reasoning podczas generowania wiadomości.',
 			minimalAgenticIndicators:
 				'Zastępuje panele Reasoning i Tools małymi animowanymi wskaźnikami w stopce wiadomości, gdy są aktywne.',
 			disableReasoningParsing:
@@ -811,6 +811,7 @@ export const pl: TranslationDictionary = {
 		aboutLlampartDescription: 'Informacje o programie i wersji.',
 		aboutLlampartVersionLabel: 'Wersja',
 		aboutLlampartAuthorLabel: 'Autor',
+		aboutLlampartRepositoryLabel: 'Repozytorium',
 		aboutLlampartAboutProgramTitle: 'O programie',
 		aboutLlampartAboutProgramBodyOne:
 			'llampart to niezależne lokalne web UI inspirowane bazą llama-ui, ale niepowiązane bezpośrednio z llama.cpp i rozwijane niezależnie od oryginalnego interfejsu. Zachowuje lokalny charakter pracy znany z llama-server, a jednocześnie skupia się na wygodniejszym codziennym doświadczeniu rozmowy.',

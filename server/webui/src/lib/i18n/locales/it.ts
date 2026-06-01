@@ -33,6 +33,7 @@ export const it: TranslationDictionary = {
 		codeIncomplete: 'Codice incompleto',
 		copyCode: 'Copia codice',
 		previewCode: 'Anteprima codice',
+		previewMarkdown: 'Anteprima Markdown',
 		tablePreview: 'Anteprima tabella',
 		removeFile: 'Rimuovi file',
 		copyToClipboard: 'Copia negli appunti',
@@ -168,7 +169,7 @@ export const it: TranslationDictionary = {
 		enterValidNumber: 'Inserisci un numero valido.',
 		invalidServerConnectionSettings: 'Impostazioni di connessione al server non valide.',
 		fieldShowMessageGenerationStatistics: 'Mostra le statistiche di generazione dei messaggi',
-		fieldShowThoughtInProgress: 'Mostra il ragionamento in corso',
+		fieldShowThoughtInProgress: 'Mostra Reasoning durante la generazione',
 		fieldMinimalAgenticIndicators: 'Modalità Minimalistic per Reasoning e Tools',
 		fieldKeepStatsVisibleAfterGeneration: 'Mantieni visibili le statistiche dopo la generazione',
 		fieldShowMicrophoneOnEmptyInput: 'Mostra il microfono con campo vuoto',
@@ -407,7 +408,7 @@ export const it: TranslationDictionary = {
 			maxTokens: 'Numero massimo di token in uscita. Usa -1 per nessun limite.',
 			custom: 'Parametri JSON personalizzati inviati all’API. Devono essere JSON valido.',
 			showThoughtInProgress:
-				'Espande di default il ragionamento durante la generazione dei messaggi.',
+				'Espande Reasoning per impostazione predefinita durante la generazione dei messaggi.',
 			minimalAgenticIndicators:
 				'Sostituisce i pannelli Reasoning e Tools con piccoli indicatori animati nel piè di pagina del messaggio mentre sono attivi.',
 			disableReasoningParsing:
@@ -817,6 +818,7 @@ export const it: TranslationDictionary = {
 		aboutLlampartDescription: 'Informazioni su questo programma e su questa versione.',
 		aboutLlampartVersionLabel: 'Versione',
 		aboutLlampartAuthorLabel: 'Autore',
+		aboutLlampartRepositoryLabel: 'Repository',
 		aboutLlampartAboutProgramTitle: 'Informazioni su questo programma',
 		aboutLlampartAboutProgramBodyOne:
 			'llampart è un’interfaccia web locale indipendente, ispirata alla base llama-ui, ma non è direttamente collegata a llama.cpp e può evolversi separatamente dall’interfaccia originale. Mantiene il carattere locale di llama-server e si concentra su un’esperienza di chat quotidiana più comoda.',
