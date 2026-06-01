@@ -210,42 +210,50 @@
 						{
 							key: SETTINGS_KEYS.SHOW_MESSAGE_STATS,
 							label: t('settings.fieldShowMessageGenerationStatistics'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'left'
 						},
 						{
 							key: SETTINGS_KEYS.SHOW_THOUGHT_IN_PROGRESS,
 							label: t('settings.fieldShowThoughtInProgress'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'left'
 						},
 						{
 							key: SETTINGS_KEYS.MINIMAL_AGENTIC_INDICATORS,
 							label: t('settings.fieldMinimalAgenticIndicators'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'left'
 						},
 						{
 							key: SETTINGS_KEYS.KEEP_STATS_VISIBLE,
 							label: t('settings.fieldKeepStatsVisibleAfterGeneration'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'left'
 						},
 						{
 							key: SETTINGS_KEYS.RENDER_USER_CONTENT_AS_MARKDOWN,
 							label: t('settings.fieldRenderUserContentAsMarkdown'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'right'
 						},
 						{
 							key: SETTINGS_KEYS.DISABLE_AUTO_SCROLL,
 							label: t('settings.fieldDisableAutomaticScroll'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'right'
 						},
 						{
 							key: SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS,
 							label: t('settings.fieldUseFullHeightCodeBlocks'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'right'
 						},
 						{
 							key: SETTINGS_KEYS.SHOW_RAW_MODEL_NAMES,
 							label: t('settings.fieldShowRawModelNames'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'right'
 						}
 					],
 					fullWidth: true
@@ -310,17 +318,20 @@
 						{
 							key: SETTINGS_KEYS.COPY_TEXT_ATTACHMENTS_AS_PLAIN_TEXT,
 							label: t('settings.fieldCopyTextAttachmentsAsPlainText'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'left'
 						},
 						{
 							key: SETTINGS_KEYS.PASTE_LONG_TEXT_TO_FILE_LEN,
 							label: t('settings.fieldPasteLongTextToFileLength'),
-							type: SettingsFieldType.INPUT
+							type: SettingsFieldType.INPUT,
+							column: 'right'
 						},
 						{
 							key: SETTINGS_KEYS.PDF_AS_IMAGE,
 							label: t('settings.fieldParsePdfAsImage'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'left'
 						}
 					]
 				},

@@ -41,24 +41,6 @@
 		return (serverStore.defaultParams ?? {}) as Record<string, unknown>;
 	});
 
-	/**
-	 * Message display keeps a deliberate left/right grouping for visual rhythm.
-	 * The group still opts into this layout explicitly through SettingsFieldGroup.layout.
-	 */
-	const messageDisplayLeftColumnKeys = [
-		SETTINGS_KEYS.SHOW_MESSAGE_STATS,
-		SETTINGS_KEYS.SHOW_THOUGHT_IN_PROGRESS,
-		SETTINGS_KEYS.MINIMAL_AGENTIC_INDICATORS,
-		SETTINGS_KEYS.KEEP_STATS_VISIBLE
-	];
-
-	const messageDisplayRightColumnKeys = [
-		SETTINGS_KEYS.RENDER_USER_CONTENT_AS_MARKDOWN,
-		SETTINGS_KEYS.DISABLE_AUTO_SCROLL,
-		SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS,
-		SETTINGS_KEYS.SHOW_RAW_MODEL_NAMES
-	];
-
 	const isSidebarGroup = $derived(layout === 'sidebar');
 	const isThreeColumnModelGroup = $derived(layout === 'three-column');
 	const isTwoColumnGroup = $derived(layout === 'two-column');
@@ -102,8 +84,8 @@
 		return isTwoColumnGroup ? 'grid gap-5 lg:grid-cols-2' : 'space-y-5';
 	}
 
-	function getFieldByKey(fieldKey: string): SettingsFieldConfig | undefined {
-		return fields.find((field) => field.key === fieldKey);
+	function getFieldsByColumn(column: SettingsFieldColumn): SettingsFieldConfig[] {
+		return fields.filter((field) => field.column === column);
 	}
 
 	function getFieldHelp(field: SettingsFieldConfig, helpOverride = '', hideHelp = false): string {
@@ -492,32 +474,29 @@
 {:else if isMessageDisplayGroup}
 	<div class="grid gap-x-5 gap-y-4 lg:grid-cols-2">
 		<div class="space-y-4">
-			{#each messageDisplayLeftColumnKeys as fieldKey (fieldKey)}
-				{@const field = getFieldByKey(fieldKey)}
-				{#if field}
-					{@render renderField(field)}
-				{/if}
+			{#each getFieldsByColumn('left') as field (field.key)}
+				{@render renderField(field)}
 			{/each}
 		</div>
 
 		<div class="space-y-4">
-			{#each messageDisplayRightColumnKeys as fieldKey (fieldKey)}
-				{@const field = getFieldByKey(fieldKey)}
-				{#if field}
-					{@render renderField(field)}
-				{/if}
+			{#each getFieldsByColumn('right') as field (field.key)}
+				{@render renderField(field)}
 			{/each}
 		</div>
 	</div>
 {:else if isAttachmentsFilesGroup}
 	<div class="grid gap-x-5 gap-y-4 lg:grid-cols-2">
 		<div class="space-y-4">
-			{@render renderField(fields[0])}
-			{@render renderField(fields[2])}
+			{#each getFieldsByColumn('left') as field (field.key)}
+				{@render renderField(field)}
+			{/each}
 		</div>
 
 		<div>
-			{@render renderField(fields[1])}
+			{#each getFieldsByColumn('right') as field (field.key)}
+				{@render renderField(field)}
+			{/each}
 		</div>
 	</div>
 {:else}

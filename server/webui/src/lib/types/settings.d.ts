@@ -29,6 +29,12 @@ export type SettingsFieldGroupLayout =
 	| 'message-display'
 	| 'attachments-files';
 
+/**
+ * Places fields inside named multi-column group layouts.
+ * Column ownership belongs to field metadata so renderers do not depend on field order.
+ */
+export type SettingsFieldColumn = 'left' | 'right';
+
 export interface SettingsFieldConfig {
 	key: string;
 	label: string;
@@ -36,6 +42,7 @@ export interface SettingsFieldConfig {
 	isExperimental?: boolean;
 	help?: string;
 	layout?: SettingsFieldLayout;
+	column?: SettingsFieldColumn;
 	options?: Array<{ value: string; label: string; icon?: typeof Icon }>;
 }
 
