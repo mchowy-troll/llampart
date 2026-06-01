@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { defineConfig, searchForWorkspaceRoot } from 'vite';
 import devtoolsJson from 'vite-plugin-devtools-json';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+import { playwright } from '@vitest/browser-playwright';
 import { llampartBuildPlugin } from './scripts/vite-plugin-llampart-build';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -51,7 +52,7 @@ export default defineConfig({
 					environment: 'browser',
 					browser: {
 						enabled: true,
-						provider: 'playwright',
+						provider: playwright(),
 						instances: [{ browser: 'chromium' }]
 					},
 					include: ['tests/client/**/*.svelte.{test,spec}.{js,ts}'],
@@ -75,8 +76,9 @@ export default defineConfig({
 					environment: 'browser',
 					browser: {
 						enabled: true,
-						provider: 'playwright',
-						instances: [{ browser: 'chromium', headless: true }]
+						headless: true,
+						provider: playwright(),
+						instances: [{ browser: 'chromium' }]
 					},
 					include: ['tests/stories/**/*.stories.{js,ts,svelte}'],
 					setupFiles: ['./.storybook/vitest.setup.ts']
