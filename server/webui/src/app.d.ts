@@ -53,6 +53,9 @@ import type {
 	SettingsChatServiceOptions,
 	SettingsConfigValue,
 	SettingsFieldConfig,
+	SettingsFieldGroup,
+	SettingsFieldLayout,
+	SettingsFieldGroupLayout,
 	SettingsConfigType
 } from '$lib/types';
 
@@ -121,6 +124,9 @@ declare global {
 		SettingsChatServiceOptions,
 		SettingsConfigValue,
 		SettingsFieldConfig,
+		SettingsFieldGroup,
+		SettingsFieldLayout,
+		SettingsFieldGroupLayout,
 		SettingsConfigType
 	};
 }

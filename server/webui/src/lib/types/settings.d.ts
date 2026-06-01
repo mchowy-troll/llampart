@@ -7,12 +7,35 @@ import type { Icon } from '@lucide/svelte';
 
 export type SettingsConfigValue = string | number | boolean | undefined;
 
+/**
+ * Describes small visual variants for individual settings controls.
+ * Keep field shape decisions here so render components do not grow key-specific exception lists.
+ */
+export type SettingsFieldLayout =
+	| 'default'
+	| 'compact-inline-number'
+	| 'compact-peer-checkbox'
+	| 'aligned-mcp-number';
+
+/**
+ * Describes the layout used by a complete settings group.
+ * New groups should opt into a named layout instead of being inferred from their field keys.
+ */
+export type SettingsFieldGroupLayout =
+	| 'default'
+	| 'two-column'
+	| 'three-column'
+	| 'sidebar'
+	| 'message-display'
+	| 'attachments-files';
+
 export interface SettingsFieldConfig {
 	key: string;
 	label: string;
 	type: SettingsFieldType;
 	isExperimental?: boolean;
 	help?: string;
+	layout?: SettingsFieldLayout;
 	options?: Array<{ value: string; label: string; icon?: typeof Icon }>;
 }
 
@@ -22,7 +45,9 @@ export interface SettingsFieldGroup {
 	description?: string;
 	fields: SettingsFieldConfig[];
 	fullWidth?: boolean;
+	halfWidth?: boolean;
 	framed?: boolean;
+	layout?: SettingsFieldGroupLayout;
 }
 
 export interface SettingsChatServiceOptions {
