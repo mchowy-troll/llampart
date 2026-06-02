@@ -273,20 +273,23 @@
 				{
 					id: 'input',
 					title: t('settings.groupInput'),
-					halfWidth: true,
+					layout: 'two-column',
 					fields: [
 						{
 							key: SETTINGS_KEYS.SEND_ON_ENTER,
 							label: t('settings.fieldSendMessageOnEnter'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'left'
 						},
 						{
 							key: SETTINGS_KEYS.AUTO_MIC_ON_EMPTY,
 							label: t('settings.fieldShowMicrophoneOnEmptyInput'),
 							type: SettingsFieldType.CHECKBOX,
-							isExperimental: true
+							isExperimental: true,
+							column: 'right'
 						}
-					]
+					],
+					fullWidth: true
 				},
 				{
 					id: 'conversation-titles',
