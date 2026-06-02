@@ -427,7 +427,6 @@
 						onStop={() => chatStore.stopGeneration()}
 						onSystemPromptAdd={handleSystemPromptAdd}
 						showHelperText={false}
-						showNewChatButton
 						bind:uploadedFiles
 					/>
 				</div>

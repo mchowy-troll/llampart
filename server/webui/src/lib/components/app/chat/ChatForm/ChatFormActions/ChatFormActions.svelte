@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Square, SquarePen } from '@lucide/svelte';
+	import { Square } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import {
 		ChatFormActionAttachmentsDropdown,
@@ -30,7 +30,6 @@
 		isLoading?: boolean;
 		isRecording?: boolean;
 		hasText?: boolean;
-		showNewChatButton?: boolean;
 		uploadedFiles?: ChatUploadedFile[];
 		onFileUpload?: () => void;
 		onMicClick?: () => void;
@@ -47,7 +46,6 @@
 		isLoading = false,
 		isRecording = false,
 		hasText = false,
-		showNewChatButton = false,
 		uploadedFiles = [],
 		onFileUpload,
 		onMicClick,
@@ -228,18 +226,6 @@
 	</div>
 
 	<div class="ml-auto flex items-center gap-1.5">
-		{#if showNewChatButton}
-			<a
-				class="llampart-existing-chat-new-chat-button llampart-model-selector-trigger inline-grid cursor-pointer grid-cols-[auto_1fr] items-center gap-1.5 rounded-sm bg-muted-foreground/10 px-1.5 py-1 text-xs text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-				href="?new_chat=true#/"
-				aria-label={t('sidebar.newChat')}
-				data-llampart-new-chat-composer-button
-			>
-				<SquarePen class="h-4 w-4 shrink-0" />
-				<span>{t('sidebar.newChat')}</span>
-			</a>
-		{/if}
-
 		{#if isMobile.current}
 			<ModelsSelectorSheet
 				disabled={disabled || isOffline}

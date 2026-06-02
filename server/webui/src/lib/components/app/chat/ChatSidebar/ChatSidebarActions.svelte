@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Search, SquarePen, X } from '@lucide/svelte';
+	import { Plus, Search, X } from '@lucide/svelte';
 	import { KeyboardShortcutInfo } from '$lib/components/app';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -55,13 +55,13 @@
 		</div>
 	{:else}
 		<Button
-			class="llampart-sidebar-primary-action llampart-sidebar-new-chat-action h-10 w-full justify-between rounded-lg px-3 text-sm font-medium text-[#333333] shadow-none backdrop-blur-none! transition-colors hover:bg-accent hover:text-[#333333] focus-visible:bg-accent focus-visible:text-[#333333] dark:text-foreground/80 dark:hover:text-foreground/80 dark:focus-visible:text-foreground/80 hover:[&>kbd]:opacity-100"
+			class="llampart-sidebar-primary-action llampart-sidebar-new-chat-action h-10 w-full justify-between rounded-lg px-3 text-sm font-medium text-[#333333] shadow-none backdrop-blur-none! transition-colors hover:bg-transparent hover:text-[#333333] focus-visible:bg-transparent focus-visible:text-[#333333] active:bg-transparent dark:text-foreground/80 dark:hover:bg-transparent dark:hover:text-foreground/80 dark:focus-visible:bg-transparent dark:focus-visible:text-foreground/80 dark:active:bg-transparent hover:[&>kbd]:opacity-100"
 			href="?new_chat=true#/"
 			onclick={handleMobileSidebarItemClick}
 			variant="ghost"
 		>
 			<div class="llampart-sidebar-primary-action-main flex items-center gap-3">
-				<SquarePen class="llampart-sidebar-primary-action-icon h-4 w-4 shrink-0" />
+				<Plus class="llampart-sidebar-primary-action-icon h-4 w-4 shrink-0" />
 
 				<span class="llampart-sidebar-primary-action-text">{t('sidebar.newChat')}</span>
 			</div>
@@ -71,7 +71,7 @@
 
 		{#if !searchInputExternal}
 			<Button
-				class="llampart-sidebar-primary-action llampart-sidebar-search-action h-10 w-full justify-between rounded-lg px-3 text-sm font-medium text-[#333333] shadow-none backdrop-blur-none! transition-colors hover:bg-accent hover:text-[#333333] focus-visible:bg-accent focus-visible:text-[#333333] dark:text-foreground/80 dark:hover:text-foreground/80 dark:focus-visible:text-foreground/80 hover:[&>kbd]:opacity-100"
+				class="llampart-sidebar-primary-action llampart-sidebar-search-action h-10 w-full justify-between rounded-lg px-3 text-sm font-medium text-[#333333] shadow-none backdrop-blur-none! transition-colors hover:bg-transparent hover:text-[#333333] focus-visible:bg-transparent focus-visible:text-[#333333] active:bg-transparent dark:text-foreground/80 dark:hover:bg-transparent dark:hover:text-foreground/80 dark:focus-visible:bg-transparent dark:focus-visible:text-foreground/80 dark:active:bg-transparent hover:[&>kbd]:opacity-100"
 				onclick={() => {
 					isSearchModeActive = true;
 				}}
