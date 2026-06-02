@@ -46,6 +46,9 @@
 	const isTwoColumnGroup = $derived(layout === 'two-column');
 	const isMessageDisplayGroup = $derived(layout === 'message-display');
 	const isAttachmentsFilesGroup = $derived(layout === 'attachments-files');
+	const isExplicitTwoColumnGroup = $derived(
+		isTwoColumnGroup && fields.some((field) => field.column)
+	);
 
 	/**
 	 * Field layout helpers keep compact variants named and reusable across the template.
@@ -90,6 +93,10 @@
 
 	function getFieldsByColumn(column: SettingsFieldColumn): SettingsFieldConfig[] {
 		return fields.filter((field) => field.column === column);
+	}
+
+	function getFieldsWithoutColumn(): SettingsFieldConfig[] {
+		return fields.filter((field) => !field.column);
 	}
 
 	function getFieldsWithoutCluster(): SettingsFieldConfig[] {
@@ -512,6 +519,26 @@
 				{@render renderField(field)}
 			{/each}
 		</div>
+	</div>
+{:else if isExplicitTwoColumnGroup}
+	<div class="space-y-5">
+		<div class="grid gap-x-5 gap-y-4 lg:grid-cols-2">
+			<div class="space-y-4">
+				{#each getFieldsByColumn('left') as field (field.key)}
+					{@render renderField(field)}
+				{/each}
+			</div>
+
+			<div class="space-y-4">
+				{#each getFieldsByColumn('right') as field (field.key)}
+					{@render renderField(field)}
+				{/each}
+			</div>
+		</div>
+
+		{#each getFieldsWithoutColumn() as field (field.key)}
+			{@render renderField(field)}
+		{/each}
 	</div>
 {:else}
 	<div class={getFieldsWrapperClass()}>
