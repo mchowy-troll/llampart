@@ -14,7 +14,6 @@
 		onStop?: () => void;
 		onSystemPromptAdd?: (draft: { message: string; files: ChatUploadedFile[] }) => void;
 		showHelperText?: boolean;
-		showNewChatButton?: boolean;
 		uploadedFiles?: ChatUploadedFile[];
 	}
 
@@ -29,7 +28,6 @@
 		onStop,
 		onSystemPromptAdd,
 		showHelperText = true,
-		showNewChatButton = false,
 		uploadedFiles = $bindable([])
 	}: Props = $props();
 
@@ -113,7 +111,6 @@
 		{disabled}
 		{isLoading}
 		showMcpPromptButton
-		{showNewChatButton}
 		onFilesAdd={handleFilesAdd}
 		{onStop}
 		onSubmit={handleSubmit}

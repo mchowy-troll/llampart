@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { Trash2, Pencil, Search, Settings, X } from '@lucide/svelte';
+	import { Trash2, Pencil, Plus, Search, Settings, X } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { ChatSidebarConversationItem, DialogConfirmation } from '$lib/components/app';
 	import { Checkbox } from '$lib/components/ui/checkbox';
@@ -376,12 +376,22 @@
 		class="llampart-sidebar-conversations-frame mx-4 mt-3 mb-4 flex min-h-0 flex-1 flex-col rounded-xl border border-border bg-background p-4 shadow-none"
 	>
 		<div
-			class="llampart-sidebar-frame-header mb-4 grid min-h-12 -translate-y-4 grid-cols-[3rem_1fr_3rem] items-center gap-3"
+			class="llampart-sidebar-frame-header mb-3 grid min-h-12 -translate-y-4 grid-cols-1 items-center"
 		>
-			{#if isSearchModeActive}
+			<h2 class="justify-self-center text-center text-sm font-semibold text-foreground">
+				{t('sidebar.conversations')}
+			</h2>
+		</div>
+
+		<div class="llampart-sidebar-header-separator llampart-sidebar-title-separator"></div>
+
+		{#if isSearchModeActive}
+			<div
+				class="llampart-sidebar-header-actions llampart-sidebar-action-band flex h-[3.25rem] items-center"
+			>
 				<div
-					class="relative col-span-3 min-w-0"
-					data-llampart-sidebar-search-input="llampart-sidebar-search-input-full-width"
+					class="relative w-full min-w-0"
+					data-llampart-sidebar-search-input="llampart-sidebar-search-input-action-row"
 				>
 					<Search
 						class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#333333] dark:text-foreground/80"
@@ -392,7 +402,7 @@
 						bind:value={searchQuery}
 						onkeydown={(e) => e.key === 'Escape' && handleSearchModeDeactivate()}
 						placeholder={t('sidebar.searchConversationsPlaceholder')}
-						class="h-10 rounded-lg border-border bg-background pr-9 pl-9 text-sm font-medium text-[#333333] shadow-none placeholder:text-[#333333] hover:bg-background focus-visible:border-input focus-visible:ring-0 focus-visible:ring-transparent dark:text-foreground/80 dark:placeholder:text-foreground/80"
+						class="llampart-sidebar-action-search-input h-10 rounded-lg border-border bg-background pr-9 pl-9 text-sm font-medium text-[#333333] shadow-none placeholder:text-[#333333] hover:bg-background focus-visible:border-input focus-visible:ring-0 focus-visible:ring-transparent dark:text-foreground/80 dark:placeholder:text-foreground/80"
 					/>
 
 					<button
@@ -404,35 +414,39 @@
 						<X class="h-4 w-4" />
 					</button>
 				</div>
-			{:else}
-				<h2
-					class="col-start-2 justify-self-center text-center text-sm font-semibold text-foreground"
+			</div>
+		{:else}
+			<div
+				class="llampart-sidebar-header-actions llampart-sidebar-action-band flex h-[3.25rem] items-center justify-between gap-3"
+			>
+				<Button
+					aria-label={t('sidebar.newChat')}
+					class="llampart-sidebar-primary-action llampart-sidebar-new-chat-action -ml-1 h-10 justify-start gap-2 rounded-lg pr-3 pl-0 text-sm font-medium text-[#333333] shadow-none backdrop-blur-none! transition-colors hover:bg-transparent hover:text-[#333333] focus-visible:bg-transparent focus-visible:text-[#333333] active:bg-transparent dark:text-foreground/80 dark:hover:bg-transparent dark:hover:text-foreground/80 dark:focus-visible:bg-transparent dark:focus-visible:text-foreground/80 dark:active:bg-transparent"
+					href="?new_chat=true#/"
+					onclick={handleMobileSidebarItemClick}
+					variant="ghost"
 				>
-					{t('sidebar.conversations')}
-				</h2>
+					<Plus class="llampart-sidebar-primary-action-icon h-4 w-4 shrink-0" />
 
-				<Tooltip.Root>
-					<Tooltip.Trigger class="col-start-3 justify-self-end">
-						<Button
-							aria-label={t('sidebar.search')}
-							class="h-9 w-9 rounded-lg p-0 text-foreground shadow-none transition-colors hover:bg-accent hover:text-foreground focus-visible:bg-accent focus-visible:text-foreground"
-							onclick={() => {
-								isSearchModeActive = true;
-							}}
-							variant="ghost"
-						>
-							<Search class="h-5 w-5" />
-						</Button>
-					</Tooltip.Trigger>
+					<span class="llampart-sidebar-primary-action-text">{t('sidebar.newChat')}</span>
+				</Button>
 
-					<Tooltip.Content>
-						<p>{t('sidebar.search')}</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
-			{/if}
-		</div>
+				<Button
+					aria-label={t('sidebar.search')}
+					class="llampart-sidebar-primary-action llampart-sidebar-search-action h-10 justify-end gap-2 rounded-lg px-3 text-sm font-medium text-[#333333] shadow-none backdrop-blur-none! transition-colors hover:bg-transparent hover:text-[#333333] focus-visible:bg-transparent focus-visible:text-[#333333] active:bg-transparent dark:text-foreground/80 dark:hover:bg-transparent dark:hover:text-foreground/80 dark:focus-visible:bg-transparent dark:focus-visible:text-foreground/80 dark:active:bg-transparent"
+					onclick={() => {
+						isSearchModeActive = true;
+					}}
+					variant="ghost"
+				>
+					<span class="llampart-sidebar-primary-action-text">{t('sidebar.search')}</span>
 
-		<div class="llampart-sidebar-header-separator"></div>
+					<Search class="llampart-sidebar-primary-action-icon h-4 w-4 shrink-0" />
+				</Button>
+			</div>
+		{/if}
+
+		<div class="llampart-sidebar-header-separator llampart-sidebar-actions-separator"></div>
 
 		<ScrollArea class="min-h-0 flex-1">
 			<Sidebar.Group class="m-0 space-y-2 p-0">
@@ -637,11 +651,19 @@
 		flex: 0 0 1px !important;
 		width: 100% !important;
 		height: 1px !important;
-		margin: -1.75rem 0 1rem 0 !important;
+		margin: 0 !important;
 		padding: 0 !important;
 		background: rgba(0, 0, 0, 0.11) !important;
 		border: 0 !important;
 		box-shadow: none !important;
+	}
+
+	:global(.llampart-sidebar-title-separator) {
+		margin: -1.75rem 0 0 0 !important;
+	}
+
+	:global(.llampart-sidebar-actions-separator) {
+		margin: 0 0 1rem 0 !important;
 	}
 
 	:global(html.dark .llampart-sidebar-header-separator) {
@@ -650,6 +672,24 @@
 
 	:global(html.has-frosted-glass-theme .llampart-sidebar-header-separator) {
 		background: rgba(0, 0, 0, 0.1) !important;
+	}
+
+	/* llampart-sidebar-action-search-input-frosted-surface */
+	:global(html.has-frosted-glass-theme .llampart-sidebar-action-search-input) {
+		background: rgba(255, 255, 255, 0.2) !important;
+		background-color: rgba(255, 255, 255, 0.2) !important;
+		border-color: rgba(255, 255, 255, 0.34) !important;
+		box-shadow:
+			inset 0 1px 0 rgba(255, 255, 255, 0.26),
+			0 1px 2px rgba(0, 0, 0, 0.05) !important;
+		backdrop-filter: blur(24px) saturate(135%) !important;
+		-webkit-backdrop-filter: blur(24px) saturate(135%) !important;
+	}
+
+	:global(html.dark.has-frosted-glass-theme .llampart-sidebar-action-search-input) {
+		background: rgba(18, 18, 18, 0.26) !important;
+		background-color: rgba(18, 18, 18, 0.26) !important;
+		border-color: rgba(255, 255, 255, 0.2) !important;
 	}
 
 	/* llampart-sidebar-container-query-columns */

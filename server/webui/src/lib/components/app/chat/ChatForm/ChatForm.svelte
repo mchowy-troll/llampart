@@ -55,7 +55,6 @@
 		isLoading?: boolean;
 		placeholder?: string;
 		showMcpPromptButton?: boolean;
-		showNewChatButton?: boolean;
 
 		// Event Handlers
 		onAttachmentRemove?: (index: number) => void;
@@ -75,7 +74,6 @@
 		isLoading = false,
 		placeholder = '',
 		showMcpPromptButton = false,
-		showNewChatButton = false,
 		uploadedFiles = $bindable([]),
 		value = $bindable(''),
 		onAttachmentRemove,
@@ -630,7 +628,6 @@
 				class="px-3"
 				bind:this={chatFormActionsRef}
 				canSend={canSubmit}
-				{showNewChatButton}
 				hasText={value.trim().length > 0}
 				{disabled}
 				{isLoading}
