@@ -43,7 +43,6 @@ export const fr: TranslationDictionary = {
 		confirm: 'Confirmer',
 		toggleSidebar: 'Basculer la barre latérale',
 		sidebar: 'Barre latérale',
-		displaysMobileSidebar: 'Affiche la barre latérale mobile.',
 		untitledConversation: 'Conversation sans titre',
 		conversationName: 'Nom de la conversation',
 		messages: 'Messages',

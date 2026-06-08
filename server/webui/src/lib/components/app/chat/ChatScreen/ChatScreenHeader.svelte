@@ -1,1 +1,1 @@
-<!-- Settings button moved to ChatSidebarActions.svelte. -->
+<!-- Chat screen header intentionally empty; desktop controls live in ChatSidebar. -->

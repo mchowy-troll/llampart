@@ -18,11 +18,9 @@
 	} from '$lib/stores/conversations.svelte';
 	import { chatStore } from '$lib/stores/chat.svelte';
 	import { getPreviewText } from '$lib/utils';
-	import ChatSidebarActions from './ChatSidebarActions.svelte';
 	import { getChatSettingsDialogContext } from '$lib/contexts';
 	import { getInterfaceLanguage, t } from '$lib/i18n';
 
-	const sidebar = Sidebar.useSidebar();
 	const chatSettingsDialog = getChatSettingsDialogContext();
 
 	type ConversationCountVariant = 'one' | 'few' | 'many';
@@ -318,12 +316,6 @@
 		selectedConversation = null;
 	}
 
-	export function handleMobileSidebarItemClick() {
-		if (sidebar.isMobile) {
-			sidebar.toggle();
-		}
-	}
-
 	export function activateSearchMode() {
 		isSearchModeActive = true;
 	}
@@ -356,22 +348,12 @@
 
 	function handleSettingsClick() {
 		chatSettingsDialog.open();
-		handleMobileSidebarItemClick();
 	}
 </script>
 
 <svelte:window bind:innerWidth={sidebarViewportWidth} />
 
 <div class="flex h-[100vh] flex-col">
-	<Sidebar.Header class="top-0 z-10 gap-2 p-4 pb-3 md:hidden">
-		<ChatSidebarActions
-			{handleMobileSidebarItemClick}
-			bind:isSearchModeActive
-			bind:searchQuery
-			searchInputExternal={true}
-		/>
-	</Sidebar.Header>
-
 	<div
 		class="llampart-sidebar-conversations-frame mx-4 mt-3 mb-4 flex min-h-0 flex-1 flex-col rounded-xl border border-border bg-background p-4 shadow-none"
 	>
@@ -423,7 +405,6 @@
 					aria-label={t('sidebar.newChat')}
 					class="llampart-sidebar-primary-action llampart-sidebar-new-chat-action -ml-1 h-10 justify-start gap-2 rounded-lg pr-3 pl-0 text-sm font-medium text-[#333333] shadow-none backdrop-blur-none! transition-colors hover:bg-transparent hover:text-[#333333] focus-visible:bg-transparent focus-visible:text-[#333333] active:bg-transparent dark:text-foreground/80 dark:hover:bg-transparent dark:hover:text-foreground/80 dark:focus-visible:bg-transparent dark:focus-visible:text-foreground/80 dark:active:bg-transparent"
 					href="?new_chat=true#/"
-					onclick={handleMobileSidebarItemClick}
 					variant="ghost"
 				>
 					<Plus class="llampart-sidebar-primary-action-icon h-4 w-4 shrink-0" />
@@ -481,7 +462,6 @@
 										pinned: conversation.pinned
 									}}
 									{depth}
-									{handleMobileSidebarItemClick}
 									isActive={currentChatId === conversation.id}
 									selectionChecked={selectedConversationIds.includes(conversation.id)}
 									selectionAriaLabel={t('sidebar.selectConversation').replace(

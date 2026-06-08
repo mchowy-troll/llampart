@@ -1,9 +1,6 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
-	import * as Sheet from '$lib/components/ui/sheet/index.js';
 	import { cn, type WithElementRef } from '$lib/components/ui/utils.js';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { SIDEBAR_WIDTH_MOBILE } from './constants.js';
 	import { useSidebar } from './context.svelte.js';
 
 	let {
@@ -34,25 +31,6 @@
 	>
 		{@render children?.()}
 	</div>
-{:else if sidebar.isMobile}
-	<Sheet.Root bind:open={() => sidebar.openMobile, (v) => sidebar.setOpenMobile(v)} {...restProps}>
-		<Sheet.Content
-			data-sidebar="sidebar"
-			data-slot="sidebar"
-			data-mobile="true"
-			class="z-99999 w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground sm:z-99 [&>button]:hidden"
-			style="--sidebar-width: {SIDEBAR_WIDTH_MOBILE};"
-			{side}
-		>
-			<Sheet.Header class="sr-only">
-				<Sheet.Title>{t('common.sidebar')}</Sheet.Title>
-				<Sheet.Description>{t('common.displaysMobileSidebar')}</Sheet.Description>
-			</Sheet.Header>
-			<div class="flex h-full w-full flex-col">
-				{@render children?.()}
-			</div>
-		</Sheet.Content>
-	</Sheet.Root>
 {:else}
 	<div
 		bind:this={ref}
