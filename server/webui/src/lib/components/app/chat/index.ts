@@ -733,7 +733,7 @@ export { default as ChatSettingsParameterSourceIndicator } from './ChatSettings/
  *
  * Collapsible sidebar displaying conversation history with search and
  * management actions. Integrates with ShadCN sidebar component for
- * consistent styling and mobile responsiveness.
+ * consistent desktop sidebar styling.
  *
  * **Architecture:**
  * - Uses ShadCN Sidebar.* components for structure
@@ -756,12 +756,10 @@ export { default as ChatSettingsParameterSourceIndicator } from './ChatSettings/
  * - Search/filter conversations by title
  * - Conversation list with message previews (first message truncated)
  * - Active conversation highlighting
- * - Mobile-responsive collapse/expand via ShadCN sidebar
  * - New chat button in header
  * - Settings button opens DialogChatSettings
  *
  * **Exported API:**
- * - `handleMobileSidebarItemClick()` - Close sidebar on mobile after item selection
  * - `activateSearchMode()` - Focus search input programmatically
  * - `editActiveConversation()` - Open rename dialog for current conversation
  *
@@ -771,13 +769,6 @@ export { default as ChatSettingsParameterSourceIndicator } from './ChatSettings/
  * ```
  */
 export { default as ChatSidebar } from './ChatSidebar/ChatSidebar.svelte';
-
-/**
- * Action buttons for sidebar header. Contains new chat button, settings button,
- * and delete all conversations button. Manages dialog states for settings and
- * delete confirmation.
- */
-export { default as ChatSidebarActions } from './ChatSidebar/ChatSidebarActions.svelte';
 
 /**
  * Single conversation item in sidebar. Displays conversation title (truncated),

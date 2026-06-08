@@ -43,7 +43,6 @@ export const pl: TranslationDictionary = {
 		confirm: 'Potwierdź',
 		toggleSidebar: 'Przełącz pasek boczny',
 		sidebar: 'Pasek boczny',
-		displaysMobileSidebar: 'Wyświetla mobilny pasek boczny.',
 		untitledConversation: 'Rozmowa bez tytułu',
 		conversationName: 'Nazwa rozmowy',
 		messages: 'Wiadomości',

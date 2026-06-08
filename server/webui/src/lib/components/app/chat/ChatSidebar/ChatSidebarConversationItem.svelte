@@ -22,7 +22,6 @@
 		isActive?: boolean;
 		depth?: number;
 		conversation: DatabaseConversation;
-		handleMobileSidebarItemClick?: () => void;
 		onEdit?: (id: string) => void;
 		onSelect?: (id: string) => void;
 		onStop?: (id: string) => void;
@@ -34,7 +33,6 @@
 
 	let {
 		conversation,
-		handleMobileSidebarItemClick,
 		onEdit,
 		onSelect,
 		onStop,
@@ -181,11 +179,8 @@
 			</Tooltip.Root>
 		{/if}
 
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<span
 			class="conversation-title min-w-0 flex-1 text-sm leading-snug font-medium break-words whitespace-normal transition-colors"
-			onclick={handleMobileSidebarItemClick}
 		>
 			{conversation.name}
 		</span>

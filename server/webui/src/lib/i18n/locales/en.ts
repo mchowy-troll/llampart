@@ -42,7 +42,6 @@ export const en: TranslationDictionary = {
 		confirm: 'Confirm',
 		toggleSidebar: 'Toggle Sidebar',
 		sidebar: 'Sidebar',
-		displaysMobileSidebar: 'Displays the mobile sidebar.',
 		untitledConversation: 'Untitled conversation',
 		conversationName: 'Conversation Name',
 		messages: 'Messages',

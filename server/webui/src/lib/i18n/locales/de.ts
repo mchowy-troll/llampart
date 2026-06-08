@@ -43,7 +43,6 @@ export const de: TranslationDictionary = {
 		confirm: 'Bestätigen',
 		toggleSidebar: 'Seitenleiste umschalten',
 		sidebar: 'Seitenleiste',
-		displaysMobileSidebar: 'Zeigt die mobile Seitenleiste an.',
 		untitledConversation: 'Unbenannte Unterhaltung',
 		conversationName: 'Unterhaltungsname',
 		messages: 'Nachrichten',
