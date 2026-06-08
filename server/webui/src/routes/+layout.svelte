@@ -24,7 +24,6 @@
 	import { TOOLTIP_DELAY_DURATION } from '$lib/constants';
 	import type { SettingsSectionTitle } from '$lib/constants';
 	import { KeyboardKey } from '$lib/enums';
-	import { IsMobile } from '$lib/hooks/is-mobile.svelte';
 	import { setChatSettingsDialogContext } from '$lib/contexts';
 	import { CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT, getFrostedGlassWallpaper } from '$lib/constants';
 	import { ColorMode } from '$lib/enums/ui';
@@ -37,8 +36,6 @@
 	let showSidebarByDefault = $derived(activeMessages().length > 0 || isLoading());
 	let alwaysShowSidebarOnDesktop = $derived(config().alwaysShowSidebarOnDesktop);
 	let autoShowSidebarOnNewChat = $derived(config().autoShowSidebarOnNewChat);
-	let isMobile = new IsMobile();
-	let isDesktop = $derived(!isMobile.current);
 	let sidebarOpen = $state(false);
 	let innerHeight = $state<number | undefined>();
 	let chatSidebar:
@@ -152,7 +149,7 @@
 	}
 
 	$effect(() => {
-		if (alwaysShowSidebarOnDesktop && isDesktop) {
+		if (alwaysShowSidebarOnDesktop) {
 			sidebarOpen = true;
 			return;
 		}
