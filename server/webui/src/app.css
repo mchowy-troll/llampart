@@ -1,3 +1,5 @@
+@import './lib/styles/tokens.css';
+
 @import 'tailwindcss';
 
 @import 'tw-animate-css';
@@ -12,7 +14,11 @@
    zachowują proporcje bez ręcznego zmieniania pojedynczych komponentów. */
 @media (min-width: 1024px) {
 	html {
-		font-size: clamp(12px, 0.625vw, 16px);
+		font-size: clamp(
+			var(--llampart-ui-scale-min-font-size),
+			var(--llampart-ui-scale-fluid-font-size),
+			var(--llampart-ui-scale-max-font-size)
+		);
 	}
 }
 /* /llampart-desktop-fluid-ui-scale */
@@ -23,7 +29,7 @@
    żeby dwie kolumny kafelków miały taką samą logikę jak na 5K. */
 @media (min-width: 1024px) and (max-width: 2559.98px) {
 	[data-slot='sidebar-wrapper'] {
-		--sidebar-width: 25vw !important;
+		--sidebar-width: var(--llampart-desktop-sidebar-width) !important;
 	}
 }
 /* /llampart-desktop-sidebar-width-scale */
@@ -34,7 +40,7 @@
    żeby dwie kolumny kafelków miały taką samą logikę jak na 5K. */
 @media (min-width: 1024px) and (max-width: 2559.98px) {
 	[data-slot='sidebar-wrapper'] {
-		--sidebar-width: 25vw !important;
+		--sidebar-width: var(--llampart-desktop-sidebar-width) !important;
 	}
 }
 /* /llampart-desktop-sidebar-width-scale */
@@ -177,7 +183,7 @@
 	* {
 		scrollbar-width: thin;
 		scrollbar-color: transparent transparent;
-		transition: scrollbar-color 0.2s ease;
+		transition: scrollbar-color var(--llampart-scrollbar-transition);
 	}
 
 	*:hover {
@@ -185,8 +191,8 @@
 	}
 
 	*::-webkit-scrollbar {
-		width: 6px;
-		height: 6px;
+		width: var(--llampart-scrollbar-size);
+		height: var(--llampart-scrollbar-size);
 	}
 
 	*::-webkit-scrollbar-track {
@@ -195,8 +201,8 @@
 
 	*::-webkit-scrollbar-thumb {
 		background: transparent;
-		border-radius: 3px;
-		transition: background 0.2s ease;
+		border-radius: var(--llampart-scrollbar-radius);
+		transition: background var(--llampart-scrollbar-transition);
 	}
 
 	*:hover::-webkit-scrollbar-thumb {
@@ -579,7 +585,7 @@ html.has-frosted-glass-theme
 	[data-slot='sidebar-wrapper']:has(
 		[data-slot='sidebar'] > [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
 	) {
-		--sidebar-width: 25vw !important;
+		--sidebar-width: var(--llampart-desktop-sidebar-width) !important;
 	}
 }
 

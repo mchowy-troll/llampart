@@ -1,0 +1,15 @@
+/* Shared non-theme primitives.
+
+   Keep theme-specific visual values in dedicated theme and surface layers. */
+
+:root {
+	--llampart-ui-scale-min-font-size: 12px;
+	--llampart-ui-scale-fluid-font-size: 0.625vw;
+	--llampart-ui-scale-max-font-size: 16px;
+
+	--llampart-desktop-sidebar-width: 25vw;
+
+	--llampart-scrollbar-size: 6px;
+	--llampart-scrollbar-radius: 3px;
+	--llampart-scrollbar-transition: 0.2s ease;
+}
