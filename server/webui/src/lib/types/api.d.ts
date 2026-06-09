@@ -213,6 +213,9 @@ export interface ApiChatCompletionRequest {
 	tools?: ApiChatCompletionTool[];
 	// Reasoning parameters
 	reasoning_format?: string;
+	chat_template_kwargs?: Record<string, unknown>;
+	thinking_budget_tokens?: number;
+	reasoning_control?: boolean;
 	// Generation parameters
 	temperature?: number;
 	max_tokens?: number;
@@ -259,6 +262,7 @@ export interface ApiChatCompletionToolCall extends ApiChatCompletionToolCallDelt
 }
 
 export interface ApiChatCompletionStreamChunk {
+	id?: string;
 	object?: string;
 	model?: string;
 	choices: Array<{

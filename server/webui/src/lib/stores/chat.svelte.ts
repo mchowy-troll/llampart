@@ -59,8 +59,10 @@ class ChatStore {
 	currentResponse = $state('');
 	errorDialogState = $state<ErrorDialogState | null>(null);
 	isLoading = $state(false);
+	isReasoning = $state(false);
 	chatLoadingStates = new SvelteMap<string, boolean>();
 	chatStreamingStates = new SvelteMap<string, { response: string; messageId: string }>();
+	chatReasoningStates = new SvelteMap<string, boolean>();
 	private abortControllers = new SvelteMap<string, AbortController>();
 	private preEncodeAbortController: AbortController | null = null;
 	private processingStates = new SvelteMap<string, ApiProcessingState | null>();
@@ -95,6 +97,16 @@ class ChatStore {
 		this.chatStreamingStates.delete(convId);
 		if (convId === conversationsStore.activeConversation?.id) this.currentResponse = '';
 	}
+	private setChatReasoning(convId: string, reasoning: boolean): void {
+		this.touchConversationState(convId);
+		if (reasoning) {
+			this.chatReasoningStates.set(convId, true);
+			if (convId === conversationsStore.activeConversation?.id) this.isReasoning = true;
+		} else {
+			this.chatReasoningStates.delete(convId);
+			if (convId === conversationsStore.activeConversation?.id) this.isReasoning = false;
+		}
+	}
 	private getChatStreaming(convId: string): { response: string; messageId: string } | undefined {
 		return this.chatStreamingStates.get(convId);
 	}
@@ -102,6 +114,7 @@ class ChatStore {
 		this.isLoading = this.chatLoadingStates.get(convId) || false;
 		const s = this.chatStreamingStates.get(convId);
 		this.currentResponse = s?.response || '';
+		this.isReasoning = this.chatReasoningStates.get(convId) || false;
 		this.isStreamingActive = s !== undefined;
 		this.setActiveProcessingConversation(convId);
 		// Sync streaming content to activeMessages so UI displays current content
@@ -116,6 +129,7 @@ class ChatStore {
 	clearUIState(): void {
 		this.isLoading = false;
 		this.currentResponse = '';
+		this.isReasoning = false;
 		this.isStreamingActive = false;
 	}
 
@@ -572,6 +586,20 @@ class ChatStore {
 		let modelPersisted = false;
 		const convId = assistantMessage.convId;
 
+		const recordCompletionId = (() => {
+			let completionIdRecorded = false;
+
+			return (id: string): void => {
+				if (!id || completionIdRecorded) return;
+				completionIdRecorded = true;
+				const idx = conversationsStore.findMessageIndex(currentMessageId);
+				conversationsStore.updateMessageAtIndex(idx, { completionId: id });
+				DatabaseService.updateMessage(currentMessageId, { completionId: id }).catch(() => {
+					completionIdRecorded = false;
+				});
+			};
+		})();
+
 		const recordModel = (modelName: string | null | undefined, persistImmediately = true): void => {
 			if (!modelName) return;
 			const n = normalizeModelName(modelName);
@@ -596,6 +624,7 @@ class ChatStore {
 
 		const cleanupStreamingState = () => {
 			this.setStreamingActive(false);
+			this.setChatReasoning(convId, false);
 			this.setChatLoading(convId, false);
 			this.clearChatStreaming(convId);
 			this.setProcessingState(convId, null);
@@ -609,14 +638,16 @@ class ChatStore {
 			onChunk: (chunk: string) => {
 				streamedContent += chunk;
 				updateStreamingUI();
+				this.setChatReasoning(convId, false);
 			},
 			onReasoningChunk: (chunk: string) => {
 				streamedReasoningContent += chunk;
-				// Update UI to show reasoning is being received
+				this.setChatStreaming(convId, streamedContent, currentMessageId);
 				const idx = conversationsStore.findMessageIndex(currentMessageId);
 				conversationsStore.updateMessageAtIndex(idx, {
 					reasoningContent: streamedReasoningContent
 				});
+				this.setChatReasoning(convId, true);
 			},
 			onToolCallsStreaming: (toolCalls) => {
 				const idx = conversationsStore.findMessageIndex(currentMessageId);
@@ -632,6 +663,7 @@ class ChatStore {
 				DatabaseService.updateMessage(messageId, { extra: updatedExtras }).catch(console.error);
 			},
 			onModel: (modelName: string) => recordModel(modelName),
+			onCompletionId: (id: string) => recordCompletionId(id),
 			onTurnComplete: (intermediateTimings: ChatMessageTimings) => {
 				// Update the first assistant message with cumulative agentic timings
 				const idx = conversationsStore.findMessageIndex(assistantMessage.id);
@@ -807,6 +839,7 @@ class ChatStore {
 				onChunk: streamCallbacks.onChunk,
 				onReasoningChunk: streamCallbacks.onReasoningChunk,
 				onModel: streamCallbacks.onModel,
+				onCompletionId: streamCallbacks.onCompletionId,
 				onTimings: streamCallbacks.onTimings,
 				onComplete: async (
 					finalContent?: string,
@@ -1706,6 +1739,8 @@ class ChatStore {
 		if (currentConfig.samplers) apiOptions.samplers = currentConfig.samplers;
 
 		apiOptions.backend_sampling = currentConfig.backend_sampling;
+		apiOptions.enableThinking = conversationsStore.getThinkingEnabled();
+		apiOptions.reasoningEffort = conversationsStore.getReasoningEffort();
 
 		if (currentConfig.custom) apiOptions.custom = currentConfig.custom;
 
@@ -1762,4 +1797,5 @@ export const isChatLoading = (convId: string) => chatStore.isChatLoadingPublic(c
 export const isChatStreaming = () => chatStore.isStreaming();
 export const isEditing = () => chatStore.isEditing();
 export const isLoading = () => chatStore.isLoading;
+export const isReasoning = () => chatStore.isReasoning;
 export const pendingEditMessageId = () => chatStore.pendingEditMessageId;

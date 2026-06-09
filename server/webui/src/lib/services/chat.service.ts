@@ -7,12 +7,16 @@ import {
 	ATTACHMENT_LABEL_PDF_FILE,
 	ATTACHMENT_LABEL_MCP_PROMPT,
 	ATTACHMENT_LABEL_MCP_RESOURCE,
-	LEGACY_AGENTIC_REGEX
+	API_CHAT,
+	CONTROL_ACTION,
+	LEGACY_AGENTIC_REGEX,
+	REASONING_EFFORT_TOKENS
 } from '$lib/constants';
 import {
 	AttachmentType,
 	ContentPartType,
 	MessageRole,
+	ReasoningEffort,
 	ReasoningFormat,
 	UrlProtocol
 } from '$lib/enums';
@@ -87,6 +91,7 @@ export class ChatService {
 			onReasoningChunk,
 			onToolCallChunk,
 			onModel,
+			onCompletionId,
 			onTimings,
 			// Tools for function calling
 			tools,
@@ -118,7 +123,9 @@ export class ChatService {
 			timings_per_token,
 			// Config options
 			disableReasoningParsing,
-			excludeReasoningFromContext
+			excludeReasoningFromContext,
+			enableThinking,
+			reasoningEffort
 		} = options;
 
 		const normalizedMessages: ApiChatMessageData[] = messages
@@ -193,6 +200,28 @@ export class ChatService {
 			? ReasoningFormat.NONE
 			: ReasoningFormat.AUTO;
 
+		const requestedReasoningEffort = Object.values(ReasoningEffort).includes(
+			reasoningEffort as ReasoningEffort
+		)
+			? (reasoningEffort as ReasoningEffort)
+			: undefined;
+
+		const reasoningBudgetTokens =
+			enableThinking && requestedReasoningEffort
+				? REASONING_EFFORT_TOKENS[requestedReasoningEffort]
+				: -1;
+
+		requestBody.chat_template_kwargs = {
+			...(requestBody.chat_template_kwargs ?? {}),
+			enable_thinking: enableThinking ?? false
+		};
+
+		if (reasoningBudgetTokens >= 0) {
+			requestBody.thinking_budget_tokens = reasoningBudgetTokens;
+		}
+
+		requestBody.reasoning_control = true;
+
 		if (temperature !== undefined) requestBody.temperature = temperature;
 		if (max_tokens !== undefined) {
 			// Set max_tokens to -1 (infinite) when explicitly configured as 0 or null
@@ -238,7 +267,7 @@ export class ChatService {
 		}
 
 		try {
-			const response = await fetch(`${getApiBaseUrl()}/v1/chat/completions`, {
+			const response = await fetch(`${getApiBaseUrl()}${API_CHAT.COMPLETIONS}`, {
 				method: 'POST',
 				headers: getJsonHeaders(),
 				body: JSON.stringify(requestBody),
@@ -264,6 +293,7 @@ export class ChatService {
 					onReasoningChunk,
 					onToolCallChunk,
 					onModel,
+					onCompletionId,
 					onTimings,
 					conversationId,
 					signal
@@ -310,6 +340,49 @@ export class ChatService {
 			}
 
 			throw userFriendlyError;
+		}
+	}
+
+	/**
+	 * Ends the reasoning block of a running completion without stopping the whole generation.
+	 */
+	static async stopReasoning(completionId: string, model?: string | null): Promise<boolean> {
+		if (!completionId) {
+			console.error(
+				'stopReasoning: no completion id for the active message, cannot target the running completion'
+			);
+			return false;
+		}
+
+		const body: Record<string, unknown> = {
+			id: completionId,
+			action: CONTROL_ACTION.END_REASONING
+		};
+
+		if (model) body.model = model;
+
+		try {
+			const response = await fetch(`${getApiBaseUrl()}${API_CHAT.CONTROL}`, {
+				method: 'POST',
+				headers: getJsonHeaders(),
+				body: JSON.stringify(body)
+			});
+
+			const data = await response.json().catch(() => null);
+
+			if (!response.ok || data?.success !== true) {
+				console.error('stopReasoning: control request failed', {
+					status: response.status,
+					completionId,
+					response: data
+				});
+				return false;
+			}
+
+			return true;
+		} catch (error) {
+			console.error('stopReasoning: control request threw', { completionId, error });
+			return false;
 		}
 	}
 
@@ -448,6 +521,7 @@ export class ChatService {
 		onReasoningChunk?: (chunk: string) => void,
 		onToolCallChunk?: (chunk: string) => void,
 		onModel?: (model: string) => void,
+		onCompletionId?: (id: string) => void,
 		onTimings?: (timings?: ChatMessageTimings, promptProgress?: ChatMessagePromptProgress) => void,
 		conversationId?: string,
 		abortSignal?: AbortSignal
@@ -465,6 +539,7 @@ export class ChatService {
 		let lastTimings: ChatMessageTimings | undefined;
 		let streamFinished = false;
 		let modelEmitted = false;
+		let idEmitted = false;
 		let toolCallIndexOffset = 0;
 		let hasOpenToolCallBatch = false;
 
@@ -532,9 +607,10 @@ export class ChatService {
 
 						try {
 							const parsed: ApiChatCompletionStreamChunk = JSON.parse(data);
-							const content = parsed.choices[0]?.delta?.content;
-							const reasoningContent = parsed.choices[0]?.delta?.reasoning_content;
-							const toolCalls = parsed.choices[0]?.delta?.tool_calls;
+							const choice = parsed.choices?.[0];
+							const content = choice?.delta?.content;
+							const reasoningContent = choice?.delta?.reasoning_content;
+							const toolCalls = choice?.delta?.tool_calls;
 							const timings = parsed.timings;
 							const promptProgress = parsed.prompt_progress;
 
@@ -542,6 +618,11 @@ export class ChatService {
 							if (chunkModel && !modelEmitted) {
 								modelEmitted = true;
 								onModel?.(chunkModel);
+							}
+
+							if (parsed.id && !idEmitted) {
+								idEmitted = true;
+								onCompletionId?.(parsed.id);
 							}
 
 							if (promptProgress) {

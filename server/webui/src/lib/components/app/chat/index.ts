@@ -183,6 +183,7 @@ export { default as ChatFormActionRecord } from './ChatForm/ChatFormActions/Chat
  * based on model capabilities and loading state.
  */
 export { default as ChatFormActions } from './ChatForm/ChatFormActions/ChatFormActions.svelte';
+export { default as ChatFormReasoningToggle } from './ChatForm/ChatFormActions/ChatFormReasoningToggle.svelte';
 
 /**
  * Submit/stop button with loading state. Shows send icon normally, transforms

@@ -1,5 +1,5 @@
 import type { ChatMessageTimings, ChatRole, ChatMessageType } from '$lib/types/chat';
-import { AttachmentType } from '$lib/enums';
+import { AttachmentType, ReasoningEffort } from '$lib/enums';
 
 export interface McpServerOverride {
 	serverId: string;
@@ -13,6 +13,8 @@ export interface DatabaseConversation {
 	name: string;
 	pinned?: boolean;
 	mcpServerOverrides?: McpServerOverride[];
+	thinkingEnabled?: boolean;
+	reasoningEffort?: ReasoningEffort;
 	forkedFromConversationId?: string;
 }
 
@@ -95,6 +97,8 @@ export interface DatabaseMessage {
 	thinking?: string;
 	/** Reasoning content produced by the model (separate from visible content) */
 	reasoningContent?: string;
+	/** Chat completion id streamed by the server, used by realtime controls such as Skip reasoning. */
+	completionId?: string;
 	/** Serialized JSON array of tool calls made by assistant messages */
 	toolCalls?: string;
 	/** Tool call ID for tool result messages (role: 'tool') */
