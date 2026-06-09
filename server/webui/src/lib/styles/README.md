@@ -60,6 +60,24 @@ preview.css      preview dialog/shell/header/body/actions layout and contrast
 attachments.css  attachment thumbnails, frames, metadata, and attachment actions
 ```
 
+## CSS import order
+
+`src/app.css` is the CSS entry point. Local style files imported from `app.css` must stay before `@import 'tailwindcss'`.
+
+Current order:
+
+```css
+@import './lib/styles/tokens.css';
+
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+```
+
+Keep local imports grouped at the top unless a focused build and visual check proves another order is safe. This rule protects Tailwind processing while the style layers are being extracted.
+
 ## Current ownership
 
 Until extraction happens, these areas are transitional ownership points:
