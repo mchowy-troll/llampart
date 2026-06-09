@@ -16,7 +16,7 @@ export const README_MD = String.raw`
 - 📦 **Zero Config** - Works out of the box for most use cases
 - 🎨 **Flexible** - Unopinionated with sensible defaults
 - 🔧 **Extensible** - Plugin system for custom functionality
-- 📱 **Responsive** - Mobile-first approach
+- 🖥️ **Desktop-focused** - Optimized for 1080p+ screens
 - 🌍 **i18n Ready** - Built-in internationalization
 - 🔒 **Secure** - Security best practices by default
 

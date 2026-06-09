@@ -20,7 +20,7 @@ ${'```'}
 1. **AI Assistant**: 78% of users (↑ from 45%)
 2. **Collaboration Tools**: 62% of users (↑ from 38%)
 3. **Analytics Dashboard**: 54% of users (↑ from 31%)
-4. **Mobile App**: 41% of users (↑ from 22%)
+4. **Desktop App**: 41% of users (↑ from 22%)
 
 ### Customer Satisfaction
 
@@ -88,7 +88,7 @@ ${'```'}
 ### Session Patterns
 
 - **Peak Hours**: 9-11 AM, 2-4 PM EST
-- **Mobile Usage**: 67% of sessions
+- **Desktop Usage**: 67% of sessions
 - **Average Pages/Session**: 4.8
 - **Bounce Rate**: 23% (↓ from 31%)
 
