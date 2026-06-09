@@ -34,7 +34,6 @@ end
     subgraph Hooks["🪝 Hooks"]
         H1["useModelChangeValidation"]
         H2["useProcessingState"]
-        H3["isMobile"]
     end
 
     subgraph Stores["🗄️ Stores"]

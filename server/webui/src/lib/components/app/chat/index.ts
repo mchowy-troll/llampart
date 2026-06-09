@@ -616,8 +616,7 @@ export { default as ChatScreenProcessingInfo } from './ChatScreen/ChatScreenProc
  *
  * Application settings components. Settings are persisted to localStorage via
  * the config store and synchronized with server `/props` endpoint for sampling
- * parameters. The settings panel uses a tabbed interface with mobile-responsive
- * horizontal scrolling tabs.
+ * parameters. The settings panel uses a desktop-focused tabbed interface.
  *
  * **Parameter Sync System:**
  * Sampling parameters (temperature, top_p, etc.) can come from three sources:
@@ -658,7 +657,7 @@ export { default as ChatScreenProcessingInfo } from './ChatScreen/ChatScreenProc
  * - Tracks which parameters user has explicitly overridden
  *
  * **Features:**
- * - Mobile-responsive layout with horizontal scrolling tabs
+ * - Desktop-focused tabbed settings layout
  * - Form validation with error messages
  * - Secure API key storage (masked input)
  * - Import/export conversations as JSON
@@ -715,7 +714,7 @@ export { default as ChatSettingsParameterSourceIndicator } from './ChatSettings/
  * SIDEBAR
  *
  * The sidebar integrates with ShadCN's sidebar component system
- * for consistent styling and mobile responsiveness.
+ * for consistent desktop sidebar styling.
  * Conversations are loaded from conversationsStore and displayed in reverse
  * chronological order (most recent first).
  *
