@@ -6,7 +6,7 @@
 
 # llampart
 
-llampart is a local-first chat Web UI designed for use with `llama-server`.
+llampart is a local chat Web UI designed for use with `llama-server`.
 
 The project focuses on a polished desktop experience, including a custom Frosted Glass theme, conversation management, model selection, MCP-related UI flows, and careful local settings handling.
 
@@ -82,7 +82,7 @@ Key llampart features include:
   Optional cleaner presentation for reasoning and tool-related assistant sections, designed to reduce visual noise while keeping reasoning/tool information accessible when needed.
 
 - **Extended chat and interface settings**
-  llampart includes additional local-first settings for the chat experience, including visual theme selection, Frosted Glass wallpaper options, conversation date/time display, message/statistics display behavior, model display preferences, and generation-related chat parameters.
+  llampart includes additional local settings for the chat experience, including visual theme selection, Frosted Glass wallpaper options, conversation date/time display, message/statistics display behavior, model display preferences, and generation-related chat parameters.
 
 - **Local import/export flows for settings and conversations**
   llampart provides local import/export workflows. Settings export is designed to avoid including sensitive local configuration by default, such as API keys, server connection URLs, and MCP server definitions.
