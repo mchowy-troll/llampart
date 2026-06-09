@@ -121,7 +121,7 @@ ${'```'}
 ✅ **Real-time messaging** with WebSockets  
 ✅ **Message persistence** using Prisma + PostgreSQL  
 ✅ **Type-safe** with TypeScript  
-✅ **Responsive UI** for all devices  
+✅ **Desktop-focused UI** for 1080p+ screens
 ✅ **Auto-reconnection** on connection loss  
 
 ## 📊 Performance Metrics
