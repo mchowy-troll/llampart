@@ -48,7 +48,7 @@ export { default as ModelsSelector } from './ModelsSelector.svelte';
  * **ModelsSelectorList** - Grouped model options list
  *
  * Renders grouped model options (loaded, favorites, available) with section
- * headers and org subgroups. Shared between ModelsSelector and ModelsSelectorSheet
+ * headers and org subgroups used by the desktop model selector
  * to avoid template duplication.
  *
  * Accepts an optional `renderOption` snippet to customize how each option is
@@ -64,15 +64,6 @@ export { default as ModelsSelectorList } from './ModelsSelectorList.svelte';
  * Used inside ModelsSelectorList or directly in custom render snippets.
  */
 export { default as ModelsSelectorOption } from './ModelsSelectorOption.svelte';
-
-/**
- * **ModelsSelectorSheet** - Mobile model selection sheet
- *
- * Bottom sheet variant of ModelsSelector optimized for touch interaction
- * on mobile devices. Same functionality as ModelsSelector but uses Sheet UI
- * instead of DropdownMenu.
- */
-export { default as ModelsSelectorSheet } from './ModelsSelectorSheet.svelte';
 
 /**
  * **ModelBadge** - Model name display badge
