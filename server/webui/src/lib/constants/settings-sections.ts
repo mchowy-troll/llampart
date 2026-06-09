@@ -2,7 +2,7 @@
  * Settings section titles constants for ChatSettings component.
  *
  * These titles define the navigation sections in the settings dialog.
- * Used for both sidebar navigation and mobile horizontal scroll menu.
+ * Used by the desktop Settings sidebar navigation.
  */
 export const SETTINGS_SECTION_TITLES = {
 	GENERAL: 'General',
