@@ -34,17 +34,6 @@
 }
 /* /llampart-desktop-sidebar-width-scale */
 
-/* llampart-desktop-sidebar-width-scale
-   5K przy systemowym skalowaniu 200% daje 2560 CSS px, więc 25vw = 640px.
-   Na 1080p przeglądarka ma 1920 CSS px, więc wymuszamy tę samą szerokość sidebara,
-   żeby dwie kolumny kafelków miały taką samą logikę jak na 5K. */
-@media (min-width: 1024px) and (max-width: 2559.98px) {
-	[data-slot='sidebar-wrapper'] {
-		--sidebar-width: var(--llampart-desktop-sidebar-width) !important;
-	}
-}
-/* /llampart-desktop-sidebar-width-scale */
-
 :root {
 	--radius: 0.625rem;
 	--background: oklch(1 0 0);
