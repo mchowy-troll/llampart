@@ -3,8 +3,6 @@
 		Settings,
 		Code,
 		Monitor,
-		ChevronLeft,
-		ChevronRight,
 		Database,
 		MessageSquare,
 		SlidersHorizontal,
@@ -643,10 +641,6 @@
 		}
 	}
 
-	let canScrollLeft = $state(false);
-	let canScrollRight = $state(false);
-	let scrollContainer: HTMLDivElement | undefined = $state();
-
 	$effect(() => {
 		if (initialSection) {
 			activeSection = initialSection;
@@ -751,55 +745,14 @@
 		onSave?.();
 	}
 
-	function scrollToCenter(element: HTMLElement) {
-		if (!scrollContainer) return;
-
-		const containerRect = scrollContainer.getBoundingClientRect();
-		const elementRect = element.getBoundingClientRect();
-
-		const elementCenter = elementRect.left + elementRect.width / 2;
-		const containerCenter = containerRect.left + containerRect.width / 2;
-		const scrollOffset = elementCenter - containerCenter;
-
-		scrollContainer.scrollBy({ left: scrollOffset, behavior: 'smooth' });
-	}
-
-	function scrollLeft() {
-		if (!scrollContainer) return;
-
-		scrollContainer.scrollBy({ left: -250, behavior: 'smooth' });
-	}
-
-	function scrollRight() {
-		if (!scrollContainer) return;
-
-		scrollContainer.scrollBy({ left: 250, behavior: 'smooth' });
-	}
-
-	function updateScrollButtons() {
-		if (!scrollContainer) return;
-
-		const { scrollLeft, scrollWidth, clientWidth } = scrollContainer;
-		canScrollLeft = scrollLeft > 0;
-		canScrollRight = scrollLeft < scrollWidth - clientWidth - 1; // -1 for rounding
-	}
-
 	export function reset() {
 		localConfig = { ...config() };
-
-		setTimeout(updateScrollButtons, 100);
 	}
-
-	$effect(() => {
-		if (scrollContainer) {
-			updateScrollButtons();
-		}
-	});
 </script>
 
-<div class="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
-	<!-- Desktop Sidebar -->
-	<div class="hidden w-60 shrink-0 border-r border-border/30 p-5 md:block lg:w-64">
+<div class="flex min-h-0 flex-1 flex-row overflow-hidden">
+	<!-- Settings Sidebar -->
+	<div class="w-60 shrink-0 border-r border-border/30 p-5 lg:w-64">
 		<nav class="space-y-1 py-2">
 			{#each settingSections as section (section.title)}
 				<button
@@ -817,62 +770,10 @@
 		</nav>
 	</div>
 
-	<!-- Mobile Header with Horizontal Scrollable Menu -->
-	<div class="flex flex-col pt-6 md:hidden">
-		<div class="border-b border-border/30 pt-4 md:py-4">
-			<!-- Horizontal Scrollable Category Menu with Navigation -->
-			<div class="relative flex items-center" style="scroll-padding: 1rem;">
-				<button
-					class="absolute left-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted shadow-md backdrop-blur-sm transition-opacity hover:bg-accent {canScrollLeft
-						? 'opacity-100'
-						: 'pointer-events-none opacity-0'}"
-					onclick={scrollLeft}
-					aria-label={t('settings.scrollLeft')}
-				>
-					<ChevronLeft class="h-4 w-4" />
-				</button>
-
-				<div
-					class="scrollbar-hide overflow-x-auto py-2"
-					bind:this={scrollContainer}
-					onscroll={updateScrollButtons}
-				>
-					<div class="flex min-w-max gap-2">
-						{#each settingSections as section (section.title)}
-							<button
-								class="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm whitespace-nowrap transition-colors first:ml-4 last:mr-4 hover:bg-accent {activeSection ===
-								section.title
-									? 'bg-accent text-accent-foreground'
-									: 'text-muted-foreground'}"
-								onclick={(e: MouseEvent) => {
-									activeSection = section.title;
-									scrollToCenter(e.currentTarget as HTMLElement);
-								}}
-							>
-								<section.icon class="h-4 w-4 flex-shrink-0" />
-								<span>{getSectionLabel(section.title)}</span>
-							</button>
-						{/each}
-					</div>
-				</div>
-
-				<button
-					class="absolute right-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted shadow-md backdrop-blur-sm transition-opacity hover:bg-accent {canScrollRight
-						? 'opacity-100'
-						: 'pointer-events-none opacity-0'}"
-					onclick={scrollRight}
-					aria-label={t('settings.scrollRight')}
-				>
-					<ChevronRight class="h-4 w-4" />
-				</button>
-			</div>
-		</div>
-	</div>
-
 	<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
 		<ScrollArea class="min-h-0 flex-1">
-			<div class="flex min-h-full flex-col gap-6 p-4 md:p-6">
-				<div class="mb-6 hidden items-center gap-2 border-b border-border/30 pb-6 md:flex">
+			<div class="flex min-h-full flex-col gap-6 p-6">
+				<div class="mb-6 flex items-center gap-2 border-b border-border/30 pb-6">
 					<currentSection.icon class="h-5 w-5" />
 
 					<h3 class="text-lg font-semibold">{getSectionLabel(currentSection.title)}</h3>
@@ -985,7 +886,7 @@
 				{/if}
 			</div>
 		</ScrollArea>
-		<div class="px-4 py-4 md:px-6">
+		<div class="px-6 py-4">
 			<div class="border-t border-border/30 pt-6">
 				<p class="text-xs text-muted-foreground">{t('settings.savedInLocalStorage')}</p>
 			</div>
