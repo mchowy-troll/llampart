@@ -207,3 +207,4 @@ export {
 // Cryptography utilities
 
 export { uuid } from './uuid';
+export * from './chat-template-thinking-detector';

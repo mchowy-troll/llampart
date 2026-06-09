@@ -51,6 +51,8 @@ export type {
 	FileProcessingResult
 } from './chat.d';
 
+export type { ReasoningEffortLevel, ReasoningEffortOptionValue } from './reasoning';
+
 // Database types
 export type {
 	McpServerOverride,

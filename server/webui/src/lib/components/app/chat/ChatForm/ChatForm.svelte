@@ -631,6 +631,7 @@
 				hasText={value.trim().length > 0}
 				{disabled}
 				{isLoading}
+				isReasoning={chatStore.isReasoning}
 				{isRecording}
 				{uploadedFiles}
 				onFileUpload={handleFileUpload}
@@ -693,6 +694,7 @@
 	}
 
 	/* llampart-frosted-glass-composer-shell-and-menus */
+	/* llampart-composer-bare-action: transparent icon-only composer triggers opt out of the filled Frosted Glass button chrome below. */
 	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame {
 		border: 1px solid rgba(255, 255, 255, 0.19) !important;
 		background: rgba(255, 255, 255, 0.14) !important;
@@ -716,9 +718,15 @@
 			0 0 16px rgba(255, 255, 255, 0.34) !important;
 	}
 
-	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame :global(button),
-	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame :global([role='button']),
-	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame :global([data-slot='button']) {
+	:global(html.has-frosted-glass-theme)
+		.llampart-chat-input-frame
+		:global(button:not(.llampart-composer-bare-action)),
+	:global(html.has-frosted-glass-theme)
+		.llampart-chat-input-frame
+		:global([role='button']:not(.llampart-composer-bare-action)),
+	:global(html.has-frosted-glass-theme)
+		.llampart-chat-input-frame
+		:global([data-slot='button']:not(.llampart-composer-bare-action)) {
 		border: 1px solid rgba(255, 255, 255, 0.2) !important;
 		background: rgba(255, 255, 255, 0.2) !important;
 		box-shadow:
@@ -728,11 +736,15 @@
 		-webkit-backdrop-filter: blur(10px) saturate(110%) !important;
 	}
 
-	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame :global(button:hover),
-	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame :global([role='button']:hover),
 	:global(html.has-frosted-glass-theme)
 		.llampart-chat-input-frame
-		:global([data-slot='button']:hover) {
+		:global(button:not(.llampart-composer-bare-action):hover),
+	:global(html.has-frosted-glass-theme)
+		.llampart-chat-input-frame
+		:global([role='button']:not(.llampart-composer-bare-action):hover),
+	:global(html.has-frosted-glass-theme)
+		.llampart-chat-input-frame
+		:global([data-slot='button']:not(.llampart-composer-bare-action):hover) {
 		background: rgba(255, 255, 255, 0.28) !important;
 	}
 

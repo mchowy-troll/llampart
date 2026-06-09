@@ -11,6 +11,8 @@ export {
 	ReasoningFormat
 } from './chat';
 
+export { ReasoningEffort } from './reasoning-effort.enums';
+
 export {
 	FileTypeCategory,
 	FileTypeImage,

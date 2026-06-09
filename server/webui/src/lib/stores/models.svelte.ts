@@ -3,7 +3,7 @@ import { toast } from 'svelte-sonner';
 import { ServerModelStatus, ModelModality } from '$lib/enums';
 import { ModelsService, PropsService } from '$lib/services';
 import { serverStore } from '$lib/stores/server.svelte';
-import { TTLCache } from '$lib/utils';
+import { detectThinkingSupport, detectThinkingSupportWithReason, TTLCache } from '$lib/utils';
 import { t } from '$lib/i18n';
 import {
 	MODEL_PROPS_CACHE_TTL_MS,
@@ -212,6 +212,64 @@ class ModelsStore {
 	 */
 	isModelPropsFetching(modelId: string): boolean {
 		return this.modelPropsFetching.has(modelId);
+	}
+
+	//
+	// Thinking Support Detection
+	//
+
+	/**
+	 * Whether the selected model's chat template supports thinking/reasoning controls.
+	 */
+	get supportsThinking(): boolean {
+		const modelId = this.selectedModelName;
+		if (!modelId) {
+			if (!serverStore.isRouterMode) {
+				return detectThinkingSupport(serverStore.props?.chat_template ?? '');
+			}
+			return false;
+		}
+
+		if (serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
+			this.fetchModelProps(modelId);
+		}
+
+		const props = this.getModelProps(modelId);
+		return detectThinkingSupport(props?.chat_template ?? '');
+	}
+
+	/**
+	 * Checks whether a specific model supports thinking/reasoning controls.
+	 */
+	checkModelSupportsThinking(modelId: string): boolean {
+		if (!modelId) return false;
+
+		if (serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
+			this.fetchModelProps(modelId);
+		}
+
+		const props = this.getModelProps(modelId);
+		return detectThinkingSupport(props?.chat_template ?? '');
+	}
+
+	/**
+	 * Detailed thinking support detection result for debugging/UI.
+	 */
+	get thinkingSupportDetails(): { supported: boolean; reason: string } {
+		const modelId = this.selectedModelName;
+		if (!modelId) {
+			if (!serverStore.isRouterMode) {
+				return detectThinkingSupportWithReason(serverStore.props?.chat_template ?? '');
+			}
+			return { supported: false, reason: 'No model selected' };
+		}
+
+		if (serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
+			this.fetchModelProps(modelId);
+		}
+
+		const props = this.getModelProps(modelId);
+		return detectThinkingSupportWithReason(props?.chat_template ?? '');
 	}
 
 	/**
@@ -742,4 +800,7 @@ export const loadingModelIds = () => modelsStore.loadingModelIds;
 export const propsCacheVersion = () => modelsStore.propsCacheVersion;
 export const singleModelName = () => modelsStore.singleModelName;
 export const selectedModelContextSize = () => modelsStore.selectedModelContextSize;
+export const supportsThinking = () => modelsStore.supportsThinking;
+export const checkModelSupportsThinking = (modelId: string) =>
+	modelsStore.checkModelSupportsThinking(modelId);
 export const favoriteModelIds = () => modelsStore.favoriteModelIds;

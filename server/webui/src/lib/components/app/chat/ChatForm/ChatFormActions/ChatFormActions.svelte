@@ -1,10 +1,12 @@
 <script lang="ts">
-	import { Square } from '@lucide/svelte';
+	import { SkipForward, Square } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
+	import { ChatService } from '$lib/services/chat.service';
 	import {
 		ChatFormActionAttachmentsDropdown,
 		ChatFormActionRecord,
 		ChatFormActionSubmit,
+		ChatFormReasoningToggle,
 		McpServersSelector,
 		ModelsSelector
 	} from '$lib/components/app';
@@ -25,6 +27,7 @@
 		class?: string;
 		disabled?: boolean;
 		isLoading?: boolean;
+		isReasoning?: boolean;
 		isRecording?: boolean;
 		hasText?: boolean;
 		uploadedFiles?: ChatUploadedFile[];
@@ -41,6 +44,7 @@
 		class: className = '',
 		disabled = false,
 		isLoading = false,
+		isReasoning = false,
 		isRecording = false,
 		hasText = false,
 		uploadedFiles = [],
@@ -171,6 +175,10 @@
 
 	const chatSettingsDialog = getChatSettingsDialogContext();
 
+	let activeMessage = $derived(
+		conversationsStore.activeMessages[conversationsStore.activeMessages.length - 1]
+	);
+
 	let hasMcpPromptsSupport = $derived.by(() => {
 		const perChatOverrides = conversationsStore.getAllMcpServerOverrides();
 
@@ -206,6 +214,8 @@
 	</div>
 
 	<div class="ml-auto flex items-center gap-1.5">
+		<ChatFormReasoningToggle />
+
 		<ModelsSelector
 			disabled={disabled || isOffline}
 			bind:this={selectorModelRef}
@@ -214,6 +224,21 @@
 			useGlobalSelection
 		/>
 	</div>
+
+	{#if isReasoning}
+		<Button
+			type="button"
+			variant="secondary"
+			onclick={() =>
+				ChatService.stopReasoning(activeMessage?.completionId ?? '', activeMessage?.model)}
+			class="group h-8 w-8 rounded-full p-0"
+			title={t('chat.skipReasoning')}
+		>
+			<span class="sr-only">{t('chat.skipReasoning')}</span>
+
+			<SkipForward class="h-4 w-4 stroke-muted-foreground group-hover:stroke-foreground" />
+		</Button>
+	{/if}
 
 	{#if isLoading}
 		<Button

@@ -2,7 +2,12 @@ import type { SETTING_CONFIG_DEFAULT } from '$lib/constants';
 import type { ChatMessagePromptProgress, ChatMessageTimings } from './chat';
 import type { OpenAIToolDefinition } from './mcp';
 import type { DatabaseMessageExtra } from './database';
-import type { ParameterSource, SyncableParameterType, SettingsFieldType } from '$lib/enums';
+import type {
+	ParameterSource,
+	ReasoningEffort,
+	SyncableParameterType,
+	SettingsFieldType
+} from '$lib/enums';
 import type { Icon } from '@lucide/svelte';
 
 export type SettingsConfigValue = string | number | boolean | undefined;
@@ -76,6 +81,9 @@ export interface SettingsChatServiceOptions {
 	disableReasoningParsing?: boolean;
 	// Strip reasoning content from context before sending
 	excludeReasoningFromContext?: boolean;
+	// Enable model thinking/reasoning via chat_template_kwargs
+	enableThinking?: boolean;
+	reasoningEffort?: ReasoningEffort;
 	tools?: OpenAIToolDefinition[];
 	// Generation parameters
 	temperature?: number;
@@ -102,7 +110,7 @@ export interface SettingsChatServiceOptions {
 	samplers?: string | string[];
 	backend_sampling?: boolean;
 	// Custom parameters
-	custom?: string;
+	custom?: string | Record<string, unknown>;
 	timings_per_token?: boolean;
 	// Callbacks
 	onChunk?: (chunk: string) => void;
@@ -110,6 +118,7 @@ export interface SettingsChatServiceOptions {
 	onToolCallChunk?: (chunk: string) => void;
 	onAttachments?: (extras: DatabaseMessageExtra[]) => void;
 	onModel?: (model: string) => void;
+	onCompletionId?: (id: string) => void;
 	onTimings?: (timings?: ChatMessageTimings, promptProgress?: ChatMessagePromptProgress) => void;
 	onComplete?: (
 		response: string,

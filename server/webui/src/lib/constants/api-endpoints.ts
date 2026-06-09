@@ -1,3 +1,8 @@
+export const API_CHAT = {
+	COMPLETIONS: '/v1/chat/completions',
+	CONTROL: '/v1/chat/completions/control'
+};
+
 export const API_MODELS = {
 	LIST: '/v1/models',
 	LOAD: '/models/load',
