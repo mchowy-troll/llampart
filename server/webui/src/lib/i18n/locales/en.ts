@@ -806,7 +806,7 @@ export const en: TranslationDictionary = {
 		aboutLlampartRepositoryLabel: 'Repository',
 		aboutLlampartAboutProgramTitle: 'About this program',
 		aboutLlampartAboutProgramBodyOne:
-			'llampart is an independent local web UI inspired by and built from the llama-ui foundation, but it is not directly affiliated with llama.cpp and can evolve separately from the original interface. It keeps the local-first character of llama-server while focusing on a more comfortable everyday chat experience.',
+			'llampart is an independent local web UI inspired by and built from the llama-ui foundation, but it is not directly affiliated with llama.cpp and can evolve separately from the original interface. It keeps llama-server’s local workflow while focusing on a more comfortable everyday chat experience.',
 		aboutLlampartAboutProgramBodyTwo:
 			'Compared with the original llama-ui, llampart adds a broader and more clearly organized settings window, a polished sidebar, refined conversation presentation, improved Reasoning and tool-call sections, and better handling for rich markdown content such as tables. These changes make the interface easier to read, easier to configure, and more pleasant during longer sessions.',
 		aboutLlampartAboutProgramBodyThree:
