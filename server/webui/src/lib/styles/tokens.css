@@ -9,6 +9,10 @@
 
 	--llampart-desktop-sidebar-width: 25vw;
 
+	/* Base UI primitives shared by Tailwind's theme bridge and app layers. */
+	--radius: 0.625rem;
+	--layer-popover: 1000000;
+
 	--llampart-scrollbar-size: 6px;
 	--llampart-scrollbar-radius: 3px;
 	--llampart-scrollbar-transition: 0.2s ease;
