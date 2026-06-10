@@ -108,5 +108,10 @@
 		"qs": "6.15.2",
 		"ws": "8.20.1",
 		"hono": "4.12.24"
+	},
+	"allowScripts": {
+		"esbuild@0.27.7": true,
+		"@parcel/watcher@2.5.1": true,
+		"@tailwindcss/oxide@4.1.11": true
 	}
 }
