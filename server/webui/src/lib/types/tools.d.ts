@@ -5,8 +5,10 @@ export interface ToolEntry {
 	source: ToolSource;
 	/** For MCP tools, the server display name (used for UI grouping) */
 	serverName?: string;
-	/** For MCP tools, the server ID (used for permission keys) */
+	/** For MCP tools, the server ID (used for stable selection and permission keys) */
 	serverId?: string;
+	/** Stable selection identity: builtin:name, mcp-<serverId>:name, mcp:name, custom:name */
+	key: string;
 	definition: OpenAIToolDefinition;
 }
 
@@ -15,7 +17,7 @@ export interface ToolGroup {
 	label: string;
 	/** For MCP groups, the server ID */
 	serverId?: string;
-	tools: OpenAIToolDefinition[];
+	tools: ToolEntry[];
 }
 
 export interface ServerBuiltinToolInfo {

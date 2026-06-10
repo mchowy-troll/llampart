@@ -8,7 +8,7 @@
 	import { mcpStore } from '$lib/stores/mcp.svelte';
 	import { ToolSource } from '$lib/enums';
 	import { t } from '$lib/i18n';
-	import type { OpenAIToolDefinition, ToolGroup } from '$lib/types';
+	import type { ToolEntry, ToolGroup } from '$lib/types';
 
 	const TOOL_COLUMNS_COUNT = 1;
 	const TOOL_GROUP_SOURCE_ORDER: Record<ToolSource, number> = {
@@ -81,7 +81,7 @@
 
 			for (const tool of group.tools) {
 				const existingToolIndex = mergedTools.findIndex(
-					(existingTool) => existingTool.function.name === tool.function.name
+					(existingTool) => existingTool.key === tool.key
 				);
 
 				if (existingToolIndex === -1) {
@@ -97,9 +97,9 @@
 		return mergedGroups.sort(compareToolGroups);
 	}
 
-	function getSortedTools(tools: OpenAIToolDefinition[]): OpenAIToolDefinition[] {
+	function getSortedTools(tools: ToolEntry[]): ToolEntry[] {
 		return [...tools].sort((left, right) =>
-			compareToolNames(left.function.name, right.function.name)
+			compareToolNames(left.definition.function.name, right.definition.function.name)
 		);
 	}
 
@@ -212,10 +212,10 @@
 										>
 									</div>
 
-									{#each group.tools as tool (tool.function.name)}
-										{@const toolName = tool.function.name}
-										{@const isEnabled = toolsStore.isToolEnabled(toolName)}
-										{@const permissionKey = toolsStore.getPermissionKey(toolName)}
+									{#each group.tools as entry (entry.key)}
+										{@const toolName = entry.definition.function.name}
+										{@const isEnabled = toolsStore.isToolEnabled(entry.key)}
+										{@const permissionKey = entry.key}
 										{@const isAlwaysAllowed = permissionKey
 											? permissionsStore.hasTool(permissionKey)
 											: false}
@@ -228,7 +228,7 @@
 											<div class="flex justify-center">
 												<Checkbox
 													checked={isEnabled}
-													onCheckedChange={() => toolsStore.toggleTool(toolName)}
+													onCheckedChange={() => toolsStore.toggleTool(entry.key)}
 													class="h-4 w-4"
 												/>
 											</div>

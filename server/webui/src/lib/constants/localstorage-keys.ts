@@ -6,4 +6,5 @@ export const THINKING_ENABLED_DEFAULT_LOCALSTORAGE_KEY = 'LlamaCppWebui.thinking
 export const REASONING_EFFORT_DEFAULT_LOCALSTORAGE_KEY = 'LlamaCppWebui.reasoningEffortDefault';
 export const LLAMPART_ABOUT_DISMISSED_VERSION_KEY = 'Llampart.aboutDismissedVersion';
 export const DISABLED_TOOLS_LOCALSTORAGE_KEY = 'LlamaCppWebui.disabledTools';
+export const DISABLED_TOOL_KEYS_LOCALSTORAGE_KEY = 'LlamaCppWebui.disabledToolKeys';
 export const ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY = 'LlamaCppWebui.alwaysAllowedTools';
