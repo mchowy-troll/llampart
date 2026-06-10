@@ -1,5 +1,5 @@
 <!-- llampart-readme-logo:start -->
-<p align="center">
+<p align="left">
   <img src="server/webui/static/llampart.svg" alt="llampart logo" width="96" />
 </p>
 <!-- llampart-readme-logo:end -->
@@ -17,7 +17,7 @@ llampart is being prepared as an open-source project.
 Current release:
 
 ```text
-llampart 1.0.5
+llampart 1.0.6
 ```
 
 <!-- llampart-readme-screenshots:start -->
