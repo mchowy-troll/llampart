@@ -12,6 +12,7 @@
 	import { HealthCheckStatus } from '$lib/enums';
 	import type { MCPServerSettingsEntry } from '$lib/types';
 	import { t } from '$lib/i18n';
+	import ChatFormActionToolsSubmenu from './ChatFormActionToolsSubmenu.svelte';
 
 	interface Props {
 		class?: string;
@@ -301,6 +302,13 @@
 			</Tooltip.Root>
 
 			<DropdownMenu.Separator />
+
+			<ChatFormActionToolsSubmenu
+				onSubmenuIntent={() => {
+					attachmentMenuTooltipsEnabled = false;
+					closeFirstLevelAttachmentTooltips();
+				}}
+			/>
 
 			<DropdownMenu.Sub>
 				<DropdownMenu.SubTrigger
