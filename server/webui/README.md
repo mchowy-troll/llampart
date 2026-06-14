@@ -7,7 +7,7 @@ This WebUI lives in `server/webui` and builds into `server/public`, where it can
 ## What this directory contains
 
 - chat-focused WebUI for llampart
-- local development setup for Vite + Storybook
+- local development setup for the llampart Vite/SvelteKit frontend
 - static production build output copied into `server/public`
 - UI sources, tests, docs, and helper scripts used by frontend work
 
@@ -36,23 +36,11 @@ npm install
 npm run dev
 ```
 
-This starts:
-
-- Vite at `http://localhost:5173`
-- Storybook at `http://localhost:6006`
-
-If you only want one service:
-
-```bash
-cd server/webui
-npm run dev:vite
-# or
-npm run dev:storybook
-```
+This starts the llampart Vite development server at `http://localhost:5173`.
 
 ## Local development notes
 
-- `npm run dev` starts both Vite and Storybook.
+- `npm run dev` starts the llampart Vite development server.
 - `llama-server` is not started automatically. Run it separately if you need real API calls.
 - Vite is started with `--insecure-http-parser` because some backend responses may contain malformed header combinations.
 - The dev script can install the WebUI git hook automatically if it is missing.
@@ -61,15 +49,14 @@ npm run dev:storybook
 
 | Command                 | Purpose                                     |
 | ----------------------- | ------------------------------------------- |
-| `npm run dev`           | Start Vite and Storybook together           |
-| `npm run dev:vite`      | Start only the Vite dev server              |
-| `npm run dev:storybook` | Start only Storybook                        |
+| `npm run dev`           | Start the llampart Vite dev server          |
+| `npm run dev:vite`      | Start the Vite dev server directly          |
 | `npm run build`         | Create production build for `server/public` |
 | `npm run preview`       | Preview the production build                |
 | `npm run check`         | Run Svelte sync + type checks               |
 | `npm run lint`          | Run Prettier check and ESLint               |
 | `npm run format`        | Format the project with Prettier            |
-| `npm run test`          | Run UI, client, unit, and e2e tests         |
+| `npm run test`          | Run client, unit, and e2e tests             |
 | `npm run hooks:install` | Install the WebUI pre-commit hook           |
 | `npm run cleanup`       | Remove generated local frontend artifacts   |
 | `npm run reset`         | Remove `.svelte-kit` and `node_modules`     |
