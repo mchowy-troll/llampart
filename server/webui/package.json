@@ -1,7 +1,7 @@
 {
 	"name": "llampart",
 	"private": true,
-	"version": "1.0.8",
+	"version": "1.0.9",
 	"description": "Local chat Web UI designed for llama-server.",
 	"license": "MIT",
 	"author": "Marcin Gluziński",
