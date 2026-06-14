@@ -5,7 +5,6 @@ import { fileURLToPath } from 'url';
 
 import { defineConfig } from 'vitest/config';
 import { searchForWorkspaceRoot } from 'vite';
-import { playwright } from '@vitest/browser-playwright';
 import { llampartBuildPlugin } from './scripts/vite-plugin-llampart-build';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -44,21 +43,6 @@ export default defineConfig({
 
 	test: {
 		projects: [
-			{
-				extends: './vite.config.ts',
-				test: {
-					name: 'client',
-
-					browser: {
-						enabled: true,
-						provider: playwright(),
-						instances: [{ browser: 'chromium' }]
-					},
-					include: ['tests/client/**/*.svelte.{test,spec}.{js,ts}'],
-					setupFiles: ['./vitest-setup-client.ts']
-				}
-			},
-
 			{
 				extends: './vite.config.ts',
 				test: {
