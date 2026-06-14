@@ -430,20 +430,20 @@
 	/* llampart-user-footer-regular-weight-only-final */
 	:global(html.has-frosted-glass-theme .llampart-user-message-footer),
 	:global(html.has-frosted-glass-theme .llampart-user-message-footer *),
-	:global(html.has-frosted-glass-theme .llampart-user-message-footer :global(*)),
-	:global(html.has-frosted-glass-theme .llampart-user-message-footer :global(button)),
-	:global(html.has-frosted-glass-theme .llampart-user-message-footer :global([data-slot='button'])),
-	:global(html.has-frosted-glass-theme .llampart-user-message-footer :global([class*='font-'])),
-	:global(html.has-frosted-glass-theme .llampart-user-message-footer :global(strong)),
-	:global(html.has-frosted-glass-theme .llampart-user-message-footer :global(b)) {
+	:global(html.has-frosted-glass-theme .llampart-user-message-footer *),
+	:global(html.has-frosted-glass-theme .llampart-user-message-footer button),
+	:global(html.has-frosted-glass-theme .llampart-user-message-footer [data-slot='button']),
+	:global(html.has-frosted-glass-theme .llampart-user-message-footer [class*='font-']),
+	:global(html.has-frosted-glass-theme .llampart-user-message-footer strong),
+	:global(html.has-frosted-glass-theme .llampart-user-message-footer b) {
 		font-weight: 400 !important;
 		font-variation-settings: 'wght' 400 !important;
 		text-shadow: none !important;
 		filter: none !important;
 	}
 
-	:global(html.has-frosted-glass-theme .llampart-user-message-footer :global(svg)),
-	:global(html.has-frosted-glass-theme .llampart-user-message-footer :global(svg *)) {
+	:global(html.has-frosted-glass-theme .llampart-user-message-footer svg),
+	:global(html.has-frosted-glass-theme .llampart-user-message-footer svg *) {
 		stroke-width: 1.65 !important;
 		filter: none !important;
 		text-shadow: none !important;

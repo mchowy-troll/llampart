@@ -411,7 +411,7 @@
 		filter: none !important;
 	}
 
-	:global(html.has-frosted-glass-theme .llampart-system-message-footer :global(*)),
+	:global(html.has-frosted-glass-theme .llampart-system-message-footer *),
 	:global(html.has-frosted-glass-theme)
 		.llampart-system-message-footer
 		:global(.llampart-message-actions),
@@ -713,7 +713,7 @@
 		filter: none !important;
 	}
 
-	:global(html.has-frosted-glass-theme .llampart-system-message-footer :global(*)),
+	:global(html.has-frosted-glass-theme .llampart-system-message-footer *),
 	:global(html.has-frosted-glass-theme)
 		.llampart-system-message-footer
 		:global(.llampart-message-actions),
