@@ -56,7 +56,7 @@ This starts the llampart Vite development server at `http://localhost:5173`.
 | `npm run check`         | Run Svelte sync + type checks               |
 | `npm run lint`          | Run Prettier check and ESLint               |
 | `npm run format`        | Format the project with Prettier            |
-| `npm run test`          | Run client, unit, and e2e tests             |
+| `npm run test`          | Run unit tests                              |
 | `npm run hooks:install` | Install the WebUI pre-commit hook           |
 | `npm run cleanup`       | Remove generated local frontend artifacts   |
 | `npm run reset`         | Remove `.svelte-kit` and `node_modules`     |
