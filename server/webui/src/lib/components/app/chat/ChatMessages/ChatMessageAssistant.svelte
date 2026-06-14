@@ -740,7 +740,7 @@
 	}
 
 	:global(html.has-frosted-glass-theme .assistant-message-footer),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(*)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer *) {
 		color: #000000 !important;
 		font-weight: 400 !important;
 		font-variation-settings: normal !important;
@@ -761,7 +761,7 @@
 		padding-right: 0.125rem;
 	}
 
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(svg)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer svg) {
 		color: #000000 !important;
 		stroke: currentColor;
 		stroke-width: 2 !important;
@@ -769,9 +769,9 @@
 		text-shadow: none !important;
 	}
 
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(button)),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global([role='button'])),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(a)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer button),
+	:global(html.has-frosted-glass-theme .assistant-message-footer [role='button']),
+	:global(html.has-frosted-glass-theme .assistant-message-footer a) {
 		background: transparent !important;
 		border-color: transparent !important;
 		box-shadow: none !important;
@@ -780,7 +780,7 @@
 		font-weight: 400 !important;
 	}
 
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(.stats-view-switcher)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer .stats-view-switcher) {
 		background: transparent !important;
 		border: 0 !important;
 		box-shadow: none !important;
@@ -788,7 +788,7 @@
 		-webkit-backdrop-filter: none !important;
 	}
 
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(.stats-view-button)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer .stats-view-button) {
 		background: transparent !important;
 		border: 1px solid transparent !important;
 		box-shadow: none !important;
@@ -797,15 +797,11 @@
 		font-weight: 400 !important;
 	}
 
-	:global(
-		html.has-frosted-glass-theme .assistant-message-footer :global(.stats-view-button:hover)
-	) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer .stats-view-button:hover) {
 		background: transparent !important;
 	}
 
-	:global(
-		html.has-frosted-glass-theme .assistant-message-footer :global(.stats-view-button-active)
-	) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer .stats-view-button-active) {
 		background: rgba(255, 255, 255, 0.16) !important;
 		border-color: rgba(255, 255, 255, 0.16) !important;
 		box-shadow:
@@ -890,7 +886,7 @@
 	}
 
 	:global(html.has-frosted-glass-theme .assistant-message-footer),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(*)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer *) {
 		color: #000000 !important;
 		font-weight: 400 !important;
 		font-variation-settings: normal !important;
@@ -909,9 +905,9 @@
 		font-weight: 400 !important;
 	}
 
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(button)),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global([role='button'])),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(a)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer button),
+	:global(html.has-frosted-glass-theme .assistant-message-footer [role='button']),
+	:global(html.has-frosted-glass-theme .assistant-message-footer a) {
 		background: transparent !important;
 		background-color: transparent !important;
 		background-image: none !important;
@@ -924,33 +920,33 @@
 		-webkit-backdrop-filter: none !important;
 	}
 
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(svg)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer svg) {
 		stroke-width: 1.8 !important;
 		filter: none !important;
 		text-shadow: none !important;
 	}
 
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(.stats-view-button)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer .stats-view-button) {
 		font-weight: 400 !important;
 	}
 	/* llampart-footer-regular-weight-only-final */
 	:global(html.has-frosted-glass-theme .assistant-message-footer),
 	:global(html.has-frosted-glass-theme .assistant-message-footer *),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(*)),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(button)),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global([data-slot='button'])),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global([data-slot='badge'])),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global([class*='font-'])),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(strong)),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(b)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer *),
+	:global(html.has-frosted-glass-theme .assistant-message-footer button),
+	:global(html.has-frosted-glass-theme .assistant-message-footer [data-slot='button']),
+	:global(html.has-frosted-glass-theme .assistant-message-footer [data-slot='badge']),
+	:global(html.has-frosted-glass-theme .assistant-message-footer [class*='font-']),
+	:global(html.has-frosted-glass-theme .assistant-message-footer strong),
+	:global(html.has-frosted-glass-theme .assistant-message-footer b) {
 		font-weight: 400 !important;
 		font-variation-settings: 'wght' 400 !important;
 		text-shadow: none !important;
 		filter: none !important;
 	}
 
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(svg)),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(svg *)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer svg),
+	:global(html.has-frosted-glass-theme .assistant-message-footer svg *) {
 		stroke-width: 1.65 !important;
 		filter: none !important;
 		text-shadow: none !important;
@@ -975,7 +971,7 @@
 	/* llampart-frosted-glass-assistant-footer-glow-regular-final */
 	:global(html.has-frosted-glass-theme .agentic-content .assistant-message-footer),
 	:global(html.has-frosted-glass-theme .agentic-content .assistant-message-footer *),
-	:global(html.has-frosted-glass-theme .agentic-content .assistant-message-footer :global(*)) {
+	:global(html.has-frosted-glass-theme .agentic-content .assistant-message-footer *) {
 		color: #000000 !important;
 		font-weight: 400 !important;
 		font-variation-settings: 'wght' 400 !important;
@@ -1025,25 +1021,19 @@
 	}
 
 	:global(html.has-frosted-glass-theme .assistant-message-footer .llampart-chat-message-statistics),
-	:global(
-		html.has-frosted-glass-theme
-			.assistant-message-footer
-			:global(.llampart-chat-message-statistics)
-	),
-	:global(
-		html.has-frosted-glass-theme .assistant-message-footer :global(.llampart-message-actions)
-	) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer .llampart-chat-message-statistics),
+	:global(html.has-frosted-glass-theme .assistant-message-footer .llampart-message-actions) {
 		display: inline-flex !important;
 		align-items: center !important;
 		line-height: 1 !important;
 		transform: none !important;
 	}
 
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(.stats-view-switcher)),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(.stats-view-button)),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(button)),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(a)),
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global([role='button'])) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer .stats-view-switcher),
+	:global(html.has-frosted-glass-theme .assistant-message-footer .stats-view-button),
+	:global(html.has-frosted-glass-theme .assistant-message-footer button),
+	:global(html.has-frosted-glass-theme .assistant-message-footer a),
+	:global(html.has-frosted-glass-theme .assistant-message-footer [role='button']) {
 		display: inline-flex !important;
 		align-items: center !important;
 		justify-content: center !important;
@@ -1051,7 +1041,7 @@
 		vertical-align: middle !important;
 	}
 
-	:global(html.has-frosted-glass-theme .assistant-message-footer :global(svg)) {
+	:global(html.has-frosted-glass-theme .assistant-message-footer svg) {
 		display: block !important;
 		flex: 0 0 auto !important;
 	}
