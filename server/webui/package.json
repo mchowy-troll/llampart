@@ -34,6 +34,7 @@
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/typography": "^0.5.15",
 		"@tailwindcss/vite": "^4.3.1",
+		"@types/mdast": "^4.0.4",
 		"@types/node": "^24",
 		"@vitest/coverage-v8": "^4.1.8",
 		"bits-ui": "^2.14.4",
@@ -43,8 +44,6 @@
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.0.0",
 		"globals": "^16.0.0",
-		"http-server": "^14.1.1",
-		"mdast": "^3.0.0",
 		"mdsvex": "^0.12.3",
 		"prettier": "^3.8.4",
 		"prettier-plugin-svelte": "^4.1.0",
@@ -91,7 +90,7 @@
 	},
 	"allowScripts": {
 		"esbuild@0.27.7": true,
-		"@parcel/watcher@2.5.1": true,
+		"@parcel/watcher@2.5.6": true,
 		"@tailwindcss/oxide@4.1.11": true
 	}
 }
