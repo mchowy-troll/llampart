@@ -693,30 +693,9 @@
 		transition-property: min-height, padding, opacity, transform !important;
 	}
 
-	/* llampart-frosted-glass-composer-shell-and-menus */
+	/* llampart-frosted-glass-composer-shell-and-menus
+	   Frame surface values are owned by the global Frosted Glass surface primitives in app.css. */
 	/* llampart-composer-bare-action: transparent icon-only composer triggers opt out of the filled Frosted Glass button chrome below. */
-	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame {
-		border: 1px solid rgba(255, 255, 255, 0.19) !important;
-		background: rgba(255, 255, 255, 0.14) !important;
-		box-shadow:
-			0 1px 2px rgba(0, 0, 0, 0.06),
-			0 2px 4px rgba(0, 0, 0, 0.055),
-			0 4px 8px rgba(0, 0, 0, 0.05),
-			0 8px 16px rgba(0, 0, 0, 0.045),
-			0 16px 32px rgba(0, 0, 0, 0.04),
-			0 32px 64px rgba(0, 0, 0, 0.035) !important;
-		backdrop-filter: blur(18px) saturate(116%) !important;
-		-webkit-backdrop-filter: blur(18px) saturate(116%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame,
-	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame * {
-		color: #000000 !important;
-		text-shadow:
-			0 0 2px rgba(255, 255, 255, 0.64),
-			0 0 8px rgba(255, 255, 255, 0.5),
-			0 0 16px rgba(255, 255, 255, 0.34) !important;
-	}
 
 	:global(html.has-frosted-glass-theme)
 		.llampart-chat-input-frame
