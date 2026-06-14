@@ -250,6 +250,194 @@ html.has-frosted-glass-theme .llampart-chat-input-frame * {
 }
 /* /llampart-frosted-glass-surface-primitives */
 
+/* llampart-frosted-glass-composer-menu-surfaces
+   app.css owns Frosted Glass composer overlay surfaces; components keep semantic classes only. */
+html.has-frosted-glass-theme {
+	--llampart-frosted-glass-composer-radius: 0.75rem;
+	--llampart-frosted-glass-composer-item-radius: 0.625rem;
+	--llampart-frosted-glass-composer-menu-bg: rgba(255, 255, 255, 0.46);
+	--llampart-frosted-glass-composer-menu-border: rgba(255, 255, 255, 0.4);
+	--llampart-frosted-glass-composer-menu-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.038), 0 24px 54px rgba(0, 0, 0, 0.03);
+	--llampart-frosted-glass-composer-menu-filter: blur(32px) saturate(138%);
+}
+
+html.has-frosted-glass-theme
+	body
+	:is(
+		[data-slot='dropdown-menu-content'].llampart-composer-menu-content,
+		[data-slot='dropdown-menu-sub-content'].llampart-composer-mcp-submenu,
+		[data-slot='dropdown-menu-content'].llampart-composer-mcp-selector,
+		[data-slot='dropdown-menu-content'].llampart-model-selector-menu,
+		[data-slot='popover-content'].llampart-composer-menu-content,
+		[data-slot='sheet-content'].llampart-composer-menu-content,
+		.llampart-model-selector-sheet
+	) {
+	border: 1px solid var(--llampart-frosted-glass-composer-menu-border) !important;
+	border-radius: var(--llampart-frosted-glass-composer-radius) !important;
+	background: var(--llampart-frosted-glass-composer-menu-bg) !important;
+	background-color: var(--llampart-frosted-glass-composer-menu-bg) !important;
+	background-clip: border-box !important;
+	box-shadow: var(--llampart-frosted-glass-composer-menu-shadow) !important;
+	-webkit-backdrop-filter: var(--llampart-frosted-glass-composer-menu-filter) !important;
+	backdrop-filter: var(--llampart-frosted-glass-composer-menu-filter) !important;
+	overflow: hidden !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is(
+		[data-slot='dropdown-menu-content'].llampart-composer-main-menu,
+		.llampart-composer-main-menu
+	) {
+	max-height: none !important;
+	overflow: visible !important;
+	overflow-x: visible !important;
+	overflow-y: visible !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is(
+		.llampart-composer-menu-content,
+		.llampart-composer-menu-content *,
+		.llampart-composer-mcp-submenu,
+		.llampart-composer-mcp-submenu *,
+		.llampart-composer-mcp-selector,
+		.llampart-composer-mcp-selector *,
+		.llampart-model-selector-menu,
+		.llampart-model-selector-menu *
+	) {
+	text-shadow:
+		0 0 0.35px rgba(255, 255, 255, 0.42),
+		0 0 8px rgba(255, 255, 255, 0.12) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is(
+		.llampart-composer-menu-content svg,
+		.llampart-composer-mcp-submenu svg,
+		.llampart-composer-mcp-selector svg,
+		.llampart-model-selector-menu svg
+	) {
+	filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.12)) !important;
+}
+
+html.has-frosted-glass-theme body .llampart-searchable-menu-header {
+	background: transparent !important;
+	padding: 0.35rem 0.35rem 0.1rem !important;
+}
+
+html.has-frosted-glass-theme body .llampart-searchable-menu-panel {
+	padding: 0 0.3rem 0.3rem !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is(
+		.llampart-search-input.llampart-quiet-search .llampart-search-native,
+		.llampart-search-input.llampart-quiet-search [data-slot='input']
+	) {
+	height: 2.2rem !important;
+	min-height: 2.2rem !important;
+	border-radius: var(--llampart-frosted-glass-composer-radius) !important;
+	border: 1px solid rgba(255, 255, 255, 0.48) !important;
+	background: rgba(255, 255, 255, 0.64) !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.28),
+		0 1px 2px rgba(0, 0, 0, 0.022) !important;
+	color: #111111 !important;
+	-webkit-backdrop-filter: blur(16px) saturate(124%) !important;
+	backdrop-filter: blur(16px) saturate(124%) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is(
+		.llampart-search-input.llampart-quiet-search .llampart-search-native::placeholder,
+		.llampart-search-input.llampart-quiet-search [data-slot='input']::placeholder
+	) {
+	color: rgba(0, 0, 0, 0.44) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is(
+		.llampart-search-input.llampart-quiet-search .llampart-search-input-icon,
+		.llampart-search-input.llampart-quiet-search .llampart-search-input-clear
+	) {
+	color: rgba(17, 17, 17, 0.72) !important;
+	text-shadow: 0 0 8px rgba(255, 255, 255, 0.16) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is(
+		.llampart-composer-menu-content [data-slot='dropdown-menu-item'],
+		.llampart-composer-menu-content [data-slot='dropdown-menu-sub-trigger'],
+		.llampart-model-selector-menu [role='option'],
+		.llampart-model-selector-sheet [role='option'],
+		.llampart-mcp-server-item
+	) {
+	border-radius: var(--llampart-frosted-glass-composer-item-radius) !important;
+	color: #111111 !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is(
+		.llampart-composer-menu-content [data-slot='dropdown-menu-item']:hover,
+		.llampart-composer-menu-content [data-slot='dropdown-menu-item'][data-highlighted],
+		.llampart-composer-menu-content [data-slot='dropdown-menu-sub-trigger']:hover,
+		.llampart-composer-menu-content [data-slot='dropdown-menu-sub-trigger'][data-highlighted],
+		.llampart-reasoning-effort-option:hover,
+		.llampart-reasoning-effort-option[aria-selected='true'],
+		.llampart-model-selector-menu [role='option']:hover,
+		.llampart-model-selector-menu [role='option'][aria-selected='true'],
+		.llampart-model-selector-sheet [role='option']:hover,
+		.llampart-model-selector-sheet [role='option'][aria-selected='true'],
+		.llampart-mcp-server-item:hover
+	) {
+	background: rgba(255, 255, 255, 0.42) !important;
+}
+
+html.has-frosted-glass-theme body .llampart-model-selector-option .font-medium,
+html.has-frosted-glass-theme body .llampart-model-selector-option [class*='font-medium'] {
+	font-weight: 400 !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is(
+		.llampart-model-selector-option[data-llampart-loaded-model='true'] .font-medium,
+		.llampart-model-selector-option[data-llampart-loaded-model='true'] [class*='font-medium']
+	) {
+	font-weight: 600 !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is(
+		.llampart-model-selector-option-actions button,
+		.llampart-model-selector-option-actions [role='button'],
+		.llampart-model-selector-option-actions .action-icon,
+		.llampart-model-selector-option-actions [data-slot='button']
+	) {
+	background: transparent !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+}
+
+html.has-frosted-glass-theme body .llampart-mcp-server-list {
+	max-height: min(20rem, 55vh) !important;
+	overflow-y: auto !important;
+	padding: 0.125rem !important;
+}
+/* /llampart-frosted-glass-composer-menu-surfaces */
+
 /* llampart Frosted Glass sidebar initial pass */
 html.has-frosted-glass-theme [data-slot='sidebar-wrapper'] {
 	background: transparent;
