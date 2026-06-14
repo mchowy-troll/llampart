@@ -239,7 +239,19 @@ describe('MCPService', () => {
 			)
 		).toHaveLength(1);
 
-		emitClientError?.(new Error('runtime protocol error'));
+		const expectedRuntimeError = new Error('runtime protocol error');
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+		try {
+			emitClientError?.(expectedRuntimeError);
+
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
+				'[MCPService][test-server] Protocol error after initialize:',
+				expectedRuntimeError
+			);
+		} finally {
+			consoleErrorSpy.mockRestore();
+		}
 
 		expect(
 			phaseLogs.filter(
