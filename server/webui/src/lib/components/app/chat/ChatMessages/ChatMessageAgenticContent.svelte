@@ -458,61 +458,19 @@
 		border-top: 0;
 	}
 
-	/* Chat answer frosted glass effect. Active only when the Frosted Glass theme is selected. */
+	/* Chat answer Frosted Glass layout. Surface values are owned by app.css. */
 	:global(.has-frosted-glass-theme) .agentic-content {
 		position: relative;
-		color: #000000;
-		text-shadow:
-			0 0 2px rgba(255, 255, 255, 0.64),
-			0 0 8px rgba(255, 255, 255, 0.5),
-			0 0 16px rgba(255, 255, 255, 0.34);
-		border: 2px solid transparent;
-		background:
-			linear-gradient(
-					color-mix(in srgb, hsl(var(--background)) 72%, transparent),
-					color-mix(in srgb, hsl(var(--background)) 72%, transparent)
-				)
-				padding-box,
-			linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.16)) border-box;
-		background-clip: padding-box, border-box;
-		box-shadow:
-			0 1px 2px rgba(0, 0, 0, 0.07),
-			0 2px 4px rgba(0, 0, 0, 0.07),
-			0 4px 8px rgba(0, 0, 0, 0.07),
-			0 8px 16px rgba(0, 0, 0, 0.07),
-			0 16px 32px rgba(0, 0, 0, 0.07),
-			0 32px 64px rgba(0, 0, 0, 0.07);
-		backdrop-filter: blur(18px) saturate(120%);
-		-webkit-backdrop-filter: blur(18px) saturate(120%);
+		color: var(--llampart-frosted-surface-text);
+		text-shadow: var(--llampart-frosted-surface-text-shadow);
 	}
 
 	:global(.has-frosted-glass-theme) .agentic-content {
 		padding-bottom: 0.125rem;
 	}
 
-	@supports not (background-color: color-mix(in srgb, white 50%, transparent)) {
-		:global(.has-frosted-glass-theme) .agentic-content {
-			background:
-				linear-gradient(hsl(var(--background) / 0.72), hsl(var(--background) / 0.72)) padding-box,
-				linear-gradient(rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.16)) border-box;
-		}
-	}
-
-	/* llampart-main-agentic-frame-final-tuning */
-	:global(html.has-frosted-glass-theme .agentic-content.llampart-assistant-message) {
-		border: 1px solid rgba(255, 255, 255, 0.19) !important;
-		background: rgba(255, 255, 255, 0.14) !important;
-		background-clip: border-box !important;
-		box-shadow:
-			0 1px 2px rgba(0, 0, 0, 0.06),
-			0 2px 4px rgba(0, 0, 0, 0.055),
-			0 4px 8px rgba(0, 0, 0, 0.05),
-			0 8px 16px rgba(0, 0, 0, 0.045),
-			0 16px 32px rgba(0, 0, 0, 0.04),
-			0 32px 64px rgba(0, 0, 0, 0.035) !important;
-		backdrop-filter: blur(18px) saturate(116%) !important;
-		-webkit-backdrop-filter: blur(18px) saturate(116%) !important;
-	}
+	/* llampart-main-agentic-frame-final-tuning
+	   Frame surface values are owned by the global Frosted Glass surface primitives in app.css. */
 
 	:global(html.has-frosted-glass-theme .agentic-footer-slot) {
 		margin-right: -0.5rem;

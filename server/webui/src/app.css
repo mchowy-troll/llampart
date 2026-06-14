@@ -215,6 +215,41 @@ html.has-frosted-glass-theme #llampart-frosted-glass-preload-background {
 	display: block;
 }
 
+/* llampart-frosted-glass-surface-primitives
+   app.css is the temporary owner for Frosted Glass theme surfaces until the
+   planned shared surface layer is extracted in a focused stylesheet cleanup. */
+html.has-frosted-glass-theme {
+	--llampart-frosted-surface-border: rgba(255, 255, 255, 0.19);
+	--llampart-frosted-surface-bg: rgba(255, 255, 255, 0.14);
+	--llampart-frosted-surface-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.055), 0 4px 8px rgba(0, 0, 0, 0.05),
+		0 8px 16px rgba(0, 0, 0, 0.045), 0 16px 32px rgba(0, 0, 0, 0.04),
+		0 32px 64px rgba(0, 0, 0, 0.035);
+	--llampart-frosted-surface-filter: blur(18px) saturate(116%);
+	--llampart-frosted-surface-text: #000000;
+	--llampart-frosted-surface-text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.64), 0 0 8px rgba(255, 255, 255, 0.5),
+		0 0 16px rgba(255, 255, 255, 0.34);
+}
+
+html.has-frosted-glass-theme
+	:is(.llampart-chat-input-frame, .agentic-content.llampart-assistant-message) {
+	border: 1px solid var(--llampart-frosted-surface-border);
+	background: var(--llampart-frosted-surface-bg);
+	background-clip: border-box;
+	box-shadow: var(--llampart-frosted-surface-shadow);
+	-webkit-backdrop-filter: var(--llampart-frosted-surface-filter);
+	backdrop-filter: var(--llampart-frosted-surface-filter);
+}
+
+html.has-frosted-glass-theme
+	:is(.llampart-chat-input-frame, .agentic-content.llampart-assistant-message),
+html.has-frosted-glass-theme .llampart-chat-input-frame * {
+	color: var(--llampart-frosted-surface-text);
+	text-shadow: var(--llampart-frosted-surface-text-shadow);
+}
+/* /llampart-frosted-glass-surface-primitives */
+
 /* llampart Frosted Glass sidebar initial pass */
 html.has-frosted-glass-theme [data-slot='sidebar-wrapper'] {
 	background: transparent;
