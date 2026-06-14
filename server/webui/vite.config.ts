@@ -3,9 +3,8 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
-import { defineConfig, searchForWorkspaceRoot } from 'vite';
-import devtoolsJson from 'vite-plugin-devtools-json';
-import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+import { defineConfig } from 'vitest/config';
+import { searchForWorkspaceRoot } from 'vite';
 import { playwright } from '@vitest/browser-playwright';
 import { llampartBuildPlugin } from './scripts/vite-plugin-llampart-build';
 
@@ -41,7 +40,7 @@ export default defineConfig({
 		}
 	},
 
-	plugins: [tailwindcss(), sveltekit(), devtoolsJson(), llampartBuildPlugin()],
+	plugins: [tailwindcss(), sveltekit(), llampartBuildPlugin()],
 
 	test: {
 		projects: [
@@ -49,7 +48,7 @@ export default defineConfig({
 				extends: './vite.config.ts',
 				test: {
 					name: 'client',
-					environment: 'browser',
+
 					browser: {
 						enabled: true,
 						provider: playwright(),
@@ -67,27 +66,6 @@ export default defineConfig({
 					environment: 'node',
 					include: ['tests/unit/**/*.{test,spec}.{js,ts}']
 				}
-			},
-
-			{
-				extends: './vite.config.ts',
-				test: {
-					name: 'ui',
-					environment: 'browser',
-					browser: {
-						enabled: true,
-						headless: true,
-						provider: playwright(),
-						instances: [{ browser: 'chromium' }]
-					},
-					include: ['tests/stories/**/*.stories.{js,ts,svelte}'],
-					setupFiles: ['./.storybook/vitest.setup.ts']
-				},
-				plugins: [
-					storybookTest({
-						storybookScript: 'npm run storybook -- --no-open'
-					})
-				]
 			}
 		]
 	},

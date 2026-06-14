@@ -10,7 +10,7 @@ PRE_COMMIT_HOOK="$REPO_ROOT/.git/hooks/pre-commit"
 
 # Development script for llampart webui.
 #
-# This script starts the webui development servers (Storybook and Vite).
+# This script starts the llampart Vite development server only.
 # Start llama-server separately if backend API access is needed.
 #
 # Usage:
@@ -36,23 +36,12 @@ check_and_install_hooks() {
 	fi
 }
 
-cleanup() {
-	echo "🧹 Cleaning up..."
-	jobs -pr | xargs -r kill
-}
-
-trap cleanup SIGINT SIGTERM EXIT
-
 check_and_install_hooks
 
 cd "$WEBUI_ROOT"
 
-echo "🚀 Starting development servers..."
+echo "🚀 Starting llampart development server..."
 echo "📝 Note: Start llama-server separately if needed"
-echo "🌐 Vite:      http://localhost:5173"
-echo "📚 Storybook: http://localhost:6006"
+echo "🌐 Vite: http://localhost:5173"
 
-storybook dev -p 6006 --ci &
-NODE_OPTIONS="--insecure-http-parser" vite dev --host 0.0.0.0 &
-
-wait
+NODE_OPTIONS="--insecure-http-parser" vite dev --host 0.0.0.0
