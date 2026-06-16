@@ -21,8 +21,8 @@ const config = {
 			strict: true
 		}),
 		output: {
-			// Compatibility mode for the current static artifact model; modular output is handled in a later ownership step.
-			bundleStrategy: 'single'
+			// Split output keeps the SvelteKit asset graph intact; public artifact normalization is owned by scripts/normalize-static-build.mjs.
+			bundleStrategy: 'split'
 		},
 		alias: {
 			$styles: 'src/styles'
