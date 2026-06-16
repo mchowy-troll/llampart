@@ -5,22 +5,49 @@
 
 import { browser } from '$app/environment';
 import { MimeTypeApplication, MimeTypeImage } from '$lib/enums';
-import * as pdfjs from 'pdfjs-dist';
+
+type PdfJsModule = typeof import('pdfjs-dist');
 
 type TextContent = {
 	items: Array<{ str: string }>;
 };
 
-if (browser) {
-	// Import worker as text and create blob URL for inline bundling
-	import('pdfjs-dist/build/pdf.worker.min.mjs?raw')
+let pdfjsPromise: Promise<PdfJsModule> | null = null;
+let pdfWorkerConfigurationPromise: Promise<void> | null = null;
+let pdfWorkerUrl: string | null = null;
+
+async function configurePdfWorker(pdfjs: PdfJsModule): Promise<void> {
+	if (pdfjs.GlobalWorkerOptions.workerSrc) return;
+
+	if (pdfWorkerUrl) {
+		pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+		return;
+	}
+
+	pdfWorkerConfigurationPromise ??= import('pdfjs-dist/build/pdf.worker.min.mjs?raw')
 		.then((workerModule) => {
 			const workerBlob = new Blob([workerModule.default], { type: 'application/javascript' });
-			pdfjs.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
+			pdfWorkerUrl = URL.createObjectURL(workerBlob);
+			pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 		})
 		.catch(() => {
 			console.warn('Failed to load PDF.js worker, PDF processing may not work');
 		});
+
+	await pdfWorkerConfigurationPromise;
+}
+
+async function loadPdfJs(): Promise<PdfJsModule> {
+	if (!browser) {
+		throw new Error('PDF processing is only available in the browser');
+	}
+
+	pdfjsPromise ??= import('pdfjs-dist').then(async (pdfjs) => {
+		await configurePdfWorker(pdfjs);
+		return pdfjs;
+	});
+
+	return pdfjsPromise;
 }
 
 /**
@@ -56,6 +83,7 @@ export async function convertPDFToText(file: File): Promise<string> {
 	}
 
 	try {
+		const pdfjs = await loadPdfJs();
 		const buffer = await getFileAsBuffer(file);
 		const pdf = await pdfjs.getDocument(buffer).promise;
 		const numPages = pdf.numPages;
@@ -93,6 +121,7 @@ export async function convertPDFToImage(file: File, scale: number = 1.5): Promis
 	}
 
 	try {
+		const pdfjs = await loadPdfJs();
 		const buffer = await getFileAsBuffer(file);
 		const doc = await pdfjs.getDocument(buffer).promise;
 		const pages: Promise<string>[] = [];
