@@ -48,7 +48,7 @@
 					disabled={!hasPrevious}
 					onclick={handlePrevious}
 					size="sm"
-					variant="ghost"
+					variant="bare-icon"
 				>
 					<ChevronLeft class="h-3 w-3" />
 				</Button>
@@ -71,7 +71,7 @@
 					disabled={!hasNext}
 					onclick={handleNext}
 					size="sm"
-					variant="ghost"
+					variant="bare-icon"
 				>
 					<ChevronRight class="h-3 w-3" />
 				</Button>

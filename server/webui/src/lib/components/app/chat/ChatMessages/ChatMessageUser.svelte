@@ -91,7 +91,7 @@
 
 		{#if message.content.trim()}
 			<Card
-				class="llampart-user-message-card w-full max-w-[80%] overflow-y-auto rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5 dark:bg-primary/15"
+				class="llampart-message-shell-card llampart-user-message-card w-full max-w-[80%] overflow-y-auto rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5 dark:bg-primary/15"
 				data-multiline={isMultiline ? '' : undefined}
 				style="max-height: var(--max-message-height); overflow-wrap: anywhere; word-break: break-word;"
 			>
@@ -109,7 +109,7 @@
 				{/if}
 
 				{#if message.timestamp}
-					<div class="llampart-user-message-footer">
+					<div class="llampart-message-shell-footer llampart-user-message-footer">
 						<ChatMessageActions
 							actionsPosition="right"
 							{deletionInfo}
