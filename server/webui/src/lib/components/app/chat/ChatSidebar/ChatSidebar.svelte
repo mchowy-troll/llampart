@@ -827,15 +827,7 @@
 		transition: none;
 	}
 
-	:global(html.has-frosted-glass-theme .llampart-sidebar-conversations-frame) {
-		border-color: rgb(255 255 255 / 0.28);
-		background: rgb(255 255 255 / 0.18);
-		box-shadow:
-			0 18px 52px rgb(15 23 42 / 0.12),
-			inset 0 1px 0 rgb(255 255 255 / 0.22);
-		-webkit-backdrop-filter: blur(20px) saturate(140%);
-		backdrop-filter: blur(20px) saturate(140%);
-	}
+	/* Frosted Glass sidebar frame surface values are owned by src/app.css shared surface primitives. */
 
 	:global(html.has-frosted-glass-theme .llampart-sidebar-frame-header button),
 	:global(html.has-frosted-glass-theme .llampart-sidebar-frame-header input) {

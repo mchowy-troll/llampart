@@ -15,6 +15,8 @@
 				secondary:
 					'dark:bg-secondary dark:text-secondary-foreground bg-background shadow-sm text-foreground hover:bg-muted-foreground/20',
 				ghost: 'hover:text-accent-foreground hover:bg-muted-foreground/10 backdrop-blur-sm',
+				'bare-icon':
+					'llampart-button-bare-icon border-0 bg-transparent shadow-none outline-none ring-0 transition-none animate-none hover:bg-transparent hover:shadow-none focus:bg-transparent focus:outline-none focus:ring-0 focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 active:bg-transparent active:shadow-none',
 				link: 'text-primary underline-offset-4 hover:underline'
 			},
 			size: {
@@ -86,5 +88,37 @@
 	a,
 	button {
 		cursor: pointer;
+	}
+
+	/* Shared bare icon action primitive: no button surface, focus ring, or motion in any interaction state. */
+	:global(.llampart-button-bare-icon),
+	:global(.llampart-bare-icon-action),
+	:global(.llampart-button-bare-icon:hover),
+	:global(.llampart-bare-icon-action:hover),
+	:global(.llampart-button-bare-icon:focus),
+	:global(.llampart-bare-icon-action:focus),
+	:global(.llampart-button-bare-icon:focus-visible),
+	:global(.llampart-bare-icon-action:focus-visible),
+	:global(.llampart-button-bare-icon:active),
+	:global(.llampart-bare-icon-action:active) {
+		background: transparent !important;
+		background-color: transparent !important;
+		background-image: none !important;
+		border: 0 !important;
+		border-color: transparent !important;
+		box-shadow: none !important;
+		outline: none !important;
+		text-decoration: none !important;
+		transform: none !important;
+		transition: none !important;
+		transition-property: none !important;
+		transition-duration: 0s !important;
+		animation: none !important;
+		-webkit-backdrop-filter: none !important;
+		backdrop-filter: none !important;
+		--tw-ring-offset-shadow: 0 0 #0000 !important;
+		--tw-ring-shadow: 0 0 #0000 !important;
+		--tw-shadow: 0 0 #0000 !important;
+		--tw-shadow-colored: 0 0 #0000 !important;
 	}
 </style>
