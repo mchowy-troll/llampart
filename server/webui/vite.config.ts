@@ -5,7 +5,6 @@ import { fileURLToPath } from 'url';
 
 import { defineConfig } from 'vitest/config';
 import { searchForWorkspaceRoot } from 'vite';
-import { llampartBuildPlugin } from './scripts/vite-plugin-llampart-build';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -34,7 +33,7 @@ export default defineConfig({
 		}
 	},
 
-	plugins: [tailwindcss(), sveltekit(), llampartBuildPlugin()],
+	plugins: [tailwindcss(), sveltekit()],
 
 	test: {
 		projects: [
