@@ -1,11 +1,13 @@
 <script lang="ts">
-	import hljs from 'highlight.js';
 	import { browser } from '$app/environment';
 	import { mode } from 'mode-watcher';
 
-	import githubDarkCss from 'highlight.js/styles/github-dark.css?inline';
-	import githubLightCss from 'highlight.js/styles/github.css?inline';
 	import { ColorMode } from '$lib/enums';
+	import {
+		escapeCodeHtml,
+		highlightCodeAsync,
+		loadHighlightThemeCss
+	} from '$lib/utils/syntax-highlighting';
 
 	interface Props {
 		code: string;
@@ -24,8 +26,9 @@
 	}: Props = $props();
 
 	let highlightedHtml = $state('');
+	let highlightRequestId = 0;
 
-	function loadHighlightTheme(isDark: boolean) {
+	async function loadHighlightTheme(isDark: boolean) {
 		if (!browser) return;
 
 		const existingThemes = document.querySelectorAll('style[data-highlight-theme-preview]');
@@ -33,41 +36,37 @@
 
 		const style = document.createElement('style');
 		style.setAttribute('data-highlight-theme-preview', 'true');
-		style.textContent = isDark ? githubDarkCss : githubLightCss;
+		style.textContent = await loadHighlightThemeCss(isDark);
 
 		document.head.appendChild(style);
+	}
+
+	async function updateHighlightedHtml(codeToHighlight: string, languageToHighlight: string) {
+		const requestId = ++highlightRequestId;
+
+		if (!codeToHighlight) {
+			highlightedHtml = '';
+			return;
+		}
+
+		highlightedHtml = escapeCodeHtml(codeToHighlight);
+
+		const html = await highlightCodeAsync(codeToHighlight, languageToHighlight);
+
+		if (requestId === highlightRequestId) {
+			highlightedHtml = html;
+		}
 	}
 
 	$effect(() => {
 		const currentMode = mode.current;
 		const isDark = currentMode === ColorMode.DARK;
 
-		loadHighlightTheme(isDark);
+		void loadHighlightTheme(isDark);
 	});
 
 	$effect(() => {
-		if (!code) {
-			highlightedHtml = '';
-			return;
-		}
-
-		try {
-			// Check if the language is supported
-			const lang = language.toLowerCase();
-			const isSupported = hljs.getLanguage(lang);
-
-			if (isSupported) {
-				const result = hljs.highlight(code, { language: lang });
-				highlightedHtml = result.value;
-			} else {
-				// Try auto-detection or fallback to plain text
-				const result = hljs.highlightAuto(code);
-				highlightedHtml = result.value;
-			}
-		} catch {
-			// Fallback to escaped plain text
-			highlightedHtml = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-		}
+		void updateHighlightedHtml(code, language);
 	});
 </script>
 

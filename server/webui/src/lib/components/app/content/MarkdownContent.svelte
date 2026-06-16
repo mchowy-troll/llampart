@@ -1,27 +1,21 @@
 <script lang="ts">
-	import { remark } from 'remark';
-	import remarkBreaks from 'remark-breaks';
-	import remarkGfm from 'remark-gfm';
-	import remarkMath from 'remark-math';
-	import rehypeHighlight from 'rehype-highlight';
-	import { all as lowlightAll } from 'lowlight';
-	import remarkRehype from 'remark-rehype';
-	import rehypeKatex from 'rehype-katex';
-	import rehypeStringify from 'rehype-stringify';
 	import type { Root as HastRoot, RootContent as HastRootContent } from 'hast';
 	import type { Root as MdastRoot } from 'mdast';
 	import { browser } from '$app/environment';
 	import { onDestroy, tick } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { rehypeRestoreTableHtml } from '$lib/markdown/table-html-restorer';
-	import { rehypeEnhanceLinks } from '$lib/markdown/enhance-links';
-	import { rehypeEnhanceCodeBlocks } from '$lib/markdown/enhance-code-blocks';
-	import { rehypeResolveAttachmentImages } from '$lib/markdown/resolve-attachment-images';
-	import { rehypeRtlSupport } from '$lib/markdown/rehype-rtl-support';
-	import { rehypeWrapTables } from '$lib/markdown/wrap-tables';
-	import { remarkLiteralHtml } from '$lib/markdown/literal-html';
-	import { copyCodeToClipboard, preprocessLaTeX, getImageErrorFallbackHtml } from '$lib/utils';
+	import {
+		escapeCodeHtml,
+		highlightCodeAsync,
+		loadHighlightThemeCss
+	} from '$lib/utils/syntax-highlighting';
+	import { copyCodeToClipboard } from '$lib/utils/clipboard';
+	import { preprocessLaTeX } from '$lib/utils/latex-protection';
+	import { getImageErrorFallbackHtml } from '$lib/utils/image-error-fallback';
+	import { detectIncompleteCodeBlock, type IncompleteCodeBlock } from '$lib/utils/code';
+	import type { MarkdownProcessor } from '$lib/markdown/markdown-runtime';
+	import '$styles/katex-custom.scss';
 	import {
 		IMAGE_NOT_ERROR_BOUND_SELECTOR,
 		DATA_ERROR_BOUND_ATTR,
@@ -30,11 +24,6 @@
 		SETTINGS_KEYS
 	} from '$lib/constants';
 	import { ColorMode, UrlProtocol } from '$lib/enums';
-	import { FileTypeText } from '$lib/enums/files';
-	import { highlightCode, detectIncompleteCodeBlock, type IncompleteCodeBlock } from '$lib/utils';
-	import '$styles/katex-custom.scss';
-	import githubDarkCss from 'highlight.js/styles/github-dark.css?inline';
-	import githubLightCss from 'highlight.js/styles/github.css?inline';
 	import { mode } from 'mode-watcher';
 	import { ActionIconsCodeBlock, DialogCodePreview } from '$lib/components/app';
 	import { createAutoScrollController } from '$lib/hooks/use-auto-scroll.svelte';
@@ -62,6 +51,8 @@
 	let renderedBlocks = $state<MarkdownBlock[]>([]);
 	let unstableBlockHtml = $state('');
 	let incompleteCodeBlock = $state<IncompleteCodeBlock | null>(null);
+	let streamingHighlightedHtml = $state('');
+	let streamingHighlightRequestId = 0;
 	let previewDialogOpen = $state(false);
 	let previewCode = $state('');
 	let previewLanguage = $state('text');
@@ -108,37 +99,20 @@
 		return candidate.type === 'code' && Boolean(lang && MARKDOWN_CODE_LANGUAGES.has(lang));
 	}
 
-	let processor = $derived(() => {
-		void attachments;
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		let proc: any = remark().use(remarkGfm); // GitHub Flavored Markdown
+	let markdownRuntimePromise: Promise<typeof import('$lib/markdown/markdown-runtime')> | null =
+		null;
 
-		if (!disableMath) {
-			proc = proc.use(remarkMath); // Parse $inline$ and $$block$$ math
-		}
+	function loadMarkdownRuntime() {
+		markdownRuntimePromise ??= import('$lib/markdown/markdown-runtime');
 
-		proc = proc
-			.use(remarkBreaks) // Convert line breaks to <br>
-			.use(remarkLiteralHtml) // Treat raw HTML as literal text with preserved indentation
-			.use(remarkRehype); // Convert Markdown AST to rehype
+		return markdownRuntimePromise;
+	}
 
-		if (!disableMath) {
-			proc = proc.use(rehypeKatex); // Render math using KaTeX
-		}
+	async function createProcessor(): Promise<MarkdownProcessor> {
+		const { createMarkdownProcessor } = await loadMarkdownRuntime();
 
-		return proc
-			.use(rehypeHighlight, {
-				languages: lowlightAll,
-				aliases: { [FileTypeText.XML]: [FileTypeText.SVELTE, FileTypeText.VUE] }
-			}) // Add syntax highlighting
-			.use(rehypeRestoreTableHtml) // Restore limited HTML (e.g., <br>, <ul>) inside Markdown tables
-			.use(rehypeWrapTables) // Wrap tables in a scroll container without changing table markup
-			.use(rehypeEnhanceLinks) // Add target="_blank" to links
-			.use(rehypeEnhanceCodeBlocks) // Wrap code blocks with header and actions
-			.use(rehypeResolveAttachmentImages, { attachments })
-			.use(rehypeRtlSupport) // Add bidirectional text support
-			.use(rehypeStringify, { allowDangerousHtml: true }); // Convert to HTML string
-	});
+		return createMarkdownProcessor({ attachments, disableMath });
+	}
 
 	/**
 	 * Removes click event listeners from copy and preview buttons.
@@ -181,7 +155,7 @@
 	 * Injects a scoped style element into the document head.
 	 * @param isDark - Whether to load the dark theme (true) or light theme (false)
 	 */
-	function loadHighlightTheme(isDark: boolean) {
+	async function loadHighlightTheme(isDark: boolean) {
 		if (!browser) return;
 
 		const existingTheme = document.getElementById(themeStyleId);
@@ -189,9 +163,27 @@
 
 		const style = document.createElement('style');
 		style.id = themeStyleId;
-		style.textContent = isDark ? githubDarkCss : githubLightCss;
+		style.textContent = await loadHighlightThemeCss(isDark);
 
 		document.head.appendChild(style);
+	}
+
+	async function updateStreamingHighlightedHtml(block: IncompleteCodeBlock) {
+		const requestId = ++streamingHighlightRequestId;
+		const language = block.language || 'text';
+		streamingHighlightedHtml = escapeCodeHtml(block.code);
+
+		try {
+			const html = await highlightCodeAsync(block.code, language);
+
+			if (requestId === streamingHighlightRequestId && incompleteCodeBlock === block) {
+				streamingHighlightedHtml = html;
+			}
+		} catch {
+			if (requestId === streamingHighlightRequestId && incompleteCodeBlock === block) {
+				streamingHighlightedHtml = escapeCodeHtml(block.code);
+			}
+		}
 	}
 
 	/**
@@ -263,7 +255,7 @@
 	}
 
 	async function renderMarkdownCodeBlock(
-		processorInstance: ReturnType<typeof processor>,
+		processorInstance: MarkdownProcessor,
 		node: { lang?: string; value?: string }
 	): Promise<string> {
 		const rawCode = node.value ?? '';
@@ -288,7 +280,7 @@
 	 * @returns Object containing the HTML string and cache hash
 	 */
 	async function transformMdastNode(
-		processorInstance: ReturnType<typeof processor>,
+		processorInstance: MarkdownProcessor,
 		node: unknown,
 		index: number
 	): Promise<{ html: string; hash: string }> {
@@ -470,6 +462,7 @@
 			renderedBlocks = [];
 			unstableBlockHtml = '';
 			incompleteCodeBlock = null;
+			streamingHighlightedHtml = '';
 			previousContent = '';
 			return;
 		}
@@ -483,7 +476,7 @@
 
 			if (prefixMarkdown.trim()) {
 				const normalizedPrefix = preprocessLaTeX(prefixMarkdown);
-				const processorInstance = processor();
+				const processorInstance = await createProcessor();
 				const ast = processorInstance.parse(normalizedPrefix) as MdastRoot;
 				const mdastChildren = (ast as { children?: unknown[] }).children ?? [];
 				const nextBlocks: MarkdownBlock[] = [];
@@ -526,15 +519,17 @@
 			previousContent = prefixMarkdown;
 			unstableBlockHtml = '';
 			incompleteCodeBlock = incompleteBlock;
+			await updateStreamingHighlightedHtml(incompleteBlock);
 
 			return;
 		}
 
 		// No incomplete code block - use standard processing
 		incompleteCodeBlock = null;
+		streamingHighlightedHtml = '';
 
 		const normalized = preprocessLaTeX(markdown);
-		const processorInstance = processor();
+		const processorInstance = await createProcessor();
 		const ast = processorInstance.parse(normalized) as MdastRoot;
 		const mdastChildren = (ast as { children?: unknown[] }).children ?? [];
 		const stableCount = Math.max(mdastChildren.length - 1, 0);
@@ -715,7 +710,7 @@
 		const currentMode = mode.current;
 		const isDark = currentMode === ColorMode.DARK;
 
-		loadHighlightTheme(isDark);
+		void loadHighlightTheme(isDark);
 	});
 
 	$effect(() => {
@@ -791,10 +786,7 @@
 			>
 				<pre class="streaming-code-pre"><code
 						class="hljs language-{incompleteCodeBlock.language || 'text'}"
-						>{@html highlightCode(
-							incompleteCodeBlock.code,
-							incompleteCodeBlock.language || 'text'
-						)}</code
+						>{@html streamingHighlightedHtml}</code
 					></pre>
 			</div>
 		</div>
