@@ -1,4 +1,3 @@
-import hljs from 'highlight.js';
 import {
 	NEWLINE,
 	DEFAULT_LANGUAGE,
@@ -22,24 +21,11 @@ export interface IncompleteCodeBlock {
  * @returns HTML string with syntax highlighting
  */
 export function highlightCode(code: string, language: string): string {
+	void language;
+
 	if (!code) return '';
 
-	try {
-		const lang = language.toLowerCase();
-		const isSupported = hljs.getLanguage(lang);
-
-		if (isSupported) {
-			return hljs.highlight(code, { language: lang }).value;
-		} else {
-			return hljs.highlightAuto(code).value;
-		}
-	} catch {
-		// Fallback to escaped plain text
-		return code
-			.replace(AMPERSAND_REGEX, '&amp;')
-			.replace(LT_REGEX, '&lt;')
-			.replace(GT_REGEX, '&gt;');
-	}
+	return code.replace(AMPERSAND_REGEX, '&amp;').replace(LT_REGEX, '&lt;').replace(GT_REGEX, '&gt;');
 }
 
 /**
