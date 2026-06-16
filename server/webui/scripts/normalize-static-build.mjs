@@ -1,13 +1,5 @@
 #!/usr/bin/env node
-import {
-	copyFileSync,
-	existsSync,
-	mkdirSync,
-	readFileSync,
-	readdirSync,
-	rmSync,
-	writeFileSync
-} from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -24,6 +16,7 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const webuiRoot = resolve(scriptDir, '..');
 
 const publicCandidates = [resolve(webuiRoot, '../public'), resolve(webuiRoot, 'public')];
+const clientManifestPath = resolve(webuiRoot, '.svelte-kit/output/client/.vite/manifest.json');
 
 function findPublicDir() {
 	const existing = publicCandidates.find((candidate) =>
@@ -32,22 +25,66 @@ function findPublicDir() {
 	return existing ?? publicCandidates[0];
 }
 
-function listMatchingFiles(directory, pattern) {
-	if (!existsSync(directory)) return [];
-	return readdirSync(directory)
-		.filter((file) => pattern.test(file))
-		.sort();
-}
-
-function requireSingleFile(directory, pattern, label) {
-	const files = listMatchingFiles(directory, pattern);
-
-	if (files.length !== 1) {
-		const found = files.length ? files.join(', ') : 'none';
-		throw new Error(`Expected exactly one ${label} in ${directory}; found ${found}.`);
+function readJsonFile(path, label) {
+	if (!existsSync(path)) {
+		throw new Error(`Missing ${label}: ${path}. Run vite build before post-build normalization.`);
 	}
 
-	return files[0];
+	return JSON.parse(readFileSync(path, 'utf-8'));
+}
+
+function readClientManifest() {
+	return readJsonFile(clientManifestPath, 'client manifest');
+}
+
+function findClientEntry(manifest) {
+	const entries = Object.values(manifest).filter((entry) => entry && entry.isEntry);
+
+	if (entries.length !== 1) {
+		const found = entries
+			.map((entry) => entry?.file)
+			.filter(Boolean)
+			.join(', ');
+		throw new Error(
+			`Expected exactly one client entry in ${clientManifestPath}; found ${found || 'none'}. ` +
+				'Update normalize-static-build.mjs before enabling modular output.'
+		);
+	}
+
+	return entries[0];
+}
+
+function requireClientEntryCss(entry) {
+	const css = entry.css ?? [];
+
+	if (css.length !== 1) {
+		throw new Error(
+			`Expected exactly one CSS asset for client entry ${entry.file}; found ${
+				css.length ? css.join(', ') : 'none'
+			}. Update normalize-static-build.mjs before enabling modular CSS output.`
+		);
+	}
+
+	return css[0];
+}
+
+function assertSingleBundleCompatibility(entry, cssFile) {
+	const entryFileName = entry.file.split('/').pop() ?? entry.file;
+	const cssFileName = cssFile.split('/').pop() ?? cssFile;
+
+	if (!/^bundle\..+\.js$/.test(entryFileName)) {
+		throw new Error(
+			`Current public contract expects a single bundle.*.js entry; manifest entry is ${entry.file}. ` +
+				'Prepare the public artifact contract before changing SvelteKit bundleStrategy.'
+		);
+	}
+
+	if (!/^bundle\..+\.css$/.test(cssFileName)) {
+		throw new Error(
+			`Current public contract expects a single bundle.*.css asset; manifest CSS is ${cssFile}. ` +
+				'Prepare the public artifact contract before changing SvelteKit bundleStrategy.'
+		);
+	}
 }
 
 function inlineFavicon(content) {
@@ -63,14 +100,49 @@ function inlineFavicon(content) {
 	return content.replace(/href="[^"]*favicon\.svg"/g, `href="${faviconDataUrl}"`);
 }
 
-function normalizeBundleReferences(content) {
-	return content
-		.replace(/(?:\.\.?\/|\/)?_app\/immutable\/bundle\.[^"]+\.js/g, './bundle.js')
-		.replace(/(?:\.\.?\/|\/)?_app\/immutable\/assets\/bundle\.[^"]+\.css/g, './bundle.css');
+function replacePublicAssetReference(content, assetPath, replacement) {
+	const normalizedAssetPath = assetPath.replace(/\\/g, '/');
+
+	for (const candidate of [
+		normalizedAssetPath,
+		`/${normalizedAssetPath}`,
+		`./${normalizedAssetPath}`,
+		`../${normalizedAssetPath}`
+	]) {
+		content = content.split(candidate).join(replacement);
+	}
+
+	return content;
+}
+
+function normalizeBundleReferences(content, entryFile, cssFile) {
+	return replacePublicAssetReference(
+		replacePublicAssetReference(content, entryFile, './bundle.js'),
+		cssFile,
+		'./bundle.css'
+	);
 }
 
 function normalizeSvelteKitRuntime(content) {
 	return content.replace(/__sveltekit_[A-Za-z0-9_]+/g, '__sveltekit__');
+}
+
+function withGuideComment(content) {
+	if (content.startsWith(GUIDE_FOR_FRONTEND)) return content;
+
+	return `${GUIDE_FOR_FRONTEND}\n${content}`;
+}
+
+function copyPublicArtifact(publicDir, artifactPath, outputFileName) {
+	const sourcePath = resolve(publicDir, artifactPath);
+	const outputPath = resolve(publicDir, outputFileName);
+
+	if (!existsSync(sourcePath)) {
+		throw new Error(`Manifest points to missing public artifact: ${sourcePath}`);
+	}
+
+	copyFileSync(sourcePath, outputPath);
+	return outputPath;
 }
 
 function normalizeStaticBuild() {
@@ -81,25 +153,24 @@ function normalizeStaticBuild() {
 		throw new Error(`Missing static build index.html in ${publicDir}.`);
 	}
 
+	const clientManifest = readClientManifest();
+	const clientEntry = findClientEntry(clientManifest);
+	const clientCss = requireClientEntryCss(clientEntry);
+	assertSingleBundleCompatibility(clientEntry, clientCss);
+
 	let indexHtml = readFileSync(indexPath, 'utf-8');
 	indexHtml = inlineFavicon(indexHtml);
-	indexHtml = normalizeBundleReferences(indexHtml);
-	indexHtml = `${GUIDE_FOR_FRONTEND}\n${indexHtml}`;
+	indexHtml = normalizeBundleReferences(indexHtml, clientEntry.file, clientCss);
+	indexHtml = withGuideComment(indexHtml);
 	writeFileSync(indexPath, indexHtml);
-	console.log('✓ Updated index.html');
+	console.log('✓ Updated index.html from client manifest');
 
-	const immutableDir = resolve(publicDir, '_app/immutable');
-	const assetsDir = resolve(immutableDir, 'assets');
-
-	const jsFile = requireSingleFile(immutableDir, /^bundle\..+\.js$/, 'client JS bundle');
-	const bundleJsPath = resolve(publicDir, 'bundle.js');
-	copyFileSync(resolve(immutableDir, jsFile), bundleJsPath);
+	const bundleJsPath = copyPublicArtifact(publicDir, clientEntry.file, 'bundle.js');
 	writeFileSync(bundleJsPath, normalizeSvelteKitRuntime(readFileSync(bundleJsPath, 'utf-8')));
-	console.log(`✓ Copied ${jsFile} -> bundle.js`);
+	console.log(`✓ Copied ${clientEntry.file} -> bundle.js`);
 
-	const cssFile = requireSingleFile(assetsDir, /^bundle\..+\.css$/, 'client CSS bundle');
-	copyFileSync(resolve(assetsDir, cssFile), resolve(publicDir, 'bundle.css'));
-	console.log(`✓ Copied ${cssFile} -> bundle.css`);
+	copyPublicArtifact(publicDir, clientCss, 'bundle.css');
+	console.log(`✓ Copied ${clientCss} -> bundle.css`);
 
 	copyFileSync(indexPath, resolve(publicDir, '200.html'));
 	console.log('✓ Copied index.html -> 200.html');
