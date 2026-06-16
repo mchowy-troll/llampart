@@ -37,54 +37,38 @@ function readClientManifest() {
 	return readJsonFile(clientManifestPath, 'client manifest');
 }
 
-function findClientEntry(manifest) {
-	const entries = Object.values(manifest).filter((entry) => entry && entry.isEntry);
-
-	if (entries.length !== 1) {
-		const found = entries
-			.map((entry) => entry?.file)
-			.filter(Boolean)
-			.join(', ');
-		throw new Error(
-			`Expected exactly one client entry in ${clientManifestPath}; found ${found || 'none'}. ` +
-				'Update normalize-static-build.mjs before enabling modular output.'
-		);
-	}
-
-	return entries[0];
+function getManifestEntries(manifest) {
+	return Object.values(manifest).filter((entry) => entry && entry.isEntry);
 }
 
-function requireClientEntryCss(entry) {
+function getManifestFiles(manifest, manifestKeys) {
+	return manifestKeys
+		.map((manifestKey) => manifest[manifestKey])
+		.filter(Boolean)
+		.map((entry) => entry.file)
+		.filter(Boolean);
+}
+
+function findSingleBundleEntry(entries) {
+	if (entries.length !== 1) return null;
+
+	const [entry] = entries;
 	const css = entry.css ?? [];
+	const entryFileName = entry.file?.split('/').pop() ?? entry.file;
+	const cssFileName = css[0]?.split('/').pop() ?? css[0];
 
-	if (css.length !== 1) {
-		throw new Error(
-			`Expected exactly one CSS asset for client entry ${entry.file}; found ${
-				css.length ? css.join(', ') : 'none'
-			}. Update normalize-static-build.mjs before enabling modular CSS output.`
-		);
-	}
+	if (css.length !== 1) return null;
+	if (!/^bundle\..+\.js$/.test(entryFileName)) return null;
+	if (!/^bundle\..+\.css$/.test(cssFileName)) return null;
 
-	return css[0];
+	return {
+		entry,
+		cssFile: css[0]
+	};
 }
 
-function assertSingleBundleCompatibility(entry, cssFile) {
-	const entryFileName = entry.file.split('/').pop() ?? entry.file;
-	const cssFileName = cssFile.split('/').pop() ?? cssFile;
-
-	if (!/^bundle\..+\.js$/.test(entryFileName)) {
-		throw new Error(
-			`Current public contract expects a single bundle.*.js entry; manifest entry is ${entry.file}. ` +
-				'Prepare the public artifact contract before changing SvelteKit bundleStrategy.'
-		);
-	}
-
-	if (!/^bundle\..+\.css$/.test(cssFileName)) {
-		throw new Error(
-			`Current public contract expects a single bundle.*.css asset; manifest CSS is ${cssFile}. ` +
-				'Prepare the public artifact contract before changing SvelteKit bundleStrategy.'
-		);
-	}
+function isSplitClientManifest(entries) {
+	return entries.length > 1;
 }
 
 function inlineFavicon(content) {
@@ -145,6 +129,85 @@ function copyPublicArtifact(publicDir, artifactPath, outputFileName) {
 	return outputPath;
 }
 
+function assertPublicArtifactExists(publicDir, artifactPath, label) {
+	const sourcePath = resolve(publicDir, artifactPath);
+
+	if (!existsSync(sourcePath)) {
+		throw new Error(`Manifest ${label} points to missing public artifact: ${sourcePath}`);
+	}
+}
+
+function assertSplitAssetGraph(publicDir, manifest, manifestEntries) {
+	const entryFiles = manifestEntries.map((entry) => entry.file).filter(Boolean);
+	const cssFiles = manifestEntries.flatMap((entry) => entry.css ?? []);
+	const importFiles = getManifestFiles(
+		manifest,
+		manifestEntries.flatMap((entry) => entry.imports ?? [])
+	);
+	const dynamicImportFiles = getManifestFiles(
+		manifest,
+		manifestEntries.flatMap((entry) => entry.dynamicImports ?? [])
+	);
+
+	for (const file of [...entryFiles, ...cssFiles, ...importFiles, ...dynamicImportFiles]) {
+		assertPublicArtifactExists(publicDir, file, 'split asset');
+	}
+}
+
+function removeGeneratedCompressedFallbacks(publicDir) {
+	rmSync(resolve(publicDir, 'index.html.gz'), { force: true });
+	rmSync(resolve(publicDir, '200.html.gz'), { force: true });
+}
+
+function removeStandaloneFavicon(publicDir) {
+	rmSync(resolve(publicDir, 'favicon.svg'), { force: true });
+}
+
+function normalizeSingleBundleBuild(publicDir, indexPath, singleBundle) {
+	let indexHtml = readFileSync(indexPath, 'utf-8');
+	indexHtml = inlineFavicon(indexHtml);
+	indexHtml = normalizeBundleReferences(indexHtml, singleBundle.entry.file, singleBundle.cssFile);
+	indexHtml = withGuideComment(indexHtml);
+	writeFileSync(indexPath, indexHtml);
+	console.log('✓ Updated single-bundle index.html from client manifest');
+
+	const bundleJsPath = copyPublicArtifact(publicDir, singleBundle.entry.file, 'bundle.js');
+	writeFileSync(bundleJsPath, normalizeSvelteKitRuntime(readFileSync(bundleJsPath, 'utf-8')));
+	console.log(`✓ Copied ${singleBundle.entry.file} -> bundle.js`);
+
+	copyPublicArtifact(publicDir, singleBundle.cssFile, 'bundle.css');
+	console.log(`✓ Copied ${singleBundle.cssFile} -> bundle.css`);
+
+	copyFileSync(indexPath, resolve(publicDir, '200.html'));
+	console.log('✓ Copied index.html -> 200.html');
+
+	rmSync(resolve(publicDir, '_app'), { recursive: true, force: true });
+	removeStandaloneFavicon(publicDir);
+	removeGeneratedCompressedFallbacks(publicDir);
+
+	console.log(`✓ Normalized single-bundle static build artifacts in ${publicDir}`);
+}
+
+function normalizeSplitBuild(publicDir, indexPath, manifest, manifestEntries) {
+	assertSplitAssetGraph(publicDir, manifest, manifestEntries);
+
+	let indexHtml = readFileSync(indexPath, 'utf-8');
+	indexHtml = inlineFavicon(indexHtml);
+	indexHtml = withGuideComment(indexHtml);
+	writeFileSync(indexPath, indexHtml);
+	console.log('✓ Updated split index.html from client manifest');
+
+	copyFileSync(indexPath, resolve(publicDir, '200.html'));
+	console.log('✓ Copied index.html -> 200.html');
+
+	rmSync(resolve(publicDir, 'bundle.js'), { force: true });
+	rmSync(resolve(publicDir, 'bundle.css'), { force: true });
+	removeStandaloneFavicon(publicDir);
+	removeGeneratedCompressedFallbacks(publicDir);
+
+	console.log(`✓ Preserved split SvelteKit _app asset graph in ${publicDir}`);
+}
+
 function normalizeStaticBuild() {
 	const publicDir = findPublicDir();
 	const indexPath = resolve(publicDir, 'index.html');
@@ -154,34 +217,21 @@ function normalizeStaticBuild() {
 	}
 
 	const clientManifest = readClientManifest();
-	const clientEntry = findClientEntry(clientManifest);
-	const clientCss = requireClientEntryCss(clientEntry);
-	assertSingleBundleCompatibility(clientEntry, clientCss);
+	const manifestEntries = getManifestEntries(clientManifest);
+	const singleBundle = findSingleBundleEntry(manifestEntries);
 
-	let indexHtml = readFileSync(indexPath, 'utf-8');
-	indexHtml = inlineFavicon(indexHtml);
-	indexHtml = normalizeBundleReferences(indexHtml, clientEntry.file, clientCss);
-	indexHtml = withGuideComment(indexHtml);
-	writeFileSync(indexPath, indexHtml);
-	console.log('✓ Updated index.html from client manifest');
-
-	const bundleJsPath = copyPublicArtifact(publicDir, clientEntry.file, 'bundle.js');
-	writeFileSync(bundleJsPath, normalizeSvelteKitRuntime(readFileSync(bundleJsPath, 'utf-8')));
-	console.log(`✓ Copied ${clientEntry.file} -> bundle.js`);
-
-	copyPublicArtifact(publicDir, clientCss, 'bundle.css');
-	console.log(`✓ Copied ${clientCss} -> bundle.css`);
-
-	copyFileSync(indexPath, resolve(publicDir, '200.html'));
-	console.log('✓ Copied index.html -> 200.html');
-
-	rmSync(resolve(publicDir, '_app'), { recursive: true, force: true });
-	rmSync(resolve(publicDir, 'favicon.svg'), { force: true });
-	rmSync(resolve(publicDir, 'index.html.gz'), { force: true });
-	rmSync(resolve(publicDir, '200.html.gz'), { force: true });
+	if (singleBundle) {
+		normalizeSingleBundleBuild(publicDir, indexPath, singleBundle);
+	} else if (isSplitClientManifest(manifestEntries)) {
+		normalizeSplitBuild(publicDir, indexPath, clientManifest, manifestEntries);
+	} else {
+		throw new Error(
+			`Unsupported client manifest shape in ${clientManifestPath}. ` +
+				'Expected either a single bundle entry or a split SvelteKit asset graph.'
+		);
+	}
 
 	mkdirSync(publicDir, { recursive: true });
-	console.log(`✓ Normalized static build artifacts in ${publicDir}`);
 }
 
 try {
