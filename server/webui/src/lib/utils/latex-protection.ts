@@ -94,6 +94,38 @@ export function maskInlineLaTeX(content: string, latexExpressions: string[]): st
 		.join('\n');
 }
 
+/**
+ * Detects whether the content contains renderable LaTeX math outside code spans/blocks.
+ *
+ * This is intentionally a pure, lightweight detector used to decide whether the
+ * Markdown math plugins are needed. It mirrors the existing LaTeX protection rules
+ * instead of introducing a separate parsing policy.
+ */
+export function hasRenderableMath(content: string): boolean {
+	if (!content.includes('$') && !content.includes('\\(') && !content.includes('\\[')) {
+		return false;
+	}
+
+	const contentWithoutCode = content.replace(CODE_BLOCK_REGEXP, '');
+
+	if (/\$\$[\s\S]+?\$\$/.test(contentWithoutCode)) {
+		return true;
+	}
+
+	if (/(?<!\\)\\\[[\s\S]+?\\\]/.test(contentWithoutCode)) {
+		return true;
+	}
+
+	if (/(?<!\\)\\\(.+?\\\)/.test(contentWithoutCode)) {
+		return true;
+	}
+
+	const latexExpressions: string[] = [];
+	maskInlineLaTeX(contentWithoutCode, latexExpressions);
+
+	return latexExpressions.length > 0;
+}
+
 function escapeBrackets(text: string): string {
 	return text.replace(
 		LATEX_MATH_AND_CODE_PATTERN,

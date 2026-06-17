@@ -1,6 +1,6 @@
 /* eslint-disable no-irregular-whitespace */
 import { describe, it, expect, test } from 'vitest';
-import { maskInlineLaTeX, preprocessLaTeX } from '$lib/utils/latex-protection';
+import { hasRenderableMath, maskInlineLaTeX, preprocessLaTeX } from '$lib/utils/latex-protection';
 
 describe('maskInlineLaTeX', () => {
 	it('should protect LaTeX $x + y$ but not money $3.99', () => {
@@ -372,5 +372,43 @@ $$\n\\pi_n(\\mathbb{S}^3) = \\begin{cases}
 
 		// All LaTeX should be converted, blockquote markers preserved
 		expect(output).toBe('Regular text with $x^2$.\n\n> Quote with $y^2$.\n\nMore text with $z^2$.');
+	});
+});
+
+describe('hasRenderableMath', () => {
+	it('returns false for plain text without math markers', () => {
+		expect(hasRenderableMath('This is plain text with no math.')).toBe(false);
+	});
+
+	it('returns false for prices and currency-like dollars', () => {
+		expect(hasRenderableMath('I paid $10, $3.99 and $2,000 today.')).toBe(false);
+	});
+
+	it('returns true for inline dollar math', () => {
+		expect(hasRenderableMath('Pythagorean: $a^2 + b^2 = c^2$.')).toBe(true);
+	});
+
+	it('returns true for display dollar math', () => {
+		expect(hasRenderableMath('Before\n$$\n\\int_0^1 x^2\\,dx\n$$\nAfter')).toBe(true);
+	});
+
+	it('returns true for bracket and parenthesis LaTeX math delimiters', () => {
+		expect(hasRenderableMath(String.raw`Inline \(x^2\) and display \[y^2\]`)).toBe(true);
+	});
+
+	it('returns false for math-looking content inside code blocks and inline code', () => {
+		const input = '```latex\n$x^2$\n```\nAnd `$y^2$` inline code';
+
+		expect(hasRenderableMath(input)).toBe(false);
+	});
+
+	it('returns true when math appears outside protected code', () => {
+		const input = '```latex\n$x^2$\n```\nBut $y^2$ renders.';
+
+		expect(hasRenderableMath(input)).toBe(true);
+	});
+
+	it('returns false for escaped parenthesis delimiters', () => {
+		expect(hasRenderableMath(String.raw`Definitions\\(also called macros)`)).toBe(false);
 	});
 });
