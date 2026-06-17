@@ -411,4 +411,23 @@ describe('hasRenderableMath', () => {
 	it('returns false for escaped parenthesis delimiters', () => {
 		expect(hasRenderableMath(String.raw`Definitions\\(also called macros)`)).toBe(false);
 	});
+
+	it('does not detect comma-separated prices and identifier dollars as renderable math', () => {
+		expect(hasRenderableMath('Values: $10, $3.99, $2,000, 50$, user$name, total_$value.')).toBe(
+			false
+		);
+	});
+});
+
+describe('preprocessLaTeX non-math dollars', () => {
+	it('escapes non-math dollars while preserving real math', () => {
+		const input = 'Values: $10, $3.99, $2,000, 50$, user$name, total_$value. Math: $x + 1$.';
+
+		const output = preprocessLaTeX(input);
+
+		expect(output).toContain(
+			'Values: \\$10, \\$3.99, \\$2,000, 50\\$, user\\$name, total_\\$value.'
+		);
+		expect(output).toContain('Math: $x + 1$.');
+	});
 });

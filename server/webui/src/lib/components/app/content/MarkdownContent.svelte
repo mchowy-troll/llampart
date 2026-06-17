@@ -11,7 +11,7 @@
 		loadHighlightThemeCss
 	} from '$lib/utils/syntax-highlighting';
 	import { copyCodeToClipboard } from '$lib/utils/clipboard';
-	import { preprocessLaTeX } from '$lib/utils/latex-protection';
+	import { hasRenderableMath, preprocessLaTeX } from '$lib/utils/latex-protection';
 	import { getImageErrorFallbackHtml } from '$lib/utils/image-error-fallback';
 	import { detectIncompleteCodeBlock, type IncompleteCodeBlock } from '$lib/utils/code';
 	import type { MarkdownProcessor } from '$lib/markdown/markdown-runtime';
@@ -108,10 +108,11 @@
 		return markdownRuntimePromise;
 	}
 
-	async function createProcessor(): Promise<MarkdownProcessor> {
+	async function createProcessor(markdown: string): Promise<MarkdownProcessor> {
+		const enableMath = !disableMath && hasRenderableMath(markdown);
 		const { createMarkdownProcessor } = await loadMarkdownRuntime();
 
-		return createMarkdownProcessor({ attachments, disableMath });
+		return createMarkdownProcessor({ attachments, disableMath: !enableMath });
 	}
 
 	/**
@@ -476,7 +477,7 @@
 
 			if (prefixMarkdown.trim()) {
 				const normalizedPrefix = preprocessLaTeX(prefixMarkdown);
-				const processorInstance = await createProcessor();
+				const processorInstance = await createProcessor(markdown);
 				const ast = processorInstance.parse(normalizedPrefix) as MdastRoot;
 				const mdastChildren = (ast as { children?: unknown[] }).children ?? [];
 				const nextBlocks: MarkdownBlock[] = [];
@@ -529,7 +530,7 @@
 		streamingHighlightedHtml = '';
 
 		const normalized = preprocessLaTeX(markdown);
-		const processorInstance = await createProcessor();
+		const processorInstance = await createProcessor(markdown);
 		const ast = processorInstance.parse(normalized) as MdastRoot;
 		const mdastChildren = (ast as { children?: unknown[] }).children ?? [];
 		const stableCount = Math.max(mdastChildren.length - 1, 0);

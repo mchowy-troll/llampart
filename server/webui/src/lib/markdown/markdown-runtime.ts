@@ -1,11 +1,9 @@
 import { remark } from 'remark';
 import remarkBreaks from 'remark-breaks';
 import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
 import { all as lowlightAll } from 'lowlight';
 import remarkRehype from 'remark-rehype';
-import rehypeKatex from 'rehype-katex';
 import rehypeStringify from 'rehype-stringify';
 import { FileTypeText } from '$lib/enums/files';
 import { rehypeRestoreTableHtml } from '$lib/markdown/table-html-restorer';
@@ -28,15 +26,33 @@ export type MarkdownProcessorOptions = {
 	disableMath?: boolean;
 };
 
-export function createMarkdownProcessor({
+let mathPluginsPromise: Promise<{
+	remarkMath: (typeof import('remark-math'))['default'];
+	rehypeKatex: (typeof import('rehype-katex'))['default'];
+}> | null = null;
+
+function loadMathPlugins() {
+	mathPluginsPromise ??= Promise.all([import('remark-math'), import('rehype-katex')]).then(
+		([remarkMathModule, rehypeKatexModule]) => ({
+			remarkMath: remarkMathModule.default,
+			rehypeKatex: rehypeKatexModule.default
+		})
+	);
+
+	return mathPluginsPromise;
+}
+
+export async function createMarkdownProcessor({
 	attachments,
 	disableMath = false
-}: MarkdownProcessorOptions): MarkdownProcessor {
+}: MarkdownProcessorOptions): Promise<MarkdownProcessor> {
+	const mathPlugins = disableMath ? null : await loadMathPlugins();
+
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let proc: any = remark().use(remarkGfm); // GitHub Flavored Markdown
 
-	if (!disableMath) {
-		proc = proc.use(remarkMath); // Parse $inline$ and $$block$$ math
+	if (mathPlugins) {
+		proc = proc.use(mathPlugins.remarkMath); // Parse $inline$ and $$block$$ math
 	}
 
 	proc = proc
@@ -44,8 +60,8 @@ export function createMarkdownProcessor({
 		.use(remarkLiteralHtml) // Treat raw HTML as literal text with preserved indentation
 		.use(remarkRehype); // Convert Markdown AST to rehype
 
-	if (!disableMath) {
-		proc = proc.use(rehypeKatex); // Render math using KaTeX
+	if (mathPlugins) {
+		proc = proc.use(mathPlugins.rehypeKatex); // Render math using KaTeX
 	}
 
 	return proc

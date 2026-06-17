@@ -74,6 +74,17 @@ export function maskInlineLaTeX(content: string, latexExpressions: string[]): st
 					shouldSkipAsNonLatex = true;
 				}
 
+				const inlineCandidate = line.slice(openDollarIndex + 1, closeDollarIndex);
+
+				if (
+					/[0-9]/.test(charAfterOpen) &&
+					/^[0-9][0-9\s,.]*$/.test(inlineCandidate) &&
+					/[\s,.]/.test(inlineCandidate)
+				) {
+					// Looks like a currency amount or a comma-separated list, not math.
+					shouldSkipAsNonLatex = true;
+				}
+
 				if (shouldSkipAsNonLatex) {
 					processedLine += line.slice(currentPosition, openDollarIndex + 1);
 					currentPosition = openDollarIndex + 1;
@@ -239,9 +250,10 @@ export function preprocessLaTeX(content: string): string {
 	// Protect inline $...$ but NOT if it looks like money (e.g., $10, $3.99)
 	content = maskInlineLaTeX(content, latexExpressions);
 
-	// Step 3: Escape standalone $ before digits (currency like $5 → \$5)
-	// (Now that inline math is protected, this will only escape dollars not already protected)
-	content = content.replace(/\$(?=\d)/g, '\\$');
+	// Step 3: Escape remaining non-LaTeX dollar signs.
+	// Valid inline math is protected by placeholders at this point, so any remaining
+	// unescaped dollar sign is text and must not be consumed by remark-math later.
+	content = content.replace(/(?<!\\)\$/g, '\\$');
 
 	// Step 4: Restore protected LaTeX expressions (they are valid)
 	content = content.replace(/<<LATEX_(\d+)>>/g, (_, index) => {
