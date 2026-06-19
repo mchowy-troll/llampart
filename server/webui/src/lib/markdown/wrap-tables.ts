@@ -1,4 +1,11 @@
 import type { Element, ElementContent, Root, RootContent } from 'hast';
+import {
+	TABLE_ACTIONS_CLASS,
+	TABLE_BLOCK_CLASS,
+	TABLE_CELL_CONTENT_CLASS,
+	TABLE_PREVIEW_BUTTON_CLASS,
+	TABLE_WRAPPER_CLASS
+} from '$lib/markdown/markdown-presentation';
 
 function isElement(
 	node: ElementContent | RootContent | Element | Root | undefined
@@ -21,7 +28,7 @@ function isTableCell(node: Element) {
 }
 
 function isTableCellContent(node: ElementContent | undefined) {
-	return isElement(node) && node.tagName === 'span' && hasClassName(node, 'table-cell-content');
+	return isElement(node) && node.tagName === 'span' && hasClassName(node, TABLE_CELL_CONTENT_CLASS);
 }
 
 function wrapTableCellContent(cell: Element) {
@@ -33,7 +40,7 @@ function wrapTableCellContent(cell: Element) {
 		{
 			type: 'element',
 			tagName: 'span',
-			properties: { className: ['table-cell-content'] },
+			properties: { className: [TABLE_CELL_CONTENT_CLASS] },
 			children: cell.children
 		} satisfies Element
 	];
@@ -81,7 +88,7 @@ function createTablePreviewButton(): Element {
 		tagName: 'button',
 		properties: {
 			type: 'button',
-			className: ['table-preview-button'],
+			className: [TABLE_PREVIEW_BUTTON_CLASS],
 			dataTablePreview: 'true',
 			title: '',
 			ariaLabel: ''
@@ -94,18 +101,18 @@ function createTableBlock(table: Element): Element {
 	return {
 		type: 'element',
 		tagName: 'div',
-		properties: { className: ['table-block'] },
+		properties: { className: [TABLE_BLOCK_CLASS] },
 		children: [
 			{
 				type: 'element',
 				tagName: 'div',
-				properties: { className: ['table-actions'] },
+				properties: { className: [TABLE_ACTIONS_CLASS] },
 				children: [createTablePreviewButton()]
 			},
 			{
 				type: 'element',
 				tagName: 'div',
-				properties: { className: ['table-wrapper'] },
+				properties: { className: [TABLE_WRAPPER_CLASS] },
 				children: [table]
 			}
 		]
@@ -135,12 +142,12 @@ function wrapTablesInChildren(parent: Root | Element, insideTableWrapper = false
 			continue;
 		}
 
-		if (child.tagName === 'div' && hasClassName(child, 'table-block')) {
+		if (child.tagName === 'div' && hasClassName(child, TABLE_BLOCK_CLASS)) {
 			wrapTablesInChildren(child, false);
 			continue;
 		}
 
-		if (child.tagName === 'div' && hasClassName(child, 'table-wrapper')) {
+		if (child.tagName === 'div' && hasClassName(child, TABLE_WRAPPER_CLASS)) {
 			wrapTablesInChildren(child, true);
 			continue;
 		}

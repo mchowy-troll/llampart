@@ -15,6 +15,15 @@
 	import { getImageErrorFallbackHtml } from '$lib/utils/image-error-fallback';
 	import { detectIncompleteCodeBlock, type IncompleteCodeBlock } from '$lib/utils/code';
 	import type { MarkdownProcessor } from '$lib/markdown/markdown-runtime';
+	import {
+		MARKDOWN_PRESENTATION_SELECTORS,
+		MARKDOWN_RENDERED_CODE_BLOCK_CLASS,
+		MARKDOWN_RENDERED_CODE_PREVIEW_BUTTON_CLASS,
+		buildMarkdownRenderedPreviewHtml,
+		getCodeInfoFromActionTarget,
+		isMarkdownCodeNode,
+		renderMarkdownRenderedCodeBlockShell
+	} from '$lib/markdown/markdown-presentation';
 	import '$styles/katex-custom.scss';
 	import {
 		IMAGE_NOT_ERROR_BOUND_SELECTOR,
@@ -75,30 +84,6 @@
 
 	const themeStyleId = `highlight-theme-${(window.idxThemeStyle = (window.idxThemeStyle ?? 0) + 1)}`;
 
-	const MARKDOWN_CODE_LANGUAGES = new Set(['md', 'markdown', 'mdown', 'mkdn', 'mkd']);
-
-	const COPY_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-icon lucide-copy"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>`;
-
-	const PREVIEW_ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eye-icon lucide-eye"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>`;
-
-	function escapeHtml(value: string): string {
-		return value
-			.replace(/&/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
-			.replace(/"/g, '&quot;')
-			.replace(/'/g, '&#39;');
-	}
-
-	function isMarkdownCodeNode(
-		node: unknown
-	): node is { type: 'code'; lang?: string; value?: string } {
-		const candidate = node as { type?: string; lang?: string };
-		const lang = candidate.lang?.toLowerCase();
-
-		return candidate.type === 'code' && Boolean(lang && MARKDOWN_CODE_LANGUAGES.has(lang));
-	}
-
 	let markdownRuntimePromise: Promise<typeof import('$lib/markdown/markdown-runtime')> | null =
 		null;
 
@@ -122,10 +107,15 @@
 	function cleanupEventListeners() {
 		if (!containerRef) return;
 
-		const copyButtons = containerRef.querySelectorAll<HTMLButtonElement>('.copy-code-btn');
-		const previewButtons = containerRef.querySelectorAll<HTMLButtonElement>('.preview-code-btn');
-		const tablePreviewButtons =
-			containerRef.querySelectorAll<HTMLButtonElement>('.table-preview-button');
+		const copyButtons = containerRef.querySelectorAll<HTMLButtonElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.copyCodeButton
+		);
+		const previewButtons = containerRef.querySelectorAll<HTMLButtonElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.previewCodeButton
+		);
+		const tablePreviewButtons = containerRef.querySelectorAll<HTMLButtonElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.tablePreviewButton
+		);
 
 		for (const button of copyButtons) {
 			button.removeEventListener('click', handleCopyClick);
@@ -188,33 +178,6 @@
 	}
 
 	/**
-	 * Extracts code information from a button click target within a code block.
-	 * @param target - The clicked button element
-	 * @returns Object with rawCode and language, or null if extraction fails
-	 */
-	function getCodeInfoFromTarget(target: HTMLElement) {
-		const wrapper = target.closest('.code-block-wrapper');
-
-		if (!wrapper) {
-			console.error('No wrapper found');
-			return null;
-		}
-
-		const codeElement = wrapper.querySelector<HTMLElement>('code[data-code-id]');
-		const rawCode = codeElement?.dataset.rawCode ?? codeElement?.textContent;
-
-		if (rawCode == null) {
-			console.error('No code content found in wrapper');
-			return null;
-		}
-
-		const languageLabel = wrapper.querySelector<HTMLElement>('.code-language');
-		const language = languageLabel?.textContent?.trim() || 'text';
-
-		return { rawCode, language };
-	}
-
-	/**
 	 * Generates a unique identifier for a HAST node based on its position.
 	 * Used for stable block identification during incremental rendering.
 	 * @param node - The HAST root content node
@@ -267,7 +230,13 @@
 		const transformedRoot = (await processorInstance.run(innerAst)) as HastRoot;
 		const renderedMarkdown = processorInstance.stringify(transformedRoot);
 
-		return `<div class="code-block-wrapper markdown-rendered-code-block relative"><div class="code-block-header"><span class="code-language">${escapeHtml(language)}</span><div class="code-block-actions"><button class="copy-code-btn" data-code-id="${escapeHtml(codeId)}" title="Copy code" type="button"><span>${COPY_ICON_SVG}</span></button><button class="preview-code-btn llampart-markdown-rendered-code-preview-btn" data-code-id="${escapeHtml(codeId)}" title="${escapeHtml(t('common.previewMarkdown'))}" aria-label="${escapeHtml(t('common.previewMarkdown'))}" type="button"><span>${PREVIEW_ICON_SVG}</span></button></div></div><div class="markdown-rendered-code-content markdown-rendered-code-scroll-container"><code data-code-id="${escapeHtml(codeId)}" data-raw-code="${escapeHtml(rawCode)}" hidden></code>${renderedMarkdown}</div></div>`;
+		return renderMarkdownRenderedCodeBlockShell({
+			codeId,
+			language,
+			previewMarkdownLabel: t('common.previewMarkdown'),
+			rawCode,
+			renderedMarkdown
+		});
 	}
 
 	/**
@@ -309,24 +278,6 @@
 		return { html, hash };
 	}
 
-	function buildMarkdownRenderedPreviewHtml(wrapper: HTMLElement): string | null {
-		const content = wrapper.querySelector<HTMLElement>('.markdown-rendered-code-content');
-
-		if (!content) return null;
-
-		const clone = content.cloneNode(true) as HTMLElement;
-
-		clone
-			.querySelectorAll('code[data-code-id][hidden], .code-block-actions, .table-actions')
-			.forEach((node) => {
-				node.remove();
-			});
-
-		const bodyHtml = clone.innerHTML.trim();
-
-		return bodyHtml || null;
-	}
-
 	/**
 	 * Handles click events on copy buttons within code blocks.
 	 * Copies the raw code content to the clipboard.
@@ -342,7 +293,7 @@
 			return;
 		}
 
-		const info = getCodeInfoFromTarget(target);
+		const info = getCodeInfoFromActionTarget(target);
 
 		if (!info) {
 			return;
@@ -384,9 +335,11 @@
 			return;
 		}
 
-		const wrapper = target.closest('.code-block-wrapper') as HTMLElement | null;
+		const wrapper = target.closest(
+			MARKDOWN_PRESENTATION_SELECTORS.codeBlockWrapper
+		) as HTMLElement | null;
 
-		if (wrapper?.classList.contains('markdown-rendered-code-block')) {
+		if (wrapper?.classList.contains(MARKDOWN_RENDERED_CODE_BLOCK_CLASS)) {
 			const markdownPreviewHtml = buildMarkdownRenderedPreviewHtml(wrapper);
 
 			if (markdownPreviewHtml) {
@@ -396,7 +349,7 @@
 			}
 		}
 
-		const info = getCodeInfoFromTarget(target);
+		const info = getCodeInfoFromActionTarget(target);
 
 		if (!info) {
 			return;
@@ -436,8 +389,10 @@
 		event.stopPropagation();
 
 		const target = event.currentTarget as HTMLButtonElement | null;
-		const tableBlock = target?.closest('.table-block');
-		const table = tableBlock?.querySelector<HTMLTableElement>('.table-wrapper table');
+		const tableBlock = target?.closest(MARKDOWN_PRESENTATION_SELECTORS.tableBlock);
+		const table = tableBlock?.querySelector<HTMLTableElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.tableWrapperTable
+		);
 
 		if (!table) {
 			return;
@@ -586,13 +541,19 @@
 	function setupCodeBlockActions() {
 		if (!containerRef) return;
 
-		const wrappers = containerRef.querySelectorAll<HTMLElement>('.code-block-wrapper');
+		const wrappers = containerRef.querySelectorAll<HTMLElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.codeBlockWrapper
+		);
 
 		for (const wrapper of wrappers) {
-			const copyButton = wrapper.querySelector<HTMLButtonElement>('.copy-code-btn');
-			const previewButton = wrapper.querySelector<HTMLButtonElement>('.preview-code-btn');
+			const copyButton = wrapper.querySelector<HTMLButtonElement>(
+				MARKDOWN_PRESENTATION_SELECTORS.copyCodeButton
+			);
+			const previewButton = wrapper.querySelector<HTMLButtonElement>(
+				MARKDOWN_PRESENTATION_SELECTORS.previewCodeButton
+			);
 
-			if (previewButton?.classList.contains('llampart-markdown-rendered-code-preview-btn')) {
+			if (previewButton?.classList.contains(MARKDOWN_RENDERED_CODE_PREVIEW_BUTTON_CLASS)) {
 				previewButton.title = t('common.previewMarkdown');
 				previewButton.setAttribute('aria-label', t('common.previewMarkdown'));
 			}
@@ -616,7 +577,9 @@
 	function setupTablePreviewActions() {
 		if (!containerRef) return;
 
-		const buttons = containerRef.querySelectorAll<HTMLButtonElement>('.table-preview-button');
+		const buttons = containerRef.querySelectorAll<HTMLButtonElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.tablePreviewButton
+		);
 
 		for (const button of buttons) {
 			button.title = t('common.tablePreview');
