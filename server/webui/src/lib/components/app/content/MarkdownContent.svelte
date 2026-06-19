@@ -16,6 +16,10 @@
 	import { detectIncompleteCodeBlock, type IncompleteCodeBlock } from '$lib/utils/code';
 	import type { MarkdownProcessor } from '$lib/markdown/markdown-runtime';
 	import {
+		detectIncompleteMathBlock,
+		type IncompleteMathBlock
+	} from '$lib/markdown/markdown-streaming-policy';
+	import {
 		MARKDOWN_PRESENTATION_SELECTORS,
 		MARKDOWN_RENDERED_CODE_BLOCK_CLASS,
 		MARKDOWN_RENDERED_CODE_PREVIEW_BUTTON_CLASS,
@@ -60,6 +64,7 @@
 	let renderedBlocks = $state<MarkdownBlock[]>([]);
 	let unstableBlockHtml = $state('');
 	let incompleteCodeBlock = $state<IncompleteCodeBlock | null>(null);
+	let incompleteMathBlock = $state<IncompleteMathBlock | null>(null);
 	let streamingHighlightedHtml = $state('');
 	let streamingHighlightRequestId = 0;
 	let previewDialogOpen = $state(false);
@@ -216,6 +221,48 @@
 	 */
 	function isAppendMode(newContent: string): boolean {
 		return previousContent.length > 0 && newContent.startsWith(previousContent);
+	}
+
+	async function renderStableMarkdownBlocks(prefixMarkdown: string): Promise<MarkdownBlock[]> {
+		if (!prefixMarkdown.trim()) {
+			return [];
+		}
+
+		const normalizedPrefix = preprocessLaTeX(prefixMarkdown);
+		const processorInstance = await createProcessor(prefixMarkdown);
+		const ast = processorInstance.parse(normalizedPrefix) as MdastRoot;
+		const mdastChildren = (ast as { children?: unknown[] }).children ?? [];
+		const nextBlocks: MarkdownBlock[] = [];
+
+		// Check if we're in append mode for cache reuse.
+		const appendMode = isAppendMode(prefixMarkdown);
+		const previousBlockCount = appendMode ? renderedBlocks.length : 0;
+
+		// All prefix blocks are stable because the pending structured content is rendered separately.
+		for (let index = 0; index < mdastChildren.length; index++) {
+			const child = mdastChildren[index];
+
+			if (appendMode && index < previousBlockCount) {
+				const prevBlock = renderedBlocks[index];
+				const currentHash = getMdastNodeHash(child, index);
+
+				if (prevBlock?.contentHash === currentHash) {
+					nextBlocks.push(prevBlock);
+
+					continue;
+				}
+			}
+
+			const { html, hash } = await transformMdastNode(processorInstance, child, index);
+			const id = getHastNodeId(
+				{ position: (child as { position?: unknown }).position } as HastRootContent,
+				index
+			);
+
+			nextBlocks.push({ id, html, contentHash: hash });
+		}
+
+		return nextBlocks;
 	}
 
 	async function renderMarkdownCodeBlock(
@@ -418,6 +465,7 @@
 			renderedBlocks = [];
 			unstableBlockHtml = '';
 			incompleteCodeBlock = null;
+			incompleteMathBlock = null;
 			streamingHighlightedHtml = '';
 			previousContent = '';
 			return;
@@ -427,61 +475,37 @@
 		const incompleteBlock = detectIncompleteCodeBlock(markdown);
 
 		if (incompleteBlock) {
-			// Process only the prefix (content before the incomplete code block)
+			// Process only the prefix (content before the incomplete code block).
 			const prefixMarkdown = markdown.slice(0, incompleteBlock.openingIndex);
 
-			if (prefixMarkdown.trim()) {
-				const normalizedPrefix = preprocessLaTeX(prefixMarkdown);
-				const processorInstance = await createProcessor(markdown);
-				const ast = processorInstance.parse(normalizedPrefix) as MdastRoot;
-				const mdastChildren = (ast as { children?: unknown[] }).children ?? [];
-				const nextBlocks: MarkdownBlock[] = [];
-
-				// Check if we're in append mode for cache reuse
-				const appendMode = isAppendMode(prefixMarkdown);
-				const previousBlockCount = appendMode ? renderedBlocks.length : 0;
-
-				// All prefix blocks are now stable since code block is separate
-				for (let index = 0; index < mdastChildren.length; index++) {
-					const child = mdastChildren[index];
-
-					// In append mode, reuse previous blocks if unchanged
-					if (appendMode && index < previousBlockCount) {
-						const prevBlock = renderedBlocks[index];
-						const currentHash = getMdastNodeHash(child, index);
-
-						if (prevBlock?.contentHash === currentHash) {
-							nextBlocks.push(prevBlock);
-
-							continue;
-						}
-					}
-
-					// Transform this block (with caching)
-					const { html, hash } = await transformMdastNode(processorInstance, child, index);
-					const id = getHastNodeId(
-						{ position: (child as { position?: unknown }).position } as HastRootContent,
-						index
-					);
-
-					nextBlocks.push({ id, html, contentHash: hash });
-				}
-
-				renderedBlocks = nextBlocks;
-			} else {
-				renderedBlocks = [];
-			}
-
+			renderedBlocks = await renderStableMarkdownBlocks(prefixMarkdown);
 			previousContent = prefixMarkdown;
 			unstableBlockHtml = '';
+			incompleteMathBlock = null;
 			incompleteCodeBlock = incompleteBlock;
 			await updateStreamingHighlightedHtml(incompleteBlock);
 
 			return;
 		}
 
-		// No incomplete code block - use standard processing
+		const pendingMathBlock = disableMath ? null : detectIncompleteMathBlock(markdown);
+
+		if (pendingMathBlock) {
+			const prefixMarkdown = markdown.slice(0, pendingMathBlock.openingIndex);
+
+			renderedBlocks = await renderStableMarkdownBlocks(prefixMarkdown);
+			previousContent = prefixMarkdown;
+			unstableBlockHtml = '';
+			incompleteCodeBlock = null;
+			incompleteMathBlock = pendingMathBlock;
+			streamingHighlightedHtml = '';
+
+			return;
+		}
+
+		// No incomplete structured streaming block - use standard processing.
 		incompleteCodeBlock = null;
+		incompleteMathBlock = null;
 		streamingHighlightedHtml = '';
 
 		const normalized = preprocessLaTeX(markdown);
@@ -728,6 +752,13 @@
 		</div>
 	{/if}
 
+	{#if incompleteMathBlock}
+		<div class="markdown-math-pending" role="status" aria-label={t('messages.processingEllipsis')}>
+			<span class="markdown-math-pending__symbol" aria-hidden="true">∑</span>
+			<span class="markdown-math-pending__label">{t('messages.processingEllipsis')}</span>
+		</div>
+	{/if}
+
 	{#if incompleteCodeBlock}
 		<div class="code-block-wrapper streaming-code-block relative">
 			<div class="code-block-header">
@@ -839,6 +870,35 @@
 
 	.markdown-block--unstable {
 		display: contents;
+	}
+
+	.markdown-math-pending {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin: 0.5rem 0;
+		color: hsl(var(--muted-foreground));
+		font-size: 0.875rem;
+		line-height: 1.35;
+	}
+
+	.markdown-math-pending__symbol {
+		font-weight: 600;
+	}
+
+	:global(.katex-display) {
+		display: block;
+		max-width: 100%;
+		overflow-x: auto;
+		overflow-y: hidden;
+		margin: 0.75rem 0;
+		padding-bottom: 0.125rem;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	:global(.katex-display > .katex) {
+		display: inline-block;
+		min-width: max-content;
 	}
 
 	:global(.markdown-rendered-preview-dialog-content) {
