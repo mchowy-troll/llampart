@@ -1,4 +1,4 @@
-import type { ErrorDialogType } from '$lib/enums';
+import type { AttachmentSource, ErrorDialogType } from '$lib/enums';
 import type { ApiChatCompletionToolCall } from './api';
 import type { DatabaseMessage, DatabaseMessageExtra } from './database';
 
@@ -17,6 +17,7 @@ export interface ChatUploadedFile {
 	};
 	isLoading?: boolean;
 	loadError?: string;
+	source?: AttachmentSource;
 }
 
 export interface ChatAttachmentDisplayItem {
@@ -32,6 +33,7 @@ export interface ChatAttachmentDisplayItem {
 	uploadedFile?: ChatUploadedFile;
 	attachment?: DatabaseMessageExtra;
 	attachmentIndex?: number;
+	source?: AttachmentSource;
 	textContent?: string;
 }
 

@@ -19,6 +19,7 @@
 		RESOURCE_TRIGGER_PREFIX
 	} from '$lib/constants';
 	import {
+		AttachmentSource,
 		ContentPartType,
 		FileExtensionText,
 		KeyboardKey,
@@ -386,7 +387,19 @@
 				type: MimeTypeText.PLAIN
 			});
 
-			onFilesAdd?.([textFile]);
+			const pastedTextAttachment: ChatUploadedFile = {
+				id: uuid(),
+				name: t('chat.pastedText'),
+				size: text.length,
+				type: MimeTypeText.PLAIN,
+				file: textFile,
+				isLoading: false,
+				textContent: text,
+				source: AttachmentSource.PASTED_TEXT
+			};
+
+			uploadedFiles = [...uploadedFiles, pastedTextAttachment];
+			onUploadedFilesChange?.(uploadedFiles);
 		}
 	}
 

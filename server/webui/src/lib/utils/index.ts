@@ -25,7 +25,14 @@ export {
 } from './connection-validation';
 // Attachment utilities
 export { getAttachmentDisplayItems } from './attachment-display';
-export { isTextFile, isImageFile, isPdfFile, isAudioFile } from './attachment-type';
+export {
+	isTextFile,
+	isImageFile,
+	isPdfFile,
+	isAudioFile,
+	isPastedTextAttachment,
+	isPastedTextOnlyAttachmentMessage
+} from './attachment-type';
 
 // Textarea utilities
 export { default as autoResizeTextarea } from './autoresize-textarea';

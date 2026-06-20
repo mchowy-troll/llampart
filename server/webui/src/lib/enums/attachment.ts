@@ -10,3 +10,10 @@ export enum AttachmentType {
 	TEXT = 'TEXT',
 	LEGACY_CONTEXT = 'context' // Legacy attachment type for backward compatibility
 }
+
+/**
+ * Source/origin marker for attachments whose UI behavior differs from regular uploads.
+ */
+export enum AttachmentSource {
+	PASTED_TEXT = 'PASTED_TEXT'
+}

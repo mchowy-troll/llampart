@@ -7,6 +7,7 @@
 	import ChatMessageActions from './ChatMessageActions.svelte';
 	import ChatMessageEditForm from './ChatMessageEditForm.svelte';
 	import { MessageRole } from '$lib/enums';
+	import { isPastedTextOnlyAttachmentMessage } from '$lib/utils';
 
 	interface Props {
 		class?: string;
@@ -49,6 +50,9 @@
 	let isMultiline = $state(false);
 	let messageElement: HTMLElement | undefined = $state();
 	const currentConfig = config();
+	let hideAttachmentOnlyActions = $derived(
+		isPastedTextOnlyAttachmentMessage(message.content, message.extra)
+	);
 
 	$effect(() => {
 		if (!messageElement || !message.content.trim()) return;
@@ -128,7 +132,7 @@
 					</div>
 				{/if}
 			</Card>
-		{:else if message.timestamp}
+		{:else if message.timestamp && !hideAttachmentOnlyActions}
 			<div class="w-full max-w-[80%]">
 				<ChatMessageActions
 					actionsPosition="right"
@@ -580,4 +584,17 @@
 		padding-top: 0.9375rem !important;
 	}
 	/* /llampart-user-message-single-line-top-inset-stability */
+
+	/* llampart-light-user-message-no-frame-shadow-owner
+	   Light theme only: remove visible card frame/shadow from user messages.
+	   Dark and Frosted Glass retain their own owners. */
+	:global(html:not(.dark):not(.has-frosted-glass-theme) .llampart-user-message-card) {
+		border-color: transparent !important;
+		box-shadow: none !important;
+		outline: none !important;
+		filter: none !important;
+		backdrop-filter: none !important;
+		-webkit-backdrop-filter: none !important;
+	}
+	/* /llampart-light-user-message-no-frame-shadow-owner */
 </style>

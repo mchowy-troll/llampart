@@ -669,6 +669,8 @@ export const en: TranslationDictionary = {
 		preview: 'Preview',
 		sentAsImage: 'Sent as Image',
 		sentAsText: 'Sent as Text',
+		files: 'Files',
+		viewAll: 'View all',
 		allAttachments: 'All attachments',
 		attachFile: 'Attach file',
 		audioPreviewNotAvailable: 'Audio preview not available',

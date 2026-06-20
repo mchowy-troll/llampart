@@ -1,4 +1,4 @@
-import { AttachmentType, FileTypeCategory } from '$lib/enums';
+import { AttachmentSource, AttachmentType, FileTypeCategory } from '$lib/enums';
 import { getFileTypeCategory, getFileTypeCategoryByExtension } from '$lib/utils';
 
 /**
@@ -102,4 +102,33 @@ export function isAudioFile(
 	}
 
 	return false;
+}
+
+/**
+ * Determines if an attachment/upload is the synthetic long pasted text attachment.
+ */
+export function isPastedTextAttachment(
+	attachment?: DatabaseMessageExtra,
+	uploadedFile?: ChatUploadedFile
+): boolean {
+	if (uploadedFile?.source === AttachmentSource.PASTED_TEXT) {
+		return true;
+	}
+
+	return Boolean(
+		attachment && 'source' in attachment && attachment.source === AttachmentSource.PASTED_TEXT
+	);
+}
+
+/**
+ * Determines if a user message contains only the synthetic pasted-text attachment.
+ *
+ * This is a message-level policy used by the message renderer to avoid showing
+ * message actions for a thing that visually behaves as a file attachment.
+ */
+export function isPastedTextOnlyAttachmentMessage(
+	content: string,
+	extras?: DatabaseMessageExtra[]
+): boolean {
+	return content.trim().length === 0 && extras?.length === 1 && isPastedTextAttachment(extras[0]);
 }

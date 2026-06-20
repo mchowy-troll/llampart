@@ -102,3 +102,35 @@ html.has-frosted-glass-theme {
 		0 0 2px rgba(255, 255, 255, 0.64), 0 0 8px rgba(255, 255, 255, 0.5),
 		0 0 16px rgba(255, 255, 255, 0.34);
 }
+
+/* llampart-agentic-panel-and-dialog-overlay-token-owner
+   Shared visual tokens:
+   - `.llampart-agentic-panel` is the shared Tools/Reasoning panel primitive.
+   - `.llampart-dialog-overlay` is the shared dialog overlay primitive.
+   Component code exposes hooks; this theme layer owns the surfaces. */
+html.dark:not(.has-frosted-glass-theme) {
+	--llampart-agentic-panel-dark-background: #212121;
+	--llampart-dialog-overlay-milk-background: rgba(255, 255, 255, 0.14);
+	--llampart-dialog-overlay-milk-gradient-start: rgba(255, 255, 255, 0.13);
+	--llampart-dialog-overlay-milk-gradient-end: rgba(255, 255, 255, 0.09);
+	--llampart-dialog-overlay-milk-filter: none;
+}
+
+html.dark:not(.has-frosted-glass-theme) body .llampart-agentic-panel {
+	background: var(--llampart-agentic-panel-dark-background) !important;
+	background-color: var(--llampart-agentic-panel-dark-background) !important;
+	background-image: none !important;
+}
+
+html.dark:not(.has-frosted-glass-theme) body .llampart-dialog-overlay {
+	background: var(--llampart-dialog-overlay-milk-background) !important;
+	background-color: var(--llampart-dialog-overlay-milk-background) !important;
+	background-image: linear-gradient(
+		135deg,
+		var(--llampart-dialog-overlay-milk-gradient-start),
+		var(--llampart-dialog-overlay-milk-gradient-end)
+	) !important;
+	backdrop-filter: var(--llampart-dialog-overlay-milk-filter) !important;
+	-webkit-backdrop-filter: var(--llampart-dialog-overlay-milk-filter) !important;
+}
+/* /llampart-agentic-panel-and-dialog-overlay-token-owner */

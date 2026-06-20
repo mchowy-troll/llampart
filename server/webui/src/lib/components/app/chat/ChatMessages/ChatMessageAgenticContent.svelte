@@ -763,4 +763,13 @@
 	}
 
 	/* /llampart-1-0-2-assistant-message-rhythm */
+
+	/* llampart-agentic-dark-card-surface-owner
+	   Dark-only LLM answer fill. Light theme uses the original component styles. */
+	:global(html.dark:not(.has-frosted-glass-theme)) .agentic-content.llampart-assistant-message {
+		background: #191919 !important;
+		background-color: #191919 !important;
+		background-image: none !important;
+	}
+	/* /llampart-agentic-dark-card-surface-owner */
 </style>

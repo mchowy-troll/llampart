@@ -7,7 +7,12 @@ import { modelsStore } from '$lib/stores/models.svelte';
 import { getFileTypeCategory } from '$lib/utils';
 import { readFileAsText, isLikelyTextFile } from './text-files';
 import { toast } from 'svelte-sonner';
-import type { FileProcessingResult, ChatUploadedFile, DatabaseMessageExtra } from '$lib/types';
+import type {
+	FileProcessingResult,
+	ChatUploadedFile,
+	DatabaseMessageExtra,
+	DatabaseMessageExtraTextFile
+} from '$lib/types';
 
 function readFileAsBase64(file: File): Promise<string> {
 	return new Promise((resolve, reject) => {
@@ -181,11 +186,17 @@ export async function parseFilesToMessageExtras(
 					console.warn(`File ${file.name} is empty and will be skipped`);
 					emptyFiles.push(file.name);
 				} else if (isLikelyTextFile(content)) {
-					extras.push({
+					const textExtra: DatabaseMessageExtraTextFile = {
 						type: AttachmentType.TEXT,
 						name: file.name,
 						content: content
-					});
+					};
+
+					if (file.source) {
+						textExtra.source = file.source;
+					}
+
+					extras.push(textExtra);
 				} else {
 					console.warn(`File ${file.name} appears to be binary and will be skipped`);
 				}
