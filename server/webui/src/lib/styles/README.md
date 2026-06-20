@@ -52,7 +52,7 @@ The following files are planned as the shared style layers mature. They do not n
 
 ```text
 tokens.css       shared non-theme primitives: spacing, radius, font scale, icon sizes, timings
-themes.css       semantic token values for light, dark, and Frosted Glass as independent themes
+themes.css       semantic token values for light, dark, and Frosted Glass as independent themes (active)
 surfaces.css     assistant, user, system, sidebar, composer, dialog, popover surfaces
 actions.css      action icons, buttons, hover/focus/active states, disabled states
 markdown.css     Markdown, tables, code, blockquotes, KaTeX, context-specific Markdown
@@ -68,6 +68,7 @@ Current order:
 
 ```css
 @import './lib/styles/tokens.css';
+@import './lib/styles/themes.css';
 
 @import 'tailwindcss';
 
@@ -80,9 +81,10 @@ Keep local imports grouped at the top unless a focused build and visual check pr
 
 ## Current ownership
 
-Until extraction happens, these areas are transitional ownership points:
+These areas are current ownership points:
 
-- `src/app.css` owns global Tailwind setup, base theme variables, Frosted Glass global overrides, sidebar shell styling, dialog/toast surfaces, and several global surface/action overrides.
+- `src/lib/styles/themes.css` owns light/dark semantic theme variables and Frosted Glass theme-level surface tokens.
+- `src/app.css` owns global Tailwind setup, Frosted Glass global selectors, sidebar shell styling, dialog/toast surfaces, and several global surface/action overrides.
 - `components/app/content/MarkdownContent.svelte` owns Markdown rendering and local Markdown-specific styling.
 - `components/app/content/SyntaxHighlightedCode.svelte` owns syntax-highlighted code presentation.
 - `components/app/chat/ChatMessages/*` own assistant, user, system, reasoning, tools, and message action presentation.
