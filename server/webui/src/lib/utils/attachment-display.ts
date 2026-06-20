@@ -61,6 +61,7 @@ export function getAttachmentDisplayItems(
 			isMcpPrompt: isMcpPromptUpload(file),
 			isLoading: file.isLoading,
 			loadError: file.loadError,
+			source: file.source,
 			uploadedFile: file,
 			textContent: file.textContent
 		});
@@ -71,6 +72,7 @@ export function getAttachmentDisplayItems(
 		const isImage = isImageFile(attachment);
 		const isMcpPrompt = isMcpPromptAttachment(attachment);
 		const isMcpResource = isMcpResourceAttachment(attachment);
+		const source = 'source' in attachment ? attachment.source : undefined;
 
 		items.push({
 			id: `attachment-${index}`,
@@ -81,6 +83,7 @@ export function getAttachmentDisplayItems(
 			isMcpResource,
 			attachment,
 			attachmentIndex: index,
+			source,
 			textContent: 'content' in attachment ? attachment.content : undefined
 		});
 	}

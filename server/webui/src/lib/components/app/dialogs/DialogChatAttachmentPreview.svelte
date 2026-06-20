@@ -47,24 +47,35 @@
 </script>
 
 <Dialog.Root bind:open {onOpenChange}>
-	<Dialog.Content class="grid max-h-[90vh] max-w-5xl overflow-hidden sm:w-auto sm:max-w-6xl">
-		<Dialog.Header>
-			<Dialog.Title class="pr-8">{displayName}</Dialog.Title>
-			<Dialog.Description>
-				{#if displaySize}
-					{formatFileSize(displaySize)}
-				{/if}
-			</Dialog.Description>
-		</Dialog.Header>
+	<Dialog.Content
+		class="llampart-attachment-preview-dialog-content z-[999999] !max-h-[80dvh] !w-auto !max-w-[80vw] gap-0"
+	>
+		<div class="table-preview-dialog llampart-attachment-preview-dialog-shell">
+			<div class="table-preview-header llampart-attachment-preview-dialog-header">
+				<div class="min-w-0">
+					<Dialog.Title class="table-preview-title llampart-attachment-preview-dialog-title"
+						>{displayName}</Dialog.Title
+					>
 
-		<ChatAttachmentPreview
-			bind:this={chatAttachmentPreviewRef}
-			{uploadedFile}
-			{attachment}
-			{preview}
-			name={displayName}
-			{textContent}
-			{activeModelId}
-		/>
+					{#if displaySize}
+						<Dialog.Description class="llampart-attachment-preview-dialog-description">
+							{formatFileSize(displaySize)}
+						</Dialog.Description>
+					{/if}
+				</div>
+			</div>
+
+			<div class="table-preview-body llampart-attachment-preview-dialog-body">
+				<ChatAttachmentPreview
+					bind:this={chatAttachmentPreviewRef}
+					{uploadedFile}
+					{attachment}
+					{preview}
+					name={displayName}
+					{textContent}
+					{activeModelId}
+				/>
+			</div>
+		</div>
 	</Dialog.Content>
 </Dialog.Root>

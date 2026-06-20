@@ -34,7 +34,9 @@
 	<Dialog.Portal>
 		<Dialog.Overlay />
 
-		<Dialog.Content class="flex !max-h-[90vh] !max-w-6xl flex-col">
+		<Dialog.Content
+			class="llampart-solid-dialog-content llampart-attachments-view-all-dialog-content flex !max-h-[90vh] !max-w-6xl flex-col !overflow-visible"
+		>
 			<Dialog.Header>
 				<Dialog.Title>{t('attachments.allAttachments')} ({totalCount})</Dialog.Title>
 				<Dialog.Description>{t('attachments.viewAndManageAllAttachedFiles')}</Dialog.Description>

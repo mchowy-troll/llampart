@@ -1,5 +1,6 @@
 @import './lib/styles/tokens.css';
 @import './lib/styles/themes.css';
+@import './lib/styles/attachments.css';
 
 @import 'tailwindcss';
 
@@ -1098,7 +1099,9 @@ html.has-frosted-glass-theme body [data-slot='sheet-overlay'] {
 
 html.has-frosted-glass-theme
 	body
-	[data-slot='dialog-content']:not(.llampart-model-info-dialog):not(.table-preview-dialog-content),
+	[data-slot='dialog-content']:not(.llampart-model-info-dialog):not(
+		.table-preview-dialog-content
+	):not(.llampart-attachment-preview-dialog-content):not(.llampart-solid-dialog-content),
 html.has-frosted-glass-theme body [data-slot='alert-dialog-content'],
 html.has-frosted-glass-theme body [data-slot='sheet-content']:not(.llampart-composer-menu-content) {
 	border: 1px solid rgba(255, 255, 255, 0.56) !important;
@@ -1118,7 +1121,9 @@ html.has-frosted-glass-theme body [data-slot='sheet-content']:not(.llampart-comp
 
 html.has-frosted-glass-theme
 	body
-	[data-slot='dialog-content']:not(.llampart-model-info-dialog):not(.table-preview-dialog-content)
+	[data-slot='dialog-content']:not(.llampart-model-info-dialog):not(
+		.table-preview-dialog-content
+	):not(.llampart-attachment-preview-dialog-content):not(.llampart-solid-dialog-content)
 	:is([data-slot='dialog-title'], [data-slot='dialog-description']),
 html.has-frosted-glass-theme
 	body
@@ -1136,7 +1141,9 @@ html.has-frosted-glass-theme
 
 html.has-frosted-glass-theme
 	body
-	[data-slot='dialog-content']:not(.llampart-model-info-dialog):not(.table-preview-dialog-content)
+	[data-slot='dialog-content']:not(.llampart-model-info-dialog):not(
+		.table-preview-dialog-content
+	):not(.llampart-attachment-preview-dialog-content):not(.llampart-solid-dialog-content)
 	.text-muted-foreground,
 html.has-frosted-glass-theme body [data-slot='alert-dialog-content'] .text-muted-foreground,
 html.has-frosted-glass-theme
@@ -1467,3 +1474,125 @@ html.has-frosted-glass-theme [data-slot='checkbox'][aria-checked='true'] svg * {
 	visibility: visible !important;
 }
 /* /llampart-frosted-glass-shared-checkbox-checked-state */
+
+/* llampart-frosted-glass-dialog-overlay-dim-parity
+   Global dialog owner for Frosted Glass modal layers:
+   dim the outside like light theme, keep dialog/sheet interiors solid like table preview. */
+html.has-frosted-glass-theme body [data-slot='dialog-overlay'],
+html.has-frosted-glass-theme body [data-slot='alert-dialog-overlay'],
+html.has-frosted-glass-theme body [data-slot='sheet-overlay'] {
+	background: rgba(0, 0, 0, 0.5) !important;
+	background-color: rgba(0, 0, 0, 0.5) !important;
+	background-image: none !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}
+
+html.has-frosted-glass-theme body [data-slot='dialog-content']:not(.llampart-composer-menu-content),
+html.has-frosted-glass-theme body [data-slot='alert-dialog-content'],
+html.has-frosted-glass-theme body [data-slot='sheet-content']:not(.llampart-composer-menu-content) {
+	border-color: var(--border) !important;
+	background: var(--background) !important;
+	background-color: var(--background) !important;
+	background-image: none !important;
+	color: var(--foreground) !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+	text-shadow: none !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is([data-slot='dialog-content'], [data-slot='alert-dialog-content'], [data-slot='sheet-content'])
+	:is(
+		[data-slot='dialog-title'],
+		[data-slot='dialog-description'],
+		[data-slot='alert-dialog-title'],
+		[data-slot='alert-dialog-description'],
+		[data-slot='sheet-title'],
+		[data-slot='sheet-description']
+	) {
+	color: var(--foreground) !important;
+	text-shadow: none !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	:is([data-slot='dialog-content'], [data-slot='alert-dialog-content'], [data-slot='sheet-content'])
+	.text-muted-foreground {
+	color: var(--muted-foreground) !important;
+	text-shadow: none !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	[data-slot='dialog-content'].llampart-attachment-preview-dialog-content,
+html.has-frosted-glass-theme body [data-slot='dialog-content'].table-preview-dialog-content {
+	background: var(--background) !important;
+	background-color: var(--background) !important;
+	background-image: none !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}
+/* /llampart-frosted-glass-dialog-overlay-dim-parity */
+
+/* llampart-frosted-glass-solid-dialog-selector-exclusion */
+/* Solid dialog components are excluded from the legacy translucent Frosted Glass dialog selector above. */
+/* llampart-frosted-glass-solid-dialog-surfaces
+   Semantic solid dialog primitive for Frosted Glass windows that open on a dim overlay.
+   The component declares the semantic class; this global owner applies the theme surface. */
+html.has-frosted-glass-theme body [data-slot='dialog-content'].llampart-solid-dialog-content,
+html.has-frosted-glass-theme body [data-slot='alert-dialog-content'].llampart-solid-dialog-content,
+html.has-frosted-glass-theme body [data-slot='sheet-content'].llampart-solid-dialog-content,
+html.has-frosted-glass-theme body .llampart-solid-dialog-content {
+	border-color: var(--border) !important;
+	background: var(--background) !important;
+	background-color: var(--background) !important;
+	background-image: none !important;
+	color: var(--foreground) !important;
+	box-shadow:
+		0 22px 60px rgba(0, 0, 0, 0.2),
+		0 4px 16px rgba(0, 0, 0, 0.12) !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+	text-shadow: none !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-solid-dialog-content
+	:is([data-slot='dialog-title'], [data-slot='dialog-description']),
+html.has-frosted-glass-theme
+	body
+	.llampart-solid-dialog-content
+	:is([data-slot='sheet-title'], [data-slot='sheet-description']),
+html.has-frosted-glass-theme
+	body
+	.llampart-solid-dialog-content
+	:is([data-slot='alert-dialog-title'], [data-slot='alert-dialog-description']) {
+	color: var(--foreground) !important;
+	text-shadow: none !important;
+}
+
+html.has-frosted-glass-theme body .llampart-solid-dialog-content .text-muted-foreground {
+	color: var(--muted-foreground) !important;
+	text-shadow: none !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-solid-dialog-content
+	:is(.bg-background, [class*='bg-background']) {
+	background-color: var(--background) !important;
+	background-image: none !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-solid-dialog-content
+	:is(.bg-muted\/10, .bg-muted\/20, .bg-muted\/30, [class*='bg-muted/']) {
+	background: color-mix(in oklch, var(--muted) 18%, var(--background)) !important;
+	background-color: color-mix(in oklch, var(--muted) 18%, var(--background)) !important;
+	background-image: none !important;
+}
+/* /llampart-frosted-glass-solid-dialog-surfaces */

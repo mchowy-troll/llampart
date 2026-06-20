@@ -1,5 +1,5 @@
 import type { ChatMessageTimings, ChatRole, ChatMessageType } from '$lib/types/chat';
-import { AttachmentType, ReasoningEffort } from '$lib/enums';
+import { AttachmentSource, AttachmentType, ReasoningEffort } from '$lib/enums';
 
 export interface McpServerOverride {
 	serverId: string;
@@ -54,6 +54,7 @@ export interface DatabaseMessageExtraTextFile {
 	type: AttachmentType.TEXT;
 	name: string;
 	content: string;
+	source?: AttachmentSource;
 }
 
 export interface DatabaseMessageExtraMcpPrompt {

@@ -34,7 +34,7 @@
 <div
 	class="llampart-attachment-thumbnail-image {readonly
 		? 'llampart-attachment-thumbnail-image-readonly'
-		: ''} group relative overflow-hidden rounded-lg bg-muted shadow-lg dark:border dark:border-muted {className}"
+		: ''} group relative overflow-hidden rounded-lg {className}"
 >
 	{#if onClick}
 		<button

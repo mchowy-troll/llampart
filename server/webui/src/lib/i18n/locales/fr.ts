@@ -691,6 +691,8 @@ export const fr: TranslationDictionary = {
 		preview: 'Aperçu',
 		sentAsImage: 'Envoyé comme image',
 		sentAsText: 'Envoyé comme texte',
+		files: 'Fichiers',
+		viewAll: 'Tout afficher',
 		allAttachments: 'Toutes les pièces jointes',
 		attachFile: 'Joindre un fichier',
 		audioPreviewNotAvailable: 'Aperçu audio non disponible',

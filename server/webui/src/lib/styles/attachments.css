@@ -1,0 +1,304 @@
+/* llampart-attachment-surface-primitives
+   Shared owner for chat attachment card geometry and frame alignment.
+   Components own semantics; this file owns the reusable frame primitive. */
+
+:root {
+	--llampart-attachment-card-width: 18rem;
+	--llampart-attachment-card-radius: 0.75rem;
+	--llampart-attachment-card-border: #cecece;
+	--llampart-attachment-card-shadow: none;
+}
+
+.dark {
+	--llampart-attachment-card-border: #2d2d2d;
+}
+
+html.has-frosted-glass-theme {
+	--llampart-attachment-card-border: var(--llampart-frosted-message-surface-border);
+	--llampart-attachment-card-shadow: var(--llampart-frosted-message-surface-shadow);
+}
+
+.llampart-attachment-thumbnail-file.llampart-attachment-card {
+	width: var(--llampart-attachment-card-width);
+	min-width: var(--llampart-attachment-card-width);
+	max-width: var(--llampart-attachment-card-width);
+	border-color: var(--llampart-attachment-card-border) !important;
+	border-radius: var(--llampart-attachment-card-radius) !important;
+	box-shadow: var(--llampart-attachment-card-shadow) !important;
+}
+
+.llampart-attachment-thumbnail-file.llampart-attachment-card,
+.llampart-attachment-thumbnail-file.llampart-attachment-card:hover {
+	background-color: var(--muted) !important;
+}
+
+html.has-frosted-glass-theme .llampart-attachment-thumbnail-file.llampart-attachment-card {
+	background: var(--llampart-frosted-surface-bg) !important;
+	color: var(--llampart-frosted-surface-text) !important;
+	text-shadow: var(--llampart-frosted-surface-text-shadow) !important;
+	-webkit-backdrop-filter: var(--llampart-frosted-surface-filter) !important;
+	backdrop-filter: var(--llampart-frosted-surface-filter) !important;
+}
+
+html.has-frosted-glass-theme .llampart-attachment-thumbnail-file.llampart-attachment-card *,
+html.has-frosted-glass-theme .llampart-attachment-thumbnail-file.llampart-attachment-card-title {
+	color: var(--llampart-frosted-surface-text) !important;
+	text-shadow: var(--llampart-frosted-surface-text-shadow) !important;
+}
+
+html.has-frosted-glass-theme .llampart-attachment-thumbnail-file .text-muted-foreground {
+	color: rgba(0, 0, 0, 0.68) !important;
+}
+
+.llampart-attachment-thumbnail-file .llampart-attachment-file-label {
+	flex: 0 0 2rem;
+	font-weight: 700 !important;
+}
+
+.llampart-attachment-thumbnail-file .llampart-attachment-file-title {
+	min-width: 0;
+	max-width: 100%;
+}
+
+.llampart-attachment-thumbnail-image {
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.llampart-attachment-thumbnail-image img {
+	border-color: var(--llampart-attachment-card-border) !important;
+}
+
+html.has-frosted-glass-theme .llampart-attachment-thumbnail-image img {
+	border-color: var(--llampart-frosted-message-surface-border) !important;
+}
+
+/* /llampart-attachment-surface-primitives */
+
+/* llampart-composer-attachment-strip-layout
+   Shared owner for pending attachment strip layout in the composer. */
+
+.llampart-attachments-strip {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 0.5rem;
+	padding-top: 0.25rem;
+}
+
+.llampart-attachments-strip-action {
+	display: flex;
+	justify-content: flex-end;
+	padding-inline: 1rem;
+}
+
+.llampart-attachments-strip-row {
+	display: flex;
+	min-width: 0;
+	align-items: center;
+	gap: 0.75rem;
+	overflow: visible;
+	padding: 0.25rem 1rem 0.5rem;
+}
+
+/* /llampart-composer-attachment-strip-layout */
+
+/* llampart-attachment-preview-dialog-shell
+   Attachment previews share the accepted table preview chrome classes.
+   This file only owns attachment-specific aliases and OKLCH-token-safe fills. */
+
+.llampart-attachment-preview-dialog-content {
+	padding: 0 !important;
+	overflow: hidden !important;
+	background: var(--background) !important;
+	background-color: var(--background) !important;
+	color: var(--foreground) !important;
+}
+
+.llampart-attachment-preview-dialog-shell {
+	display: flex;
+	min-height: 0;
+	max-height: 80dvh;
+	flex-direction: column;
+	background: var(--background);
+	color: var(--foreground);
+}
+
+.llampart-attachment-preview-dialog-header {
+	position: relative;
+	display: flex;
+	min-height: 3.25rem;
+	flex: 0 0 auto;
+	align-items: center;
+	border-bottom: 1px solid color-mix(in oklch, var(--border) 68%, transparent);
+	padding: 0 1.25rem;
+	background: var(--background);
+}
+
+.llampart-attachment-preview-dialog-title {
+	margin: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 1rem;
+	font-weight: 600;
+	line-height: 1.25;
+}
+
+.llampart-attachment-preview-dialog-description {
+	margin: 0.125rem 0 0;
+	color: var(--muted-foreground);
+	font-size: 0.75rem;
+	line-height: 1.2;
+}
+
+.llampart-attachment-preview-dialog-body {
+	min-height: 0;
+	flex: 1 1 auto;
+	overflow: auto;
+	padding: 1rem !important;
+	background: var(--background);
+}
+
+.llampart-attachments-view-all-trigger {
+	box-shadow: none;
+}
+
+html.has-frosted-glass-theme
+	[data-slot='dialog-content']
+	.llampart-attachment-thumbnail-file.llampart-attachment-card {
+	box-shadow: none !important;
+}
+
+/* /llampart-attachment-preview-dialog-shell */
+
+/* llampart-attachments-view-all-panel-surface
+   Inner attachment list panel is intentionally lighter than the dialog shell in Frosted Glass. */
+.llampart-attachments-view-all-panel {
+	border-radius: 0.875rem;
+	padding: 0.25rem;
+}
+
+html.has-frosted-glass-theme .llampart-attachments-view-all-panel {
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	background: rgba(255, 255, 255, 0.1);
+	background-color: rgba(255, 255, 255, 0.1);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+	backdrop-filter: blur(10px) saturate(108%);
+	-webkit-backdrop-filter: blur(10px) saturate(108%);
+}
+/* /llampart-attachments-view-all-panel-surface */
+
+/* llampart-attachment-preview-opaque-fill
+   Fills attachment preview interiors with OKLCH-token-safe colors in all themes. */
+.llampart-attachment-preview-dialog-content,
+.llampart-attachment-preview-dialog-shell,
+.llampart-attachment-preview-dialog-header,
+.llampart-attachment-preview-dialog-body,
+.llampart-attachment-preview-content,
+.llampart-attachment-pdf-preview-pages,
+.llampart-attachment-pdf-preview-page,
+.llampart-attachment-image-preview-frame {
+	background: var(--background) !important;
+	background-color: var(--background) !important;
+	color: var(--foreground) !important;
+	text-shadow: none !important;
+}
+
+html.has-frosted-glass-theme .llampart-attachment-preview-dialog-content,
+html.has-frosted-glass-theme .llampart-attachment-preview-dialog-shell,
+html.has-frosted-glass-theme .llampart-attachment-preview-dialog-header,
+html.has-frosted-glass-theme .llampart-attachment-preview-dialog-body,
+html.has-frosted-glass-theme .llampart-attachment-preview-content,
+html.has-frosted-glass-theme .llampart-attachment-pdf-preview-pages,
+html.has-frosted-glass-theme .llampart-attachment-pdf-preview-page,
+html.has-frosted-glass-theme .llampart-attachment-image-preview-frame {
+	background: var(--background) !important;
+	background-color: var(--background) !important;
+	color: var(--foreground) !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+	text-shadow: none !important;
+}
+
+html.has-frosted-glass-theme .llampart-attachment-preview-dialog-content *,
+html.has-frosted-glass-theme .llampart-attachment-preview-dialog-shell * {
+	text-shadow: none !important;
+}
+/* /llampart-attachment-preview-opaque-fill */
+
+/* llampart-attachments-view-all-solid-surface
+   View-all attachment dialog uses the same solid dialog surface contract as table preview. */
+.llampart-attachments-view-all-dialog-content {
+	background: var(--background) !important;
+	background-color: var(--background) !important;
+	background-image: none !important;
+	color: var(--foreground) !important;
+	overflow: visible !important;
+}
+
+.llampart-attachments-view-all-panel {
+	border: 1px solid color-mix(in oklch, var(--border) 68%, transparent);
+	border-radius: 0.875rem;
+	background: var(--background) !important;
+	background-color: var(--background) !important;
+	background-image: none !important;
+	padding: 1.25rem 1.5rem 1.5rem;
+}
+
+.llampart-attachments-view-all-panel > .min-h-0 {
+	padding: 0.125rem 0.25rem 0.25rem;
+}
+
+.llampart-attachments-view-all-panel h3 {
+	margin: 0 0 1rem;
+	padding-left: 0.125rem;
+	font-weight: 700;
+}
+
+html.has-frosted-glass-theme .llampart-attachments-view-all-dialog-content,
+html.has-frosted-glass-theme .llampart-attachments-view-all-panel {
+	background: var(--background) !important;
+	background-color: var(--background) !important;
+	background-image: none !important;
+	color: var(--foreground) !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+	text-shadow: none !important;
+}
+/* /llampart-attachments-view-all-solid-surface */
+
+/* llampart-attachment-user-message-frame-parity
+   Light and dark attachment cards follow the user-message frame contract:
+   no visible outline and no extra shadow. Frosted Glass keeps its frosted attachment frame. */
+html:not(.has-frosted-glass-theme) .llampart-attachment-thumbnail-file.llampart-attachment-card,
+html:not(.has-frosted-glass-theme) .llampart-attachment-thumbnail-image img {
+	border-color: transparent !important;
+	box-shadow: none !important;
+}
+
+html:not(.has-frosted-glass-theme) .llampart-attachment-thumbnail-file.llampart-attachment-card {
+	background-color: var(--muted) !important;
+}
+/* /llampart-attachment-user-message-frame-parity */
+
+/* llampart-attachment-file-label-size-polish
+   Non-image attachment badges must fit four-letter labels like JSON, YAML, DOCX, XLSX.
+   Image thumbnails keep their natural image preview treatment. */
+.llampart-attachment-thumbnail-file .llampart-attachment-file-label {
+	width: 3rem !important;
+	min-width: 3rem !important;
+	max-width: 3rem !important;
+	height: 3rem !important;
+	min-height: 3rem !important;
+	max-height: 3rem !important;
+	flex: 0 0 3rem !important;
+	padding-inline: 0.25rem !important;
+	font-size: 0.8125rem !important;
+	font-weight: 700 !important;
+	line-height: 1 !important;
+	letter-spacing: -0.045em !important;
+	text-align: center !important;
+	white-space: nowrap !important;
+}
+/* /llampart-attachment-file-label-size-polish */

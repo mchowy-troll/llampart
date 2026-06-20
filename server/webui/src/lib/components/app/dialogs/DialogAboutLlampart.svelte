@@ -110,7 +110,7 @@
 <Dialog.Root bind:open>
 	<Dialog.Content
 		showCloseButton={false}
-		class="flex h-[100dvh] max-h-[100dvh] min-h-[100dvh] w-[100vw] max-w-none! flex-col overflow-hidden rounded-none border border-border/30 p-0 shadow-lg md:h-[80dvh] md:max-h-[80dvh] md:min-h-0 md:w-[60vw] md:max-w-[60vw]! md:rounded-lg"
+		class="llampart-solid-dialog-content llampart-about-dialog-content flex h-[100dvh] max-h-[100dvh] min-h-[100dvh] w-[100vw] max-w-none! flex-col overflow-hidden rounded-none border border-border/30 p-0 shadow-lg md:h-[80dvh] md:max-h-[80dvh] md:min-h-0 md:w-[60vw] md:max-w-[60vw]! md:rounded-lg"
 	>
 		<div class="grid min-h-0 flex-1 grid-cols-3">
 			<div

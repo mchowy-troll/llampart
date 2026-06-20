@@ -1,4 +1,4 @@
-export { AttachmentType } from './attachment';
+export { AttachmentType, AttachmentSource } from './attachment';
 
 export { AgenticSectionType, ToolCallType } from './agentic';
 

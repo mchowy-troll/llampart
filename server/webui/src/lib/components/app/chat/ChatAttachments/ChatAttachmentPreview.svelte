@@ -1,17 +1,9 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
 	import * as Alert from '$lib/components/ui/alert';
-	import { SyntaxHighlightedCode } from '$lib/components/app';
-	import { FileText, Image, Music, FileIcon, Eye, Info } from '@lucide/svelte';
-	import {
-		isTextFile,
-		isImageFile,
-		isPdfFile,
-		isAudioFile,
-		getLanguageFromFilename,
-		createBase64DataUrl
-	} from '$lib/utils';
+	import { FileText, Image, Music, FileIcon, Info } from '@lucide/svelte';
+	import { isTextFile, isImageFile, isPdfFile, isAudioFile, createBase64DataUrl } from '$lib/utils';
 	import { convertPDFToImage } from '$lib/utils/browser-only';
+	import { MarkdownContent } from '$lib/components/app/content';
 	import { modelsStore } from '$lib/stores/models.svelte';
 	import { t } from '$lib/i18n';
 
@@ -37,11 +29,18 @@
 		uploadedFile?.name || attachment?.name || name || t('attachments.unknownFile')
 	);
 
-	// Determine file type from uploaded file or attachment
+	let displayMimeType = $derived(
+		uploadedFile?.type ||
+			(attachment && 'mimeType' in attachment && attachment.mimeType
+				? attachment.mimeType
+				: undefined)
+	);
+
 	let isAudio = $derived(isAudioFile(attachment, uploadedFile));
 	let isImage = $derived(isImageFile(attachment, uploadedFile));
 	let isPdf = $derived(isPdfFile(attachment, uploadedFile));
 	let isText = $derived(isTextFile(attachment, uploadedFile));
+	let isMarkdown = $derived(isText && isMarkdownLike(displayName, displayMimeType));
 
 	let displayPreview = $derived(
 		uploadedFile?.preview ||
@@ -53,8 +52,6 @@
 			(attachment && 'content' in attachment ? attachment.content : textContent)
 	);
 
-	let language = $derived(getLanguageFromFilename(displayName));
-
 	let IconComponent = $derived(() => {
 		if (isImage) return Image;
 		if (isText || isPdf) return FileText;
@@ -63,13 +60,23 @@
 		return FileIcon;
 	});
 
-	let pdfViewMode = $state<'text' | 'pages'>('pages');
-
 	let pdfImages = $state<string[]>([]);
-
 	let pdfImagesLoading = $state(false);
-
 	let pdfImagesError = $state<string | null>(null);
+
+	function isMarkdownLike(fileName: string, mimeType?: string): boolean {
+		const normalizedName = fileName.trim().toLowerCase().split('?')[0].split('#')[0];
+		const normalizedMime = mimeType?.trim().toLowerCase();
+
+		return (
+			normalizedName.endsWith('.md') ||
+			normalizedName.endsWith('.markdown') ||
+			normalizedName.endsWith('.mdown') ||
+			normalizedName.endsWith('.mkd') ||
+			normalizedMime === 'text/markdown' ||
+			normalizedMime === 'text/x-markdown'
+		);
+	}
 
 	async function loadPdfImages() {
 		if (!isPdf || pdfImages.length > 0 || pdfImagesLoading) return;
@@ -83,18 +90,6 @@
 			if (uploadedFile?.file) {
 				file = uploadedFile.file;
 			} else if (isPdf && attachment) {
-				// Check if we have pre-processed images
-				if (
-					'images' in attachment &&
-					attachment.images &&
-					Array.isArray(attachment.images) &&
-					attachment.images.length > 0
-				) {
-					pdfImages = attachment.images;
-					return;
-				}
-
-				// Convert base64 back to File for processing
 				if ('base64Data' in attachment && attachment.base64Data) {
 					const base64Data = attachment.base64Data;
 					const byteCharacters = atob(base64Data);
@@ -104,11 +99,20 @@
 					}
 					const byteArray = new Uint8Array(byteNumbers);
 					file = new File([byteArray], displayName, { type: 'application/pdf' });
+				} else if (
+					'images' in attachment &&
+					attachment.images &&
+					Array.isArray(attachment.images) &&
+					attachment.images.length > 0
+				) {
+					pdfImages = attachment.images;
+					return;
 				}
 			}
 
 			if (file) {
-				pdfImages = await convertPDFToImage(file);
+				const pdfPreviewScale = Math.max(2.5, Math.min(3.5, window.devicePixelRatio * 2));
+				pdfImages = await convertPDFToImage(file, pdfPreviewScale);
 			} else {
 				throw new Error(t('attachments.noPdfFileAvailableForConversion'));
 			}
@@ -124,169 +128,225 @@
 		pdfImages = [];
 		pdfImagesLoading = false;
 		pdfImagesError = null;
-		pdfViewMode = 'pages';
 	}
 
 	$effect(() => {
-		if (isPdf && pdfViewMode === 'pages') {
+		if (isPdf) {
 			loadPdfImages();
 		}
 	});
 </script>
 
-<div class="space-y-4">
-	<div class="flex items-center justify-end gap-6">
-		{#if isPdf}
-			<div class="flex items-center gap-2">
-				<Button
-					variant={pdfViewMode === 'text' ? 'default' : 'outline'}
-					size="sm"
-					onclick={() => (pdfViewMode = 'text')}
-					disabled={pdfImagesLoading}
-				>
-					<FileText class="mr-1 h-4 w-4" />
-
-					Text
-				</Button>
-
-				<Button
-					variant={pdfViewMode === 'pages' ? 'default' : 'outline'}
-					size="sm"
-					onclick={() => {
-						pdfViewMode = 'pages';
-						loadPdfImages();
-					}}
-					disabled={pdfImagesLoading}
-				>
-					{#if pdfImagesLoading}
-						<div
-							class="mr-1 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-						></div>
-					{:else}
-						<Eye class="mr-1 h-4 w-4" />
-					{/if}
-
-					Pages
-				</Button>
-			</div>
+<div class="llampart-attachment-preview-content">
+	{#if isImage && displayPreview}
+		<div class="llampart-attachment-image-preview-frame">
+			<img src={displayPreview} alt={displayName} class="llampart-attachment-image-preview" />
+		</div>
+	{:else if isPdf}
+		{#if !hasVisionModality && activeModelId}
+			<Alert.Root class="mb-4 w-full">
+				<Info class="h-4 w-4" />
+				<Alert.Title>{t('attachments.previewOnly')}</Alert.Title>
+				<Alert.Description>
+					{t('attachments.selectedModelDoesNotSupportVisionOnlyExtracted')}
+					{t('attachments.willBeSentToModel')}
+				</Alert.Description>
+			</Alert.Root>
 		{/if}
-	</div>
 
-	<div class="flex-1 overflow-auto">
-		{#if isImage && displayPreview}
-			<div class="flex items-center justify-center">
-				<img
-					src={displayPreview}
-					alt={displayName}
-					class="max-h-full rounded-lg object-contain shadow-lg"
-				/>
-			</div>
-		{:else if isPdf && pdfViewMode === 'pages'}
-			{#if !hasVisionModality && activeModelId}
-				<Alert.Root class="mb-4">
-					<Info class="h-4 w-4" />
-					<Alert.Title>{t('attachments.previewOnly')}</Alert.Title>
-					<Alert.Description>
-						<span class="inline-flex">
-							{t('attachments.selectedModelDoesNotSupportVisionOnlyExtracted')}
-							<!-- svelte-ignore a11y_click_events_have_key_events -->
-							<!-- svelte-ignore a11y_no_static_element_interactions -->
-							<span class="mx-1 cursor-pointer underline" onclick={() => (pdfViewMode = 'text')}>
-								{t('attachments.text').toLowerCase()}
-							</span>
-							{t('attachments.willBeSentToModel')}
-						</span>
-					</Alert.Description>
-				</Alert.Root>
-			{/if}
-
-			{#if pdfImagesLoading}
-				<div class="flex items-center justify-center p-8">
-					<div class="text-center">
-						<div
-							class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
-						></div>
-
-						<p class="text-muted-foreground">{t('attachments.convertingPdfToImages')}</p>
-					</div>
-				</div>
-			{:else if pdfImagesError}
-				<div class="flex items-center justify-center p-8">
-					<div class="text-center">
-						<FileText class="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-
-						<p class="mb-4 text-muted-foreground">{t('attachments.failedToLoadPdfImages')}</p>
-
-						<p class="text-sm text-muted-foreground">{pdfImagesError}</p>
-
-						<Button class="mt-4" onclick={() => (pdfViewMode = 'text')}
-							>{t('attachments.viewAsText')}</Button
-						>
-					</div>
-				</div>
-			{:else if pdfImages.length > 0}
-				<div class="max-h-[70vh] space-y-4 overflow-auto">
-					{#each pdfImages as image, index (image)}
-						<div class="text-center">
-							<p class="mb-2 text-sm text-muted-foreground">{t('attachments.page')} {index + 1}</p>
-
-							<img
-								src={image}
-								alt={`${t('attachments.pdfPage')} ${index + 1}`}
-								class="mx-auto max-w-full rounded-lg shadow-lg"
-							/>
-						</div>
-					{/each}
-				</div>
-			{:else}
-				<div class="flex items-center justify-center p-8">
-					<div class="text-center">
-						<FileText class="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-
-						<p class="mb-4 text-muted-foreground">{t('attachments.noPdfPagesAvailable')}</p>
-					</div>
-				</div>
-			{/if}
-		{:else if (isText || (isPdf && pdfViewMode === 'text')) && displayTextContent}
-			<SyntaxHighlightedCode code={displayTextContent} {language} maxWidth="calc(69rem - 2rem)" />
-		{:else if isAudio}
+		{#if pdfImagesLoading}
 			<div class="flex items-center justify-center p-8">
-				<div class="w-full max-w-md text-center">
-					<Music class="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+				<div class="text-center">
+					<div
+						class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
+					></div>
 
-					{#if uploadedFile?.preview}
-						<audio controls class="mb-4 w-full" src={uploadedFile.preview}>
-							{t('attachments.browserDoesNotSupportAudioElement')}
-						</audio>
-					{:else if isAudio && attachment && 'mimeType' in attachment && 'base64Data' in attachment}
-						<audio
-							controls
-							class="mb-4 w-full"
-							src={createBase64DataUrl(attachment.mimeType, attachment.base64Data)}
-						>
-							{t('attachments.browserDoesNotSupportAudioElement')}
-						</audio>
-					{:else}
-						<p class="mb-4 text-muted-foreground">{t('attachments.audioPreviewNotAvailable')}</p>
-					{/if}
-
-					<p class="text-sm text-muted-foreground">
-						{displayName}
-					</p>
+					<p class="text-muted-foreground">{t('attachments.convertingPdfToImages')}</p>
 				</div>
+			</div>
+		{:else if pdfImagesError}
+			<div class="flex items-center justify-center p-8">
+				<div class="text-center">
+					<FileText class="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+
+					<p class="mb-4 text-muted-foreground">{t('attachments.failedToLoadPdfImages')}</p>
+
+					<p class="text-sm text-muted-foreground">{pdfImagesError}</p>
+				</div>
+			</div>
+		{:else if pdfImages.length > 0}
+			<div class="llampart-attachment-pdf-preview-pages">
+				{#each pdfImages as image, index (image)}
+					<div class="llampart-attachment-pdf-preview-page">
+						<p class="mb-2 text-center text-sm text-muted-foreground">
+							{t('attachments.page')}
+							{index + 1}
+						</p>
+
+						<img
+							src={image}
+							alt={`${t('attachments.pdfPage')} ${index + 1}`}
+							class="llampart-attachment-pdf-preview-image"
+						/>
+					</div>
+				{/each}
 			</div>
 		{:else}
 			<div class="flex items-center justify-center p-8">
 				<div class="text-center">
-					{#if IconComponent}
-						<IconComponent class="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
-					{/if}
+					<FileText class="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
 
-					<p class="mb-4 text-muted-foreground">
-						{t('attachments.previewNotAvailableForFileType')}
-					</p>
+					<p class="mb-4 text-muted-foreground">{t('attachments.noPdfPagesAvailable')}</p>
 				</div>
 			</div>
 		{/if}
-	</div>
+	{:else if isMarkdown && displayTextContent}
+		<div class="llampart-attachment-markdown-preview markdown-rendered-preview-dialog">
+			<MarkdownContent class="llampart-attachment-markdown-content" content={displayTextContent} />
+		</div>
+	{:else if isText && displayTextContent}
+		<pre class="llampart-attachment-text-preview"><code>{displayTextContent}</code></pre>
+	{:else if isAudio}
+		<div class="flex items-center justify-center p-8">
+			<div class="w-full max-w-md text-center">
+				<Music class="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+
+				{#if uploadedFile?.preview}
+					<audio controls class="mb-4 w-full" src={uploadedFile.preview}>
+						{t('attachments.browserDoesNotSupportAudioElement')}
+					</audio>
+				{:else if isAudio && attachment && 'mimeType' in attachment && 'base64Data' in attachment}
+					<audio
+						controls
+						class="mb-4 w-full"
+						src={createBase64DataUrl(attachment.mimeType, attachment.base64Data)}
+					>
+						{t('attachments.browserDoesNotSupportAudioElement')}
+					</audio>
+				{:else}
+					<p class="mb-4 text-muted-foreground">{t('attachments.audioPreviewNotAvailable')}</p>
+				{/if}
+
+				<p class="text-sm text-muted-foreground">
+					{displayName}
+				</p>
+			</div>
+		</div>
+	{:else}
+		<div class="flex items-center justify-center p-8">
+			<div class="text-center">
+				{#if IconComponent}
+					<IconComponent class="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+				{/if}
+
+				<p class="mb-4 text-muted-foreground">
+					{t('attachments.previewNotAvailableForFileType')}
+				</p>
+			</div>
+		</div>
+	{/if}
 </div>
+
+<style>
+	.llampart-attachment-preview-content {
+		box-sizing: border-box;
+		width: fit-content;
+		min-width: min(18rem, calc(80vw - 2rem));
+		max-width: calc(80vw - 2rem);
+		max-height: calc(80dvh - 8.5rem);
+		margin-inline: auto;
+		overflow: auto;
+	}
+
+	.llampart-attachment-image-preview-frame {
+		display: flex;
+		width: fit-content;
+		max-width: 100%;
+		min-height: 0;
+		align-items: center;
+		justify-content: center;
+		margin-inline: auto;
+	}
+
+	.llampart-attachment-image-preview {
+		display: block;
+		width: auto;
+		height: auto;
+		max-width: calc(80vw - 4rem);
+		max-height: calc(80dvh - 8.5rem);
+		border-radius: 0.75rem;
+		object-fit: contain;
+	}
+
+	.llampart-attachment-pdf-preview-pages {
+		display: flex;
+		width: fit-content;
+		max-width: calc(80vw - 4rem);
+		min-height: 0;
+		max-height: calc(80dvh - 8.5rem);
+		flex-direction: column;
+		gap: 1rem;
+		overflow: auto;
+		margin-inline: auto;
+	}
+
+	.llampart-attachment-pdf-preview-page {
+		width: fit-content;
+		max-width: 100%;
+		margin-inline: auto;
+		text-align: center;
+	}
+
+	.llampart-attachment-pdf-preview-image {
+		display: block;
+		width: auto;
+		height: auto;
+		max-width: calc(80vw - 4rem);
+		max-height: calc(80dvh - 8.5rem);
+		margin-inline: auto;
+		border-radius: 0.75rem;
+		object-fit: contain;
+	}
+
+	.llampart-attachment-markdown-preview,
+	.llampart-attachment-text-preview {
+		box-sizing: border-box;
+		width: min(72rem, calc(80vw - 2rem));
+		max-width: calc(80vw - 2rem);
+		max-height: calc(80dvh - 8.5rem);
+		margin: 0;
+		overflow: auto;
+		border: 1px solid color-mix(in oklch, var(--border) 68%, transparent);
+		border-radius: 0.75rem;
+		background: color-mix(in oklch, var(--muted) 50%, transparent);
+		padding: 1rem;
+		color: var(--foreground);
+	}
+
+	.llampart-attachment-markdown-preview {
+		font-size: 0.9375rem;
+		line-height: 1.6;
+	}
+
+	.llampart-attachment-text-preview {
+		font-family: var(--font-mono);
+		font-size: 0.875rem;
+		line-height: 1.6;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		word-break: break-word;
+	}
+
+	:global(html.has-frosted-glass-theme) .llampart-attachment-markdown-preview,
+	:global(html.has-frosted-glass-theme) .llampart-attachment-text-preview {
+		background: color-mix(in oklch, var(--muted) 50%, transparent);
+		color: var(--foreground);
+		text-shadow: none !important;
+		backdrop-filter: none !important;
+		-webkit-backdrop-filter: none !important;
+	}
+
+	:global(html.has-frosted-glass-theme) .llampart-attachment-markdown-preview :global(*) {
+		text-shadow: none !important;
+	}
+</style>
