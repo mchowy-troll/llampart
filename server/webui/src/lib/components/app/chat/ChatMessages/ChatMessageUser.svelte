@@ -573,4 +573,11 @@
 		padding: 0 !important;
 	}
 	/* /llampart-1-0-2-user-message-padding-match-assistant */
+
+	/* llampart-user-message-single-line-top-inset-stability */
+	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card:not([data-multiline])),
+	:global(html.has-frosted-glass-theme .llampart-user-message-card:not([data-multiline])) {
+		padding-top: 0.9375rem !important;
+	}
+	/* /llampart-user-message-single-line-top-inset-stability */
 </style>

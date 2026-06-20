@@ -170,7 +170,11 @@
 		<!-- Hidden by Minimalistic Reasoning/Tools mode. -->
 	{:else if section.type === AgenticSectionType.TEXT}
 		<div class="agentic-text">
-			<MarkdownContent content={section.content} attachments={message?.extra} />
+			<MarkdownContent
+				class="llampart-assistant-markdown"
+				content={section.content}
+				attachments={message?.extra}
+			/>
 		</div>
 	{:else if section.type === AgenticSectionType.TOOL_CALL_STREAMING}
 		{@const streamingIcon = isStreaming ? Loader2 : Loader2}
@@ -392,6 +396,23 @@
 
 	.agentic-text {
 		width: 100%;
+	}
+
+	/* llampart-assistant-markdown-top-edge-alignment */
+	.agentic-text :global(.llampart-assistant-markdown > :first-child),
+	.agentic-text :global(.llampart-assistant-markdown p:first-child),
+	.agentic-text :global(.llampart-assistant-markdown h1:first-child),
+	.agentic-text :global(.llampart-assistant-markdown h2:first-child),
+	.agentic-text :global(.llampart-assistant-markdown h3:first-child),
+	.agentic-text :global(.llampart-assistant-markdown h4:first-child),
+	.agentic-text :global(.llampart-assistant-markdown h5:first-child),
+	.agentic-text :global(.llampart-assistant-markdown h6:first-child),
+	.agentic-text :global(.llampart-assistant-markdown ul:first-child),
+	.agentic-text :global(.llampart-assistant-markdown ol:first-child),
+	.agentic-text :global(.llampart-assistant-markdown blockquote:first-child),
+	.agentic-text :global(.llampart-assistant-markdown pre:first-child),
+	.agentic-text :global(.llampart-assistant-markdown table:first-child) {
+		margin-top: 0 !important;
 	}
 
 	/* llampart-minimalistic-first-markdown-top-edge */

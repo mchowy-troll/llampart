@@ -2,15 +2,16 @@
 	import type { Snippet, Component } from 'svelte';
 
 	interface Props {
+		class?: string;
 		icon: Component<{ class?: string }>;
 		message: Snippet;
 		actions: Snippet;
 	}
 
-	let { icon: IconComponent, message, actions }: Props = $props();
+	let { class: className = '', icon: IconComponent, message, actions }: Props = $props();
 </script>
 
-<div class="llampart-action-card my-2 rounded-lg border border-border bg-card p-3">
+<div class="llampart-action-card my-2 rounded-lg border border-border bg-card p-3 {className}">
 	<div class="mb-3 flex items-center gap-2 text-sm">
 		<IconComponent class="h-4 w-4 shrink-0 text-muted-foreground" />
 		<span>
