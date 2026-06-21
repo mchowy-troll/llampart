@@ -14,6 +14,8 @@
 	let { code, language, disabled = false, onPreview }: Props = $props();
 
 	const showPreview = $derived(language?.toLowerCase() === FileTypeText.HTML);
+	const copyLabel = $derived(disabled ? t('common.codeIncomplete') : t('common.copyCode'));
+	const previewLabel = $derived(disabled ? t('common.codeIncomplete') : t('common.previewCode'));
 
 	function handlePreview() {
 		if (disabled) return;
@@ -22,11 +24,16 @@
 </script>
 
 <div class="code-block-actions">
-	<div class="copy-code-btn" class:opacity-50={disabled} class:!cursor-not-allowed={disabled}>
+	<div
+		class="copy-code-btn"
+		class:opacity-50={disabled}
+		class:!cursor-not-allowed={disabled}
+		data-llampart-code-tooltip={copyLabel}
+	>
 		<ActionIconCopyToClipboard
 			text={code}
 			canCopy={!disabled}
-			ariaLabel={disabled ? t('common.codeIncomplete') : t('common.copyCode')}
+			ariaLabel={copyLabel}
 			successMessage={t('common.codeCopiedToClipboard')}
 			errorMessage={t('common.failedToCopyCode')}
 		/>
@@ -37,8 +44,8 @@
 			class="preview-code-btn"
 			class:opacity-50={disabled}
 			class:!cursor-not-allowed={disabled}
-			title={disabled ? t('common.codeIncomplete') : t('common.previewCode')}
-			aria-label={t('common.previewCode')}
+			aria-label={previewLabel}
+			data-llampart-code-tooltip={previewLabel}
 			aria-disabled={disabled}
 			type="button"
 			onclick={handlePreview}

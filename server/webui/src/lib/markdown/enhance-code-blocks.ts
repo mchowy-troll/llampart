@@ -51,7 +51,8 @@ function createCopyButton(codeId: string): Element {
 		properties: {
 			className: [COPY_CODE_BTN_CLASS],
 			'data-code-id': codeId,
-			title: 'Copy code',
+			'aria-label': '',
+			'data-llampart-code-tooltip': '',
 			type: 'button'
 		},
 		children: [createRawHtmlElement(COPY_ICON_SVG)]
@@ -65,7 +66,8 @@ function createPreviewButton(codeId: string): Element {
 		properties: {
 			className: [PREVIEW_CODE_BTN_CLASS],
 			'data-code-id': codeId,
-			title: 'Preview code',
+			'aria-label': '',
+			'data-llampart-code-tooltip': '',
 			type: 'button'
 		},
 		children: [createRawHtmlElement(CODE_PREVIEW_ICON_SVG)]

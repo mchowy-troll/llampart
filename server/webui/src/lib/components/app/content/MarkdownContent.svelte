@@ -581,9 +581,22 @@
 				MARKDOWN_PRESENTATION_SELECTORS.previewCodeButton
 			);
 
-			if (previewButton?.classList.contains(MARKDOWN_RENDERED_CODE_PREVIEW_BUTTON_CLASS)) {
-				previewButton.title = t('common.previewMarkdown');
-				previewButton.setAttribute('aria-label', t('common.previewMarkdown'));
+			if (copyButton) {
+				const copyLabel = t('common.copyCode');
+				copyButton.removeAttribute('title');
+				copyButton.setAttribute('aria-label', copyLabel);
+				copyButton.dataset.llampartCodeTooltip = copyLabel;
+			}
+
+			if (previewButton) {
+				const previewLabel = previewButton.classList.contains(
+					MARKDOWN_RENDERED_CODE_PREVIEW_BUTTON_CLASS
+				)
+					? t('common.previewMarkdown')
+					: t('common.previewCode');
+				previewButton.removeAttribute('title');
+				previewButton.setAttribute('aria-label', previewLabel);
+				previewButton.dataset.llampartCodeTooltip = previewLabel;
 			}
 
 			if (copyButton && copyButton.dataset.listenerBound !== 'true') {
@@ -1306,12 +1319,14 @@
 	div :global(.code-block-wrapper) {
 		margin: 1.5rem 0;
 		border-radius: 0.75rem;
-		overflow: hidden;
+		overflow: visible;
 		border: 1px solid color-mix(in oklch, var(--border) 30%, transparent);
 		background: var(--code-background);
 		box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 		min-height: var(--min-message-height);
-		max-height: var(--max-message-height);
+		max-height: none;
+		display: flex;
+		flex-direction: column;
 	}
 
 	:global(.dark) div :global(.code-block-wrapper) {
@@ -1322,10 +1337,10 @@
 	div :global(.code-block-scroll-container),
 	.streaming-code-scroll-container {
 		min-height: var(--min-message-height);
-		max-height: var(--max-message-height);
-		overflow-y: auto;
+		max-height: none;
+		overflow-y: visible;
 		overflow-x: auto;
-		padding: 3rem 1rem 1rem;
+		padding: 1rem;
 		line-height: 1.3;
 	}
 
@@ -1343,12 +1358,15 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 0.5rem 1rem 0;
+		padding: 1rem 1rem 0.75rem;
 		font-size: 0.875rem;
-		position: absolute;
+		position: relative;
 		top: 0;
 		left: 0;
 		right: 0;
+		overflow: visible;
+		isolation: isolate;
+		z-index: 2;
 	}
 
 	div :global(.code-language) {
@@ -1961,16 +1979,18 @@
 	div :global(.markdown-rendered-code-block) {
 		display: flex;
 		min-height: var(--min-message-height);
-		max-height: var(--max-message-height);
+		max-height: none;
 		flex-direction: column;
-		overflow: hidden;
+		overflow: visible;
 	}
 
 	div :global(.markdown-rendered-code-block .code-block-header) {
-		position: static;
+		position: relative;
 		flex: 0 0 auto;
 		padding: 1rem 1rem 0.625rem;
-		z-index: 1;
+		z-index: 2;
+		overflow: visible;
+		isolation: isolate;
 	}
 
 	div :global(.markdown-rendered-code-block .markdown-rendered-code-content) {
@@ -1978,7 +1998,8 @@
 		min-height: 0;
 		padding: 1rem 1.25rem 1.25rem;
 		overflow-x: auto;
-		overflow-y: auto;
+		overflow-y: visible;
+		max-height: none;
 	}
 
 	.full-height-code-blocks :global(.markdown-rendered-code-block) {
@@ -1989,4 +2010,92 @@
 		overflow-y: visible;
 	}
 	/* /Code/text/Markdown action icon sizing and Markdown rendered-frame scroll layout. */
+
+	/* llampart-code-header-tooltip-bridge: raw @html code buttons mirror the shared Tooltip primitive. */
+	div :global(.code-block-header)::after {
+		content: '';
+		position: absolute;
+		left: 1rem;
+		right: 1rem;
+		bottom: 0;
+		z-index: 0;
+		height: 1px;
+		background: color-mix(in oklch, var(--border) 48%, transparent);
+		pointer-events: none;
+	}
+
+	:global(.dark) div :global(.code-block-header)::after {
+		background: color-mix(in oklch, var(--border) 34%, transparent);
+	}
+
+	:global(html.has-frosted-glass-theme) div :global(.code-block-header)::after {
+		background: rgba(255, 255, 255, 0.26);
+	}
+
+	div :global(.code-block-header > *) {
+		position: relative;
+		z-index: 1;
+	}
+
+	div :global(.code-block-actions) {
+		position: relative;
+		z-index: 3;
+		overflow: visible;
+	}
+
+	div :global(.copy-code-btn[data-llampart-code-tooltip]),
+	div :global(.preview-code-btn[data-llampart-code-tooltip]) {
+		position: relative;
+		overflow: visible;
+	}
+
+	div :global(.copy-code-btn[data-llampart-code-tooltip]:hover::after),
+	div :global(.copy-code-btn[data-llampart-code-tooltip]:focus-visible::after),
+	div :global(.preview-code-btn[data-llampart-code-tooltip]:hover::after),
+	div :global(.preview-code-btn[data-llampart-code-tooltip]:focus-visible::after) {
+		content: attr(data-llampart-code-tooltip);
+		position: absolute;
+		top: calc(100% + 0.625rem);
+		left: 50%;
+		z-index: 80;
+		width: max-content;
+		max-width: min(22rem, calc(100vw - 2rem));
+		padding: 0.375rem 0.75rem;
+		border-radius: 0.375rem;
+		background: var(--primary);
+		color: var(--primary-foreground);
+		box-shadow: none;
+		filter: none;
+		font-family: inherit;
+		font-size: 0.75rem;
+		font-weight: 500;
+		line-height: 1rem;
+		letter-spacing: 0;
+		text-shadow: none;
+		text-transform: none;
+		white-space: nowrap;
+		transform: translateX(-50%);
+		opacity: 1;
+		pointer-events: none;
+	}
+
+	div :global(.copy-code-btn[data-llampart-code-tooltip]:hover::before),
+	div :global(.copy-code-btn[data-llampart-code-tooltip]:focus-visible::before),
+	div :global(.preview-code-btn[data-llampart-code-tooltip]:hover::before),
+	div :global(.preview-code-btn[data-llampart-code-tooltip]:focus-visible::before) {
+		content: '';
+		position: absolute;
+		top: calc(100% + 0.375rem);
+		left: 50%;
+		z-index: 79;
+		width: 0.625rem;
+		height: 0.625rem;
+		border-radius: 2px;
+		background: var(--primary);
+		box-shadow: none;
+		filter: none;
+		transform: translateX(-50%) rotate(45deg);
+		opacity: 1;
+		pointer-events: none;
+	}
 </style>
