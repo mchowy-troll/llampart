@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
+	import { formatConversationDocumentTitle } from '$lib/utils';
 	import { goto, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import { afterNavigate } from '$app/navigation';
@@ -163,7 +164,9 @@
 </script>
 
 <svelte:head>
-	<title>{activeConversation()?.name || t('common.chat')} - llampart</title>
+	<title
+		>{formatConversationDocumentTitle(activeConversation()?.name ?? '', t('common.chat'))}</title
+	>
 </svelte:head>
 
 <ChatScreen />

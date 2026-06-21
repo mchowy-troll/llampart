@@ -329,12 +329,16 @@
 	}
 
 	.llampart-attachment-text-preview {
-		font-family: var(--font-mono);
-		font-size: 0.875rem;
-		line-height: 1.6;
+		font: inherit;
+		line-height: 1.75;
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
 		word-break: break-word;
+	}
+
+	.llampart-attachment-text-preview code {
+		font: inherit;
+		white-space: inherit;
 	}
 
 	:global(html.has-frosted-glass-theme) .llampart-attachment-markdown-preview,

@@ -1,6 +1,5 @@
 export const API_CHAT = {
-	COMPLETIONS: '/v1/chat/completions',
-	CONTROL: '/v1/chat/completions/control'
+	COMPLETIONS: '/v1/chat/completions'
 };
 
 export const API_MODELS = {

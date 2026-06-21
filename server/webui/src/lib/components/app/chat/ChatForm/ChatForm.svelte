@@ -644,7 +644,6 @@
 				hasText={value.trim().length > 0}
 				{disabled}
 				{isLoading}
-				isReasoning={chatStore.isReasoning}
 				{isRecording}
 				{uploadedFiles}
 				onFileUpload={handleFileUpload}
@@ -675,12 +674,6 @@
 	.llampart-chat-input-frame {
 		border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
 		box-shadow: none;
-	}
-
-	/* llampart-standard-theme-composer-blur-restore */
-	:global(html:not(.has-frosted-glass-theme)) .llampart-chat-input-frame {
-		backdrop-filter: blur(18px) saturate(116%);
-		-webkit-backdrop-filter: blur(18px) saturate(116%);
 	}
 
 	/* llampart-frosted-glass-composer-compositing-stability */
@@ -752,11 +745,46 @@
 		text-shadow: none !important;
 	}
 
+	:global(html.has-frosted-glass-theme)
+		.llampart-chat-input-frame
+		:global(svg.llampart-reasoning-trigger-icon-disabled) {
+		color: #e7000b !important;
+		stroke: #e7000b !important;
+	}
+
 	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame :global([data-slot='badge']),
 	:global(html.has-frosted-glass-theme) .llampart-chat-input-frame :global(.badge) {
 		background: rgba(255, 255, 255, 0.22) !important;
 		border-color: rgba(255, 255, 255, 0.2) !important;
 		box-shadow: none !important;
+	}
+
+	/* llampart-frosted-glass-composer-runtime-control-polish */
+
+	:global(html.has-frosted-glass-theme)
+		.llampart-chat-input-frame
+		:global(.llampart-composer-stop-action:hover) {
+		background: rgba(255, 255, 255, 0.34) !important;
+		background-color: rgba(255, 255, 255, 0.34) !important;
+	}
+
+	:global(html.has-frosted-glass-theme)
+		.llampart-chat-input-frame
+		:global(.llampart-composer-stop-glyph) {
+		width: 1rem !important;
+		height: 1rem !important;
+		color: rgba(231, 0, 11, 0.78) !important;
+		fill: rgba(231, 0, 11, 0.78) !important;
+		stroke: rgba(231, 0, 11, 0.78) !important;
+		filter: none !important;
+	}
+
+	:global(html.has-frosted-glass-theme)
+		.llampart-chat-input-frame
+		:global(.llampart-composer-stop-action:hover .llampart-composer-stop-glyph) {
+		color: rgba(231, 0, 11, 0.9) !important;
+		fill: rgba(231, 0, 11, 0.9) !important;
+		stroke: rgba(231, 0, 11, 0.9) !important;
 	}
 
 	:global(html.has-frosted-glass-theme [data-slot='dropdown-menu-content']),

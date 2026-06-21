@@ -134,6 +134,69 @@ html.has-frosted-glass-theme #llampart-frosted-glass-preload-background {
 	display: block;
 }
 
+/* llampart-light-dark-composer-and-toast-surface-owner
+   Theme tokens live in lib/styles/themes.css; app.css owns the shared light/dark surface selectors while surfaces.css is still planned. */
+html:not(.has-frosted-glass-theme) .llampart-chat-input-frame {
+	border-color: var(--llampart-composer-surface-border) !important;
+	background: var(--llampart-composer-surface-background) !important;
+	background-color: var(--llampart-composer-surface-background) !important;
+	background-image: none !important;
+	-webkit-backdrop-filter: var(--llampart-composer-surface-filter) !important;
+	backdrop-filter: var(--llampart-composer-surface-filter) !important;
+}
+
+html:not(.has-frosted-glass-theme) body [data-sonner-toaster] [data-sonner-toast],
+html:not(.has-frosted-glass-theme)
+	body
+	[data-sonner-toaster]
+	[data-sonner-toast][data-type='success'],
+html:not(.has-frosted-glass-theme)
+	body
+	[data-sonner-toaster]
+	[data-sonner-toast][data-type='error'],
+html:not(.has-frosted-glass-theme)
+	body
+	[data-sonner-toaster]
+	[data-sonner-toast][data-type='warning'],
+html:not(.has-frosted-glass-theme) body [data-sonner-toaster] [data-sonner-toast][data-type='info'],
+html:not(.has-frosted-glass-theme)
+	body
+	[data-sonner-toaster]
+	[data-sonner-toast][data-type='loading'] {
+	border: 1px solid var(--llampart-toast-surface-border) !important;
+	border-radius: 1rem !important;
+	background: var(--llampart-toast-surface-background) !important;
+	background-color: var(--llampart-toast-surface-background) !important;
+	background-image: none !important;
+	color: var(--llampart-toast-surface-foreground) !important;
+	box-shadow: var(--llampart-toast-surface-shadow) !important;
+}
+
+html:not(.has-frosted-glass-theme) body [data-sonner-toaster] [data-sonner-toast] [data-title],
+html:not(.has-frosted-glass-theme) body [data-sonner-toaster] [data-sonner-toast] [data-content] {
+	color: var(--llampart-toast-surface-foreground) !important;
+}
+
+html:not(.has-frosted-glass-theme)
+	body
+	[data-sonner-toaster]
+	[data-sonner-toast]
+	[data-description] {
+	color: var(--llampart-toast-surface-description) !important;
+}
+/* /llampart-light-dark-composer-and-toast-surface-owner */
+
+/* llampart-toast-shadow-reset-owner */
+html body [data-sonner-toaster] [data-sonner-toast],
+html body [data-sonner-toaster] [data-sonner-toast][data-type='success'],
+html body [data-sonner-toaster] [data-sonner-toast][data-type='error'],
+html body [data-sonner-toaster] [data-sonner-toast][data-type='warning'],
+html body [data-sonner-toaster] [data-sonner-toast][data-type='info'],
+html body [data-sonner-toaster] [data-sonner-toast][data-type='loading'] {
+	box-shadow: none !important;
+}
+/* /llampart-toast-shadow-reset-owner */
+
 /* llampart-frosted-glass-surface-primitives
    app.css temporarily owns Frosted Glass surface selectors.
    Theme-level Frosted Glass variables live in lib/styles/themes.css. */
@@ -1315,10 +1378,7 @@ html.has-frosted-glass-theme body [data-sonner-toaster] [data-sonner-toast][data
 	background-color: rgba(255, 255, 255, 0.34) !important;
 	background-image: none !important;
 	color: #111111 !important;
-	box-shadow:
-		0 1px 2px rgba(0, 0, 0, 0.04),
-		0 8px 26px rgba(0, 0, 0, 0.036),
-		0 20px 48px rgba(0, 0, 0, 0.028) !important;
+	box-shadow: none !important;
 	-webkit-backdrop-filter: blur(28px) saturate(132%) !important;
 	backdrop-filter: blur(28px) saturate(132%) !important;
 }

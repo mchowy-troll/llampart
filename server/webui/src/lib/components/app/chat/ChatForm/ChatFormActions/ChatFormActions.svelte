@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { SkipForward, Square } from '@lucide/svelte';
+	import { Square } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { ChatService } from '$lib/services/chat.service';
 	import {
 		ChatFormActionAttachmentsDropdown,
 		ChatFormActionRecord,
@@ -27,7 +26,6 @@
 		class?: string;
 		disabled?: boolean;
 		isLoading?: boolean;
-		isReasoning?: boolean;
 		isRecording?: boolean;
 		hasText?: boolean;
 		uploadedFiles?: ChatUploadedFile[];
@@ -44,7 +42,6 @@
 		class: className = '',
 		disabled = false,
 		isLoading = false,
-		isReasoning = false,
 		isRecording = false,
 		hasText = false,
 		uploadedFiles = [],
@@ -175,10 +172,6 @@
 
 	const chatSettingsDialog = getChatSettingsDialogContext();
 
-	let activeMessage = $derived(
-		conversationsStore.activeMessages[conversationsStore.activeMessages.length - 1]
-	);
-
 	let hasMcpPromptsSupport = $derived.by(() => {
 		const perChatOverrides = conversationsStore.getAllMcpServerOverrides();
 
@@ -225,32 +218,17 @@
 		/>
 	</div>
 
-	{#if isReasoning}
-		<Button
-			type="button"
-			variant="secondary"
-			onclick={() =>
-				ChatService.stopReasoning(activeMessage?.completionId ?? '', activeMessage?.model)}
-			class="group h-8 w-8 rounded-full p-0"
-			title={t('chat.skipReasoning')}
-		>
-			<span class="sr-only">{t('chat.skipReasoning')}</span>
-
-			<SkipForward class="h-4 w-4 stroke-muted-foreground group-hover:stroke-foreground" />
-		</Button>
-	{/if}
-
 	{#if isLoading}
 		<Button
 			type="button"
 			variant="secondary"
 			onclick={onStop}
-			class="group h-8 w-8 rounded-full p-0 hover:bg-destructive/10!"
+			class="llampart-composer-stop-action group h-8 w-8 rounded-full p-0 hover:bg-destructive/10!"
 		>
 			<span class="sr-only">{t('common.stop')}</span>
 
 			<Square
-				class="h-8 w-8 fill-muted-foreground stroke-muted-foreground group-hover:fill-destructive group-hover:stroke-destructive hover:fill-destructive hover:stroke-destructive"
+				class="llampart-composer-stop-glyph h-8 w-8 fill-muted-foreground stroke-muted-foreground group-hover:fill-destructive group-hover:stroke-destructive hover:fill-destructive hover:stroke-destructive"
 			/>
 		</Button>
 	{:else if shouldShowRecordButton}

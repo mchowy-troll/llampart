@@ -347,7 +347,11 @@
 		}
 
 		try {
-			await copyCodeToClipboard(info.rawCode);
+			await copyCodeToClipboard(
+				info.rawCode,
+				t('common.codeCopiedToClipboard'),
+				t('common.failedToCopyCode')
+			);
 		} catch (error) {
 			console.error('Failed to copy code:', error);
 		}

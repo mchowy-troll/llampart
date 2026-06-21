@@ -377,14 +377,13 @@
 				class="pointer-events-none sticky right-0 bottom-4 left-0 z-20 mt-auto"
 				in:slide={{ duration: frostedGlassSlideDuration, axis: 'y' }}
 			>
-				{#if isFrostedGlassTheme}
-					<!-- llampart-frosted-glass-composer-fade-curtain -->
-					<div
-						class="llampart-frosted-glass-composer-fade-curtain pointer-events-none fixed inset-x-0 bottom-0 z-10 overflow-hidden"
-						aria-hidden="true"
-						style="--llampart-frosted-glass-composer-fade-height: clamp(4.6rem, 9.1vh, 6.15rem); --llampart-frosted-glass-composer-fade-end-offset: 2.9rem; background-color: hsl(var(--background) / 0.98); background-image: var(--llampart-frosted-glass-wallpaper); background-position: center; background-size: cover; background-repeat: no-repeat; background-attachment: fixed; -webkit-mask-image: linear-gradient(to bottom, transparent 0, black calc(var(--llampart-frosted-glass-composer-fade-height) + var(--llampart-frosted-glass-composer-fade-end-offset)), black 100%); mask-image: linear-gradient(to bottom, transparent 0, black calc(var(--llampart-frosted-glass-composer-fade-height) + var(--llampart-frosted-glass-composer-fade-end-offset)), black 100%);"
-					></div>
-				{/if}
+				<!-- llampart-chat-composer-boundary-fade-owner -->
+				<div
+					class="llampart-composer-fade-curtain pointer-events-none fixed inset-x-0 bottom-0 z-10 overflow-hidden {isFrostedGlassTheme
+						? 'llampart-frosted-glass-composer-fade-curtain'
+						: ''}"
+					aria-hidden="true"
+				></div>
 
 				<div class="relative z-20">
 					<ChatScreenProcessingInfo />
@@ -571,7 +570,7 @@
 
 			<AlertDialog.Footer>
 				<AlertDialog.Action onclick={() => (showFileErrorDialog = false)}>
-					Got it
+					{t('common.gotIt')}
 				</AlertDialog.Action>
 			</AlertDialog.Footer>
 		</AlertDialog.Content>
@@ -909,20 +908,51 @@
 			0 0 16px rgba(255, 255, 255, 0.24) !important;
 	}
 
-	/* llampart-frosted-glass-fullwidth-composer-fade-milk-only */
-	.llampart-frosted-glass-composer-fade-curtain {
+	/* llampart-chat-composer-boundary-fade-owner */
+	.llampart-composer-fade-curtain {
 		position: fixed !important;
 		inset-inline: 0 !important;
 		top: auto !important;
 		bottom: 0 !important;
 		width: 100vw !important;
 		height: calc(
-			var(--llampart-frosted-glass-composer-fade-height, 5.5rem) +
-				var(--llampart-frosted-glass-composer-fade-end-offset, 2.9rem) + 8.5rem
+			var(--llampart-composer-fade-height, clamp(4.6rem, 9.1vh, 6.15rem)) +
+				var(--llampart-composer-fade-end-offset, 2.9rem) + 8.5rem
 		);
 		transform: none !important;
 		overflow: hidden;
 		contain: paint;
+		background-color: var(--llampart-composer-fade-background, var(--background));
+		background-image: none;
+		-webkit-mask-image: linear-gradient(
+			to bottom,
+			transparent 0,
+			black
+				calc(
+					var(--llampart-composer-fade-height, clamp(4.6rem, 9.1vh, 6.15rem)) +
+						var(--llampart-composer-fade-end-offset, 2.9rem)
+				),
+			black 100%
+		);
+		mask-image: linear-gradient(
+			to bottom,
+			transparent 0,
+			black
+				calc(
+					var(--llampart-composer-fade-height, clamp(4.6rem, 9.1vh, 6.15rem)) +
+						var(--llampart-composer-fade-end-offset, 2.9rem)
+				),
+			black 100%
+		);
+	}
+
+	:global(html.has-frosted-glass-theme) .llampart-frosted-glass-composer-fade-curtain {
+		background-color: var(--background);
+		background-image: var(--llampart-frosted-glass-wallpaper);
+		background-position: center;
+		background-size: cover;
+		background-repeat: no-repeat;
+		background-attachment: fixed;
 	}
 
 	:global(html.has-frosted-glass-theme.has-frosted-glass-wallpaper-milk)
