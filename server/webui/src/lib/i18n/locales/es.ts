@@ -548,7 +548,10 @@ export const es: TranslationDictionary = {
 		pdfVisionEnabled: 'Procesamiento de PDF como imágenes activado.',
 		pdfTextFallbackNonVision:
 			'Ajuste de PDF cambiado: el modelo actual no admite visión, por lo que los PDF se procesarán como texto en lugar de imágenes.',
-		pdfProcessedAsImages: 'PDF «{name}» procesado como {count} imágenes para el modelo de visión.',
+		pdfProcessedAsImages: {
+			one: 'PDF procesado como {count} imagen para el modelo de visión.',
+			other: 'PDF procesado como {count} imágenes para el modelo de visión.'
+		},
 		pdfProcessedAsText: 'PDF procesado como contenido de texto.',
 		startRecording: 'Iniciar grabación',
 		currentModelDoesNotSupportAudio: 'El modelo actual no admite audio',
@@ -863,7 +866,8 @@ export const es: TranslationDictionary = {
 			'Agradecimientos especiales al equipo de llama.cpp y a los autores de la base llama-ui sobre la que se apoya llampart.',
 
 		aboutLlampartSpecialThanksWallpapersBody:
-			'Agradecimientos especiales también a los fotógrafos cuyas fotos se usan como fondos Frosted Glass:',
+			'Los créditos completos del proyecto y de los fondos Frosted Glass incluidos se mantienen en el documento de autores.',
+		aboutLlampartAuthorsDocumentLink: 'Abrir documento de autores',
 		aboutLlampartSpecialThanksUnsplashLicenseBody: 'Las fotos de Unsplash están cubiertas por la ',
 		aboutLlampartLicenseTitle: 'Licencia',
 		aboutLlampartLicenseBody:

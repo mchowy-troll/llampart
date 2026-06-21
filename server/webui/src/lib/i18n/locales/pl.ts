@@ -541,7 +541,12 @@ export const pl: TranslationDictionary = {
 		pdfVisionEnabled: 'Przetwarzanie PDF-ów jako obrazów zostało włączone.',
 		pdfTextFallbackNonVision:
 			'Ustawienie PDF zostało zmienione: obecny model nie obsługuje vision, więc PDF-y będą przetwarzane jako tekst zamiast obrazów.',
-		pdfProcessedAsImages: 'PDF „{name}” przetworzono jako {count} obrazów dla modelu vision.',
+		pdfProcessedAsImages: {
+			one: 'PDF przetworzono jako {count} obraz dla modelu vision.',
+			few: 'PDF przetworzono jako {count} obrazy dla modelu vision.',
+			many: 'PDF przetworzono jako {count} obrazów dla modelu vision.',
+			other: 'PDF przetworzono jako {count} obrazów dla modelu vision.'
+		},
 		pdfProcessedAsText: 'PDF przetworzono jako treść tekstową.',
 		startRecording: 'Rozpocznij nagrywanie',
 		currentModelDoesNotSupportAudio: 'Obecny model nie obsługuje audio',
@@ -851,7 +856,8 @@ export const pl: TranslationDictionary = {
 			'Specjalne podziękowania dla zespołu llama.cpp i autorów bazowego llama-ui, na którym opiera się llampart.',
 
 		aboutLlampartSpecialThanksWallpapersBody:
-			'Specjalne podziękowania także dla fotografów, których zdjęcia są użyte jako tapety Frosted Glass:',
+			'Pełne credits projektu oraz wbudowanych tapet Frosted Glass są utrzymywane w dokumencie autorów.',
+		aboutLlampartAuthorsDocumentLink: 'Otwórz dokument autorów',
 		aboutLlampartSpecialThanksUnsplashLicenseBody: 'Zdjęcia z Unsplash są objęte licencją ',
 		aboutLlampartLicenseTitle: 'Licencja',
 		aboutLlampartLicenseBody:

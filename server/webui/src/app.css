@@ -197,6 +197,29 @@ html body [data-sonner-toaster] [data-sonner-toast][data-type='loading'] {
 }
 /* /llampart-toast-shadow-reset-owner */
 
+/* llampart-toast-action-layout-owner
+   Sonner action toasts currently power the PDF vision suggestion. Keep the text
+   above the action and center the action without changing individual toast callers. */
+html body [data-sonner-toaster] [data-sonner-toast]:has([data-button]) {
+	display: grid !important;
+	grid-template-columns: minmax(0, 1fr) !important;
+	align-items: start !important;
+	justify-items: stretch !important;
+	row-gap: 0.75rem !important;
+}
+
+html body [data-sonner-toaster] [data-sonner-toast]:has([data-button]) [data-content] {
+	grid-column: 1 !important;
+	width: 100% !important;
+	min-width: 0 !important;
+}
+
+html body [data-sonner-toaster] [data-sonner-toast]:has([data-button]) [data-button] {
+	grid-column: 1 !important;
+	justify-self: center !important;
+	margin: 0 !important;
+}
+
 /* llampart-frosted-glass-surface-primitives
    app.css temporarily owns Frosted Glass surface selectors.
    Theme-level Frosted Glass variables live in lib/styles/themes.css. */
@@ -632,24 +655,33 @@ html.has-frosted-glass-theme [data-slot='sidebar-group-label'] {
 }
 
 html.has-frosted-glass-theme .conversation-item {
-	border-color: rgba(255, 255, 255, 0.19);
+	border-color: rgba(255, 255, 255, 0.12);
 	background: rgba(255, 255, 255, 0.14);
-	box-shadow: none;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.1),
+		0 1px 2px rgba(0, 0, 0, 0.03),
+		0 3px 8px rgba(0, 0, 0, 0.025);
 	-webkit-backdrop-filter: blur(18px) saturate(116%);
 	backdrop-filter: blur(18px) saturate(116%);
 }
 
 html.has-frosted-glass-theme .conversation-item:is(:hover, :focus-visible) {
-	border-color: rgba(255, 255, 255, 0.28);
+	border-color: rgba(255, 255, 255, 0.12);
 	background: rgba(255, 255, 255, 0.18);
-	box-shadow: none;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.1),
+		0 1px 2px rgba(0, 0, 0, 0.03),
+		0 3px 8px rgba(0, 0, 0, 0.025);
 }
 
 html.has-frosted-glass-theme .conversation-item.bg-accent\/45,
 html.has-frosted-glass-theme .conversation-item[class*='bg-accent'] {
-	border-color: rgba(255, 255, 255, 0.32);
+	border-color: rgba(255, 255, 255, 0.12);
 	background: rgba(255, 255, 255, 0.2);
-	box-shadow: none;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.1),
+		0 1px 2px rgba(0, 0, 0, 0.03),
+		0 3px 8px rgba(0, 0, 0, 0.025);
 }
 
 html.has-frosted-glass-theme .conversation-timestamp-badge {
