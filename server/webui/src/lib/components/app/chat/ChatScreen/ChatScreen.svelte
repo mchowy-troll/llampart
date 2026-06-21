@@ -377,13 +377,13 @@
 				class="pointer-events-none sticky right-0 bottom-4 left-0 z-20 mt-auto"
 				in:slide={{ duration: frostedGlassSlideDuration, axis: 'y' }}
 			>
-				<!-- llampart-chat-composer-boundary-fade-owner -->
-				<div
-					class="llampart-composer-fade-curtain pointer-events-none fixed inset-x-0 bottom-0 z-10 overflow-hidden {isFrostedGlassTheme
-						? 'llampart-frosted-glass-composer-fade-curtain'
-						: ''}"
-					aria-hidden="true"
-				></div>
+				{#if isFrostedGlassTheme}
+					<!-- llampart-chat-composer-boundary-fade-owner -->
+					<div
+						class="llampart-composer-fade-curtain llampart-frosted-glass-composer-fade-curtain pointer-events-none fixed inset-x-0 bottom-0 z-10 overflow-hidden"
+						aria-hidden="true"
+					></div>
+				{/if}
 
 				<div class="relative z-20">
 					<ChatScreenProcessingInfo />

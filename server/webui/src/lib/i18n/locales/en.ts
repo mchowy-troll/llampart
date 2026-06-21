@@ -535,7 +535,10 @@ export const en: TranslationDictionary = {
 		pdfVisionEnabled: 'PDF parsing as images enabled.',
 		pdfTextFallbackNonVision:
 			'PDF setting changed: the current model does not support vision, so PDFs will be processed as text instead of images.',
-		pdfProcessedAsImages: 'PDF "{name}" processed as {count} images for the vision model.',
+		pdfProcessedAsImages: {
+			one: 'PDF processed as {count} image for the vision model.',
+			other: 'PDF processed as {count} images for the vision model.'
+		},
 		pdfProcessedAsText: 'PDF processed as text content.',
 		startRecording: 'Start recording',
 		currentModelDoesNotSupportAudio: 'Current model does not support audio',
@@ -844,7 +847,8 @@ export const en: TranslationDictionary = {
 			'Special thanks to the llama.cpp team and the authors of the base llama-ui that llampart builds on.',
 
 		aboutLlampartSpecialThanksWallpapersBody:
-			'Special thanks also to the photographers whose photos are used as Frosted Glass wallpapers:',
+			'Full project and bundled Frosted Glass wallpaper credits are maintained in the authors document.',
+		aboutLlampartAuthorsDocumentLink: 'Open authors document',
 		aboutLlampartSpecialThanksUnsplashLicenseBody: 'Unsplash photos are covered by the ',
 		aboutLlampartLicenseTitle: 'License',
 		aboutLlampartLicenseBody:

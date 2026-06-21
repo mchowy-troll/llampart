@@ -545,7 +545,10 @@ export const it: TranslationDictionary = {
 		pdfVisionEnabled: 'Elaborazione dei PDF come immagini abilitata.',
 		pdfTextFallbackNonVision:
 			'Impostazione PDF modificata: il modello attuale non supporta la visione, quindi i PDF saranno elaborati come testo invece che come immagini.',
-		pdfProcessedAsImages: 'PDF “{name}” elaborato come {count} immagini per il modello vision.',
+		pdfProcessedAsImages: {
+			one: 'PDF elaborato come {count} immagine per il modello vision.',
+			other: 'PDF elaborato come {count} immagini per il modello vision.'
+		},
 		pdfProcessedAsText: 'PDF elaborato come contenuto testuale.',
 		startRecording: 'Avvia registrazione',
 		currentModelDoesNotSupportAudio: 'Il modello attuale non supporta l’audio',
@@ -859,7 +862,8 @@ export const it: TranslationDictionary = {
 			'Un ringraziamento speciale al team di llama.cpp e agli autori della base llama-ui su cui llampart si appoggia.',
 
 		aboutLlampartSpecialThanksWallpapersBody:
-			'Un ringraziamento speciale anche ai fotografi le cui foto sono usate come sfondi Frosted Glass:',
+			'I crediti completi del progetto e degli sfondi Frosted Glass inclusi sono mantenuti nel documento degli autori.',
+		aboutLlampartAuthorsDocumentLink: 'Apri il documento degli autori',
 		aboutLlampartSpecialThanksUnsplashLicenseBody: 'Le foto Unsplash sono coperte dalla ',
 		aboutLlampartLicenseTitle: 'Licenza',
 		aboutLlampartLicenseBody:

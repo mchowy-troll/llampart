@@ -6,66 +6,16 @@
 	import { Label } from '$lib/components/ui/label';
 	import { LLAMPART_ABOUT_DISMISSED_VERSION_KEY } from '$lib/constants';
 	import { t } from '$lib/i18n';
+	import {
+		LLAMA_CPP_REPOSITORY_URL,
+		LLAMPART_AUTHORS_DOCUMENT_URL,
+		LLAMPART_PROJECT_AUTHOR,
+		LLAMPART_REPOSITORY_URL,
+		UNSPLASH_LICENSE_URL
+	} from '$lib/metadata/llampart-project';
 	import packageJson from '../../../../../package.json';
 
 	const APP_VERSION = packageJson.version;
-	const AUTHOR_NAME = 'Marcin Gluziński';
-	const AUTHOR_EMAIL = 'gluzinski.marcin@gmail.com';
-	const LLAMA_CPP_URL = 'https://github.com/ggml-org/llama.cpp';
-	const LLAMPART_REPOSITORY_URL = 'https://github.com/mchowy-troll/llampart';
-	const UNSPLASH_LICENSE_URL = 'https://unsplash.com/license';
-
-	type WallpaperCredit = Readonly<{
-		label: string;
-		author: string;
-		authorUrl?: string;
-		source: string;
-		sourceUrl?: string;
-	}>;
-
-	const WALLPAPER_CREDITS: readonly WallpaperCredit[] = [
-		{
-			label: 'Frosted Glass 01',
-			author: 'Marcin Stefański',
-			source: 'Gdańsk, Poland'
-		},
-		{
-			label: 'Frosted Glass 02',
-			author: 'Royce Fonseca',
-			authorUrl:
-				'https://unsplash.com/@casunshine0508?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText',
-			source: 'Unsplash',
-			sourceUrl:
-				'https://unsplash.com/photos/white-sand-dunes-with-a-distant-mountain-range-48bRZya67Po?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText'
-		},
-		{
-			label: 'Frosted Glass 03',
-			author: 'Pawel Czerwinski',
-			authorUrl:
-				'https://unsplash.com/@pawel_czerwinski?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText',
-			source: 'Unsplash',
-			sourceUrl:
-				'https://unsplash.com/photos/a-pink-abstract-background-with-curved-shapes-iA4O2vAnieg?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText'
-		},
-		{
-			label: 'Frosted Glass 04',
-			author: 'Pawel Czerwinski',
-			authorUrl:
-				'https://unsplash.com/@pawel_czerwinski?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText',
-			source: 'Unsplash',
-			sourceUrl:
-				'https://unsplash.com/photos/a-close-up-of-a-book-with-a-white-background-jPR5yqkfxbM?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText'
-		},
-		{
-			label: 'Frosted Glass 05',
-			author: 'Mason Field',
-			authorUrl:
-				'https://unsplash.com/@masonrfield?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText',
-			source: 'Unsplash',
-			sourceUrl:
-				'https://unsplash.com/photos/a-lone-giraffe-standing-in-the-middle-of-a-field-HXccAaMfAxI?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText'
-		}
-	];
 
 	let open = $state(false);
 	let doNotShowAgain = $state(false);
@@ -137,12 +87,14 @@
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 							{t('dialogs.aboutLlampartAuthorLabel')}
 						</div>
-						<div class="mt-2 text-base leading-snug font-semibold break-words">{AUTHOR_NAME}</div>
+						<div class="mt-2 text-base leading-snug font-semibold break-words">
+							{LLAMPART_PROJECT_AUTHOR.name}
+						</div>
 						<a
-							href={`mailto:${AUTHOR_EMAIL}`}
+							href={`mailto:${LLAMPART_PROJECT_AUTHOR.email}`}
 							class="mt-1 block min-w-0 border-0 bg-transparent p-0 text-sm break-all whitespace-normal text-muted-foreground no-underline decoration-transparent shadow-none ring-0 outline-none hover:text-foreground hover:no-underline focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
 						>
-							{AUTHOR_EMAIL}
+							{LLAMPART_PROJECT_AUTHOR.email}
 						</a>
 					</div>
 
@@ -198,12 +150,12 @@
 							</p>
 
 							<a
-								href={LLAMA_CPP_URL}
+								href={LLAMA_CPP_REPOSITORY_URL}
 								target="_blank"
 								rel="noreferrer"
 								class="mt-3 inline-block border-0 bg-transparent p-0 text-sm text-muted-foreground no-underline decoration-transparent shadow-none ring-0 outline-none hover:text-foreground hover:no-underline focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
 							>
-								{LLAMA_CPP_URL}
+								{LLAMA_CPP_REPOSITORY_URL}
 							</a>
 
 							<div class="my-4 border-t border-border/30" aria-hidden="true"></div>
@@ -212,38 +164,14 @@
 								{t('dialogs.aboutLlampartSpecialThanksWallpapersBody')}
 							</p>
 
-							<ul class="mt-3 space-y-2 text-sm leading-relaxed text-muted-foreground">
-								{#each WALLPAPER_CREDITS as credit (credit.label)}
-									<li>
-										<span class="font-medium text-foreground">{credit.label}: </span>
-										{#if credit.authorUrl}
-											<a
-												href={credit.authorUrl}
-												target="_blank"
-												rel="noreferrer"
-												class="border-0 bg-transparent p-0 text-muted-foreground no-underline decoration-transparent shadow-none ring-0 outline-none hover:text-foreground hover:no-underline focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
-											>
-												{credit.author}
-											</a>
-										{:else}
-											<span>{credit.author}</span>
-										{/if}
-										<span> — </span>
-										{#if credit.sourceUrl}
-											<a
-												href={credit.sourceUrl}
-												target="_blank"
-												rel="noreferrer"
-												class="border-0 bg-transparent p-0 text-muted-foreground no-underline decoration-transparent shadow-none ring-0 outline-none hover:text-foreground hover:no-underline focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
-											>
-												{credit.source}
-											</a>
-										{:else}
-											<span>{credit.source}</span>
-										{/if}
-									</li>
-								{/each}
-							</ul>
+							<a
+								href={LLAMPART_AUTHORS_DOCUMENT_URL}
+								target="_blank"
+								rel="noreferrer"
+								class="mt-3 inline-block border-0 bg-transparent p-0 text-sm font-medium text-muted-foreground no-underline decoration-transparent shadow-none ring-0 outline-none hover:text-foreground hover:no-underline focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
+							>
+								{t('dialogs.aboutLlampartAuthorsDocumentLink')}
+							</a>
 
 							<p class="mt-3 text-xs leading-relaxed text-muted-foreground">
 								{t('dialogs.aboutLlampartSpecialThanksUnsplashLicenseBody')}

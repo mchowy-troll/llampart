@@ -1,9 +1,3 @@
-<!-- llampart-readme-logo:start -->
-<p align="left">
-  <img src="server/webui/static/llampart.svg" alt="llampart logo" width="96" />
-</p>
-<!-- llampart-readme-logo:end -->
-
 # llampart
 
 llampart is a local chat Web UI designed for use with `llama-server`.
@@ -165,17 +159,15 @@ llampart supports a Frosted Glass wallpaper workflow:
 - five bundled/default wallpaper slots
 - one user-selected custom wallpaper option
 
-The bundled Frosted Glass wallpaper files are part of the public release asset set. Wallpaper photo credits are shown in llampart's About / Welcome dialog and preserved in NOTICE.
-
-Wallpaper photos used by the program are credited in the application and project notices.
+The bundled Frosted Glass wallpaper files are part of the public release asset set. Wallpaper photo credits are maintained in `AUTHORS.md` and preserved in `NOTICE`; llampart's About / Welcome dialog links to the authors document.
 
 ## Credits
 
 llampart is developed by Marcin Gluziński.
 
-Special thanks to Marcin Stefański (Gdańsk, Poland) and to the Unsplash photographers whose photos are used as bundled Frosted Glass wallpapers.
+Special thanks to Marcin Stefański (Gdańsk, Poland) and to the Unsplash photographers whose photos are used as bundled Frosted Glass wallpapers. Full project and bundled asset credits are maintained in `AUTHORS.md`.
 
-llampart includes and adapts work from the `llama.cpp` / `llama-ui` foundation. See `NOTICE` and `THIRD_PARTY_LICENSES.md` for details.
+llampart includes and adapts work from the `llama.cpp` / `llama-ui` foundation. See `AUTHORS.md`, `NOTICE` and `THIRD_PARTY_LICENSES.md` for details.
 
 ## License
 

@@ -380,10 +380,32 @@
 		stroke: currentColor;
 	}
 
-	/* llampart-sidebar-conversation-radius-match-llm */
-	:global(.conversation-item) {
+	/* llampart-sidebar-conversation-frame-owner
+	   Sidebar conversation tiles intentionally keep their own frame values, so they can be
+	   tuned independently from generated code/table blocks while preserving the desired width. */
+	:global(.conversation-item),
+	:global(.conversation-item:is(:hover, :focus-visible)),
+	:global(.conversation-item[class*='bg-accent']) {
+		border-width: 1px !important;
+		border-style: solid !important;
 		border-radius: 0.75rem !important;
 		overflow: hidden !important;
+	}
+
+	:global(html:not(.dark):not(.has-frosted-glass-theme) .conversation-item),
+	:global(
+		html:not(.dark):not(.has-frosted-glass-theme) .conversation-item:is(:hover, :focus-visible)
+	),
+	:global(html:not(.dark):not(.has-frosted-glass-theme) .conversation-item[class*='bg-accent']) {
+		border-color: var(--border) !important;
+		box-shadow: none !important;
+	}
+
+	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item),
+	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item:is(:hover, :focus-visible)),
+	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item[class*='bg-accent']) {
+		border-color: color-mix(in oklch, var(--border) 20%, transparent) !important;
+		box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
 	}
 
 	:global(.conversation-item button) {

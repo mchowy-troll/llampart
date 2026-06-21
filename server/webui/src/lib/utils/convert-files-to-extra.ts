@@ -8,6 +8,7 @@ import { getFileTypeCategory } from '$lib/utils';
 import { readFileAsText, isLikelyTextFile } from './text-files';
 import { toast } from 'svelte-sonner';
 import { t } from '$lib/i18n';
+import { formatPluralizedTranslation } from '$lib/i18n/plural';
 import type {
 	FileProcessingResult,
 	ChatUploadedFile,
@@ -123,14 +124,9 @@ export async function parseFilesToMessageExtras(
 						const images = await convertPDFToImage(file.file);
 
 						// Show success toast for PDF image processing
-						toast.success(
-							t('chat.pdfProcessedAsImages')
-								.replace('{name}', file.name)
-								.replace('{count}', String(images.length)),
-							{
-								duration: 3000
-							}
-						);
+						toast.success(formatPluralizedTranslation('chat.pdfProcessedAsImages', images.length), {
+							duration: 3000
+						});
 
 						extras.push({
 							type: AttachmentType.PDF,
