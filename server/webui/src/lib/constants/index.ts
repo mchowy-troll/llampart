@@ -8,7 +8,6 @@ export * from './auto-scroll';
 export * from './binary-detection';
 export * from './cache';
 export * from './chat-form';
-export * from './control-actions';
 export * from './code-blocks';
 export * from './code';
 export * from './context-keys';

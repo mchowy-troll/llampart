@@ -27,6 +27,8 @@
 			text={code}
 			canCopy={!disabled}
 			ariaLabel={disabled ? t('common.codeIncomplete') : t('common.copyCode')}
+			successMessage={t('common.codeCopiedToClipboard')}
+			errorMessage={t('common.failedToCopyCode')}
 		/>
 	</div>
 

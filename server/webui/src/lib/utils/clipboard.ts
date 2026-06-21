@@ -68,8 +68,8 @@ export async function copyToClipboard(
  */
 export async function copyCodeToClipboard(
 	rawCode: string,
-	successMessage = 'Code copied to clipboard',
-	errorMessage = 'Failed to copy code'
+	successMessage: string,
+	errorMessage: string
 ): Promise<boolean> {
 	return copyToClipboard(rawCode, successMessage, errorMessage);
 }

@@ -8,7 +8,6 @@ import {
 	ATTACHMENT_LABEL_MCP_PROMPT,
 	ATTACHMENT_LABEL_MCP_RESOURCE,
 	API_CHAT,
-	CONTROL_ACTION,
 	LEGACY_AGENTIC_REGEX,
 	REASONING_EFFORT_TOKENS
 } from '$lib/constants';
@@ -340,49 +339,6 @@ export class ChatService {
 			}
 
 			throw userFriendlyError;
-		}
-	}
-
-	/**
-	 * Ends the reasoning block of a running completion without stopping the whole generation.
-	 */
-	static async stopReasoning(completionId: string, model?: string | null): Promise<boolean> {
-		if (!completionId) {
-			console.error(
-				'stopReasoning: no completion id for the active message, cannot target the running completion'
-			);
-			return false;
-		}
-
-		const body: Record<string, unknown> = {
-			id: completionId,
-			action: CONTROL_ACTION.END_REASONING
-		};
-
-		if (model) body.model = model;
-
-		try {
-			const response = await fetch(`${getApiBaseUrl()}${API_CHAT.CONTROL}`, {
-				method: 'POST',
-				headers: getJsonHeaders(),
-				body: JSON.stringify(body)
-			});
-
-			const data = await response.json().catch(() => null);
-
-			if (!response.ok || data?.success !== true) {
-				console.error('stopReasoning: control request failed', {
-					status: response.status,
-					completionId,
-					response: data
-				});
-				return false;
-			}
-
-			return true;
-		} catch (error) {
-			console.error('stopReasoning: control request threw', { completionId, error });
-			return false;
 		}
 	}
 

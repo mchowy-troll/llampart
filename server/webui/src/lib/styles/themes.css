@@ -40,6 +40,15 @@
 	--chat-form-area-height: 8rem;
 	--chat-form-area-offset: 2rem;
 	--max-message-height: max(24rem, min(80dvh, calc(100dvh - var(--chat-form-area-height) - 12rem)));
+	--llampart-composer-surface-background: oklch(0.97 0 0 / 72%);
+	--llampart-composer-surface-border: oklch(0.875 0 0 / 64%);
+	--llampart-composer-surface-filter: blur(18px) saturate(116%);
+	--llampart-composer-fade-background: var(--background);
+	--llampart-toast-surface-background: oklch(0.985 0 0 / 96%);
+	--llampart-toast-surface-border: oklch(0.875 0 0 / 74%);
+	--llampart-toast-surface-foreground: var(--foreground);
+	--llampart-toast-surface-description: oklch(0.43 0 0);
+	--llampart-toast-surface-shadow: none;
 }
 
 @media (min-width: 640px) {
@@ -83,6 +92,15 @@
 	--sidebar-ring: oklch(0.556 0 0);
 	--code-background: oklch(0.225 0 0);
 	--code-foreground: oklch(0.875 0 0);
+	--llampart-composer-surface-background: oklch(0.205 0 0 / 72%);
+	--llampart-composer-surface-border: oklch(1 0 0 / 18%);
+	--llampart-composer-surface-filter: blur(18px) saturate(116%);
+	--llampart-composer-fade-background: var(--background);
+	--llampart-toast-surface-background: oklch(0.205 0 0 / 96%);
+	--llampart-toast-surface-border: oklch(1 0 0 / 12%);
+	--llampart-toast-surface-foreground: var(--foreground);
+	--llampart-toast-surface-description: oklch(0.72 0 0);
+	--llampart-toast-surface-shadow: none;
 }
 
 /* Frosted Glass surface tokens

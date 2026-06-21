@@ -7,6 +7,7 @@ import { modelsStore } from '$lib/stores/models.svelte';
 import { getFileTypeCategory } from '$lib/utils';
 import { readFileAsText, isLikelyTextFile } from './text-files';
 import { toast } from 'svelte-sonner';
+import { t } from '$lib/i18n';
 import type {
 	FileProcessingResult,
 	ChatUploadedFile,
@@ -109,12 +110,9 @@ export async function parseFilesToMessageExtras(
 					settingsStore.updateConfig('pdfAsImage', false);
 
 					// Show toast notification to user
-					toast.warning(
-						'PDF setting changed: Non-vision model detected, PDFs will be processed as text instead of images.',
-						{
-							duration: 5000
-						}
-					);
+					toast.warning(t('chat.pdfTextFallbackNonVision'), {
+						duration: 5000
+					});
 
 					shouldProcessAsImages = false;
 				}
@@ -126,7 +124,9 @@ export async function parseFilesToMessageExtras(
 
 						// Show success toast for PDF image processing
 						toast.success(
-							`PDF "${file.name}" processed as ${images.length} images for vision model.`,
+							t('chat.pdfProcessedAsImages')
+								.replace('{name}', file.name)
+								.replace('{count}', String(images.length)),
 							{
 								duration: 3000
 							}
@@ -162,7 +162,7 @@ export async function parseFilesToMessageExtras(
 					const content = await convertPDFToText(file.file);
 
 					// Show success toast for PDF text processing
-					toast.success(`PDF "${file.name}" processed as text content.`, {
+					toast.success(t('chat.pdfProcessedAsText'), {
 						duration: 3000
 					});
 

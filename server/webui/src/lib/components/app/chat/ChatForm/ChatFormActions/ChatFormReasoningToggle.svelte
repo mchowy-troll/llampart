@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Check, Info, Lightbulb, LightbulbOff } from '@lucide/svelte';
+	import { Check, Info, Lightbulb } from '@lucide/svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { REASONING_EFFORT_LEVELS, REASONING_EFFORT_TOKENS } from '$lib/constants';
@@ -95,11 +95,10 @@
 				title={tooltipText}
 				aria-label={`${tooltipText}. ${t('chat.reasoningConfigureHint')}`}
 			>
-				{#if thinkingEnabled}
-					<Lightbulb class="h-4 w-4 shrink-0" />
-				{:else}
-					<LightbulbOff class="h-4 w-4 shrink-0" />
-				{/if}
+				<Lightbulb
+					class={`h-4 w-4 shrink-0${!thinkingEnabled ? ' llampart-reasoning-trigger-icon-disabled' : ''}`}
+					color={!thinkingEnabled ? '#e7000b' : undefined}
+				/>
 			</DropdownMenu.Trigger>
 
 			<DropdownMenu.Content

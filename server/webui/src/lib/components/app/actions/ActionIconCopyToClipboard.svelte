@@ -7,13 +7,21 @@
 		ariaLabel?: string;
 		canCopy?: boolean;
 		text: string;
+		successMessage?: string;
+		errorMessage?: string;
 	}
 
-	let { ariaLabel = t('common.copyToClipboard'), canCopy = true, text }: Props = $props();
+	let {
+		ariaLabel = t('common.copyToClipboard'),
+		canCopy = true,
+		text,
+		successMessage = t('common.copiedToClipboard'),
+		errorMessage = t('common.failedToCopyToClipboard')
+	}: Props = $props();
 </script>
 
 <Copy
 	class="h-3 w-3 flex-shrink-0 cursor-{canCopy ? 'pointer' : 'not-allowed'}"
 	aria-label={ariaLabel}
-	onclick={() => canCopy && copyToClipboard(text)}
+	onclick={() => canCopy && copyToClipboard(text, successMessage, errorMessage)}
 />
