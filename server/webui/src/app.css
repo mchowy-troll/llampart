@@ -10,8 +10,8 @@
 
 /* llampart-desktop-fluid-ui-scale
    Punkt odniesienia: 5K z systemowym skalowaniem 200% daje 2560 CSS px.
-   2560 CSS px i więcej = 100% interfejsu.
-   1920 CSS px = 75% interfejsu.
+   1920 CSS px pozostaje bazą 1080p bez zmiany rozmiaru.
+   2560 CSS px i więcej celuje w 90% poprzedniego desktopowego maksimum.
    Skalujemy rem-y globalnie, więc Tailwindowe fonty, odstępy, ikony i kafelki
    zachowują proporcje bez ręcznego zmieniania pojedynczych komponentów. */
 @media (min-width: 1024px) {

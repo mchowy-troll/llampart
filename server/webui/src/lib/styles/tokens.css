@@ -3,9 +3,10 @@
    Keep theme-specific visual values in dedicated theme and surface layers. */
 
 :root {
+	/* 1080p stays at the 12px baseline; 2560 CSS px and above now cap at 90% of the previous 16px desktop maximum. */
 	--llampart-ui-scale-min-font-size: 12px;
-	--llampart-ui-scale-fluid-font-size: 0.625vw;
-	--llampart-ui-scale-max-font-size: 16px;
+	--llampart-ui-scale-fluid-font-size: 0.5625vw;
+	--llampart-ui-scale-max-font-size: 14.4px;
 
 	--llampart-desktop-sidebar-width: 25vw;
 
