@@ -115,6 +115,8 @@ Guardrails:
 - identical rendered output must still be independently controllable when the surface is theme-specific;
 - shared primitives are acceptable only when they are intentionally neutral, documented, and not likely to make one theme change accidentally affect another.
 
+Current Light/Dark sidebar and conversation-list surface values are defined in `src/lib/styles/themes.css` by `llampart-light-dark-sidebar-surface-tokens` and consumed in `ChatSidebar.svelte` / `ChatSidebarConversationItem.svelte`. The components keep local structure and state selectors, while theme-specific colors, shadows, and checkbox imagery stay theme-owned.
+
 Current Frosted Glass composer menu, sheet, and popover values are defined in `src/lib/styles/themes.css` by `llampart-frosted-glass-composer-menu-tokens` and consumed in `src/app.css` by `llampart-frosted-glass-composer-menu-surfaces`. Components keep semantic menu classes and do not own these Frosted Glass theme values.
 
 Current Frosted Glass input/textbox and placeholder glow values are defined in `src/lib/styles/themes.css` by `llampart-frosted-glass-input-glow-tokens` and consumed in `src/app.css` by `llampart-frosted-glass-user-input-text-glow`.

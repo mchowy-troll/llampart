@@ -161,6 +161,37 @@ html.dark:not(.has-frosted-glass-theme) body .llampart-dialog-overlay {
 }
 /* /llampart-agentic-panel-and-dialog-overlay-token-owner */
 
+/* llampart-light-dark-sidebar-surface-tokens
+   Theme-owned Light/Dark sidebar and conversation-list values.
+   Sidebar components consume these values while keeping local structure and state selectors. */
+:root {
+	--llampart-sidebar-conversations-frame-background: #fcfcfc;
+	--llampart-sidebar-conversation-item-border-color: var(--border);
+	--llampart-sidebar-conversation-item-shadow: none;
+}
+
+html.dark:not(.has-frosted-glass-theme) {
+	--llampart-sidebar-header-separator-background: rgba(255, 255, 255, 0.12);
+	--llampart-sidebar-conversations-frame-border: #2d2d2d;
+	--llampart-sidebar-conversations-frame-shadow: none;
+	--llampart-sidebar-conversations-frame-background: #141414;
+	--llampart-sidebar-select-checkbox-checked-border: #e8e8e8;
+	--llampart-sidebar-select-checkbox-checked-background: #e8e8e8;
+	--llampart-sidebar-select-checkbox-checked-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' stroke='%23161616' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	--llampart-sidebar-select-checkbox-check-border: #2b2b2b;
+	--llampart-sidebar-conversation-hover-foreground: #e8e8e8;
+	--llampart-sidebar-conversation-hover-checkbox-border: #e8e8e8;
+	--llampart-sidebar-conversation-item-border-color: color-mix(
+		in oklch,
+		var(--border) 20%,
+		transparent
+	);
+	--llampart-sidebar-conversation-item-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+	--llampart-sidebar-conversation-item-background: #262626;
+	--llampart-sidebar-conversation-item-hover-background: #383636;
+}
+/* /llampart-light-dark-sidebar-surface-tokens */
+
 /* llampart-frosted-glass-input-glow-tokens
    Theme-owned Frosted Glass input/textbox text and placeholder glow values.
    app.css consumes these values in llampart-frosted-glass-user-input-text-glow. */

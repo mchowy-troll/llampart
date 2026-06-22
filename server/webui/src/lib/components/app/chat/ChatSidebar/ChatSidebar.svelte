@@ -647,7 +647,10 @@
 	}
 
 	:global(html.dark .llampart-sidebar-header-separator) {
-		background: rgba(255, 255, 255, 0.12) !important;
+		background: var(
+			--llampart-sidebar-header-separator-background,
+			rgba(255, 255, 255, 0.12)
+		) !important;
 	}
 
 	:global(html.has-frosted-glass-theme .llampart-sidebar-header-separator) {
@@ -763,8 +766,8 @@
 	:global(.dark .llampart-sidebar-conversations-frame) {
 		border-width: 1px;
 		border-style: solid;
-		border-color: #2d2d2d;
-		box-shadow: none;
+		border-color: var(--llampart-sidebar-conversations-frame-border, #2d2d2d);
+		box-shadow: var(--llampart-sidebar-conversations-frame-shadow, none);
 	}
 
 	:global(.llampart-sidebar-frame-header button) {
@@ -854,13 +857,16 @@
 	:global(.dark .llampart-sidebar-select-checkbox:checked),
 	:global(.dark .llampart-sidebar-select-checkbox:checked:hover),
 	:global(.dark .llampart-sidebar-select-checkbox:checked:focus-visible) {
-		border-color: #e8e8e8;
-		background-color: #e8e8e8;
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' stroke='%23161616' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+		border-color: var(--llampart-sidebar-select-checkbox-checked-border, #e8e8e8);
+		background-color: var(--llampart-sidebar-select-checkbox-checked-background, #e8e8e8);
+		background-image: var(
+			--llampart-sidebar-select-checkbox-checked-image,
+			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' stroke='%23161616' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+		);
 	}
 
 	:global(.dark .llampart-sidebar-select-checkbox:checked)::after {
-		border-color: #2b2b2b;
+		border-color: var(--llampart-sidebar-select-checkbox-check-border, #2b2b2b);
 	}
 
 	/* llampart sidebar polish: icon action hover parity */
@@ -921,14 +927,14 @@
 
 	/* llampart-sidebar-frame-solid-light-dark-surface */
 	:global(html:not(.has-frosted-glass-theme)) .llampart-sidebar-conversations-frame {
-		background: #fcfcfc !important;
-		background-color: #fcfcfc !important;
+		background: var(--llampart-sidebar-conversations-frame-background, #fcfcfc) !important;
+		background-color: var(--llampart-sidebar-conversations-frame-background, #fcfcfc) !important;
 		background-image: none !important;
 	}
 
 	:global(html.dark:not(.has-frosted-glass-theme)) .llampart-sidebar-conversations-frame {
-		background: #141414 !important;
-		background-color: #141414 !important;
+		background: var(--llampart-sidebar-conversations-frame-background, #141414) !important;
+		background-color: var(--llampart-sidebar-conversations-frame-background, #141414) !important;
 		background-image: none !important;
 	}
 	/* /llampart-sidebar-frame-solid-light-dark-surface */
