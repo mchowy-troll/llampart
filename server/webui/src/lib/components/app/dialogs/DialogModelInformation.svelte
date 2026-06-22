@@ -2,6 +2,7 @@
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Table from '$lib/components/ui/table';
 	import { BadgeModality, ActionIconCopyToClipboard } from '$lib/components/app';
+	import { ChevronDown } from '@lucide/svelte';
 	import { serverStore } from '$lib/stores/server.svelte';
 	import { modelsStore, modelOptions, modelsLoading } from '$lib/stores/models.svelte';
 	import { formatFileSize, formatParameters, formatNumber } from '$lib/utils';
@@ -76,7 +77,7 @@
 
 <Dialog.Root bind:open {onOpenChange}>
 	<Dialog.Content
-		class="llampart-model-info-dialog @container z-9999 flex !max-h-[80dvh] !w-[80vw] !max-w-[80vw] flex-col overflow-hidden"
+		class="llampart-model-info-dialog @container z-9999 flex !max-h-[80dvh] !w-[50vw] !max-w-[50vw] flex-col overflow-hidden"
 	>
 		<style>
 			@container (max-width: 56rem) {
@@ -93,20 +94,10 @@
 				overflow: auto;
 			}
 
-			/* llampart-model-info-two-column-layout */
-			@container (max-width: 72rem) {
-				.llampart-model-info-grid {
-					grid-template-columns: minmax(0, 1fr);
-				}
-
-				.llampart-model-info-template-panel {
-					min-height: 18rem;
-				}
-			}
-
+			/* llampart-model-info-single-column-layout */
 			.llampart-model-info-grid {
 				display: grid;
-				grid-template-columns: minmax(22rem, 0.95fr) minmax(22rem, 1.05fr);
+				grid-template-columns: minmax(0, 1fr);
 				gap: 1rem;
 				align-items: start;
 			}
@@ -117,26 +108,41 @@
 			}
 
 			.llampart-model-info-template-panel {
-				display: flex;
-				min-height: min(32rem, calc(80dvh - 9rem));
-				flex-direction: column;
+				min-width: 0;
 				overflow: hidden;
-				border: 1px solid hsl(var(--border));
+				border: 1px solid var(--llampart-model-info-template-border, hsl(var(--border)));
 				border-radius: 0.75rem;
-				background: hsl(var(--muted) / 0.45);
+				background: var(--llampart-model-info-template-background, hsl(var(--muted) / 0.45));
 			}
 
 			.llampart-model-info-template-title {
-				border-bottom: 1px solid hsl(var(--border));
+				display: flex;
+				cursor: pointer;
+				align-items: center;
+				justify-content: space-between;
+				gap: 0.75rem;
 				padding: 0.75rem 1rem;
 				font-size: 0.875rem;
 				font-weight: 600;
+				list-style: none;
+			}
+
+			.llampart-model-info-template-title::-webkit-details-marker {
+				display: none;
+			}
+
+			.llampart-model-info-template-chevron {
+				transition: transform 160ms ease;
+			}
+
+			.llampart-model-info-template-panel[open] .llampart-model-info-template-chevron {
+				transform: rotate(180deg);
 			}
 
 			.llampart-model-info-template-body {
-				flex: 1 1 auto;
-				min-height: 0;
+				max-height: min(32rem, calc(80dvh - 13rem));
 				overflow: auto;
+				border-top: 1px solid var(--llampart-model-info-template-border, hsl(var(--border)));
 				padding: 1rem;
 			}
 		</style>
@@ -333,16 +339,18 @@
 							</div>
 
 							{#if serverProps.chat_template}
-								<section class="llampart-model-info-template-panel">
-									<div class="llampart-model-info-template-title">
-										{t('dialogs.chatTemplateLabel')}
-									</div>
+								<details class="llampart-model-info-template-panel">
+									<summary class="llampart-model-info-template-title">
+										<span>{t('dialogs.chatTemplateLabel')}</span>
+
+										<ChevronDown class="llampart-model-info-template-chevron h-4 w-4" />
+									</summary>
 
 									<div class="llampart-model-info-template-body">
 										<pre
 											class="font-mono text-xs whitespace-pre-wrap">{serverProps.chat_template}</pre>
 									</div>
-								</section>
+								</details>
 							{/if}
 						</div>
 					{/if}

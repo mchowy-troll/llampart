@@ -325,7 +325,7 @@
 
 <ChatFormPickerPopover
 	bind:isOpen
-	class={className}
+	class="llampart-mcp-prompt-picker-popover {className}"
 	srLabel={t('mcp.openPromptPicker')}
 	{onClose}
 	onKeydown={handleKeydown}
