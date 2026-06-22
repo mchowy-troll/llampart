@@ -208,6 +208,31 @@ html.dark:not(.has-frosted-glass-theme) {
 }
 /* /llampart-light-dark-attachment-card-tokens */
 
+/* llampart-dialog-model-surface-tokens
+   Theme-owned visual contracts for composer MCP prompt popovers and model-information
+   template panels. Statistics remain in their original committed state. */
+:root {
+	--llampart-mcp-prompt-picker-shadow: none;
+	--llampart-model-info-template-border: hsl(var(--border));
+	--llampart-model-info-template-background: color-mix(in oklch, var(--muted) 45%, transparent);
+}
+
+html.dark:not(.has-frosted-glass-theme) {
+	--llampart-model-info-template-border: hsl(var(--border));
+	--llampart-model-info-template-background: color-mix(in oklch, var(--muted) 62%, transparent);
+}
+
+html.has-frosted-glass-theme {
+	--llampart-mcp-prompt-picker-shadow: var(--llampart-frosted-glass-composer-menu-shadow);
+	--llampart-model-info-template-border: var(--border);
+	--llampart-model-info-template-background: color-mix(
+		in oklch,
+		var(--muted) 18%,
+		var(--background)
+	);
+}
+/* /llampart-dialog-model-surface-tokens */
+
 /* llampart-message-surface-tokens
    Theme-owned message surface values.
    Message components keep layout, spacing, and footer positioning while consuming these contracts. */

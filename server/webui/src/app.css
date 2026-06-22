@@ -371,6 +371,13 @@ html
 }
 /* /llampart-message-shell-action-layout-primitives */
 
+/* llampart-mcp-prompt-picker-surface-consumer
+   Prompt picker declares a semantic hook; this owner consumes theme tokens without changing the shared picker primitive. */
+html:not(.dark):not(.has-frosted-glass-theme) body .llampart-mcp-prompt-picker-popover {
+	box-shadow: var(--llampart-mcp-prompt-picker-shadow, none) !important;
+}
+/* /llampart-mcp-prompt-picker-surface-consumer */
+
 /* llampart-frosted-glass-composer-menu-surfaces
    app.css owns Frosted Glass composer menu/sheet/popover selectors.
    Theme-owned Frosted composer menu values live in lib/styles/themes.css. */
@@ -790,8 +797,8 @@ html.has-frosted-glass-theme [data-sidebar='trigger']:is(:hover, :focus-visible,
  * but use the regular light-theme dialog/table styling in Frosted Glass.
  */
 html.has-frosted-glass-theme body [data-slot='dialog-content'].llampart-model-info-dialog {
-	width: 80vw !important;
-	max-width: 80vw !important;
+	width: 50vw !important;
+	max-width: 50vw !important;
 	max-height: 80dvh !important;
 }
 
