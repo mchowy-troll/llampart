@@ -121,6 +121,8 @@ Current Light/Dark attachment card values are defined in `src/lib/styles/themes.
 
 Current message-surface theme values are defined in `src/lib/styles/themes.css` by `llampart-message-surface-tokens` and consumed in `ChatMessageUser.svelte` / `ChatMessageAssistant.svelte`. Message components keep layout, spacing, and footer/action positioning; this ownership layer only moves visual color, fill, shadow, and filter values.
 
+Current chat layout scale primitives are defined in `src/lib/styles/tokens.css` and consumed by `llampart-chat-layout-scale-primitives` in `src/app.css`. Components keep semantic structure, while chat/composer widths and shared scroll/message spacing are tunable from the layout token owner. Initial values intentionally preserve the current rendered layout before any visual scale tuning.
+
 Current Frosted Glass composer menu, sheet, and popover values are defined in `src/lib/styles/themes.css` by `llampart-frosted-glass-composer-menu-tokens` and consumed in `src/app.css` by `llampart-frosted-glass-composer-menu-surfaces`. Components keep semantic menu classes and do not own these Frosted Glass theme values.
 
 Current Frosted Glass input/textbox and placeholder glow values are defined in `src/lib/styles/themes.css` by `llampart-frosted-glass-input-glow-tokens` and consumed in `src/app.css` by `llampart-frosted-glass-user-input-text-glow`.

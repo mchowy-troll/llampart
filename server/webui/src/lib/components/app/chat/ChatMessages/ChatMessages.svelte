@@ -273,13 +273,13 @@
 </script>
 
 <div
-	class="flex h-full flex-col space-y-10 pt-24 {className}"
-	style="height: auto; min-height: calc(100dvh - 14rem);"
+	class="llampart-chat-messages-flow flex h-full flex-col space-y-10 {className}"
+	style="height: auto;"
 >
 	{#each displayMessages as { message, toolMessages, isLastAssistantMessage, siblingInfo } (message.id)}
 		<div use:fadeInView={{ disabled: isFrostedGlassTheme }}>
 			<ChatMessage
-				class="mx-auto w-full max-w-[57.6rem]"
+				class="llampart-chat-message-width mx-auto w-full"
 				{message}
 				{toolMessages}
 				{isLastAssistantMessage}

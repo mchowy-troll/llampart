@@ -355,7 +355,7 @@
 	<div
 		bind:this={chatScrollContainer}
 		aria-label={t('chat.chatInterfaceWithFileDropZone')}
-		class="flex h-full flex-col-reverse overflow-y-auto px-4 md:px-6"
+		class="llampart-chat-scroll-container flex h-full flex-col-reverse overflow-y-auto"
 		ondragenter={handleDragEnter}
 		ondragleave={handleDragLeave}
 		ondragover={handleDragOver}
@@ -365,7 +365,7 @@
 	>
 		<div class="flex flex-col">
 			<ChatMessages
-				class="mb-16 md:mb-24"
+				class="llampart-chat-messages-bottom-spacer"
 				messages={activeMessages()}
 				onUserAction={() => {
 					autoScroll.enable();
@@ -391,7 +391,7 @@
 
 				{#if hasPropsError}
 					<div
-						class="pointer-events-auto mx-auto mb-4 max-w-[48rem] px-1"
+						class="llampart-chat-composer-width pointer-events-auto mx-auto mb-4 px-1"
 						in:fly={{ y: 10, duration: frostedGlassFlyDuration }}
 					>
 						<Alert.Root variant="destructive">
@@ -445,7 +445,7 @@
 		ondrop={handleDrop}
 		role="main"
 	>
-		<div class="llampart-empty-chat-form w-full max-w-[48rem] px-4">
+		<div class="llampart-empty-chat-form llampart-chat-composer-width w-full px-4">
 			<div class="mb-10 text-center" in:fade={{ duration: frostedGlassFadeDuration }}>
 				<h1
 					class="llampart-empty-chat-title mb-2 text-2xl font-semibold tracking-tight md:text-3xl"

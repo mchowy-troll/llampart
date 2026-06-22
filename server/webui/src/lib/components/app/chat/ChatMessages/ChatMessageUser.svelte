@@ -86,14 +86,14 @@
 		<ChatMessageEditForm />
 	{:else}
 		{#if message.extra && message.extra.length > 0}
-			<div class="llampart-user-message-attachments mb-2 w-full max-w-[80%]">
+			<div class="llampart-user-message-attachments mb-2 w-full llampart-user-message-width">
 				<ChatAttachmentsList attachments={message.extra} readonly imageHeight="h-80" />
 			</div>
 		{/if}
 
 		{#if message.content.trim()}
 			<Card
-				class="llampart-message-shell-card llampart-user-message-card w-full max-w-[80%] overflow-y-auto rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5 dark:bg-primary/15"
+				class="llampart-message-shell-card llampart-user-message-card w-full llampart-user-message-width overflow-y-auto rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5 dark:bg-primary/15"
 				data-multiline={isMultiline ? '' : undefined}
 				style="max-height: var(--max-message-height); overflow-wrap: anywhere; word-break: break-word;"
 			>
@@ -131,7 +131,7 @@
 				{/if}
 			</Card>
 		{:else if message.timestamp && !hideAttachmentOnlyActions}
-			<div class="w-full max-w-[80%]">
+			<div class="w-full llampart-user-message-width">
 				<ChatMessageActions
 					actionsPosition="right"
 					{deletionInfo}
