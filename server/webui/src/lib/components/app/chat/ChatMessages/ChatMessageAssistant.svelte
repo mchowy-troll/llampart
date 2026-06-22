@@ -513,7 +513,7 @@
 	}
 
 	:global(.dark) .llampart-assistant-message {
-		color: #e8e8e8;
+		color: var(--llampart-assistant-message-foreground, #e8e8e8);
 	}
 
 	.raw-output {
@@ -705,7 +705,7 @@
 	}
 
 	:global(html.has-frosted-glass-theme) .minimal-agentic-footer-indicator {
-		color: #000000;
+		color: var(--llampart-frosted-user-message-foreground, #000000);
 		filter: none;
 	}
 
