@@ -1,3 +1,11 @@
+/* llampart-theme-independence-contract
+   This file owns theme-specific values and per-theme contracts.
+   Equal rendered output between themes is allowed, but theme-specific control should
+   remain independently changeable unless the value is an explicitly neutral primitive.
+   Global selectors in app.css and component-local styles should consume these contracts
+   instead of becoming the source of truth for theme-specific values. */
+/* /llampart-theme-independence-contract */
+
 /* llampart theme semantic tokens
    Owns light/dark semantic color variables and Frosted Glass theme-level surface tokens.
    Keep component selectors and large surface rules in app.css or focused owner stylesheets. */
@@ -152,3 +160,49 @@ html.dark:not(.has-frosted-glass-theme) body .llampart-dialog-overlay {
 	-webkit-backdrop-filter: var(--llampart-dialog-overlay-milk-filter) !important;
 }
 /* /llampart-agentic-panel-and-dialog-overlay-token-owner */
+
+/* llampart-frosted-glass-input-glow-tokens
+   Theme-owned Frosted Glass input/textbox text and placeholder glow values.
+   app.css consumes these values in llampart-frosted-glass-user-input-text-glow. */
+html.has-frosted-glass-theme {
+	--llampart-frosted-input-text-color: #000000;
+	--llampart-frosted-input-text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.64), 0 0 8px rgba(255, 255, 255, 0.5),
+		0 0 16px rgba(255, 255, 255, 0.34);
+	--llampart-frosted-input-placeholder-color: rgba(0, 0, 0, 0.48);
+	--llampart-frosted-input-placeholder-text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.5), 0 0 7px rgba(255, 255, 255, 0.36),
+		0 0 12px rgba(255, 255, 255, 0.22);
+}
+/* /llampart-frosted-glass-input-glow-tokens */
+
+/* llampart-frosted-glass-composer-menu-tokens
+   Theme-owned composer menu/sheet/popover values for Frosted Glass.
+   app.css consumes these values in llampart-frosted-glass-composer-menu-surfaces. */
+html.has-frosted-glass-theme {
+	--llampart-frosted-glass-composer-radius: 0.75rem;
+	--llampart-frosted-glass-composer-item-radius: 0.625rem;
+	--llampart-frosted-glass-composer-menu-bg: rgba(255, 255, 255, 0.46);
+	--llampart-frosted-glass-composer-menu-border: rgba(255, 255, 255, 0.4);
+	--llampart-frosted-glass-composer-menu-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.038), 0 24px 54px rgba(0, 0, 0, 0.03);
+	--llampart-frosted-glass-composer-menu-filter: blur(32px) saturate(138%);
+}
+/* /llampart-frosted-glass-composer-menu-tokens */
+
+/* llampart-frosted-glass-preview-parity-tokens
+   Theme-owned solid preview values. These currently resolve to the same rendered
+   appearance as light preview, but they remain independently changeable for Frosted
+   Glass preview without changing light or dark preview ownership. */
+html.has-frosted-glass-theme {
+	--llampart-frosted-preview-surface-background: var(--background);
+	--llampart-frosted-preview-surface-background-image: none;
+	--llampart-frosted-preview-surface-foreground: var(--foreground);
+	--llampart-frosted-preview-inline-background: color-mix(in oklch, var(--muted) 50%, transparent);
+	--llampart-frosted-preview-inline-foreground: var(--foreground);
+	--llampart-frosted-preview-inline-backdrop-filter: none;
+	--llampart-frosted-preview-inline-text-shadow: none;
+	--llampart-frosted-preview-surface-backdrop-filter: none;
+	--llampart-frosted-preview-surface-text-shadow: none;
+}
+/* /llampart-frosted-glass-preview-parity-tokens */

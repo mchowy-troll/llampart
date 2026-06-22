@@ -213,17 +213,20 @@ html.has-frosted-glass-theme .llampart-attachment-preview-content,
 html.has-frosted-glass-theme .llampart-attachment-pdf-preview-pages,
 html.has-frosted-glass-theme .llampart-attachment-pdf-preview-page,
 html.has-frosted-glass-theme .llampart-attachment-image-preview-frame {
-	background: var(--background) !important;
-	background-color: var(--background) !important;
-	color: var(--foreground) !important;
-	backdrop-filter: none !important;
-	-webkit-backdrop-filter: none !important;
-	text-shadow: none !important;
+	background: var(--llampart-frosted-preview-surface-background, var(--background)) !important;
+	background-color: var(
+		--llampart-frosted-preview-surface-background,
+		var(--background)
+	) !important;
+	color: var(--llampart-frosted-preview-surface-foreground, var(--foreground)) !important;
+	backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
+	-webkit-backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
+	text-shadow: var(--llampart-frosted-preview-surface-text-shadow, none) !important;
 }
 
 html.has-frosted-glass-theme .llampart-attachment-preview-dialog-content *,
 html.has-frosted-glass-theme .llampart-attachment-preview-dialog-shell * {
-	text-shadow: none !important;
+	text-shadow: var(--llampart-frosted-preview-surface-text-shadow, none) !important;
 }
 /* /llampart-attachment-preview-opaque-fill */
 
@@ -258,13 +261,16 @@ html.has-frosted-glass-theme .llampart-attachment-preview-dialog-shell * {
 
 html.has-frosted-glass-theme .llampart-attachments-view-all-dialog-content,
 html.has-frosted-glass-theme .llampart-attachments-view-all-panel {
-	background: var(--background) !important;
-	background-color: var(--background) !important;
-	background-image: none !important;
-	color: var(--foreground) !important;
-	backdrop-filter: none !important;
-	-webkit-backdrop-filter: none !important;
-	text-shadow: none !important;
+	background: var(--llampart-frosted-preview-surface-background, var(--background)) !important;
+	background-color: var(
+		--llampart-frosted-preview-surface-background,
+		var(--background)
+	) !important;
+	background-image: var(--llampart-frosted-preview-surface-background-image, none) !important;
+	color: var(--llampart-frosted-preview-surface-foreground, var(--foreground)) !important;
+	backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
+	-webkit-backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
+	text-shadow: var(--llampart-frosted-preview-surface-text-shadow, none) !important;
 }
 /* /llampart-attachments-view-all-solid-surface */
 
