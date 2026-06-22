@@ -83,8 +83,8 @@ Keep local imports grouped at the top unless a focused build and visual check pr
 
 These areas are current ownership points:
 
-- `src/lib/styles/themes.css
-- `src/lib/styles/attachments.css` — shared attachment card geometry and frame primitives for light/dark/Frosted Glass` owns light/dark semantic theme variables and Frosted Glass theme-level surface tokens.
+- `src/lib/styles/themes.css` owns light/dark semantic theme variables and Frosted Glass theme-level surface tokens.
+- `src/lib/styles/attachments.css` owns shared attachment card geometry and frame primitives for light/dark/Frosted Glass.
 - `src/app.css` owns global Tailwind setup, Frosted Glass global selectors, sidebar shell styling, dialog/toast surfaces, and several global surface/action overrides.
 - `components/app/content/MarkdownContent.svelte` owns Markdown rendering and local Markdown-specific styling.
 - `components/app/content/SyntaxHighlightedCode.svelte` owns syntax-highlighted code presentation.
