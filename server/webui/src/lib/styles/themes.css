@@ -48,7 +48,7 @@
 	--chat-form-area-height: 8rem;
 	--chat-form-area-offset: 2rem;
 	--max-message-height: max(24rem, min(80dvh, calc(100dvh - var(--chat-form-area-height) - 12rem)));
-	--llampart-composer-surface-background: oklch(0.97 0 0 / 72%);
+	--llampart-composer-surface-background: #f9f9f9;
 	--llampart-composer-surface-border: oklch(0.875 0 0 / 64%);
 	--llampart-composer-surface-filter: blur(18px) saturate(116%);
 	--llampart-composer-fade-background: var(--background);
@@ -198,7 +198,7 @@ html.dark:not(.has-frosted-glass-theme) {
 :root {
 	--llampart-attachment-card-border: #cecece;
 	--llampart-attachment-card-shadow: none;
-	--llampart-attachment-card-background: oklch(0.955 0 0);
+	--llampart-attachment-card-background: #f5f5f5;
 }
 
 html.dark:not(.has-frosted-glass-theme) {
@@ -207,6 +207,34 @@ html.dark:not(.has-frosted-glass-theme) {
 	--llampart-attachment-card-background: var(--muted);
 }
 /* /llampart-light-dark-attachment-card-tokens */
+
+/* llampart-message-surface-tokens
+   Theme-owned message surface values.
+   Message components keep layout, spacing, and footer positioning while consuming these contracts. */
+html.dark:not(.has-frosted-glass-theme) {
+	--llampart-assistant-message-foreground: #e8e8e8;
+}
+
+html.has-frosted-glass-theme {
+	--llampart-frosted-user-message-surface-border: rgba(255, 255, 255, 0.19);
+	--llampart-frosted-user-message-surface-background: rgba(255, 255, 255, 0.14);
+	--llampart-frosted-user-message-surface-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.055), 0 4px 8px rgba(0, 0, 0, 0.05),
+		0 8px 16px rgba(0, 0, 0, 0.045), 0 16px 32px rgba(0, 0, 0, 0.04),
+		0 32px 64px rgba(0, 0, 0, 0.035);
+	--llampart-frosted-user-message-surface-filter: blur(18px) saturate(116%);
+	--llampart-frosted-user-message-foreground: #000000;
+	--llampart-frosted-user-message-text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.64), 0 0 8px rgba(255, 255, 255, 0.5),
+		0 0 16px rgba(255, 255, 255, 0.34);
+	--llampart-frosted-user-message-code-background: rgba(255, 255, 255, 0.1);
+	--llampart-frosted-user-message-code-border: rgba(255, 255, 255, 0.1);
+	--llampart-frosted-user-message-code-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+	--llampart-frosted-user-message-attachment-background: rgba(255, 255, 255, 0.14);
+	--llampart-frosted-user-message-attachment-border: rgba(255, 255, 255, 0.16);
+	--llampart-frosted-user-message-attachment-filter: blur(16px) saturate(112%);
+}
+/* /llampart-message-surface-tokens */
 
 /* llampart-frosted-glass-input-glow-tokens
    Theme-owned Frosted Glass input/textbox text and placeholder glow values.

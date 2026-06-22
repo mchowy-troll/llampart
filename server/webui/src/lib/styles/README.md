@@ -117,7 +117,9 @@ Guardrails:
 
 Current Light/Dark sidebar and conversation-list surface values are defined in `src/lib/styles/themes.css` by `llampart-light-dark-sidebar-surface-tokens` and consumed in `ChatSidebar.svelte` / `ChatSidebarConversationItem.svelte`. The components keep local structure and state selectors, while theme-specific colors, shadows, and checkbox imagery stay theme-owned.
 
-Current Light/Dark attachment card values are defined in `src/lib/styles/themes.css` by `llampart-light-dark-attachment-card-tokens` and consumed in `src/lib/styles/attachments.css`. The attachment stylesheet keeps reusable geometry/selectors, while theme-specific border, shadow, and fill values stay theme-owned. The light attachment-card fill is intentionally independent from the generic composer surface so file cards remain legible inside the light composer frame.
+Current Light/Dark attachment card values are defined in `src/lib/styles/themes.css` by `llampart-light-dark-attachment-card-tokens` and consumed in `src/lib/styles/attachments.css`. The attachment stylesheet keeps reusable geometry/selectors, while theme-specific border, shadow, and fill values stay theme-owned. The light attachment-card fill is intentionally independent from the generic composer surface so non-image file cards remain legible inside light composer and thread frames.
+
+Current message-surface theme values are defined in `src/lib/styles/themes.css` by `llampart-message-surface-tokens` and consumed in `ChatMessageUser.svelte` / `ChatMessageAssistant.svelte`. Message components keep layout, spacing, and footer/action positioning; this ownership layer only moves visual color, fill, shadow, and filter values.
 
 Current Frosted Glass composer menu, sheet, and popover values are defined in `src/lib/styles/themes.css` by `llampart-frosted-glass-composer-menu-tokens` and consumed in `src/app.css` by `llampart-frosted-glass-composer-menu-surfaces`. Components keep semantic menu classes and do not own these Frosted Glass theme values.
 
