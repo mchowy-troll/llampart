@@ -94,6 +94,51 @@ These areas are current ownership points:
 - `components/app/dialogs/*Preview*.svelte` own existing preview dialog shells until a shared preview layer exists.
 - `components/app/chat/ChatSidebar/*` and `components/ui/sidebar/*` own sidebar layout and sidebar primitives.
 
+## Theme independence
+
+Theme independence is a global architecture rule, not a preview-only rule.
+
+Light, Dark, and Frosted Glass should be independently owned and independently changeable wherever feasible. Similar or identical visual output is allowed, but shared theme control is not, unless the value is an explicitly neutral primitive rather than a theme-specific decision.
+
+Use this ownership split as the default:
+
+- `src/lib/styles/tokens.css` owns neutral primitives and semantic base tokens that are intentionally shared;
+- `src/lib/styles/themes.css` owns theme-specific values and per-theme contracts;
+- `src/app.css` may consume theme contracts for global selectors and layout/surface wiring;
+- component styles may own local structure/rendering, but should not own theme-specific visual values when a theme token can express them.
+
+Guardrails:
+
+- do not use a Light value as the architectural source of truth for Dark or Frosted Glass merely because it currently looks correct;
+- do not use a Dark value as the architectural source of truth for Light or Frosted Glass;
+- do not use a Frosted Glass value as the architectural source of truth for Light or Dark;
+- identical rendered output must still be independently controllable when the surface is theme-specific;
+- shared primitives are acceptable only when they are intentionally neutral, documented, and not likely to make one theme change accidentally affect another.
+
+Current Frosted Glass composer menu, sheet, and popover values are defined in `src/lib/styles/themes.css` by `llampart-frosted-glass-composer-menu-tokens` and consumed in `src/app.css` by `llampart-frosted-glass-composer-menu-surfaces`. Components keep semantic menu classes and do not own these Frosted Glass theme values.
+
+Current Frosted Glass input/textbox and placeholder glow values are defined in `src/lib/styles/themes.css` by `llampart-frosted-glass-input-glow-tokens` and consumed in `src/app.css` by `llampart-frosted-glass-user-input-text-glow`.
+
+### Frosted Glass preview parity
+
+Frosted Glass preview surfaces use a solid-preview parity contract:
+
+- table, code, attachment, and rich preview surfaces in Frosted Glass must visually match the light-theme preview exactly;
+- that visual identity must be controlled by Frosted Glass preview-owned tokens, selectors, or owner blocks;
+- shared preview shell markup is allowed, but shared visual control is not;
+- changing light preview values must not automatically change Frosted Glass preview unless that change is explicitly scoped to Frosted Glass preview too;
+- changing Frosted Glass preview ownership must preserve the current preview appearance exactly unless the commit explicitly states an intentional visual change.
+
+Current preview appearance is correct. Treat preview modularization as an ownership change first, not a visual redesign.
+
+When preview ownership is extracted, preserve the existing rendered result first and introduce independent theme-owned values without changing those values in the same step.
+
+Current Frosted Glass preview parity values are defined in `src/lib/styles/themes.css` by `llampart-frosted-glass-preview-parity-tokens` and consumed in `src/app.css` by `llampart-frosted-glass-solid-preview-parity-surfaces`. These variables intentionally preserve the current rendered result while making Frosted preview control independent.
+
+Attachment preview opaque-fill and view-all preview surfaces consume the same Frosted preview parity tokens in `src/lib/styles/attachments.css`, so attachment preview parity remains visually identical while still being Frosted-owned.
+
+`ChatAttachmentPreview.svelte` keeps local rendering structure, but its Frosted inline markdown/text preview colors and glass resets consume `llampart-frosted-preview-inline-*` tokens from `themes.css` so component-local rendering does not own theme values.
+
 ## Extraction rules
 
 Use small, reviewable commits.

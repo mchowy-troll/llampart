@@ -333,17 +333,8 @@ html
 /* /llampart-message-shell-action-layout-primitives */
 
 /* llampart-frosted-glass-composer-menu-surfaces
-   app.css owns Frosted Glass composer overlay surfaces; components keep semantic classes only. */
-html.has-frosted-glass-theme {
-	--llampart-frosted-glass-composer-radius: 0.75rem;
-	--llampart-frosted-glass-composer-item-radius: 0.625rem;
-	--llampart-frosted-glass-composer-menu-bg: rgba(255, 255, 255, 0.46);
-	--llampart-frosted-glass-composer-menu-border: rgba(255, 255, 255, 0.4);
-	--llampart-frosted-glass-composer-menu-shadow:
-		0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 28px rgba(0, 0, 0, 0.038), 0 24px 54px rgba(0, 0, 0, 0.03);
-	--llampart-frosted-glass-composer-menu-filter: blur(32px) saturate(138%);
-}
-
+   app.css owns Frosted Glass composer menu/sheet/popover selectors.
+   Theme-owned Frosted composer menu values live in lib/styles/themes.css. */
 html.has-frosted-glass-theme
 	body
 	:is(
@@ -771,28 +762,20 @@ html.has-frosted-glass-theme body [data-slot='dialog-content'].table-preview-dia
 	max-height: 80dvh !important;
 }
 
-/* llampart-frosted-glass-user-input-text-glow */
-/*
- * Frosted Glass: user message input text glow.
- * Celowane w textarea/input pola rozmowy w nowym i istniejącym czacie.
- */
+/* llampart-frosted-glass-user-input-text-glow
+   app.css owns Frosted Glass input/textbox selectors.
+   Theme-owned input glow values live in lib/styles/themes.css. */
 html.has-frosted-glass-theme textarea,
 html.has-frosted-glass-theme [contenteditable='true'],
 html.has-frosted-glass-theme [role='textbox'] {
-	color: #000000 !important;
-	text-shadow:
-		0 0 2px rgba(255, 255, 255, 0.64),
-		0 0 8px rgba(255, 255, 255, 0.5),
-		0 0 16px rgba(255, 255, 255, 0.34) !important;
+	color: var(--llampart-frosted-input-text-color, #000000) !important;
+	text-shadow: var(--llampart-frosted-input-text-shadow) !important;
 }
 
 html.has-frosted-glass-theme textarea::placeholder,
 html.has-frosted-glass-theme input::placeholder {
-	color: rgba(0, 0, 0, 0.48) !important;
-	text-shadow:
-		0 0 2px rgba(255, 255, 255, 0.5),
-		0 0 7px rgba(255, 255, 255, 0.36),
-		0 0 12px rgba(255, 255, 255, 0.22) !important;
+	color: var(--llampart-frosted-input-placeholder-color, rgba(0, 0, 0, 0.48)) !important;
+	text-shadow: var(--llampart-frosted-input-placeholder-text-shadow) !important;
 }
 
 /* llampart-frosted-glass-new-chat-subtitle-color-only */
@@ -1192,6 +1175,10 @@ html.has-frosted-glass-theme body [data-slot='sheet-overlay'] {
 	backdrop-filter: blur(8px) saturate(108%) !important;
 }
 
+/* llampart-frosted-glass-translucent-dialog-surfaces
+   Frosted Glass translucent dialog shell owner.
+   Preview and solid dialog classes are intentionally excluded here because preview uses
+   an independent Frosted-owned solid parity contract instead of translucent glass. */
 html.has-frosted-glass-theme
 	body
 	[data-slot='dialog-content']:not(.llampart-model-info-dialog):not(
@@ -1616,16 +1603,24 @@ html.has-frosted-glass-theme
 	text-shadow: none !important;
 }
 
+/* llampart-frosted-glass-solid-preview-parity-surfaces
+   Frosted Glass preview surfaces intentionally render identically to the light preview.
+   Keep this controlled by Frosted preview-owned selectors/tokens; do not use light theme
+   values as the architectural source of truth for Frosted preview. */
 html.has-frosted-glass-theme
 	body
 	[data-slot='dialog-content'].llampart-attachment-preview-dialog-content,
 html.has-frosted-glass-theme body [data-slot='dialog-content'].table-preview-dialog-content {
-	background: var(--background) !important;
-	background-color: var(--background) !important;
-	background-image: none !important;
-	backdrop-filter: none !important;
-	-webkit-backdrop-filter: none !important;
+	background: var(--llampart-frosted-preview-surface-background, var(--background)) !important;
+	background-color: var(
+		--llampart-frosted-preview-surface-background,
+		var(--background)
+	) !important;
+	background-image: var(--llampart-frosted-preview-surface-background-image, none) !important;
+	backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
+	-webkit-backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
 }
+/* /llampart-frosted-glass-solid-preview-parity-surfaces */
 /* /llampart-frosted-glass-dialog-overlay-dim-parity */
 
 /* llampart-frosted-glass-solid-dialog-selector-exclusion */
