@@ -157,6 +157,7 @@ export const it: TranslationDictionary = {
 		themeSystem: 'Sistema',
 		themeLight: 'Chiaro',
 		themeFrostedGlass: 'Frosted Glass',
+		fieldUiScale: 'Scala interfaccia',
 		themeDark: 'Scuro',
 		defaultPrefix: 'Predefinito:',
 		resetToDefault: 'Ripristina predefiniti',
@@ -362,6 +363,8 @@ export const it: TranslationDictionary = {
 			theme: "Scegli il tema colore dell'interfaccia. Puoi usare Sistema, Chiaro o Scuro.",
 			interfaceLanguage:
 				"L'inglese è la lingua predefinita al primo avvio. Qui puoi scegliere la lingua dell'interfaccia.",
+			uiScale:
+				'Regola la scala desktop dell’interfaccia sopra la base responsive automatica. 100% mantiene il layout predefinito, 90% lo rende più compatto e 110% lo ingrandisce.',
 			pasteLongTextToFileLen:
 				'Quando incolli un testo lungo, verrà convertito in un file. Questo valore controlla la lunghezza. Il valore 0 disabilita questo comportamento.',
 			copyTextAttachmentsAsPlainText:

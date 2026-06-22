@@ -158,6 +158,7 @@ export const fr: TranslationDictionary = {
 		themeSystem: 'Système',
 		themeLight: 'Clair',
 		themeFrostedGlass: 'Frosted Glass',
+		fieldUiScale: 'Échelle de l’interface',
 		themeDark: 'Sombre',
 		defaultPrefix: 'Par défaut :',
 		resetToDefault: 'Réinitialiser par défaut',
@@ -372,6 +373,8 @@ export const fr: TranslationDictionary = {
 				'Fond d’écran Frosted Glass sélectionné. Les fonds intégrés sont fournis avec llampart ; le fond personnalisé est stocké uniquement dans le localStorage de ce navigateur.',
 			interfaceLanguage:
 				"L'anglais est la langue par défaut au premier lancement. Choisissez ici la langue de l'interface.",
+			uiScale:
+				'Ajuste l’échelle desktop de l’interface par-dessus la base responsive automatique. 100% conserve la mise en page par défaut, 90% la rend plus compacte et 110% l’agrandit.',
 			pasteLongTextToFileLen:
 				"Lors du collage d'un long texte, celui-ci sera converti en fichier. Cette valeur permet de contrôler la longueur. La valeur 0 désactive ce comportement.",
 			copyTextAttachmentsAsPlainText:

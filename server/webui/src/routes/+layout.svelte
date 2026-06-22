@@ -56,6 +56,13 @@
 	let frostedGlassWallpaper = $derived(
 		getFrostedGlassWallpaper(config().frostedGlassWallpaper, customFrostedGlassWallpaperRevision)
 	);
+	let uiScalePreset = $derived(normalizeUiScalePreset(config().uiScale));
+
+	function normalizeUiScalePreset(value: unknown): '90' | '100' | '110' {
+		const preset = String(value ?? '100');
+
+		return preset === '90' || preset === '110' ? preset : '100';
+	}
 
 	$effect(() => {
 		if (!browser) return;
@@ -77,6 +84,12 @@
 			);
 			window.removeEventListener('storage', handleCustomFrostedGlassWallpaperChange);
 		};
+	});
+
+	$effect(() => {
+		if (!browser) return;
+
+		document.documentElement.dataset.llampartUiScale = uiScalePreset;
 	});
 
 	$effect(() => {

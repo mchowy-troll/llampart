@@ -159,6 +159,7 @@ export const en: TranslationDictionary = {
 		themeSystem: 'System',
 		themeLight: 'Light',
 		themeFrostedGlass: 'Frosted Glass',
+		fieldUiScale: 'UI scale',
 		themeDark: 'Dark',
 		defaultPrefix: 'Default:',
 		resetToDefault: 'Reset to default',
@@ -365,6 +366,8 @@ export const en: TranslationDictionary = {
 				"Selected Frosted Glass wallpaper. Built-in wallpapers are shipped with llampart; custom wallpaper data is stored only in this browser's localStorage.",
 			interfaceLanguage:
 				'Choose the interface language. English is the default language on first launch.',
+			uiScale:
+				'Adjust the desktop interface scale on top of the automatic responsive baseline. 100% keeps the default layout, 90% makes it denser, and 110% makes it larger.',
 			pasteLongTextToFileLen:
 				'When pasting long text, it will be converted into a file. Set the value to control the length. Value 0 disables this behavior.',
 			copyTextAttachmentsAsPlainText:

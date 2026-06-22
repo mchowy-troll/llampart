@@ -157,6 +157,7 @@ export const pl: TranslationDictionary = {
 		themeSystem: 'Systemowy',
 		themeLight: 'Jasny',
 		themeFrostedGlass: 'Frosted Glass',
+		fieldUiScale: 'Skala interfejsu',
 		themeDark: 'Ciemny',
 		defaultPrefix: 'Domyślnie:',
 		resetToDefault: 'Przywróć domyślne',
@@ -365,6 +366,8 @@ export const pl: TranslationDictionary = {
 				'Wybrana tapeta Frosted Glass. Wbudowane tapety są dostarczane z llampart; własna tapeta jest zapisana tylko w localStorage tej przeglądarki.',
 			interfaceLanguage:
 				'Wybierz język interfejsu. Przy pierwszym uruchomieniu domyślny jest angielski.',
+			uiScale:
+				'Dostosuj desktopową skalę interfejsu na bazie automatycznego responsywnego ustawienia. 100% zachowuje domyślny układ, 90% zagęszcza interfejs, a 110% go powiększa.',
 			pasteLongTextToFileLen:
 				'Przy wklejaniu długiego tekstu zostanie on zamieniony na plik. Tą wartością sterujesz długością. Wartość 0 wyłącza to zachowanie.',
 			copyTextAttachmentsAsPlainText:
