@@ -73,6 +73,12 @@
 		...option,
 		label: getThemeLabel(option.value)
 	}));
+	const UI_SCALE_OPTIONS = [
+		{ value: '90', label: '90%' },
+		{ value: '100', label: '100%' },
+		{ value: '110', label: '110%' }
+	];
+
 	const CONVERSATION_TIMESTAMP_FORMAT_OPTIONS = [
 		{ value: 'ddmmyyyy24', label: '01.31.2026 20:00' },
 		{ value: 'mmddyyyy12', label: '31.01.2026 08:00 p.m.' }
@@ -162,6 +168,12 @@
 							label: t('settings.fieldTheme'),
 							type: SettingsFieldType.SELECT,
 							options: THEME_OPTIONS
+						},
+						{
+							key: SETTINGS_KEYS.UI_SCALE,
+							label: t('settings.fieldUiScale'),
+							type: SettingsFieldType.SELECT,
+							options: UI_SCALE_OPTIONS
 						},
 						{
 							key: SETTINGS_KEYS.INTERFACE_LANGUAGE,

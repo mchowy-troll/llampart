@@ -12,14 +12,33 @@
    Punkt odniesienia: 5K z systemowym skalowaniem 200% daje 2560 CSS px.
    1920 CSS px pozostaje bazą 1080p bez zmiany rozmiaru.
    2560 CSS px i więcej celuje w 90% poprzedniego desktopowego maksimum.
+   Opcjonalny preset użytkownika 90% / 100% / 110% jest mnożnikiem na tej bazie.
    Skalujemy rem-y globalnie, więc Tailwindowe fonty, odstępy, ikony i kafelki
    zachowują proporcje bez ręcznego zmieniania pojedynczych komponentów. */
+:root {
+	--llampart-user-ui-scale-min-font-size: var(--llampart-ui-scale-min-font-size);
+	--llampart-user-ui-scale-fluid-font-size: var(--llampart-ui-scale-fluid-font-size);
+	--llampart-user-ui-scale-max-font-size: var(--llampart-ui-scale-max-font-size);
+}
+
+html[data-llampart-ui-scale='90'] {
+	--llampart-user-ui-scale-min-font-size: 10.8px;
+	--llampart-user-ui-scale-fluid-font-size: 0.50625vw;
+	--llampart-user-ui-scale-max-font-size: 12.96px;
+}
+
+html[data-llampart-ui-scale='110'] {
+	--llampart-user-ui-scale-min-font-size: 13.2px;
+	--llampart-user-ui-scale-fluid-font-size: 0.61875vw;
+	--llampart-user-ui-scale-max-font-size: 15.84px;
+}
+
 @media (min-width: 1024px) {
 	html {
 		font-size: clamp(
-			var(--llampart-ui-scale-min-font-size),
-			var(--llampart-ui-scale-fluid-font-size),
-			var(--llampart-ui-scale-max-font-size)
+			var(--llampart-user-ui-scale-min-font-size),
+			var(--llampart-user-ui-scale-fluid-font-size),
+			var(--llampart-user-ui-scale-max-font-size)
 		);
 	}
 }

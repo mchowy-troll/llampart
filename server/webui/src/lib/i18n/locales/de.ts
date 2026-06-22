@@ -157,6 +157,7 @@ export const de: TranslationDictionary = {
 		themeSystem: 'System',
 		themeLight: 'Hell',
 		themeFrostedGlass: 'Frosted Glass',
+		fieldUiScale: 'UI-Skalierung',
 		themeDark: 'Dunkel',
 		defaultPrefix: 'Standard:',
 		resetToDefault: 'Auf Standard zurücksetzen',
@@ -367,6 +368,8 @@ export const de: TranslationDictionary = {
 				'Ausgewähltes Frosted-Glass-Hintergrundbild. Integrierte Hintergrundbilder werden mit llampart ausgeliefert; eigene Hintergrunddaten werden nur im localStorage dieses Browsers gespeichert.',
 			interfaceLanguage:
 				'Wählen Sie die Sprache der Oberfläche. Englisch ist beim ersten Start die Standardsprache.',
+			uiScale:
+				'Passt die Desktop-Skalierung der Oberfläche zusätzlich zur automatischen responsiven Basis an. 100% behält das Standardlayout bei, 90% macht es kompakter und 110% größer.',
 			pasteLongTextToFileLen:
 				'Beim Einfügen von langem Text wird dieser in eine Datei umgewandelt. Mit diesem Wert steuern Sie die Länge. Wert 0 deaktiviert dieses Verhalten.',
 			copyTextAttachmentsAsPlainText:
