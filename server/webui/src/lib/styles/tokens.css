@@ -9,6 +9,17 @@
 
 	--llampart-desktop-sidebar-width: 25vw;
 
+	/* Chat layout scale primitives. Keep values visual-parity first; tune them in the UI scale redesign step. */
+	--llampart-chat-composer-max-width: 48rem;
+	--llampart-chat-message-max-width: 57.6rem;
+	--llampart-chat-user-message-max-width: 80%;
+	--llampart-chat-scroll-inline-padding: 1rem;
+	--llampart-chat-scroll-inline-padding-md: 1.5rem;
+	--llampart-chat-messages-top-padding: 6rem;
+	--llampart-chat-messages-min-height: calc(100dvh - 14rem);
+	--llampart-chat-messages-bottom-margin: 4rem;
+	--llampart-chat-messages-bottom-margin-md: 6rem;
+
 	/* Base UI primitives shared by Tailwind's theme bridge and app layers. */
 	--radius: 0.625rem;
 	--layer-popover: 1000000;

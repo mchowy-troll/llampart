@@ -36,6 +36,45 @@
 }
 /* /llampart-desktop-sidebar-width-scale */
 
+/* llampart-chat-layout-scale-primitives
+   CSS classes consume tokenized chat/composer widths and spacing so the UI scale redesign can tune layout values in one owner layer.
+   Initial values intentionally preserve the current rendered layout. */
+.llampart-chat-scroll-container {
+	padding-inline: var(--llampart-chat-scroll-inline-padding);
+}
+
+.llampart-chat-composer-width {
+	max-width: var(--llampart-chat-composer-max-width);
+}
+
+.llampart-chat-message-width {
+	max-width: var(--llampart-chat-message-max-width);
+}
+
+.llampart-user-message-width {
+	max-width: var(--llampart-chat-user-message-max-width);
+}
+
+.llampart-chat-messages-flow {
+	min-height: var(--llampart-chat-messages-min-height);
+	padding-top: var(--llampart-chat-messages-top-padding);
+}
+
+.llampart-chat-messages-bottom-spacer {
+	margin-bottom: var(--llampart-chat-messages-bottom-margin);
+}
+
+@media (min-width: 768px) {
+	.llampart-chat-scroll-container {
+		padding-inline: var(--llampart-chat-scroll-inline-padding-md);
+	}
+
+	.llampart-chat-messages-bottom-spacer {
+		margin-bottom: var(--llampart-chat-messages-bottom-margin-md);
+	}
+}
+/* /llampart-chat-layout-scale-primitives */
+
 @theme inline {
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);

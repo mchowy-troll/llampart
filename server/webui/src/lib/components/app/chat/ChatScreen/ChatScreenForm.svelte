@@ -102,7 +102,7 @@
 	});
 </script>
 
-<div class="relative mx-auto max-w-[48rem]">
+<div class="llampart-chat-composer-width relative mx-auto">
 	<ChatForm
 		bind:this={chatFormRef}
 		bind:value={message}
