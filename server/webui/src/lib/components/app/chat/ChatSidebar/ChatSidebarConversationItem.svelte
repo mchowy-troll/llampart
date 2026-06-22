@@ -307,14 +307,14 @@
 	:global(.dark) .conversation-item:is(:hover, :focus-visible) .conversation-pin-button,
 	:global(.dark) .conversation-item:is(:hover, :focus-visible) .conversation-timestamp-badge,
 	:global(.dark) .conversation-item:is(:hover, :focus-visible) .conversation-parent-link {
-		color: #e8e8e8;
+		color: var(--llampart-sidebar-conversation-hover-foreground, #e8e8e8);
 	}
 
 	:global(.dark) .conversation-item:is(:hover, :focus-visible) .conversation-timestamp-badge,
 	:global(.dark)
 		.conversation-item:is(:hover, :focus-visible)
 		.llampart-sidebar-select-checkbox:not(:checked) {
-		border-color: #e8e8e8;
+		border-color: var(--llampart-sidebar-conversation-hover-checkbox-border, #e8e8e8);
 	}
 
 	.conversation-title {
@@ -397,15 +397,21 @@
 		html:not(.dark):not(.has-frosted-glass-theme) .conversation-item:is(:hover, :focus-visible)
 	),
 	:global(html:not(.dark):not(.has-frosted-glass-theme) .conversation-item[class*='bg-accent']) {
-		border-color: var(--border) !important;
-		box-shadow: none !important;
+		border-color: var(--llampart-sidebar-conversation-item-border-color, var(--border)) !important;
+		box-shadow: var(--llampart-sidebar-conversation-item-shadow, none) !important;
 	}
 
 	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item),
 	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item:is(:hover, :focus-visible)),
 	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item[class*='bg-accent']) {
-		border-color: color-mix(in oklch, var(--border) 20%, transparent) !important;
-		box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+		border-color: var(
+			--llampart-sidebar-conversation-item-border-color,
+			color-mix(in oklch, var(--border) 20%, transparent)
+		) !important;
+		box-shadow: var(
+			--llampart-sidebar-conversation-item-shadow,
+			0 1px 2px 0 rgb(0 0 0 / 0.05)
+		) !important;
 	}
 
 	:global(.conversation-item button) {
@@ -415,15 +421,18 @@
 	/* llampart-1-0-2-sidebar-card-dark-fill */
 	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item),
 	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item:is(:hover, :focus-visible)) {
-		background-color: #262626 !important;
+		background-color: var(--llampart-sidebar-conversation-item-background, #262626) !important;
 	}
 	/* /llampart-1-0-2-sidebar-card-dark-fill */
 
 	/* llampart-sidebar-dark-hover-surface-owner
 	   Dark theme: on hover only the conversation tile fill changes. */
 	:global(html.dark:not(.has-frosted-glass-theme)) .conversation-item:is(:hover, :focus-visible) {
-		background: #383636 !important;
-		background-color: #383636 !important;
+		background: var(--llampart-sidebar-conversation-item-hover-background, #383636) !important;
+		background-color: var(
+			--llampart-sidebar-conversation-item-hover-background,
+			#383636
+		) !important;
 		background-image: none !important;
 	}
 
