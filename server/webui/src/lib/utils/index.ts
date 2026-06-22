@@ -31,6 +31,7 @@ export {
 	isPdfFile,
 	isAudioFile,
 	isPastedTextAttachment,
+	isAttachmentOnlyMessage,
 	isPastedTextOnlyAttachmentMessage
 } from './attachment-type';
 

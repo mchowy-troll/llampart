@@ -7,7 +7,7 @@
 	import ChatMessageActions from './ChatMessageActions.svelte';
 	import ChatMessageEditForm from './ChatMessageEditForm.svelte';
 	import { MessageRole } from '$lib/enums';
-	import { isPastedTextOnlyAttachmentMessage } from '$lib/utils';
+	import { isAttachmentOnlyMessage } from '$lib/utils';
 
 	interface Props {
 		class?: string;
@@ -50,9 +50,7 @@
 	let isMultiline = $state(false);
 	let messageElement: HTMLElement | undefined = $state();
 	const currentConfig = config();
-	let hideAttachmentOnlyActions = $derived(
-		isPastedTextOnlyAttachmentMessage(message.content, message.extra)
-	);
+	let hideAttachmentOnlyActions = $derived(isAttachmentOnlyMessage(message.content, message.extra));
 
 	$effect(() => {
 		if (!messageElement || !message.content.trim()) return;

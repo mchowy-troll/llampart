@@ -5,12 +5,6 @@
 :root {
 	--llampart-attachment-card-width: 18rem;
 	--llampart-attachment-card-radius: 0.75rem;
-	--llampart-attachment-card-border: #cecece;
-	--llampart-attachment-card-shadow: none;
-}
-
-.dark {
-	--llampart-attachment-card-border: #2d2d2d;
 }
 
 html.has-frosted-glass-theme {
@@ -22,14 +16,14 @@ html.has-frosted-glass-theme {
 	width: var(--llampart-attachment-card-width);
 	min-width: var(--llampart-attachment-card-width);
 	max-width: var(--llampart-attachment-card-width);
-	border-color: var(--llampart-attachment-card-border) !important;
+	border-color: var(--llampart-attachment-card-border, #cecece) !important;
 	border-radius: var(--llampart-attachment-card-radius) !important;
-	box-shadow: var(--llampart-attachment-card-shadow) !important;
+	box-shadow: var(--llampart-attachment-card-shadow, none) !important;
 }
 
 .llampart-attachment-thumbnail-file.llampart-attachment-card,
 .llampart-attachment-thumbnail-file.llampart-attachment-card:hover {
-	background-color: var(--muted) !important;
+	background-color: var(--llampart-attachment-card-background, var(--muted)) !important;
 }
 
 html.has-frosted-glass-theme .llampart-attachment-thumbnail-file.llampart-attachment-card {
@@ -66,7 +60,7 @@ html.has-frosted-glass-theme .llampart-attachment-thumbnail-file .text-muted-for
 }
 
 .llampart-attachment-thumbnail-image img {
-	border-color: var(--llampart-attachment-card-border) !important;
+	border-color: var(--llampart-attachment-card-border, #cecece) !important;
 }
 
 html.has-frosted-glass-theme .llampart-attachment-thumbnail-image img {
@@ -284,7 +278,7 @@ html:not(.has-frosted-glass-theme) .llampart-attachment-thumbnail-image img {
 }
 
 html:not(.has-frosted-glass-theme) .llampart-attachment-thumbnail-file.llampart-attachment-card {
-	background-color: var(--muted) !important;
+	background-color: var(--llampart-attachment-card-background, var(--muted)) !important;
 }
 /* /llampart-attachment-user-message-frame-parity */
 

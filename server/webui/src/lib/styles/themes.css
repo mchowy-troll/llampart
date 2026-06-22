@@ -192,6 +192,22 @@ html.dark:not(.has-frosted-glass-theme) {
 }
 /* /llampart-light-dark-sidebar-surface-tokens */
 
+/* llampart-light-dark-attachment-card-tokens
+   Theme-owned Light/Dark chat attachment card values.
+   attachments.css keeps geometry and selectors while consuming these theme contracts. */
+:root {
+	--llampart-attachment-card-border: #cecece;
+	--llampart-attachment-card-shadow: none;
+	--llampart-attachment-card-background: oklch(0.955 0 0);
+}
+
+html.dark:not(.has-frosted-glass-theme) {
+	--llampart-attachment-card-border: #2d2d2d;
+	--llampart-attachment-card-shadow: none;
+	--llampart-attachment-card-background: var(--muted);
+}
+/* /llampart-light-dark-attachment-card-tokens */
+
 /* llampart-frosted-glass-input-glow-tokens
    Theme-owned Frosted Glass input/textbox text and placeholder glow values.
    app.css consumes these values in llampart-frosted-glass-user-input-text-glow. */

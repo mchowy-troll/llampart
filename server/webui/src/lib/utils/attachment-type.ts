@@ -121,6 +121,16 @@ export function isPastedTextAttachment(
 }
 
 /**
+ * Determines if a user message contains attachments but no textual content.
+ *
+ * This is a message-level rendering policy used to avoid floating message actions
+ * when the visible user-message surface is only an attachment list.
+ */
+export function isAttachmentOnlyMessage(content: string, extras?: DatabaseMessageExtra[]): boolean {
+	return content.trim().length === 0 && Boolean(extras?.length);
+}
+
+/**
  * Determines if a user message contains only the synthetic pasted-text attachment.
  *
  * This is a message-level policy used by the message renderer to avoid showing
