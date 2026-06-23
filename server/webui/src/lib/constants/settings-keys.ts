@@ -11,6 +11,7 @@ export const SETTINGS_KEYS = {
 	FROSTED_GLASS_WALLPAPER_MILKY: 'frostedGlassWallpaperMilky',
 	INTERFACE_LANGUAGE: 'interfaceLanguage',
 	UI_SCALE: 'uiScale',
+	API_PROVIDER: 'apiProvider',
 	SERVER_BASE_URL: 'serverBaseUrl',
 	API_KEY: 'apiKey',
 	SYSTEM_MESSAGE: 'systemMessage',

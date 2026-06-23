@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import { getApiBaseUrl } from '$lib/utils';
+	import { validateApiKey } from '$lib/utils';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
@@ -241,32 +241,31 @@
 		}
 	});
 
-	// Monitor API key changes and redirect to error page if removed or changed when required
+	// Monitor provider connection changes and redirect to error page on auth failure.
 	$effect(() => {
+		const apiProvider = config().apiProvider;
+		const serverBaseUrl = config().serverBaseUrl;
 		const apiKey = config().apiKey;
 
-		if (
+		const shouldValidateConnection =
 			(page.route.id === '/' || page.route.id === '/chat/[id]') &&
 			page.status !== 401 &&
-			page.status !== 403
-		) {
-			const headers: Record<string, string> = {
-				'Content-Type': 'application/json'
-			};
+			page.status !== 403 &&
+			(apiProvider !== undefined || serverBaseUrl !== undefined || apiKey !== undefined);
 
-			if (apiKey && apiKey.trim() !== '') {
-				headers.Authorization = `Bearer ${apiKey.trim()}`;
-			}
+		if (shouldValidateConnection) {
+			validateApiKey(fetch).catch((err) => {
+				if (err && typeof err === 'object' && 'status' in err) {
+					const status = Number((err as { status?: unknown }).status);
 
-			fetch(`${getApiBaseUrl()}/props`, { headers })
-				.then((response) => {
-					if (response.status === 401 || response.status === 403) {
+					if (status === 401 || status === 403) {
 						window.location.reload();
+						return;
 					}
-				})
-				.catch((e) => {
-					console.error('Error checking API key:', e);
-				});
+				}
+
+				console.error('Error checking provider connection:', err);
+			});
 		}
 	});
 

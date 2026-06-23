@@ -143,6 +143,7 @@ export const en: TranslationDictionary = {
 		serverAddress: 'Server Address',
 		apiKey: 'API Key',
 		fieldServerAddress: 'Server Address',
+		fieldApiProvider: 'API provider',
 		fieldApiKey: 'API Key',
 		fieldSystemMessage: 'System Message',
 		fieldPasteLongTextToFileLength: 'Paste long text to file length',
@@ -355,6 +356,8 @@ export const en: TranslationDictionary = {
 			noConversationsToDelete: 'No conversations to delete'
 		},
 		info: {
+			apiProvider:
+				'Choose which backend API llampart should use. llama-server keeps the local default behavior; OpenAI-compatible validates /v1/models and later uses /v1/chat/completions.',
 			serverBaseUrl:
 				'Base URL of the llama-server instance. Leave empty to use the current origin (same host/port as the frontend).',
 			apiKey: 'Set the API key if you are using the <code>--api-key</code> option on the server.',
@@ -487,7 +490,11 @@ export const en: TranslationDictionary = {
 		connectionFailed: 'Connection failed',
 		invalidPropsJsonResponse: 'Connected endpoint is not a llama-server /props JSON response',
 		serverReturnedInvalidJson: 'Server returned invalid JSON',
+		invalidOpenAiModelsJsonResponse:
+			'Connected endpoint is not an OpenAI-compatible /v1/models JSON response',
 		invalidPropsResponse: 'Connected endpoint is not a valid llama-server /props response',
+		invalidOpenAiModelsResponse:
+			'Connected endpoint is not a valid OpenAI-compatible /v1/models response',
 		cannotConnectCheckAddressRunning:
 			'Cannot connect to server - check server address and whether the server is running',
 		notRunningOrUnreachable: 'Server is not running or unreachable',

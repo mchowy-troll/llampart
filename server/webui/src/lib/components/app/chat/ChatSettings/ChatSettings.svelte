@@ -26,6 +26,7 @@
 		POSITIVE_INTEGER_FIELDS,
 		SETTINGS_COLOR_MODES_CONFIG,
 		SETTINGS_KEYS,
+		API_PROVIDER_OPTIONS,
 		getLocalizedTitleGenerationPrompt,
 		isBuiltInTitleGenerationPrompt
 	} from '$lib/constants';
@@ -73,6 +74,8 @@
 		...option,
 		label: getThemeLabel(option.value)
 	}));
+	const API_PROVIDER_SELECT_OPTIONS = API_PROVIDER_OPTIONS.map((option) => ({ ...option }));
+
 	const UI_SCALE_OPTIONS = [
 		{ value: '90', label: '90%' },
 		{ value: '100', label: '100%' },
@@ -127,6 +130,12 @@
 					title: t('settings.groupConnection'),
 					layout: 'two-column',
 					fields: [
+						{
+							key: SETTINGS_KEYS.API_PROVIDER,
+							label: t('settings.fieldApiProvider'),
+							type: SettingsFieldType.SELECT,
+							options: API_PROVIDER_SELECT_OPTIONS
+						},
 						{
 							key: SETTINGS_KEYS.SERVER_BASE_URL,
 							label: t('settings.fieldServerAddress'),
@@ -744,7 +753,8 @@
 
 		const connectionValidation = await validateConnectionSettings(
 			String(processedConfig.serverBaseUrl || ''),
-			String(processedConfig.apiKey || '')
+			String(processedConfig.apiKey || ''),
+			String(processedConfig.apiProvider || '')
 		);
 
 		if (!connectionValidation.ok) {

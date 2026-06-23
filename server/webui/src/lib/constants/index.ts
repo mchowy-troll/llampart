@@ -2,6 +2,7 @@
 // All constants should be imported from '$lib/constants'
 
 export * from './agentic';
+export * from './api-providers';
 export * from './api-endpoints';
 export * from './attachment-labels';
 export * from './auto-scroll';
@@ -30,6 +31,7 @@ export * from './message-export';
 export * from './model-id';
 export * from './precision';
 export * from './processing-info';
+export * from './provider-capabilities';
 export * from './reasoning-effort';
 export * from './reasoning-effort-tokens';
 export * from './settings-config';

@@ -143,6 +143,7 @@ export const es: TranslationDictionary = {
 		serverAddress: 'Server Address',
 		apiKey: 'API Key',
 		fieldServerAddress: 'Dirección del servidor',
+		fieldApiProvider: 'Proveedor API',
 		fieldApiKey: 'Clave API',
 		fieldSystemMessage: 'Mensaje del sistema',
 		fieldPasteLongTextToFileLength: 'Longitud para convertir texto pegado largo en archivo',
@@ -358,6 +359,8 @@ export const es: TranslationDictionary = {
 			noConversationsToDelete: 'No hay conversaciones para eliminar'
 		},
 		info: {
+			apiProvider:
+				'Elige qué API backend debe usar llampart. llama-server conserva el comportamiento local predeterminado; OpenAI-compatible valida /v1/models y más adelante usa /v1/chat/completions.',
 			serverBaseUrl:
 				'URL base de la instancia de llama-server. Déjalo vacío para usar el origen actual (mismo host/puerto que el frontend).',
 			apiKey:
@@ -498,7 +501,11 @@ export const es: TranslationDictionary = {
 		invalidPropsJsonResponse:
 			'El endpoint conectado no es una respuesta JSON /props de llama-server',
 		serverReturnedInvalidJson: 'El servidor devolvió JSON no válido',
+		invalidOpenAiModelsJsonResponse:
+			'El endpoint conectado no devuelve una respuesta JSON /v1/models compatible con OpenAI',
 		invalidPropsResponse: 'El endpoint conectado no es una respuesta /props válida de llama-server',
+		invalidOpenAiModelsResponse:
+			'El endpoint conectado no devuelve una respuesta /v1/models compatible con OpenAI válida',
 		cannotConnectCheckAddressRunning:
 			'No se puede conectar con el servidor; comprueba la dirección y que el servidor esté en ejecución',
 		notRunningOrUnreachable: 'El servidor no está en ejecución o no es accesible',

@@ -53,6 +53,16 @@ export type {
 
 export type { ReasoningEffortLevel, ReasoningEffortOptionValue } from './reasoning';
 
+// Provider types
+export type {
+	ProviderCapabilities,
+	ProviderCapabilityKey,
+	ProviderModel,
+	ProviderConnectionInput,
+	ProviderConnectionValidationResult,
+	ProviderUsage
+} from './provider';
+
 // Database types
 export type {
 	McpServerOverride,

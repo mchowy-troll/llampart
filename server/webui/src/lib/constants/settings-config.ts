@@ -1,4 +1,5 @@
 import { ColorMode } from '$lib/enums/ui';
+import { DEFAULT_API_PROVIDER_ID } from './api-providers';
 import { DEFAULT_FROSTED_GLASS_WALLPAPER_ID } from './frosted-glass-wallpapers';
 import { TITLE_GENERATION } from './title-generation';
 import { Monitor, Moon, Sparkles, Sun } from '@lucide/svelte';
@@ -6,6 +7,7 @@ import { Monitor, Moon, Sparkles, Sun } from '@lucide/svelte';
 export const SETTING_CONFIG_DEFAULT: Record<string, string | number | boolean | undefined> = {
 	// Note: in order not to introduce breaking changes, please keep the same data type (number, string, etc) if you want to change the default value.
 	// Do not use nested objects, keep it single level. Prefix the key if you need to group them.
+	apiProvider: DEFAULT_API_PROVIDER_ID,
 	serverBaseUrl: '',
 	apiKey: '',
 	systemMessage: '',
@@ -77,6 +79,7 @@ export const SETTING_CONFIG_DEFAULT: Record<string, string | number | boolean | 
 };
 
 export const SETTING_CONFIG_INFO: Record<string, string> = {
+	apiProvider: 'settings.info.apiProvider',
 	serverBaseUrl: 'settings.info.serverBaseUrl',
 	apiKey: 'settings.info.apiKey',
 	systemMessage: 'settings.info.systemMessage',

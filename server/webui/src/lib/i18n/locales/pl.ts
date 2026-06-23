@@ -141,6 +141,7 @@ export const pl: TranslationDictionary = {
 		fieldTheme: 'Motyw',
 		fieldInterfaceLanguage: 'Język interfejsu',
 		fieldServerAddress: 'Adres serwera',
+		fieldApiProvider: 'Dostawca API',
 		fieldApiKey: 'Klucz API',
 		fieldSystemMessage: 'Wiadomość systemowa',
 		fieldPasteLongTextToFileLength: 'Długość tekstu do zamiany na plik przy wklejaniu',
@@ -355,6 +356,8 @@ export const pl: TranslationDictionary = {
 			noConversationsToDelete: 'Brak rozmów do usunięcia'
 		},
 		info: {
+			apiProvider:
+				'Wybierz, którego backendowego API ma używać llampart. llama-server zachowuje lokalne domyślne działanie; OpenAI-compatible waliduje /v1/models i później używa /v1/chat/completions.',
 			serverBaseUrl:
 				'Bazowy adres URL instancji llama-server. Zostaw puste, aby użyć bieżącego adresu źródłowego (ten sam host i port co frontend).',
 			apiKey: 'Ustaw klucz API, jeśli używasz w serwerze opcji <code>--api-key</code>.',
@@ -491,7 +494,11 @@ export const pl: TranslationDictionary = {
 		connectionFailed: 'Połączenie nie powiodło się',
 		invalidPropsJsonResponse: 'Połączony adres nie zwraca odpowiedzi JSON /props z llama-server',
 		serverReturnedInvalidJson: 'Serwer zwrócił nieprawidłowy JSON',
+		invalidOpenAiModelsJsonResponse:
+			'Połączony adres nie zwraca odpowiedzi JSON /v1/models zgodnej z OpenAI-compatible',
 		invalidPropsResponse: 'Połączony adres nie zwraca prawidłowej odpowiedzi /props z llama-server',
+		invalidOpenAiModelsResponse:
+			'Połączony adres nie zwraca prawidłowej odpowiedzi /v1/models zgodnej z OpenAI-compatible',
 		cannotConnectCheckAddressRunning:
 			'Nie można połączyć się z serwerem — sprawdź adres serwera i czy serwer jest uruchomiony',
 		notRunningOrUnreachable: 'Serwer nie działa lub jest nieosiągalny',
