@@ -263,3 +263,12 @@ export { MCPService } from './mcp.service';
 
 /** **ToolsService** - Built-in llama-server tools API communication. */
 export { ToolsService } from './tools.service';
+
+/**
+ * **API Providers** - Provider identity and capability registry
+ *
+ * Owns provider metadata for independent API integrations. Provider-specific
+ * runtime methods are added to this surface rather than implemented as local
+ * llama-server conditionals in components or stores.
+ */
+export * from './providers';

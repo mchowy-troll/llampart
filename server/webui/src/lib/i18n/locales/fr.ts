@@ -141,6 +141,7 @@ export const fr: TranslationDictionary = {
 		fieldTheme: 'Thème',
 		fieldInterfaceLanguage: "Langue de l'interface",
 		fieldServerAddress: 'Adresse du serveur',
+		fieldApiProvider: 'Fournisseur API',
 		fieldApiKey: 'Clé API',
 		fieldSystemMessage: 'Message système',
 		fieldPasteLongTextToFileLength: 'Longueur du texte à convertir en fichier lors du collage',
@@ -361,6 +362,8 @@ export const fr: TranslationDictionary = {
 			noConversationsToDelete: 'Aucune conversation à supprimer'
 		},
 		info: {
+			apiProvider:
+				'Choisissez l’API backend que llampart doit utiliser. llama-server conserve le comportement local par défaut ; OpenAI-compatible valide /v1/models et utilisera ensuite /v1/chat/completions.',
 			serverBaseUrl:
 				"URL de base de l'instance llama-server. Laissez vide pour utiliser l'origine actuelle (même hôte et même port que le frontend).",
 			apiKey:
@@ -500,8 +503,12 @@ export const fr: TranslationDictionary = {
 		invalidPropsJsonResponse:
 			'Le point de terminaison connecté ne renvoie pas une réponse JSON /props de llama-server',
 		serverReturnedInvalidJson: 'Le serveur a renvoyé un JSON invalide',
+		invalidOpenAiModelsJsonResponse:
+			'Le point de terminaison connecté ne renvoie pas une réponse JSON /v1/models compatible OpenAI',
 		invalidPropsResponse:
 			'Le point de terminaison connecté ne renvoie pas une réponse /props valide de llama-server',
+		invalidOpenAiModelsResponse:
+			'Le point de terminaison connecté ne renvoie pas une réponse /v1/models compatible OpenAI valide',
 		cannotConnectCheckAddressRunning:
 			"Impossible de se connecter au serveur — vérifiez l'adresse du serveur et qu'il est en cours d'exécution",
 		notRunningOrUnreachable: "Le serveur n'est pas en cours d'exécution ou est inaccessible",

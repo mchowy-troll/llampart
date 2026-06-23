@@ -1,11 +1,13 @@
-import { getApiBaseUrl } from './api-fetch';
 import { error } from '@sveltejs/kit';
 import { browser } from '$app/environment';
+import { getApiProvider } from '$lib/services/providers';
 import { config } from '$lib/stores/settings.svelte';
 
 /**
- * Validates API key by making a request to the server props endpoint
- * Throws SvelteKit errors for authentication failures or server issues
+ * Validates the configured provider connection.
+ * Throws SvelteKit errors for authentication failures; non-auth connection
+ * failures are logged because transient provider availability should not
+ * immediately break the UI shell.
  */
 export async function validateApiKey(fetch: typeof globalThis.fetch): Promise<void> {
 	if (!browser) {
@@ -13,26 +15,26 @@ export async function validateApiKey(fetch: typeof globalThis.fetch): Promise<vo
 	}
 
 	try {
-		const apiKey = config().apiKey;
+		const currentConfig = config();
+		const provider = getApiProvider(String(currentConfig.apiProvider ?? ''));
 
-		const headers: Record<string, string> = {
-			'Content-Type': 'application/json'
-		};
+		const result = await provider.validateConnection(
+			{
+				serverBaseUrl: String(currentConfig.serverBaseUrl ?? ''),
+				apiKey: String(currentConfig.apiKey ?? '')
+			},
+			fetch
+		);
 
-		if (apiKey) {
-			headers.Authorization = `Bearer ${apiKey}`;
-		}
-
-		const response = await fetch(`${getApiBaseUrl()}/props`, { headers });
-
-		if (!response.ok) {
-			if (response.status === 401 || response.status === 403) {
-				throw error(401, 'Access denied');
-			}
-
-			console.warn(`Server responded with status ${response.status} during API key validation`);
+		if (result.ok) {
 			return;
 		}
+
+		if (result.status === 401 || result.status === 403) {
+			throw error(401, 'Access denied');
+		}
+
+		console.warn(result.errorMessage || 'Provider connection validation failed');
 	} catch (err) {
 		// If it's already a SvelteKit error, re-throw it
 		if (err && typeof err === 'object' && 'status' in err) {
@@ -40,6 +42,6 @@ export async function validateApiKey(fetch: typeof globalThis.fetch): Promise<vo
 		}
 
 		// Network or other errors
-		console.warn('Cannot connect to server for API key validation:', err);
+		console.warn('Cannot connect to provider for API key validation:', err);
 	}
 }
