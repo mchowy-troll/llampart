@@ -2,6 +2,10 @@ import type { ApiProviderId } from '$lib/constants/api-providers';
 import type { ApiModelListResponse } from '$lib/types/api';
 import type {
 	ProviderCapabilities,
+	ProviderChatCompletionFetchRequest,
+	ProviderChatCompletionInput,
+	ProviderChatCompletionResponse,
+	ProviderChatCompletionStreamEvent,
 	ProviderConnectionInput,
 	ProviderConnectionValidationResult,
 	ProviderModelListInput
@@ -27,4 +31,9 @@ export interface ApiProviderAdapter {
 		input: ProviderModelListInput,
 		fetchImpl?: typeof fetch
 	): Promise<ApiModelListResponse>;
+	buildChatCompletionRequest(
+		input: ProviderChatCompletionInput
+	): ProviderChatCompletionFetchRequest;
+	parseChatCompletionStreamData(data: string): ProviderChatCompletionStreamEvent | null;
+	parseChatCompletionResponse(data: unknown): ProviderChatCompletionResponse;
 }

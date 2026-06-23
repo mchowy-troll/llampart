@@ -1,9 +1,18 @@
-import { API_MODELS } from '$lib/constants/api-endpoints';
+import { API_CHAT, API_MODELS } from '$lib/constants/api-endpoints';
 import { API_PROVIDER_IDS, API_PROVIDER_LABELS } from '$lib/constants/api-providers';
 import { OPENAI_COMPATIBLE_PROVIDER_CAPABILITIES } from '$lib/constants/provider-capabilities';
 import { t } from '$lib/i18n';
-import type { ApiModelListResponse } from '$lib/types/api';
 import type {
+	ApiChatCompletionRequest,
+	ApiChatCompletionResponse,
+	ApiChatCompletionStreamChunk,
+	ApiModelListResponse
+} from '$lib/types/api';
+import type {
+	ProviderChatCompletionFetchRequest,
+	ProviderChatCompletionInput,
+	ProviderChatCompletionResponse,
+	ProviderChatCompletionStreamEvent,
 	ProviderConnectionInput,
 	ProviderConnectionValidationResult,
 	ProviderModelListInput
@@ -27,6 +36,13 @@ function buildHeaders(apiKey: string): Record<string, string> {
 	return headers;
 }
 
+function buildJsonHeaders(apiKey: string): Record<string, string> {
+	return {
+		...buildHeaders(apiKey),
+		'Content-Type': 'application/json'
+	};
+}
+
 function looksLikeOpenAiModelsResponse(data: unknown): data is ApiModelListResponse {
 	if (!data || typeof data !== 'object') {
 		return false;
@@ -35,6 +51,35 @@ function looksLikeOpenAiModelsResponse(data: unknown): data is ApiModelListRespo
 	const record = data as Record<string, unknown>;
 
 	return record.object === 'list' && Array.isArray(record.data);
+}
+
+function extractModelName(data: unknown): string | undefined {
+	const asRecord = (value: unknown): Record<string, unknown> | undefined => {
+		return typeof value === 'object' && value !== null
+			? (value as Record<string, unknown>)
+			: undefined;
+	};
+
+	const getTrimmedString = (value: unknown): string | undefined => {
+		return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+	};
+
+	const root = asRecord(data);
+	if (!root) return undefined;
+
+	const rootModel = getTrimmedString(root.model);
+	if (rootModel) return rootModel;
+
+	const firstChoice = Array.isArray(root.choices) ? asRecord(root.choices[0]) : undefined;
+	if (!firstChoice) return undefined;
+
+	const deltaModel = getTrimmedString(asRecord(firstChoice.delta)?.model);
+	if (deltaModel) return deltaModel;
+
+	const messageModel = getTrimmedString(asRecord(firstChoice.message)?.model);
+	if (messageModel) return messageModel;
+
+	return undefined;
 }
 
 async function readOpenAiModelsResponse(response: Response): Promise<ApiModelListResponse> {
@@ -59,6 +104,89 @@ async function readOpenAiModelsResponse(response: Response): Promise<ApiModelLis
 	}
 
 	return data;
+}
+
+function buildOpenAiCompatibleChatBody(
+	input: ProviderChatCompletionInput
+): ApiChatCompletionRequest {
+	const { options } = input;
+	const requestBody: ApiChatCompletionRequest = {
+		messages: input.messages.map((msg) => ({
+			role: msg.role,
+			content: msg.content,
+			tool_call_id: msg.tool_call_id
+		})),
+		stream: options.stream
+	};
+
+	if (options.model) requestBody.model = options.model;
+	if (options.temperature !== undefined) requestBody.temperature = options.temperature;
+	if (options.top_p !== undefined) requestBody.top_p = options.top_p;
+	if (options.presence_penalty !== undefined) {
+		requestBody.presence_penalty = options.presence_penalty;
+	}
+	if (options.frequency_penalty !== undefined) {
+		requestBody.frequency_penalty = options.frequency_penalty;
+	}
+	if (options.max_tokens !== undefined && options.max_tokens !== null && options.max_tokens !== 0) {
+		requestBody.max_tokens = options.max_tokens;
+	}
+
+	return requestBody;
+}
+
+function buildOpenAiCompatibleChatCompletionRequest(
+	input: ProviderChatCompletionInput
+): ProviderChatCompletionFetchRequest {
+	const normalizedServerBaseUrl = normalizeProviderBaseUrl(input.serverBaseUrl, {
+		stripOpenAiV1: true
+	});
+
+	if (normalizedServerBaseUrl && !isAbsoluteHttpUrl(normalizedServerBaseUrl)) {
+		throw new Error(t('server.addressMustStartWithHttp'));
+	}
+
+	return {
+		url: buildProviderEndpointUrl(normalizedServerBaseUrl, API_CHAT.COMPLETIONS),
+		init: {
+			method: 'POST',
+			headers: buildJsonHeaders(input.apiKey),
+			body: JSON.stringify(buildOpenAiCompatibleChatBody(input))
+		}
+	};
+}
+
+function parseOpenAiCompatibleChatCompletionStreamData(
+	data: string
+): ProviderChatCompletionStreamEvent | null {
+	if (data === '[DONE]') {
+		return { done: true };
+	}
+
+	const parsed: ApiChatCompletionStreamChunk = JSON.parse(data);
+	const choice = parsed.choices?.[0];
+
+	return {
+		content: choice?.delta?.content,
+		reasoningContent: choice?.delta?.reasoning_content,
+		toolCalls: choice?.delta?.tool_calls,
+		model: extractModelName(parsed),
+		completionId: parsed.id
+	};
+}
+
+function parseOpenAiCompatibleChatCompletionResponse(
+	data: unknown
+): ProviderChatCompletionResponse {
+	const parsed = data as ApiChatCompletionResponse;
+	const choice = parsed.choices?.[0];
+
+	return {
+		content: choice?.message?.content || '',
+		reasoningContent: choice?.message?.reasoning_content,
+		toolCalls: choice?.message?.tool_calls,
+		model: extractModelName(data)
+	};
 }
 
 async function validateOpenAiCompatibleConnection(
@@ -188,5 +316,8 @@ export const openAiCompatibleProvider = {
 	description: 'OpenAI-compatible Chat Completions API provider.',
 	capabilities: OPENAI_COMPATIBLE_PROVIDER_CAPABILITIES,
 	validateConnection: validateOpenAiCompatibleConnection,
-	listModels: listOpenAiCompatibleModels
+	listModels: listOpenAiCompatibleModels,
+	buildChatCompletionRequest: buildOpenAiCompatibleChatCompletionRequest,
+	parseChatCompletionStreamData: parseOpenAiCompatibleChatCompletionStreamData,
+	parseChatCompletionResponse: parseOpenAiCompatibleChatCompletionResponse
 } satisfies ApiProviderAdapter;

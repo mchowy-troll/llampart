@@ -1,4 +1,11 @@
 import type { ApiProviderId } from '$lib/constants/api-providers';
+import type {
+	ApiChatCompletionToolCall,
+	ApiChatCompletionToolCallDelta,
+	ApiChatMessageData
+} from '$lib/types/api';
+import type { ChatMessagePromptProgress, ChatMessageTimings } from '$lib/types/chat';
+import type { SettingsChatServiceOptions } from '$lib/types/settings';
 
 /**
  * Capability ownership for provider-specific behavior.
@@ -66,6 +73,36 @@ export interface ProviderConnectionValidationResult {
 export interface ProviderModelListInput {
 	serverBaseUrl: string;
 	apiKey: string;
+}
+
+export interface ProviderChatCompletionInput {
+	serverBaseUrl: string;
+	apiKey: string;
+	messages: ApiChatMessageData[];
+	options: SettingsChatServiceOptions;
+}
+
+export interface ProviderChatCompletionFetchRequest {
+	url: string;
+	init: RequestInit;
+}
+
+export interface ProviderChatCompletionStreamEvent {
+	done?: boolean;
+	content?: string;
+	reasoningContent?: string;
+	toolCalls?: ApiChatCompletionToolCallDelta[];
+	model?: string;
+	completionId?: string;
+	timings?: ChatMessageTimings;
+	promptProgress?: ChatMessagePromptProgress;
+}
+
+export interface ProviderChatCompletionResponse {
+	content: string;
+	reasoningContent?: string;
+	toolCalls?: ApiChatCompletionToolCall[];
+	model?: string;
 }
 
 export interface ProviderUsage {

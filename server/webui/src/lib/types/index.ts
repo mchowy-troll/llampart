@@ -57,10 +57,14 @@ export type { ReasoningEffortLevel, ReasoningEffortOptionValue } from './reasoni
 export type {
 	ProviderCapabilities,
 	ProviderCapabilityKey,
-	ProviderModel,
 	ProviderConnectionInput,
 	ProviderConnectionValidationResult,
 	ProviderModelListInput,
+	ProviderChatCompletionInput,
+	ProviderChatCompletionFetchRequest,
+	ProviderChatCompletionStreamEvent,
+	ProviderChatCompletionResponse,
+	ProviderModel,
 	ProviderUsage
 } from './provider';
 

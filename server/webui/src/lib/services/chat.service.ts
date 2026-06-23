@@ -1,27 +1,20 @@
 import { t } from '$lib/i18n';
-import { getJsonHeaders } from '$lib/utils/api-headers';
 import { getApiBaseUrl } from '$lib/utils';
+import { getApiProvider } from '$lib/services/providers';
+import type { ApiProviderAdapter } from '$lib/services/providers/provider.types';
 import { formatAttachmentText } from '$lib/utils/formatters';
 import { isAbortError } from '$lib/utils/abort';
 import {
 	ATTACHMENT_LABEL_PDF_FILE,
 	ATTACHMENT_LABEL_MCP_PROMPT,
 	ATTACHMENT_LABEL_MCP_RESOURCE,
-	API_CHAT,
-	LEGACY_AGENTIC_REGEX,
-	REASONING_EFFORT_TOKENS
+	LEGACY_AGENTIC_REGEX
 } from '$lib/constants';
-import {
-	AttachmentType,
-	ContentPartType,
-	MessageRole,
-	ReasoningEffort,
-	ReasoningFormat,
-	UrlProtocol
-} from '$lib/enums';
+import { AttachmentType, ContentPartType, MessageRole, UrlProtocol } from '$lib/enums';
 import type { ApiChatMessageContentPart, ApiChatCompletionToolCall } from '$lib/types/api';
 import type { DatabaseMessageExtraMcpPrompt, DatabaseMessageExtraMcpResource } from '$lib/types';
 import { modelsStore } from '$lib/stores/models.svelte';
+import { config } from '$lib/stores/settings.svelte';
 
 export class ChatService {
 	/**
@@ -82,6 +75,15 @@ export class ChatService {
 		conversationId?: string,
 		signal?: AbortSignal
 	): Promise<string | void> {
+		const currentConfig = config();
+		const provider = getApiProvider(String(currentConfig.apiProvider ?? ''));
+		const selectedProviderModel =
+			(modelsStore.selectedModelName || modelsStore.selectedModelId || '').trim() || undefined;
+		const effectiveOptions: SettingsChatServiceOptions =
+			provider.capabilities.requiresModelInChatRequest && !options.model && selectedProviderModel
+				? { ...options, model: selectedProviderModel }
+				: options;
+
 		const {
 			stream,
 			onChunk,
@@ -91,41 +93,8 @@ export class ChatService {
 			onToolCallChunk,
 			onModel,
 			onCompletionId,
-			onTimings,
-			// Tools for function calling
-			tools,
-			// Generation parameters
-			temperature,
-			max_tokens,
-			// Sampling parameters
-			dynatemp_range,
-			dynatemp_exponent,
-			top_k,
-			top_p,
-			min_p,
-			xtc_probability,
-			xtc_threshold,
-			typ_p,
-			// Penalty parameters
-			repeat_last_n,
-			repeat_penalty,
-			presence_penalty,
-			frequency_penalty,
-			dry_multiplier,
-			dry_base,
-			dry_allowed_length,
-			dry_penalty_last_n,
-			// Other parameters
-			samplers,
-			backend_sampling,
-			custom,
-			timings_per_token,
-			// Config options
-			disableReasoningParsing,
-			excludeReasoningFromContext,
-			enableThinking,
-			reasoningEffort
-		} = options;
+			onTimings
+		} = effectiveOptions;
 
 		const normalizedMessages: ApiChatMessageData[] = messages
 			.map((msg) => {
@@ -149,13 +118,13 @@ export class ChatService {
 			});
 
 		// Filter out image attachments if the model doesn't support vision
-		if (options.model && !modelsStore.modelSupportsVision(options.model)) {
+		if (effectiveOptions.model && !modelsStore.modelSupportsVision(effectiveOptions.model)) {
 			normalizedMessages.forEach((msg) => {
 				if (Array.isArray(msg.content)) {
 					msg.content = msg.content.filter((part: ApiChatMessageContentPart) => {
 						if (part.type === ContentPartType.IMAGE_URL) {
 							console.info(
-								`[ChatService] Skipping image attachment in message history (model "${options.model}" does not support vision)`
+								`[ChatService] Skipping image attachment in message history (model "${effectiveOptions.model}" does not support vision)`
 							);
 
 							return false;
@@ -171,105 +140,16 @@ export class ChatService {
 			});
 		}
 
-		const requestBody: ApiChatCompletionRequest = {
-			messages: normalizedMessages.map((msg: ApiChatMessageData) => {
-				const mapped: ApiChatCompletionRequest['messages'][0] = {
-					role: msg.role,
-					content: msg.content,
-					tool_calls: msg.tool_calls,
-					tool_call_id: msg.tool_call_id
-				};
-				// Include reasoning_content from the dedicated field
-				if (!excludeReasoningFromContext && msg.reasoning_content) {
-					mapped.reasoning_content = msg.reasoning_content;
-				}
-				return mapped;
-			}),
-			stream,
-			return_progress: stream ? true : undefined,
-			tools: tools && tools.length > 0 ? tools : undefined
-		};
-
-		// Include model in request if provided (required in ROUTER mode)
-		if (options.model) {
-			requestBody.model = options.model;
-		}
-
-		requestBody.reasoning_format = disableReasoningParsing
-			? ReasoningFormat.NONE
-			: ReasoningFormat.AUTO;
-
-		const requestedReasoningEffort = Object.values(ReasoningEffort).includes(
-			reasoningEffort as ReasoningEffort
-		)
-			? (reasoningEffort as ReasoningEffort)
-			: undefined;
-
-		const reasoningBudgetTokens =
-			enableThinking && requestedReasoningEffort
-				? REASONING_EFFORT_TOKENS[requestedReasoningEffort]
-				: -1;
-
-		requestBody.chat_template_kwargs = {
-			...(requestBody.chat_template_kwargs ?? {}),
-			enable_thinking: enableThinking ?? false
-		};
-
-		if (reasoningBudgetTokens >= 0) {
-			requestBody.thinking_budget_tokens = reasoningBudgetTokens;
-		}
-
-		requestBody.reasoning_control = true;
-
-		if (temperature !== undefined) requestBody.temperature = temperature;
-		if (max_tokens !== undefined) {
-			// Set max_tokens to -1 (infinite) when explicitly configured as 0 or null
-			requestBody.max_tokens = max_tokens !== null && max_tokens !== 0 ? max_tokens : -1;
-		}
-
-		if (dynatemp_range !== undefined) requestBody.dynatemp_range = dynatemp_range;
-		if (dynatemp_exponent !== undefined) requestBody.dynatemp_exponent = dynatemp_exponent;
-		if (top_k !== undefined) requestBody.top_k = top_k;
-		if (top_p !== undefined) requestBody.top_p = top_p;
-		if (min_p !== undefined) requestBody.min_p = min_p;
-		if (xtc_probability !== undefined) requestBody.xtc_probability = xtc_probability;
-		if (xtc_threshold !== undefined) requestBody.xtc_threshold = xtc_threshold;
-		if (typ_p !== undefined) requestBody.typ_p = typ_p;
-
-		if (repeat_last_n !== undefined) requestBody.repeat_last_n = repeat_last_n;
-		if (repeat_penalty !== undefined) requestBody.repeat_penalty = repeat_penalty;
-		if (presence_penalty !== undefined) requestBody.presence_penalty = presence_penalty;
-		if (frequency_penalty !== undefined) requestBody.frequency_penalty = frequency_penalty;
-		if (dry_multiplier !== undefined) requestBody.dry_multiplier = dry_multiplier;
-		if (dry_base !== undefined) requestBody.dry_base = dry_base;
-		if (dry_allowed_length !== undefined) requestBody.dry_allowed_length = dry_allowed_length;
-		if (dry_penalty_last_n !== undefined) requestBody.dry_penalty_last_n = dry_penalty_last_n;
-
-		if (samplers !== undefined) {
-			requestBody.samplers =
-				typeof samplers === 'string'
-					? samplers.split(';').filter((s: string) => s.trim())
-					: samplers;
-		}
-
-		if (backend_sampling !== undefined) requestBody.backend_sampling = backend_sampling;
-
-		if (timings_per_token !== undefined) requestBody.timings_per_token = timings_per_token;
-
-		if (custom) {
-			try {
-				const customParams = typeof custom === 'string' ? JSON.parse(custom) : custom;
-				Object.assign(requestBody, customParams);
-			} catch (error) {
-				console.warn('Failed to parse custom parameters:', error);
-			}
-		}
+		const providerRequest = provider.buildChatCompletionRequest({
+			serverBaseUrl: String(currentConfig.serverBaseUrl ?? ''),
+			apiKey: String(currentConfig.apiKey ?? ''),
+			messages: normalizedMessages,
+			options: effectiveOptions
+		});
 
 		try {
-			const response = await fetch(`${getApiBaseUrl()}${API_CHAT.COMPLETIONS}`, {
-				method: 'POST',
-				headers: getJsonHeaders(),
-				body: JSON.stringify(requestBody),
+			const response = await fetch(providerRequest.url, {
+				...providerRequest.init,
 				signal
 			});
 
@@ -285,6 +165,7 @@ export class ChatService {
 
 			if (stream) {
 				await ChatService.handleStreamResponse(
+					provider,
 					response,
 					onChunk,
 					onComplete,
@@ -301,6 +182,7 @@ export class ChatService {
 				return;
 			} else {
 				return ChatService.handleNonStreamResponse(
+					provider,
 					response,
 					onComplete,
 					onError,
@@ -432,9 +314,18 @@ export class ChatService {
 		}
 
 		try {
+			const currentConfig = config();
+			const provider = getApiProvider(String(currentConfig.apiProvider ?? ''));
+			if (!provider.capabilities.supportsPreEncode) return;
+
 			await fetch(`${getApiBaseUrl()}/v1/chat/completions`, {
 				method: 'POST',
-				headers: getJsonHeaders(),
+				headers: {
+					'Content-Type': 'application/json',
+					...(String(currentConfig.apiKey ?? '').trim()
+						? { Authorization: `Bearer ${String(currentConfig.apiKey ?? '').trim()}` }
+						: {})
+				},
 				body: JSON.stringify(requestBody),
 				signal
 			});
@@ -465,6 +356,7 @@ export class ChatService {
 	 * @throws {Error} if the stream cannot be read or parsed
 	 */
 	private static async handleStreamResponse(
+		provider: ApiProviderAdapter,
 		response: Response,
 		onChunk?: (chunk: string) => void,
 		onComplete?: (
@@ -555,60 +447,54 @@ export class ChatService {
 
 					if (line.startsWith(UrlProtocol.DATA)) {
 						const data = line.slice(6);
-						if (data === '[DONE]') {
-							streamFinished = true;
-
-							continue;
-						}
 
 						try {
-							const parsed: ApiChatCompletionStreamChunk = JSON.parse(data);
-							const choice = parsed.choices?.[0];
-							const content = choice?.delta?.content;
-							const reasoningContent = choice?.delta?.reasoning_content;
-							const toolCalls = choice?.delta?.tool_calls;
-							const timings = parsed.timings;
-							const promptProgress = parsed.prompt_progress;
+							const event = provider.parseChatCompletionStreamData(data);
+							if (!event) continue;
 
-							const chunkModel = ChatService.extractModelName(parsed);
-							if (chunkModel && !modelEmitted) {
+							if (event.done) {
+								streamFinished = true;
+								continue;
+							}
+
+							if (event.model && !modelEmitted) {
 								modelEmitted = true;
-								onModel?.(chunkModel);
+								onModel?.(event.model);
 							}
 
-							if (parsed.id && !idEmitted) {
+							if (event.completionId && !idEmitted) {
 								idEmitted = true;
-								onCompletionId?.(parsed.id);
+								onCompletionId?.(event.completionId);
 							}
 
-							if (promptProgress) {
-								ChatService.notifyTimings(undefined, promptProgress, onTimings);
+							if (event.promptProgress) {
+								ChatService.notifyTimings(undefined, event.promptProgress, onTimings);
 							}
 
-							if (timings) {
-								ChatService.notifyTimings(timings, promptProgress, onTimings);
-								lastTimings = timings;
+							if (event.timings) {
+								ChatService.notifyTimings(event.timings, event.promptProgress, onTimings);
+								lastTimings = event.timings;
 							}
 
-							if (content) {
+							if (event.content) {
 								finalizeOpenToolCallBatch();
-								aggregatedContent += content;
+								aggregatedContent += event.content;
 								if (!abortSignal?.aborted) {
-									onChunk?.(content);
+									onChunk?.(event.content);
 								}
 							}
 
-							if (reasoningContent) {
+							if (event.reasoningContent) {
 								finalizeOpenToolCallBatch();
-								fullReasoningContent += reasoningContent;
+								fullReasoningContent += event.reasoningContent;
 								if (!abortSignal?.aborted) {
-									onReasoningChunk?.(reasoningContent);
+									onReasoningChunk?.(event.reasoningContent);
 								}
 							}
 
-							processToolCallDelta(toolCalls);
+							processToolCallDelta(event.toolCalls);
 						} catch (e) {
-							console.error('Error parsing JSON chunk:', e);
+							console.error('Error parsing provider stream chunk:', e);
 						}
 					}
 				}
@@ -653,6 +539,7 @@ export class ChatService {
 	 * @throws {Error} if the response cannot be parsed or is malformed
 	 */
 	private static async handleNonStreamResponse(
+		provider: ApiProviderAdapter,
 		response: Response,
 		onComplete?: (
 			response: string,
@@ -673,16 +560,16 @@ export class ChatService {
 				throw noResponseError;
 			}
 
-			const data: ApiChatCompletionResponse = JSON.parse(responseText);
+			const data = JSON.parse(responseText);
+			const parsedResponse = provider.parseChatCompletionResponse(data);
 
-			const responseModel = ChatService.extractModelName(data);
-			if (responseModel) {
-				onModel?.(responseModel);
+			if (parsedResponse.model) {
+				onModel?.(parsedResponse.model);
 			}
 
-			const content = data.choices[0]?.message?.content || '';
-			const reasoningContent = data.choices[0]?.message?.reasoning_content;
-			const toolCalls = data.choices[0]?.message?.tool_calls;
+			const content = parsedResponse.content;
+			const reasoningContent = parsedResponse.reasoningContent;
+			const toolCalls = parsedResponse.toolCalls;
 
 			let serializedToolCalls: string | undefined;
 
@@ -1027,58 +914,6 @@ export class ChatService {
 
 			return fallback;
 		}
-	}
-
-	/**
-	 * Extracts model name from Chat Completions API response data.
-	 * Handles various response formats including streaming chunks and final responses.
-	 *
-	 * WORKAROUND: In single model mode, llama-server returns a default/incorrect model name
-	 * in the response. We override it with the actual model name from serverStore.
-	 *
-	 * @param data - Raw response data from the Chat Completions API
-	 * @returns Model name string if found, undefined otherwise
-	 * @private
-	 */
-	private static extractModelName(data: unknown): string | undefined {
-		const asRecord = (value: unknown): Record<string, unknown> | undefined => {
-			return typeof value === 'object' && value !== null
-				? (value as Record<string, unknown>)
-				: undefined;
-		};
-
-		const getTrimmedString = (value: unknown): string | undefined => {
-			return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-		};
-
-		const root = asRecord(data);
-		if (!root) return undefined;
-
-		// 1) root (some implementations provide `model` at the top level)
-		const rootModel = getTrimmedString(root.model);
-		if (rootModel) {
-			return rootModel;
-		}
-
-		// 2) streaming choice (delta) or final response (message)
-		const firstChoice = Array.isArray(root.choices) ? asRecord(root.choices[0]) : undefined;
-		if (!firstChoice) {
-			return undefined;
-		}
-
-		// priority: delta.model (first chunk) else message.model (final response)
-		const deltaModel = getTrimmedString(asRecord(firstChoice.delta)?.model);
-		if (deltaModel) {
-			return deltaModel;
-		}
-
-		const messageModel = getTrimmedString(asRecord(firstChoice.message)?.model);
-		if (messageModel) {
-			return messageModel;
-		}
-
-		// avoid guessing from non-standard locations (metadata, etc.)
-		return undefined;
 	}
 
 	/**
