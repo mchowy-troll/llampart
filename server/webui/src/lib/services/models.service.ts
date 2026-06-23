@@ -1,6 +1,9 @@
 import { ServerModelStatus } from '$lib/enums';
 import { apiFetch, apiPost } from '$lib/utils';
+import { config } from '$lib/stores/settings.svelte';
+import { getApiProvider } from '$lib/services/providers';
 import type { ParsedModelId } from '$lib/types/models';
+import type { ApiProviderId } from '$lib/constants/api-providers';
 import {
 	MODEL_QUANTIZATION_SEGMENT_RE,
 	MODEL_CUSTOM_QUANTIZATION_PREFIX_RE,
@@ -29,8 +32,14 @@ export class ModelsService {
 	 *
 	 * @returns List of available models with basic metadata
 	 */
-	static async list(): Promise<ApiModelListResponse> {
-		return apiFetch<ApiModelListResponse>(API_MODELS.LIST);
+	static async list(providerId?: ApiProviderId): Promise<ApiModelListResponse> {
+		const currentConfig = config();
+		const provider = getApiProvider(providerId ?? String(currentConfig.apiProvider ?? ''));
+
+		return provider.listModels({
+			serverBaseUrl: String(currentConfig.serverBaseUrl ?? ''),
+			apiKey: String(currentConfig.apiKey ?? '')
+		});
 	}
 
 	/**

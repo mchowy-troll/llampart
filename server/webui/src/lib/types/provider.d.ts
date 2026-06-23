@@ -63,6 +63,11 @@ export interface ProviderConnectionValidationResult {
 	errorMessage?: string;
 }
 
+export interface ProviderModelListInput {
+	serverBaseUrl: string;
+	apiKey: string;
+}
+
 export interface ProviderUsage {
 	promptTokens?: number;
 	completionTokens?: number;

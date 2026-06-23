@@ -1,7 +1,10 @@
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
 import { ServerModelStatus, ModelModality } from '$lib/enums';
-import { ModelsService, PropsService } from '$lib/services';
+import { ModelsService } from '$lib/services/models.service';
+import { PropsService } from '$lib/services/props.service';
+import { getApiProvider } from '$lib/services/providers';
+import { config } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { detectThinkingSupport, detectThinkingSupportWithReason, TTLCache } from '$lib/utils';
 import { t } from '$lib/i18n';
@@ -63,6 +66,7 @@ class ModelsStore {
 	private modelLoadingStates = new SvelteMap<string, boolean>();
 
 	favoriteModelIds = $state<Set<string>>(this.loadFavoritesFromStorage());
+	private loadedModelListSourceKey: string | null = null;
 
 	/**
 	 * Model-specific props cache with TTL
@@ -87,6 +91,33 @@ class ModelsStore {
 	 *
 	 *
 	 */
+
+	private get currentProvider() {
+		return getApiProvider(String(config().apiProvider ?? ''));
+	}
+
+	get modelListSourceKey(): string {
+		const currentConfig = config();
+		const provider = this.currentProvider;
+
+		return [
+			provider.id,
+			String(currentConfig.serverBaseUrl ?? '').trim(),
+			String(currentConfig.apiKey ?? '').trim()
+		].join('|');
+	}
+
+	get usesSelectableModelList(): boolean {
+		return serverStore.isRouterMode || this.currentProvider.capabilities.requiresModelInChatRequest;
+	}
+
+	get supportsModelLoadUnload(): boolean {
+		return this.currentProvider.capabilities.supportsModelLoadUnload && serverStore.isRouterMode;
+	}
+
+	get supportsModelProps(): boolean {
+		return this.currentProvider.capabilities.supportsModelProps;
+	}
 
 	get selectedModel(): ModelOption | null {
 		if (!this.selectedModelId) return null;
@@ -115,6 +146,10 @@ class ModelsStore {
 	 * In ROUTER mode, returns null (model is per-conversation).
 	 */
 	get singleModelName(): string | null {
+		if (this.currentProvider.capabilities.requiresModelInChatRequest) {
+			return this.selectedModelName;
+		}
+
 		if (serverStore.isRouterMode) return null;
 
 		const props = serverStore.props;
@@ -230,7 +265,7 @@ class ModelsStore {
 			return false;
 		}
 
-		if (serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
+		if (this.supportsModelProps && serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
 			this.fetchModelProps(modelId);
 		}
 
@@ -244,7 +279,7 @@ class ModelsStore {
 	checkModelSupportsThinking(modelId: string): boolean {
 		if (!modelId) return false;
 
-		if (serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
+		if (this.supportsModelProps && serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
 			this.fetchModelProps(modelId);
 		}
 
@@ -321,17 +356,31 @@ class ModelsStore {
 	 */
 	async fetch(force = false): Promise<void> {
 		if (this.loading) return;
-		if (this.models.length > 0 && !force) return;
+
+		const provider = this.currentProvider;
+		const sourceKey = this.modelListSourceKey;
+		const sourceChanged = this.loadedModelListSourceKey !== sourceKey;
+
+		if (sourceChanged) {
+			this.models = [];
+			this.routerModels = [];
+			this.selectedModelId = null;
+			this.selectedModelName = null;
+			this.modelPropsCache.clear();
+			this.modelPropsFetching.clear();
+		}
+
+		if (this.models.length > 0 && !force && !sourceChanged) return;
 
 		this.loading = true;
 		this.error = null;
 
 		try {
-			if (!serverStore.props) {
+			if (provider.capabilities.supportsServerProps && !serverStore.props) {
 				await serverStore.fetch();
 			}
 
-			const response = await ModelsService.list();
+			const response = await ModelsService.list(provider.id);
 
 			const models: ModelOption[] = response.data.map((item: ApiModelDataEntry, index: number) => {
 				const details = response.models?.[index];
@@ -360,7 +409,12 @@ class ModelsStore {
 			// WORKAROUND: In MODEL mode, /props returns modalities for the single model,
 			// but /v1/models doesn't include modalities. We bridge this gap here.
 			const serverProps = serverStore.props;
-			if (serverStore.isModelMode && this.models.length > 0 && serverProps?.modalities) {
+			if (
+				provider.capabilities.supportsModelProps &&
+				serverStore.isModelMode &&
+				this.models.length > 0 &&
+				serverProps?.modalities
+			) {
 				const modalities: ModelModalities = {
 					vision: serverProps.modalities.vision ?? false,
 					audio: serverProps.modalities.audio ?? false
@@ -370,6 +424,17 @@ class ModelsStore {
 					index === 0 ? { ...model, modalities } : model
 				);
 			}
+
+			if (
+				provider.capabilities.requiresModelInChatRequest &&
+				!this.selectedModelId &&
+				this.models.length > 0
+			) {
+				this.selectedModelId = this.models[0].id;
+				this.selectedModelName = this.models[0].model;
+			}
+
+			this.loadedModelListSourceKey = sourceKey;
 		} catch (error) {
 			this.models = [];
 			this.error = error instanceof Error ? error.message : 'Failed to load models';
@@ -384,6 +449,8 @@ class ModelsStore {
 	 * This fetches the /models endpoint which returns status info for each model
 	 */
 	async fetchRouterModels(): Promise<void> {
+		if (!this.supportsModelLoadUnload) return;
+
 		try {
 			const response = await ModelsService.listRouter();
 			this.routerModels = response.data;
@@ -415,6 +482,8 @@ class ModelsStore {
 	 * @returns Props data or null if fetch failed or model not loaded
 	 */
 	async fetchModelProps(modelId: string): Promise<ApiLlamaCppServerProps | null> {
+		if (!this.supportsModelProps) return null;
+
 		const cached = this.modelPropsCache.get(modelId);
 		if (cached) return cached;
 
@@ -443,6 +512,8 @@ class ModelsStore {
 	 * This updates the modalities field in models array
 	 */
 	async fetchModalitiesForLoadedModels(): Promise<void> {
+		if (!this.supportsModelProps) return;
+
 		const loadedModelIds = this.loadedModelIds;
 		if (loadedModelIds.length === 0) return;
 
@@ -478,6 +549,8 @@ class ModelsStore {
 	 * Called when a model is loaded or when we need fresh modality data
 	 */
 	async updateModelModalities(modelId: string): Promise<void> {
+		if (!this.supportsModelProps) return;
+
 		try {
 			const props = await this.fetchModelProps(modelId);
 			if (!props?.modalities) return;
@@ -631,6 +704,8 @@ class ModelsStore {
 	 * @param modelId - Model identifier to load
 	 */
 	async loadModel(modelId: string): Promise<void> {
+		if (!this.supportsModelLoadUnload) return;
+
 		if (this.isModelLoaded(modelId)) {
 			return;
 		}
@@ -665,6 +740,8 @@ class ModelsStore {
 	 * @param modelId - Model identifier to unload
 	 */
 	async unloadModel(modelId: string): Promise<void> {
+		if (!this.supportsModelLoadUnload) return;
+
 		if (!this.isModelLoaded(modelId)) {
 			return;
 		}
@@ -698,6 +775,8 @@ class ModelsStore {
 	 * @param modelId - Model identifier to ensure is loaded
 	 */
 	async ensureModelLoaded(modelId: string): Promise<void> {
+		if (!this.supportsModelLoadUnload) return;
+
 		if (this.isModelLoaded(modelId)) {
 			return;
 		}
@@ -774,6 +853,7 @@ class ModelsStore {
 		this.modelLoadingStates.clear();
 		this.modelPropsCache.clear();
 		this.modelPropsFetching.clear();
+		this.loadedModelListSourceKey = null;
 	}
 
 	/**

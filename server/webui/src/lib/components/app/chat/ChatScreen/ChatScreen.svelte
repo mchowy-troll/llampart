@@ -116,7 +116,7 @@
 	let modelPropsVersion = $state(0);
 
 	$effect(() => {
-		if (activeModelId) {
+		if (activeModelId && modelsStore.supportsModelProps) {
 			const cached = modelsStore.getModelProps(activeModelId);
 			if (!cached) {
 				modelsStore.fetchModelProps(activeModelId).then(() => {

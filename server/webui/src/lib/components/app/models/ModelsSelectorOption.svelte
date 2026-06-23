@@ -22,6 +22,7 @@
 		isHighlighted: boolean;
 		isFav: boolean;
 		showOrgName?: boolean;
+		showLoadState?: boolean;
 		onSelect: (modelId: string) => void;
 		onMouseEnter: () => void;
 		onKeyDown: (e: KeyboardEvent) => void;
@@ -34,6 +35,7 @@
 		isHighlighted,
 		isFav,
 		showOrgName = false,
+		showLoadState = true,
 		onSelect,
 		onMouseEnter,
 		onKeyDown,
@@ -94,7 +96,7 @@
 					class="h-3 w-3 hover:text-foreground"
 					onclick={() => modelsStore.toggleFavorite(option.model)}
 				/>
-			{:else}
+			{:else if showLoadState}
 				<ActionIcon
 					iconSize="h-2.5 w-2.5"
 					icon={Heart}

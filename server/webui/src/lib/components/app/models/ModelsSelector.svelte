@@ -13,7 +13,6 @@
 		singleModelName
 	} from '$lib/stores/models.svelte';
 	import { KeyboardKey } from '$lib/enums';
-	import { isRouterMode } from '$lib/stores/server.svelte';
 	import {
 		DialogModelInformation,
 		DropdownMenuSearchable,
@@ -53,11 +52,12 @@
 	let loading = $derived(modelsLoading());
 	let updating = $derived(modelsUpdating());
 	let activeId = $derived(selectedModelId());
-	let isRouter = $derived(isRouterMode());
+	let usesSelectableModelList = $derived(modelsStore.usesSelectableModelList);
+	let canManageModelLoadState = $derived(modelsStore.supportsModelLoadUnload);
 	let serverModel = $derived(singleModelName());
 
 	let isHighlightedCurrentModelActive = $derived.by(() => {
-		if (!isRouter || !currentModel) return false;
+		if (!usesSelectableModelList || !currentModel) return false;
 
 		const currentOption = options.find((option) => option.model === currentModel);
 
@@ -65,7 +65,7 @@
 	});
 
 	let isCurrentModelInCache = $derived.by(() => {
-		if (!isRouter || !currentModel) return true;
+		if (!usesSelectableModelList || !currentModel) return true;
 
 		return options.some((option) => option.model === currentModel);
 	});
@@ -79,7 +79,7 @@
 
 	let groupedFilteredOptions = $derived(
 		groupModelOptions(filteredOptions, modelsStore.favoriteModelIds, (m) =>
-			modelsStore.isModelLoaded(m)
+			canManageModelLoadState ? modelsStore.isModelLoaded(m) : false
 		)
 	);
 
@@ -97,7 +97,17 @@
 		showModelDialog = true;
 	}
 
+	let modelListSourceKey = $derived(modelsStore.modelListSourceKey);
+
 	onMount(() => {
+		modelsStore.fetch().catch((error) => {
+			console.error('Unable to load models:', error);
+		});
+	});
+
+	$effect(() => {
+		void modelListSourceKey;
+
 		modelsStore.fetch().catch((error) => {
 			console.error('Unable to load models:', error);
 		});
@@ -106,7 +116,7 @@
 	function handleOpenChange(open: boolean) {
 		if (loading || updating) return;
 
-		if (isRouter) {
+		if (usesSelectableModelList) {
 			if (open) {
 				isOpen = true;
 				searchTerm = '';
@@ -192,7 +202,7 @@
 			});
 		}
 
-		if (!onModelChange && isRouter && !modelsStore.isModelLoaded(option.model)) {
+		if (!onModelChange && canManageModelLoadState && !modelsStore.isModelLoaded(option.model)) {
 			isLoadingModel = true;
 			modelsStore
 				.loadModel(option.model)
@@ -202,7 +212,7 @@
 	}
 
 	function getDisplayOption(): ModelOption | undefined {
-		if (!isRouter) {
+		if (!usesSelectableModelList) {
 			const displayModel = serverModel || currentModel;
 			if (displayModel) {
 				return {
@@ -244,13 +254,13 @@
 </script>
 
 <div class={cn('relative inline-flex flex-col items-end gap-1', className)}>
-	{#if loading && options.length === 0 && isRouter}
+	{#if loading && options.length === 0 && usesSelectableModelList}
 		<div class="flex items-center gap-2 text-xs text-muted-foreground">
 			<Loader2 class="llampart-model-loading-icon h-3.5 w-3.5 animate-spin" />
 
 			{t('models.loadingModels')}
 		</div>
-	{:else if options.length === 0 && isRouter}
+	{:else if options.length === 0 && usesSelectableModelList}
 		{#if currentModel}
 			<span
 				class={cn(
@@ -269,7 +279,7 @@
 	{:else}
 		{@const selectedOption = getDisplayOption()}
 
-		{#if isRouter}
+		{#if usesSelectableModelList}
 			<DropdownMenu.Root bind:open={isOpen} onOpenChange={handleOpenChange}>
 				<DropdownMenu.Trigger
 					class={cn(
