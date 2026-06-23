@@ -14,29 +14,27 @@ Current release:
 llampart 1.0.9
 ```
 
-<!-- llampart-readme-screenshots:start -->
 
 ## Screenshots
 
 ### Frosted Glass start screen
 
-![llampart Frosted Glass start screen](docs/assets/screenshots/llampart-frosted-glass-main_page.png)
+![llampart Frosted Glass start screen](docs/assets/screenshots/llampart-main_page-frosted-glass.png)
 
 ### Frosted Glass chat
 
-![llampart Frosted Glass chat](docs/assets/screenshots/llampart-frosted-glass-chat.png)
+![llampart Frosted Glass chat](docs/assets/screenshots/llampart-chat-frosted-glass.png)
 
 ### Dark and light themes
 
-![llampart dark mode chat](docs/assets/screenshots/llampart-frosted-glass-chat-dark_mode.png)
+![llampart dark mode chat](docs/assets/screenshots/llampart-chat-dark_mode.png)
 
-![llampart light mode chat](docs/assets/screenshots/llampart-frosted-glass-chat-light_mode.png)
+![llampart light mode chat](docs/assets/screenshots/llampart-chat-light_mode.png)
 
 ### Appearance settings
 
-![llampart Frosted Glass settings](docs/assets/screenshots/llampart-frosted-glass-settings.png)
+![llampart Frosted Glass settings](docs/assets/screenshots/llampart-settings-frosted-glass.png)
 
-<!-- llampart-readme-screenshots:end -->
 
 ## Relationship to llama.cpp
 
