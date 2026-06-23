@@ -20,6 +20,7 @@
 	import { Toaster } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { modelsStore } from '$lib/stores/models.svelte';
+	import { getApiProvider } from '$lib/services/providers';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
 	import { TOOLTIP_DELAY_DURATION } from '$lib/constants';
 	import type { SettingsSectionTitle } from '$lib/constants';
@@ -36,6 +37,7 @@
 	let showSidebarByDefault = $derived(activeMessages().length > 0 || isLoading());
 	let alwaysShowSidebarOnDesktop = $derived(config().alwaysShowSidebarOnDesktop);
 	let autoShowSidebarOnNewChat = $derived(config().autoShowSidebarOnNewChat);
+	let currentApiProvider = $derived(getApiProvider(String(config().apiProvider ?? '')));
 	let sidebarOpen = $state(false);
 	let innerHeight = $state<number | undefined>();
 	let chatSidebar:
@@ -187,6 +189,14 @@
 
 	// Initialize server properties on app load (run once)
 	$effect(() => {
+		if (!currentApiProvider.capabilities.supportsServerProps) {
+			if (serverStore.props) {
+				serverStore.clear();
+			}
+
+			return;
+		}
+
 		// Only fetch if we don't already have props
 		if (!serverStore.props) {
 			untrack(() => {
@@ -213,7 +223,12 @@
 		const modelsCount = modelsStore.models.length;
 
 		// Only fetch router models once when we have models loaded and in router mode
-		if (isRouter && modelsCount > 0 && !routerModelsFetched) {
+		if (
+			currentApiProvider.capabilities.supportsModelLoadUnload &&
+			isRouter &&
+			modelsCount > 0 &&
+			!routerModelsFetched
+		) {
 			routerModelsFetched = true;
 			untrack(() => {
 				modelsStore.fetchRouterModels();

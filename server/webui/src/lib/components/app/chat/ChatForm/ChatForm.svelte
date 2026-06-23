@@ -27,7 +27,7 @@
 		SpecialFileType
 	} from '$lib/enums';
 	import { config } from '$lib/stores/settings.svelte';
-	import { modelOptions, selectedModelId } from '$lib/stores/models.svelte';
+	import { modelOptions, modelsStore, selectedModelId } from '$lib/stores/models.svelte';
 	import { isRouterMode } from '$lib/stores/server.svelte';
 	import { chatStore } from '$lib/stores/chat.svelte';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
@@ -137,6 +137,7 @@
 
 	// Model Selection Logic
 	let isRouter = $derived(isRouterMode());
+	let usesSelectableModelList = $derived(modelsStore.usesSelectableModelList);
 	let conversationModel = $derived(
 		chatStore.getConversationModel(activeMessages() as DatabaseMessage[])
 	);
@@ -162,7 +163,9 @@
 	});
 
 	// Form Validation State
-	let hasModelSelected = $derived(!isRouter || !!conversationModel || !!selectedModelId());
+	let hasModelSelected = $derived(
+		!usesSelectableModelList || !!conversationModel || !!selectedModelId()
+	);
 	let hasLoadingAttachments = $derived(uploadedFiles.some((f) => f.isLoading));
 	let hasAttachments = $derived(
 		(attachments && attachments.length > 0) || (uploadedFiles && uploadedFiles.length > 0)

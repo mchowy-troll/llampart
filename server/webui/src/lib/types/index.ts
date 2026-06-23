@@ -60,6 +60,7 @@ export type {
 	ProviderModel,
 	ProviderConnectionInput,
 	ProviderConnectionValidationResult,
+	ProviderModelListInput,
 	ProviderUsage
 } from './provider';
 

@@ -1,8 +1,10 @@
 import type { ApiProviderId } from '$lib/constants/api-providers';
+import type { ApiModelListResponse } from '$lib/types/api';
 import type {
 	ProviderCapabilities,
 	ProviderConnectionInput,
-	ProviderConnectionValidationResult
+	ProviderConnectionValidationResult,
+	ProviderModelListInput
 } from '$lib/types/provider';
 
 /**
@@ -21,4 +23,8 @@ export interface ApiProviderAdapter {
 		input: ProviderConnectionInput,
 		fetchImpl?: typeof fetch
 	): Promise<ProviderConnectionValidationResult>;
+	listModels(
+		input: ProviderModelListInput,
+		fetchImpl?: typeof fetch
+	): Promise<ApiModelListResponse>;
 }

@@ -55,6 +55,7 @@
 
 	let currentConfig = $derived(config());
 	let isRouter = $derived(isRouterMode());
+	let usesSelectableModelList = $derived(modelsStore.usesSelectableModelList);
 	let isOffline = $derived(!!serverError());
 
 	let conversationModel = $derived(
@@ -67,7 +68,11 @@
 		if (conversationModel && conversationModel !== lastSyncedConversationModel) {
 			lastSyncedConversationModel = conversationModel;
 			modelsStore.selectModelByName(conversationModel);
-		} else if (isRouter && !modelsStore.selectedModelId && modelsStore.loadedModelIds.length > 0) {
+		} else if (
+			modelsStore.supportsModelLoadUnload &&
+			!modelsStore.selectedModelId &&
+			modelsStore.loadedModelIds.length > 0
+		) {
 			lastSyncedConversationModel = null;
 			// auto-select the first loaded model only when nothing is selected yet
 			const first = modelOptions().find((m) => modelsStore.loadedModelIds.includes(m.model));
@@ -99,7 +104,7 @@
 	let modelPropsVersion = $state(0); // Used to trigger reactivity after fetch
 
 	$effect(() => {
-		if (activeModelId) {
+		if (activeModelId && modelsStore.supportsModelProps) {
 			const cached = modelsStore.getModelProps(activeModelId);
 
 			if (!cached) {
@@ -137,7 +142,9 @@
 		hasAudioModality && !hasText && !hasAudioAttachments && currentConfig.autoMicOnEmpty
 	);
 
-	let hasModelSelected = $derived(!isRouter || !!conversationModel || !!selectedModelId());
+	let hasModelSelected = $derived(
+		!usesSelectableModelList || !!conversationModel || !!selectedModelId()
+	);
 
 	let isSelectedModelInCache = $derived.by(() => {
 		if (!isRouter) return true;
