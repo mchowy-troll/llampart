@@ -357,12 +357,16 @@ export const de: TranslationDictionary = {
 			noConversationsToDelete: 'Keine Unterhaltungen zum Löschen'
 		},
 		info: {
-			apiProvider:
-				'Wählen Sie, welche Backend-API llampart verwenden soll. llama-server behält das lokale Standardverhalten; OpenAI-compatible validiert /v1/models und verwendet später /v1/chat/completions.',
-			serverBaseUrl:
-				'Basis-URL der llama-server-Instanz. Leer lassen, um den aktuellen Ursprung zu verwenden (derselbe Host und Port wie das Frontend).',
-			apiKey:
-				'Setzen Sie den API-Schlüssel, wenn Sie auf dem Server die Option <code>--api-key</code> verwenden.',
+			apiProvider: `Wähle den API-Anbieter, den llampart verwenden soll.`,
+			serverBaseUrl: `URL des llama-server.
+Leer lassen, wenn du die lokale Standardadresse von llama-server verwendest: http://localhost:8080/`,
+			apiKey: `Optionaler API-Schlüssel, wenn llama-server mit --api-key gestartet wurde.`,
+			llamaServerBaseUrl: `URL des llama-server.
+Leer lassen, wenn du die lokale Standardadresse von llama-server verwendest: http://localhost:8080/`,
+			llamaServerApiKey: `Optionaler API-Schlüssel, wenn llama-server mit --api-key gestartet wurde.`,
+			openAiCompatibleBaseUrl: `Adresse des OpenAI-compatible Servers - z. B. LM Studio, Ollama oder ein anderer Endpunkt, der /v1/models und /v1/chat/completions unterstützt.`,
+			openAiCompatibleApiKey: `API-Schlüssel, der vom ausgewählten OpenAI-compatible Server benötigt wird.
+Bei lokalen Servern kann er je nach Konfiguration optional oder beliebig sein.`,
 			systemMessage: 'Die Startnachricht, die festlegt, wie sich das Modell verhalten soll.',
 			showSystemMessage: 'Die Systemnachricht am Anfang jeder Unterhaltung anzeigen.',
 			theme:
