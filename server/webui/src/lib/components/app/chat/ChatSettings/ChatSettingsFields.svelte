@@ -132,8 +132,8 @@
 
 	function getHelpClass(field: SettingsFieldConfig): string {
 		return isCompactInlineNumberField(field) || isAlignedMcpNumberField(field)
-			? 'w-full text-xs text-muted-foreground'
-			: 'mt-1 w-full text-xs text-muted-foreground';
+			? 'w-full whitespace-pre-line text-xs text-muted-foreground'
+			: 'mt-1 w-full whitespace-pre-line text-xs text-muted-foreground';
 	}
 
 	function getInputLabelRowClass(field: SettingsFieldConfig): string {
@@ -308,7 +308,7 @@
 
 			{@const help = getFieldHelp(field, helpOverride, hideHelp)}
 			{#if help}
-				<p class="mt-1 text-xs text-muted-foreground">
+				<p class="mt-1 whitespace-pre-line text-xs text-muted-foreground">
 					{@html help}
 				</p>
 			{/if}
@@ -409,7 +409,7 @@
 			</Select.Root>
 			{@const help = getFieldHelp(field, helpOverride, hideHelp)}
 			{#if help}
-				<p class="mt-1 text-xs text-muted-foreground">
+				<p class="mt-1 whitespace-pre-line text-xs text-muted-foreground">
 					{@html help}
 				</p>
 			{/if}
@@ -437,7 +437,7 @@
 				</div>
 
 				{#if getFieldHelp(field, helpOverride, hideHelp)}
-					<p class="ml-7 text-xs text-muted-foreground">
+					<p class="ml-7 whitespace-pre-line text-xs text-muted-foreground">
 						{@html getFieldHelp(field, helpOverride, hideHelp)}
 					</p>
 				{/if}
@@ -463,7 +463,7 @@
 						</label>
 
 						{#if getFieldHelp(field, helpOverride, hideHelp)}
-							<p class="max-w-full text-xs break-words text-muted-foreground">
+							<p class="max-w-full whitespace-pre-line text-xs break-words text-muted-foreground">
 								{@html getFieldHelp(field, helpOverride, hideHelp)}
 							</p>
 						{/if}

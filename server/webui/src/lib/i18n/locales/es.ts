@@ -359,12 +359,16 @@ export const es: TranslationDictionary = {
 			noConversationsToDelete: 'No hay conversaciones para eliminar'
 		},
 		info: {
-			apiProvider:
-				'Elige qué API backend debe usar llampart. llama-server conserva el comportamiento local predeterminado; OpenAI-compatible valida /v1/models y más adelante usa /v1/chat/completions.',
-			serverBaseUrl:
-				'URL base de la instancia de llama-server. Déjalo vacío para usar el origen actual (mismo host/puerto que el frontend).',
-			apiKey:
-				'Establece la clave API si estás usando la opción <code>--api-key</code> en el servidor.',
+			apiProvider: `Elige el proveedor de API que debe usar llampart.`,
+			serverBaseUrl: `URL de llama-server.
+Déjalo vacío si usas la dirección local predeterminada de llama-server: http://localhost:8080/`,
+			apiKey: `Clave API opcional si llama-server se inició con --api-key.`,
+			llamaServerBaseUrl: `URL de llama-server.
+Déjalo vacío si usas la dirección local predeterminada de llama-server: http://localhost:8080/`,
+			llamaServerApiKey: `Clave API opcional si llama-server se inició con --api-key.`,
+			openAiCompatibleBaseUrl: `Dirección del servidor OpenAI-compatible - por ejemplo LM Studio, Ollama u otro endpoint que admita /v1/models y /v1/chat/completions.`,
+			openAiCompatibleApiKey: `Clave API requerida por el servidor OpenAI-compatible seleccionado.
+En servidores locales puede ser opcional o arbitraria, según la configuración.`,
 			systemMessage: 'El mensaje inicial que define cómo debe comportarse el modelo.',
 			showSystemMessage: 'Mostrar el mensaje del sistema al inicio de cada conversación.',
 			theme:

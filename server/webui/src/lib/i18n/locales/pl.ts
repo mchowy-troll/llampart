@@ -356,11 +356,16 @@ export const pl: TranslationDictionary = {
 			noConversationsToDelete: 'Brak rozmów do usunięcia'
 		},
 		info: {
-			apiProvider:
-				'Wybierz, którego backendowego API ma używać llampart. llama-server zachowuje lokalne domyślne działanie; OpenAI-compatible waliduje /v1/models i później używa /v1/chat/completions.',
-			serverBaseUrl:
-				'Bazowy adres URL instancji llama-server. Zostaw puste, aby użyć bieżącego adresu źródłowego (ten sam host i port co frontend).',
-			apiKey: 'Ustaw klucz API, jeśli używasz w serwerze opcji <code>--api-key</code>.',
+			apiProvider: `Wybierz dostawcę API, którego ma używać llampart.`,
+			serverBaseUrl: `Adres URL llama-server.
+Zostaw puste, jeśli używasz domyślnego lokalnego adresu llama-server: http://localhost:8080/`,
+			apiKey: `Opcjonalny klucz API, jeśli llama-server została uruchomiona z --api-key.`,
+			llamaServerBaseUrl: `Adres URL llama-server.
+Zostaw puste, jeśli używasz domyślnego lokalnego adresu llama-server: http://localhost:8080/`,
+			llamaServerApiKey: `Opcjonalny klucz API, jeśli llama-server została uruchomiona z --api-key.`,
+			openAiCompatibleBaseUrl: `Adres serwera OpenAI-compatible - np. LM Studio, Ollama albo inny endpoint obsługujący /v1/models i /v1/chat/completions.`,
+			openAiCompatibleApiKey: `Klucz API wymagany przez wybrany serwer OpenAI-compatible.
+W lokalnych serwerach może być opcjonalny albo dowolny, zależnie od konfiguracji.`,
 			systemMessage: 'Początkowa wiadomość określająca, jak model ma się zachowywać.',
 			showSystemMessage: 'Pokazuj wiadomość systemową na początku każdej rozmowy.',
 			theme:
