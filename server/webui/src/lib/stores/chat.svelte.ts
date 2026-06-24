@@ -14,6 +14,7 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { DatabaseService } from '$lib/services/database.service';
 import { ChatService } from '$lib/services/chat.service';
+import { getApiProvider } from '$lib/services/providers';
 import { conversationsStore } from '$lib/stores/conversations.svelte';
 import { config } from '$lib/stores/settings.svelte';
 import { agenticStore } from '$lib/stores/agentic.svelte';
@@ -772,8 +773,11 @@ class ChatStore {
 
 				if (onComplete) onComplete(streamedContent);
 				if (isRouterMode()) modelsStore.fetchRouterModels().catch(console.error);
-				// Pre-encode conversation in KV cache for faster next turn
-				if (config().preEncodeConversation) {
+				// Pre-encode conversation in KV cache for providers that expose llama-server slots.
+				if (
+					getApiProvider(String(config().apiProvider ?? '')).capabilities.supportsPreEncode &&
+					config().preEncodeConversation
+				) {
 					this.triggerPreEncode(
 						allMessages,
 						assistantMessage,
@@ -1672,6 +1676,9 @@ class ChatStore {
 
 	private getApiOptions(): Record<string, unknown> {
 		const currentConfig = config();
+		const providerCapabilities = getApiProvider(
+			String(currentConfig.apiProvider ?? '')
+		).capabilities;
 		const hasValue = (value: unknown): boolean =>
 			value !== undefined && value !== null && value !== '';
 		const apiOptions: Record<string, unknown> = { stream: true, timings_per_token: true };
@@ -1683,66 +1690,88 @@ class ChatStore {
 
 		if (currentConfig.systemMessage) apiOptions.systemMessage = currentConfig.systemMessage;
 
-		if (currentConfig.disableReasoningParsing) apiOptions.disableReasoningParsing = true;
+		if (
+			providerCapabilities.supportsLlamaReasoningControls &&
+			currentConfig.disableReasoningParsing
+		)
+			apiOptions.disableReasoningParsing = true;
 
-		if (currentConfig.excludeReasoningFromContext) apiOptions.excludeReasoningFromContext = true;
+		if (
+			providerCapabilities.supportsLlamaReasoningControls &&
+			currentConfig.excludeReasoningFromContext
+		)
+			apiOptions.excludeReasoningFromContext = true;
 
-		if (hasValue(currentConfig.temperature))
+		if (providerCapabilities.supportsTemperature && hasValue(currentConfig.temperature))
 			apiOptions.temperature = Number(currentConfig.temperature);
 
-		if (hasValue(currentConfig.max_tokens))
+		if (providerCapabilities.supportsMaxTokens && hasValue(currentConfig.max_tokens))
 			apiOptions.max_tokens = Number(currentConfig.max_tokens);
 
-		if (hasValue(currentConfig.dynatemp_range))
+		if (providerCapabilities.supportsDynamicTemperature && hasValue(currentConfig.dynatemp_range))
 			apiOptions.dynatemp_range = Number(currentConfig.dynatemp_range);
 
-		if (hasValue(currentConfig.dynatemp_exponent))
+		if (
+			providerCapabilities.supportsDynamicTemperature &&
+			hasValue(currentConfig.dynatemp_exponent)
+		)
 			apiOptions.dynatemp_exponent = Number(currentConfig.dynatemp_exponent);
 
-		if (hasValue(currentConfig.top_k)) apiOptions.top_k = Number(currentConfig.top_k);
+		if (providerCapabilities.supportsTopK && hasValue(currentConfig.top_k))
+			apiOptions.top_k = Number(currentConfig.top_k);
 
-		if (hasValue(currentConfig.top_p)) apiOptions.top_p = Number(currentConfig.top_p);
+		if (providerCapabilities.supportsTopP && hasValue(currentConfig.top_p))
+			apiOptions.top_p = Number(currentConfig.top_p);
 
-		if (hasValue(currentConfig.min_p)) apiOptions.min_p = Number(currentConfig.min_p);
+		if (providerCapabilities.supportsMinP && hasValue(currentConfig.min_p))
+			apiOptions.min_p = Number(currentConfig.min_p);
 
-		if (hasValue(currentConfig.xtc_probability))
+		if (providerCapabilities.supportsXtc && hasValue(currentConfig.xtc_probability))
 			apiOptions.xtc_probability = Number(currentConfig.xtc_probability);
 
-		if (hasValue(currentConfig.xtc_threshold))
+		if (providerCapabilities.supportsXtc && hasValue(currentConfig.xtc_threshold))
 			apiOptions.xtc_threshold = Number(currentConfig.xtc_threshold);
 
-		if (hasValue(currentConfig.typ_p)) apiOptions.typ_p = Number(currentConfig.typ_p);
+		if (providerCapabilities.supportsTypicalP && hasValue(currentConfig.typ_p))
+			apiOptions.typ_p = Number(currentConfig.typ_p);
 
-		if (hasValue(currentConfig.repeat_last_n))
+		if (providerCapabilities.supportsRepeatPenalty && hasValue(currentConfig.repeat_last_n))
 			apiOptions.repeat_last_n = Number(currentConfig.repeat_last_n);
 
-		if (hasValue(currentConfig.repeat_penalty))
+		if (providerCapabilities.supportsRepeatPenalty && hasValue(currentConfig.repeat_penalty))
 			apiOptions.repeat_penalty = Number(currentConfig.repeat_penalty);
 
-		if (hasValue(currentConfig.presence_penalty))
+		if (providerCapabilities.supportsPresencePenalty && hasValue(currentConfig.presence_penalty))
 			apiOptions.presence_penalty = Number(currentConfig.presence_penalty);
 
-		if (hasValue(currentConfig.frequency_penalty))
+		if (providerCapabilities.supportsFrequencyPenalty && hasValue(currentConfig.frequency_penalty))
 			apiOptions.frequency_penalty = Number(currentConfig.frequency_penalty);
 
-		if (hasValue(currentConfig.dry_multiplier))
+		if (providerCapabilities.supportsDryPenalty && hasValue(currentConfig.dry_multiplier))
 			apiOptions.dry_multiplier = Number(currentConfig.dry_multiplier);
 
-		if (hasValue(currentConfig.dry_base)) apiOptions.dry_base = Number(currentConfig.dry_base);
+		if (providerCapabilities.supportsDryPenalty && hasValue(currentConfig.dry_base))
+			apiOptions.dry_base = Number(currentConfig.dry_base);
 
-		if (hasValue(currentConfig.dry_allowed_length))
+		if (providerCapabilities.supportsDryPenalty && hasValue(currentConfig.dry_allowed_length))
 			apiOptions.dry_allowed_length = Number(currentConfig.dry_allowed_length);
 
-		if (hasValue(currentConfig.dry_penalty_last_n))
+		if (providerCapabilities.supportsDryPenalty && hasValue(currentConfig.dry_penalty_last_n))
 			apiOptions.dry_penalty_last_n = Number(currentConfig.dry_penalty_last_n);
 
-		if (currentConfig.samplers) apiOptions.samplers = currentConfig.samplers;
+		if (providerCapabilities.supportsSamplerOrder && currentConfig.samplers)
+			apiOptions.samplers = currentConfig.samplers;
 
-		apiOptions.backend_sampling = currentConfig.backend_sampling;
-		apiOptions.enableThinking = conversationsStore.getThinkingEnabled();
-		apiOptions.reasoningEffort = conversationsStore.getReasoningEffort();
+		if (providerCapabilities.supportsBackendSampling)
+			apiOptions.backend_sampling = currentConfig.backend_sampling;
 
-		if (currentConfig.custom) apiOptions.custom = currentConfig.custom;
+		if (providerCapabilities.supportsLlamaReasoningControls) {
+			apiOptions.enableThinking = conversationsStore.getThinkingEnabled();
+			apiOptions.reasoningEffort = conversationsStore.getReasoningEffort();
+		}
+
+		if (providerCapabilities.supportsCustomJsonPayload && currentConfig.custom)
+			apiOptions.custom = currentConfig.custom;
 
 		return apiOptions;
 	}

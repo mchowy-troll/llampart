@@ -12,6 +12,10 @@ const EXCLUDED_CONFIG_KEYS = new Set([
 	// Connection and secrets
 	'serverBaseUrl',
 	'apiKey',
+	'llamaServerBaseUrl',
+	'llamaServerApiKey',
+	'openAiCompatibleBaseUrl',
+	'openAiCompatibleApiKey',
 	// MCP servers, MCP section settings and MCP usage metadata
 	'mcpServers',
 	'mcpServerUsageStats',

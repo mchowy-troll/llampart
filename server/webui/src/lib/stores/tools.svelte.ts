@@ -1,5 +1,6 @@
 import type { OpenAIToolDefinition, ToolEntry, ToolGroup } from '$lib/types';
 import { ToolsService } from '$lib/services/tools.service';
+import { getApiProvider } from '$lib/services/providers';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { HealthCheckStatus, JsonSchemaType, ToolCallType, ToolSource } from '$lib/enums';
 import { config } from '$lib/stores/settings.svelte';
@@ -92,15 +93,21 @@ class ToolsStore {
 		}
 	}
 
+	get supportsProviderTools(): boolean {
+		return getApiProvider(String(config().apiProvider ?? '')).capabilities.supportsOpenAiToolCalls;
+	}
+
 	get builtinTools(): OpenAIToolDefinition[] {
-		return this._builtinTools;
+		return this.supportsProviderTools ? this._builtinTools : [];
 	}
 
 	get mcpTools(): OpenAIToolDefinition[] {
-		return mcpStore.getToolDefinitionsForLLM();
+		return this.supportsProviderTools ? mcpStore.getToolDefinitionsForLLM() : [];
 	}
 
 	get customTools(): OpenAIToolDefinition[] {
+		if (!this.supportsProviderTools) return [];
+
 		const raw = config().custom;
 		if (!raw || typeof raw !== 'string') return [];
 
@@ -127,6 +134,8 @@ class ToolsStore {
 		serverName: string;
 		definition: OpenAIToolDefinition;
 	}[] {
+		if (!this.supportsProviderTools) return [];
+
 		const entries: { serverId: string; serverName: string; definition: OpenAIToolDefinition }[] =
 			[];
 
@@ -194,6 +203,8 @@ class ToolsStore {
 			seen.add(entry.key);
 			entries.push(entry);
 		};
+
+		if (!this.supportsProviderTools) return [];
 
 		for (const definition of this._builtinTools) {
 			const name = definition.function.name;
@@ -298,8 +309,8 @@ class ToolsStore {
 			result.push(definition);
 		};
 
-		for (const definition of this._builtinTools) take(definition);
-		for (const definition of mcpStore.getToolDefinitionsForLLM()) take(definition);
+		for (const definition of this.builtinTools) take(definition);
+		for (const definition of this.mcpTools) take(definition);
 		for (const definition of this.customTools) take(definition);
 
 		return result;
@@ -435,6 +446,14 @@ class ToolsStore {
 	}
 
 	async fetchBuiltinTools(): Promise<void> {
+		if (!this.supportsProviderTools) {
+			this._builtinTools = [];
+			this._loading = false;
+			this._error = null;
+			this._toolsEndpointUnreachable = false;
+			return;
+		}
+
 		if (this._loading) return;
 
 		this._loading = true;

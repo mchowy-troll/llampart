@@ -27,14 +27,18 @@
 		SETTINGS_COLOR_MODES_CONFIG,
 		SETTINGS_KEYS,
 		API_PROVIDER_OPTIONS,
+		PROVIDER_CONNECTION_SETTING_KEYS,
 		getLocalizedTitleGenerationPrompt,
 		isBuiltInTitleGenerationPrompt
 	} from '$lib/constants';
 	import { validateConnectionSettings } from '$lib/utils';
+	import { getApiProvider } from '$lib/services/providers';
+	import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers';
 	import { setMode } from 'mode-watcher';
 	import { ColorMode } from '$lib/enums/ui';
 	import { SettingsFieldType } from '$lib/enums/settings';
 	import type { Component } from 'svelte';
+	import type { ProviderCapabilityKey } from '$lib/types/provider';
 	import { t } from '$lib/i18n';
 
 	interface Props {
@@ -114,12 +118,23 @@
 	 * Settings metadata is the source of truth for both content and layout hints.
 	 * Keeping layout near the group definitions makes future settings easier to add safely.
 	 */
-	const settingSections: Array<{
+	type SettingsSectionConfig = {
 		fields: SettingsFieldConfig[];
 		groups?: SettingsFieldGroup[];
 		icon: Component;
 		title: SettingsSectionTitle;
-	}> = [
+		requiredProviderCapabilities?: ProviderCapabilityKey[];
+	};
+
+	function normalizeProviderId(providerId: unknown) {
+		return isApiProviderId(providerId) ? providerId : API_PROVIDER_IDS.LLAMA_SERVER;
+	}
+
+	function getConnectionKeys(providerId: unknown) {
+		return PROVIDER_CONNECTION_SETTING_KEYS[normalizeProviderId(providerId)];
+	}
+
+	const settingSections: SettingsSectionConfig[] = [
 		{
 			title: SETTINGS_SECTION_TITLES.GENERAL,
 			icon: Settings,
@@ -394,7 +409,8 @@
 						{
 							key: SETTINGS_KEYS.TOP_K,
 							label: t('settings.fieldTopK'),
-							type: SettingsFieldType.INPUT
+							type: SettingsFieldType.INPUT,
+							requiredProviderCapabilities: ['supportsTopK']
 						},
 						{
 							key: SETTINGS_KEYS.TOP_P,
@@ -404,12 +420,14 @@
 						{
 							key: SETTINGS_KEYS.MIN_P,
 							label: t('settings.fieldMinP'),
-							type: SettingsFieldType.INPUT
+							type: SettingsFieldType.INPUT,
+							requiredProviderCapabilities: ['supportsMinP']
 						},
 						{
 							key: SETTINGS_KEYS.TYP_P,
 							label: t('settings.fieldTypicalP'),
-							type: SettingsFieldType.INPUT
+							type: SettingsFieldType.INPUT,
+							requiredProviderCapabilities: ['supportsTypicalP']
 						},
 						{
 							key: SETTINGS_KEYS.MAX_TOKENS,
@@ -422,6 +440,7 @@
 					id: 'dynamic-temperature',
 					layout: 'three-column',
 					title: t('settings.groupDynamicTemperature'),
+					requiredProviderCapabilities: ['supportsDynamicTemperature'],
 					fields: [
 						{
 							key: SETTINGS_KEYS.DYNATEMP_RANGE,
@@ -439,6 +458,7 @@
 					id: 'xtc',
 					layout: 'three-column',
 					title: t('settings.groupXtc'),
+					requiredProviderCapabilities: ['supportsXtc'],
 					fields: [
 						{
 							key: SETTINGS_KEYS.XTC_PROBABILITY,
@@ -456,6 +476,7 @@
 					id: 'sampler-order',
 					layout: 'three-column',
 					title: t('settings.groupSamplerOrder'),
+					requiredProviderCapabilities: ['supportsSamplerOrder'],
 					fields: [
 						{
 							key: SETTINGS_KEYS.SAMPLERS,
@@ -473,6 +494,7 @@
 					id: 'repetition',
 					layout: 'three-column',
 					title: t('settings.groupRepetition'),
+					requiredProviderCapabilities: ['supportsRepeatPenalty'],
 					fields: [
 						{
 							key: SETTINGS_KEYS.REPEAT_LAST_N,
@@ -507,6 +529,7 @@
 					id: 'dry-penalty',
 					layout: 'three-column',
 					title: t('settings.groupDryPenalty'),
+					requiredProviderCapabilities: ['supportsDryPenalty'],
 					fields: [
 						{
 							key: SETTINGS_KEYS.DRY_MULTIPLIER,
@@ -534,6 +557,7 @@
 		},
 		{
 			title: SETTINGS_SECTION_TITLES.MCP,
+			requiredProviderCapabilities: ['supportsOpenAiToolCalls'],
 			icon: McpLogo,
 			fields: [],
 			groups: [
@@ -579,6 +603,7 @@
 		},
 		{
 			title: SETTINGS_SECTION_TITLES.TOOLS,
+			requiredProviderCapabilities: ['supportsOpenAiToolCalls'],
 			icon: Wrench,
 			fields: []
 		},
@@ -594,6 +619,7 @@
 			groups: [
 				{
 					id: 'reasoning',
+					requiredProviderCapabilities: ['supportsLlamaReasoningControls'],
 					title: t('settings.groupReasoning'),
 					layout: 'two-column',
 					fields: [
@@ -616,6 +642,7 @@
 				},
 				{
 					id: 'performance-cache',
+					requiredProviderCapabilities: ['supportsPreEncode'],
 					title: t('settings.groupPerformanceCache'),
 					layout: 'two-column',
 					fields: [
@@ -628,6 +655,7 @@
 				},
 				{
 					id: 'custom-parameters',
+					requiredProviderCapabilities: ['supportsCustomJsonPayload'],
 					title: t('settings.groupCustomParameters'),
 					fields: [
 						{
@@ -645,10 +673,54 @@
 	let activeSection = $derived<SettingsSectionTitle>(
 		initialSection ?? SETTINGS_SECTION_TITLES.GENERAL
 	);
-	let currentSection = $derived(
-		settingSections.find((section) => section.title === activeSection) || settingSections[0]
-	);
 	let localConfig: SettingsConfigType = $state({ ...config() });
+	let activeConnectionKeys = $derived(getConnectionKeys(localConfig.apiProvider));
+	let providerCapabilities = $derived(
+		getApiProvider(String(localConfig.apiProvider ?? '')).capabilities
+	);
+
+	function supportsRequiredCapabilities(capabilities?: ProviderCapabilityKey[]): boolean {
+		return (
+			!capabilities || capabilities.every((capability) => providerCapabilities[capability] === true)
+		);
+	}
+
+	function getProviderScopedField(field: SettingsFieldConfig): SettingsFieldConfig {
+		if (field.key === SETTINGS_KEYS.SERVER_BASE_URL) {
+			return { ...field, key: activeConnectionKeys.serverBaseUrl };
+		}
+
+		if (field.key === SETTINGS_KEYS.API_KEY) {
+			return { ...field, key: activeConnectionKeys.apiKey };
+		}
+
+		return field;
+	}
+
+	function getVisibleFields(fields: SettingsFieldConfig[]): SettingsFieldConfig[] {
+		return fields
+			.filter((field) => supportsRequiredCapabilities(field.requiredProviderCapabilities))
+			.map(getProviderScopedField);
+	}
+
+	function getVisibleGroups(groups: SettingsFieldGroup[] = []): SettingsFieldGroup[] {
+		return groups
+			.filter((group) => supportsRequiredCapabilities(group.requiredProviderCapabilities))
+			.map((group) => ({ ...group, fields: getVisibleFields(group.fields) }))
+			.filter((group) => group.fields.length > 0);
+	}
+
+	let visibleSettingSections = $derived(
+		settingSections.filter((section) =>
+			supportsRequiredCapabilities(section.requiredProviderCapabilities)
+		)
+	);
+
+	let currentSection = $derived(
+		visibleSettingSections.find((section) => section.title === activeSection) ||
+			visibleSettingSections[0] ||
+			settingSections[0]
+	);
 
 	function syncLocalizedTitleGenerationPrompt(language: unknown, value: unknown) {
 		const currentPrompt = String(value ?? '');
@@ -663,8 +735,17 @@
 	}
 
 	$effect(() => {
-		if (initialSection) {
+		if (
+			initialSection &&
+			visibleSettingSections.some((section) => section.title === initialSection)
+		) {
 			activeSection = initialSection;
+		}
+	});
+
+	$effect(() => {
+		if (!visibleSettingSections.some((section) => section.title === activeSection)) {
+			activeSection = visibleSettingSections[0]?.title ?? SETTINGS_SECTION_TITLES.GENERAL;
 		}
 	});
 
@@ -678,17 +759,18 @@
 
 	function getCurrentGroups(): SettingsFieldGroup[] {
 		if (currentSection.groups?.length) {
-			return currentSection.groups;
+			return getVisibleGroups(currentSection.groups);
 		}
 
-		if (!currentSection.fields.length) {
+		const visibleFields = getVisibleFields(currentSection.fields);
+		if (!visibleFields.length) {
 			return [];
 		}
 
 		return [
 			{
 				id: `${currentSection.title}-fields`,
-				fields: currentSection.fields,
+				fields: visibleFields,
 				fullWidth: true,
 				framed: false
 			}
@@ -701,6 +783,13 @@
 
 	function handleConfigChange(key: string, value: string | boolean) {
 		const nextConfig = { ...localConfig, [key]: value };
+
+		if (key === SETTINGS_KEYS.API_PROVIDER) {
+			const nextConnectionKeys = getConnectionKeys(value);
+			nextConfig[SETTINGS_KEYS.SERVER_BASE_URL] =
+				nextConfig[nextConnectionKeys.serverBaseUrl] ?? '';
+			nextConfig[SETTINGS_KEYS.API_KEY] = nextConfig[nextConnectionKeys.apiKey] ?? '';
+		}
 
 		if (key === SETTINGS_KEYS.SHOW_THOUGHT_IN_PROGRESS && value === true) {
 			nextConfig[SETTINGS_KEYS.MINIMAL_AGENTIC_INDICATORS] = false;
@@ -751,9 +840,14 @@
 			}
 		}
 
+		const providerConnectionKeys = getConnectionKeys(processedConfig.apiProvider);
+		processedConfig[SETTINGS_KEYS.SERVER_BASE_URL] =
+			processedConfig[providerConnectionKeys.serverBaseUrl] ?? '';
+		processedConfig[SETTINGS_KEYS.API_KEY] = processedConfig[providerConnectionKeys.apiKey] ?? '';
+
 		const connectionValidation = await validateConnectionSettings(
-			String(processedConfig.serverBaseUrl || ''),
-			String(processedConfig.apiKey || ''),
+			String(processedConfig[providerConnectionKeys.serverBaseUrl] || ''),
+			String(processedConfig[providerConnectionKeys.apiKey] || ''),
 			String(processedConfig.apiProvider || '')
 		);
 
@@ -776,7 +870,7 @@
 	<!-- Settings Sidebar -->
 	<div class="w-60 shrink-0 border-r border-border/30 p-5 lg:w-64">
 		<nav class="space-y-1 py-2">
-			{#each settingSections as section (section.title)}
+			{#each visibleSettingSections as section (section.title)}
 				<button
 					class="flex w-full cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent {activeSection ===
 					section.title

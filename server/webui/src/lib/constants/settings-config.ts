@@ -1,5 +1,5 @@
 import { ColorMode } from '$lib/enums/ui';
-import { DEFAULT_API_PROVIDER_ID } from './api-providers';
+import { API_PROVIDER_IDS, DEFAULT_API_PROVIDER_ID } from './api-providers';
 import { DEFAULT_FROSTED_GLASS_WALLPAPER_ID } from './frosted-glass-wallpapers';
 import { TITLE_GENERATION } from './title-generation';
 import { Monitor, Moon, Sparkles, Sun } from '@lucide/svelte';
@@ -10,6 +10,10 @@ export const SETTING_CONFIG_DEFAULT: Record<string, string | number | boolean | 
 	apiProvider: DEFAULT_API_PROVIDER_ID,
 	serverBaseUrl: '',
 	apiKey: '',
+	llamaServerBaseUrl: '',
+	llamaServerApiKey: '',
+	openAiCompatibleBaseUrl: '',
+	openAiCompatibleApiKey: '',
 	systemMessage: '',
 	showSystemMessage: true,
 	theme: ColorMode.SYSTEM,
@@ -78,10 +82,25 @@ export const SETTING_CONFIG_DEFAULT: Record<string, string | number | boolean | 
 	enableContinueGeneration: false
 };
 
+export const PROVIDER_CONNECTION_SETTING_KEYS = {
+	[API_PROVIDER_IDS.LLAMA_SERVER]: {
+		serverBaseUrl: 'llamaServerBaseUrl',
+		apiKey: 'llamaServerApiKey'
+	},
+	[API_PROVIDER_IDS.OPENAI_COMPATIBLE]: {
+		serverBaseUrl: 'openAiCompatibleBaseUrl',
+		apiKey: 'openAiCompatibleApiKey'
+	}
+} as const;
+
 export const SETTING_CONFIG_INFO: Record<string, string> = {
 	apiProvider: 'settings.info.apiProvider',
 	serverBaseUrl: 'settings.info.serverBaseUrl',
 	apiKey: 'settings.info.apiKey',
+	llamaServerBaseUrl: 'settings.info.serverBaseUrl',
+	llamaServerApiKey: 'settings.info.apiKey',
+	openAiCompatibleBaseUrl: 'settings.info.serverBaseUrl',
+	openAiCompatibleApiKey: 'settings.info.apiKey',
 	systemMessage: 'settings.info.systemMessage',
 	showSystemMessage: 'settings.info.showSystemMessage',
 	theme: 'settings.info.theme',

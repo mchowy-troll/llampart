@@ -54,6 +54,9 @@
 	let activeId = $derived(selectedModelId());
 	let usesSelectableModelList = $derived(modelsStore.usesSelectableModelList);
 	let canManageModelLoadState = $derived(modelsStore.supportsModelLoadUnload);
+	let canShowModelProps = $derived(modelsStore.supportsModelProps);
+	let shouldShowUnavailableCurrentModel = $derived(!usesSelectableModelList);
+	let shouldGroupModelsByOrg = $derived(canManageModelLoadState);
 	let serverModel = $derived(singleModelName());
 
 	let isHighlightedCurrentModelActive = $derived.by(() => {
@@ -65,7 +68,8 @@
 	});
 
 	let isCurrentModelInCache = $derived.by(() => {
-		if (!usesSelectableModelList || !currentModel) return true;
+		if (!usesSelectableModelList || !currentModel || !shouldShowUnavailableCurrentModel)
+			return true;
 
 		return options.some((option) => option.model === currentModel);
 	});
@@ -78,8 +82,11 @@
 	let filteredOptions = $derived(filterModelOptions(options, searchTerm));
 
 	let groupedFilteredOptions = $derived(
-		groupModelOptions(filteredOptions, modelsStore.favoriteModelIds, (m) =>
-			canManageModelLoadState ? modelsStore.isModelLoaded(m) : false
+		groupModelOptions(
+			filteredOptions,
+			modelsStore.favoriteModelIds,
+			(m) => (canManageModelLoadState ? modelsStore.isModelLoaded(m) : false),
+			shouldGroupModelsByOrg
 		)
 	);
 
@@ -122,9 +129,11 @@
 				searchTerm = '';
 				highlightedIndex = -1;
 
-				modelsStore.fetchRouterModels().then(() => {
-					modelsStore.fetchModalitiesForLoadedModels();
-				});
+				if (canManageModelLoadState) {
+					modelsStore.fetchRouterModels().then(() => {
+						modelsStore.fetchModalitiesForLoadedModels();
+					});
+				}
 			} else {
 				isOpen = false;
 				searchTerm = '';
@@ -232,7 +241,7 @@
 			if (selected) return selected;
 		}
 
-		if (currentModel) {
+		if (currentModel && shouldShowUnavailableCurrentModel) {
 			if (!isCurrentModelInCache) {
 				return {
 					id: 'not-in-cache',
@@ -261,7 +270,7 @@
 			{t('models.loadingModels')}
 		</div>
 	{:else if options.length === 0 && usesSelectableModelList}
-		{#if currentModel}
+		{#if currentModel && shouldShowUnavailableCurrentModel}
 			<span
 				class={cn(
 					'inline-flex items-center gap-1.5 rounded-sm bg-muted-foreground/10 px-1.5 py-1 text-xs text-muted-foreground',
@@ -284,7 +293,7 @@
 				<DropdownMenu.Trigger
 					class={cn(
 						`llampart-model-selector-trigger inline-grid cursor-pointer grid-cols-[1fr_auto_1fr] items-center gap-1.5 rounded-sm bg-muted-foreground/10 px-1.5 py-1 text-xs transition hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60`,
-						!isCurrentModelInCache
+						!isCurrentModelInCache && shouldShowUnavailableCurrentModel
 							? 'bg-red-400/10 !text-red-400 hover:bg-red-400/20 hover:text-red-400'
 							: forceForegroundText
 								? 'text-foreground'
@@ -336,10 +345,11 @@
 						placeholder={t('models.searchModels')}
 						onSearchKeyDown={handleSearchKeyDown}
 						emptyMessage={t('models.noModelsFound')}
-						isEmpty={filteredOptions.length === 0 && isCurrentModelInCache}
+						isEmpty={filteredOptions.length === 0 &&
+							(isCurrentModelInCache || !shouldShowUnavailableCurrentModel)}
 					>
 						<div class="models-list">
-							{#if !isCurrentModelInCache && currentModel}
+							{#if !isCurrentModelInCache && currentModel && shouldShowUnavailableCurrentModel}
 								<!-- Show unavailable model as first option (disabled) -->
 								<button
 									type="button"
@@ -374,7 +384,8 @@
 									{isFav}
 									{showOrgName}
 									onSelect={handleSelect}
-									onInfoClick={handleInfoClick}
+									showLoadState={canManageModelLoadState}
+									onInfoClick={canShowModelProps ? handleInfoClick : undefined}
 									onMouseEnter={() => (highlightedIndex = flatIndex)}
 									onKeyDown={(e) => {
 										if (e.key === KeyboardKey.ENTER || e.key === KeyboardKey.SPACE) {
@@ -391,7 +402,7 @@
 								{activeId}
 								sectionHeaderClass="my-1.5 px-2 py-2 text-[13px] font-semibold text-muted-foreground/70 select-none"
 								onSelect={handleSelect}
-								onInfoClick={handleInfoClick}
+								onInfoClick={canShowModelProps ? handleInfoClick : undefined}
 								renderOption={modelOption}
 							/>
 						</div>

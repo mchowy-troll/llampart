@@ -21,6 +21,7 @@
  */
 
 import { ChatService, ToolsService } from '$lib/services';
+import { getApiProvider } from '$lib/services/providers';
 import { config } from '$lib/stores/settings.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
@@ -214,15 +215,18 @@ class AgenticStore {
 	}
 
 	getConfig(settings: SettingsConfigType, perChatOverrides?: McpServerOverride[]): AgenticConfig {
+		const provider = getApiProvider(String(settings.apiProvider ?? ''));
+		const supportsToolCalling = provider.capabilities.supportsOpenAiToolCalls;
 		const maxTurns = Number(settings.agenticMaxTurns) || DEFAULT_AGENTIC_CONFIG.maxTurns;
 		const maxToolPreviewLines =
 			Number(settings.agenticMaxToolPreviewLines) || DEFAULT_AGENTIC_CONFIG.maxToolPreviewLines;
 		const hasTools =
-			mcpStore.hasEnabledServers(perChatOverrides) ||
-			toolsStore.builtinTools.length > 0 ||
-			toolsStore.customTools.length > 0;
+			supportsToolCalling &&
+			(mcpStore.hasEnabledServers(perChatOverrides) ||
+				toolsStore.builtinTools.length > 0 ||
+				toolsStore.customTools.length > 0);
 		return {
-			enabled: hasTools && DEFAULT_AGENTIC_CONFIG.enabled,
+			enabled: supportsToolCalling && hasTools && DEFAULT_AGENTIC_CONFIG.enabled,
 			maxTurns,
 			maxToolPreviewLines
 		};
@@ -300,7 +304,11 @@ class AgenticStore {
 		this.setPendingPermission(conversationId, null);
 		this._permissionResolvers.delete(conversationId);
 
-		if (toolsStore.builtinTools.length === 0 && !toolsStore.loading) {
+		if (
+			toolsStore.supportsProviderTools &&
+			toolsStore.builtinTools.length === 0 &&
+			!toolsStore.loading
+		) {
 			await toolsStore.fetchBuiltinTools();
 		}
 

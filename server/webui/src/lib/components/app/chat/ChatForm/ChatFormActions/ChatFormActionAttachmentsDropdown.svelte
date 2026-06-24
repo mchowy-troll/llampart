@@ -21,6 +21,8 @@
 		hasVisionModality?: boolean;
 		hasMcpPromptsSupport?: boolean;
 		hasMcpResourcesSupport?: boolean;
+		showModelDrivenAttachmentOptions?: boolean;
+		showToolCallingOptions?: boolean;
 		onFileUpload?: () => void;
 		onSystemPromptClick?: () => void;
 		onMcpPromptClick?: () => void;
@@ -35,6 +37,8 @@
 		hasVisionModality = false,
 		hasMcpPromptsSupport = false,
 		hasMcpResourcesSupport = false,
+		showModelDrivenAttachmentOptions = true,
+		showToolCallingOptions = true,
 		onFileUpload,
 		onSystemPromptClick,
 		onMcpPromptClick,
@@ -59,7 +63,7 @@
 	let systemTooltipOpen = $state(false);
 
 	let mcpServers = $derived(mcpStore.getServersSorted().filter((s) => s.enabled));
-	let hasMcpServers = $derived(mcpServers.length > 0);
+	let hasMcpServers = $derived(showToolCallingOptions && mcpServers.length > 0);
 	let mcpSearchQuery = $state('');
 	let filteredMcpServers = $derived.by(() => {
 		const query = mcpSearchQuery.toLowerCase().trim();
@@ -139,7 +143,7 @@
 		systemTooltipOpen = false;
 
 		const timeout = window.setTimeout(() => {
-			if (!mcpServersSubmenuOpenedInSession) {
+			if (!mcpServersSubmenuOpenedInSession && showToolCallingOptions) {
 				attachmentMenuTooltipsEnabled = true;
 			}
 		}, 250);
@@ -174,7 +178,7 @@
 			align="start"
 			class="llampart-composer-menu-content llampart-composer-main-menu w-72 overflow-visible"
 		>
-			{#if hasVisionModality}
+			{#if showModelDrivenAttachmentOptions && hasVisionModality}
 				<DropdownMenu.Item
 					class="images-button flex cursor-pointer items-center gap-2"
 					onclick={() => onFileUpload?.()}
@@ -182,7 +186,7 @@
 					<FILE_TYPE_ICONS.image class="h-4 w-4" />
 					<span>{t('attachments.images')}</span>
 				</DropdownMenu.Item>
-			{:else}
+			{:else if showModelDrivenAttachmentOptions}
 				<Tooltip.Root
 					delayDuration={TOOLTIP_DELAY_DURATION}
 					bind:open={imagesTooltipOpen}
@@ -207,7 +211,7 @@
 				</Tooltip.Root>
 			{/if}
 
-			{#if hasAudioModality}
+			{#if showModelDrivenAttachmentOptions && hasAudioModality}
 				<DropdownMenu.Item
 					class="audio-button flex cursor-pointer items-center gap-2"
 					onclick={() => onFileUpload?.()}
@@ -215,7 +219,7 @@
 					<FILE_TYPE_ICONS.audio class="h-4 w-4" />
 					<span>{t('attachments.audioFiles')}</span>
 				</DropdownMenu.Item>
-			{:else}
+			{:else if showModelDrivenAttachmentOptions}
 				<Tooltip.Root
 					delayDuration={TOOLTIP_DELAY_DURATION}
 					bind:open={audioTooltipOpen}
@@ -301,93 +305,95 @@
 				</Tooltip.Content>
 			</Tooltip.Root>
 
-			<DropdownMenu.Separator />
+			{#if showToolCallingOptions}
+				<DropdownMenu.Separator />
 
-			<ChatFormActionToolsSubmenu
-				onSubmenuIntent={() => {
-					attachmentMenuTooltipsEnabled = false;
-					closeFirstLevelAttachmentTooltips();
-				}}
-			/>
+				<ChatFormActionToolsSubmenu
+					onSubmenuIntent={() => {
+						attachmentMenuTooltipsEnabled = false;
+						closeFirstLevelAttachmentTooltips();
+					}}
+				/>
 
-			<DropdownMenu.Sub>
-				<DropdownMenu.SubTrigger
-					class="llampart-composer-mcp-submenu-trigger flex w-full cursor-pointer items-center gap-2"
-					onpointerenter={handleMcpServersSubmenuIntent}
-					onfocus={handleMcpServersSubmenuIntent}
-					onclick={handleMcpServersSubmenuIntent}
-				>
-					<McpLogo class="h-4 w-4" />
-					<span>{t('mcp.servers')}</span>
-				</DropdownMenu.SubTrigger>
-
-				<DropdownMenu.SubContent
-					class="llampart-composer-menu-content llampart-composer-mcp-submenu w-80 max-w-[calc(100vw-1rem)] p-1.5"
-				>
-					<DropdownMenuSearchable
-						placeholder={t('mcp.searchServers')}
-						bind:searchValue={mcpSearchQuery}
-						emptyMessage={hasMcpServers ? t('mcp.noServersFound') : t('mcp.noServersConfigured')}
-						isEmpty={filteredMcpServers.length === 0}
+				<DropdownMenu.Sub>
+					<DropdownMenu.SubTrigger
+						class="llampart-composer-mcp-submenu-trigger flex w-full cursor-pointer items-center gap-2"
+						onpointerenter={handleMcpServersSubmenuIntent}
+						onfocus={handleMcpServersSubmenuIntent}
+						onclick={handleMcpServersSubmenuIntent}
 					>
-						<div class="llampart-mcp-server-list max-h-64 overflow-y-auto">
-							{#each filteredMcpServers as server (server.id)}
-								{@const healthState = mcpStore.getHealthCheckState(server.id)}
-								{@const hasError = healthState.status === HealthCheckStatus.ERROR}
-								{@const isEnabledForChat = isServerEnabledForChat(server.id)}
+						<McpLogo class="h-4 w-4" />
+						<span>{t('mcp.servers')}</span>
+					</DropdownMenu.SubTrigger>
 
-								<button
-									type="button"
-									class="llampart-mcp-server-item flex w-full items-center justify-between gap-2 rounded-xl px-2 py-2 text-left transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-									onclick={() => !hasError && toggleServerForChat(server.id)}
-									disabled={hasError}
-								>
-									<div class="flex min-w-0 flex-1 items-center gap-2">
-										{#if mcpStore.getServerFavicon(server.id)}
-											<img
-												src={mcpStore.getServerFavicon(server.id)}
-												alt=""
-												class="h-4 w-4 shrink-0 rounded-sm"
-												onerror={(e) => {
-													(e.currentTarget as HTMLImageElement).style.display = 'none';
-												}}
-											/>
-										{/if}
+					<DropdownMenu.SubContent
+						class="llampart-composer-menu-content llampart-composer-mcp-submenu w-80 max-w-[calc(100vw-1rem)] p-1.5"
+					>
+						<DropdownMenuSearchable
+							placeholder={t('mcp.searchServers')}
+							bind:searchValue={mcpSearchQuery}
+							emptyMessage={hasMcpServers ? t('mcp.noServersFound') : t('mcp.noServersConfigured')}
+							isEmpty={filteredMcpServers.length === 0}
+						>
+							<div class="llampart-mcp-server-list max-h-64 overflow-y-auto">
+								{#each filteredMcpServers as server (server.id)}
+									{@const healthState = mcpStore.getHealthCheckState(server.id)}
+									{@const hasError = healthState.status === HealthCheckStatus.ERROR}
+									{@const isEnabledForChat = isServerEnabledForChat(server.id)}
 
-										<span class="truncate text-sm">{getServerLabel(server)}</span>
-
-										{#if hasError}
-											<span
-												class="shrink-0 rounded bg-destructive/15 px-1.5 py-0.5 text-xs text-destructive"
-											>
-												{t('mcp.error')}
-											</span>
-										{/if}
-									</div>
-
-									<Switch
-										class="llampart-frosted-glass-switch"
-										checked={isEnabledForChat}
+									<button
+										type="button"
+										class="llampart-mcp-server-item flex w-full items-center justify-between gap-2 rounded-xl px-2 py-2 text-left transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+										onclick={() => !hasError && toggleServerForChat(server.id)}
 										disabled={hasError}
-										onclick={(e: MouseEvent) => e.stopPropagation()}
-										onCheckedChange={() => toggleServerForChat(server.id)}
-									/>
-								</button>
-							{/each}
-						</div>
+									>
+										<div class="flex min-w-0 flex-1 items-center gap-2">
+											{#if mcpStore.getServerFavicon(server.id)}
+												<img
+													src={mcpStore.getServerFavicon(server.id)}
+													alt=""
+													class="h-4 w-4 shrink-0 rounded-sm"
+													onerror={(e) => {
+														(e.currentTarget as HTMLImageElement).style.display = 'none';
+													}}
+												/>
+											{/if}
 
-						{#snippet footer()}
-							<DropdownMenu.Item
-								class="flex cursor-pointer items-center gap-2"
-								onclick={handleMcpSettingsClick}
-							>
-								<Settings class="h-4 w-4" />
-								<span>{t('mcp.manageServers')}</span>
-							</DropdownMenu.Item>
-						{/snippet}
-					</DropdownMenuSearchable>
-				</DropdownMenu.SubContent>
-			</DropdownMenu.Sub>
+											<span class="truncate text-sm">{getServerLabel(server)}</span>
+
+											{#if hasError}
+												<span
+													class="shrink-0 rounded bg-destructive/15 px-1.5 py-0.5 text-xs text-destructive"
+												>
+													{t('mcp.error')}
+												</span>
+											{/if}
+										</div>
+
+										<Switch
+											class="llampart-frosted-glass-switch"
+											checked={isEnabledForChat}
+											disabled={hasError}
+											onclick={(e: MouseEvent) => e.stopPropagation()}
+											onCheckedChange={() => toggleServerForChat(server.id)}
+										/>
+									</button>
+								{/each}
+							</div>
+
+							{#snippet footer()}
+								<DropdownMenu.Item
+									class="flex cursor-pointer items-center gap-2"
+									onclick={handleMcpSettingsClick}
+								>
+									<Settings class="h-4 w-4" />
+									<span>{t('mcp.manageServers')}</span>
+								</DropdownMenu.Item>
+							{/snippet}
+						</DropdownMenuSearchable>
+					</DropdownMenu.SubContent>
+				</DropdownMenu.Sub>
+			{/if}
 
 			{#if hasMcpPromptsSupport}
 				<DropdownMenu.Item

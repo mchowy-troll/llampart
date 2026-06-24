@@ -11,7 +11,7 @@
 		sectionHeaderClass?: string;
 		orgHeaderClass?: string;
 		onSelect: (modelId: string) => void;
-		onInfoClick: (modelName: string) => void;
+		onInfoClick?: (modelName: string) => void;
 		renderOption?: import('svelte').Snippet<[ModelItem, boolean]>;
 	}
 
@@ -72,7 +72,7 @@
 				<p class={orgHeaderClass}>{group.orgName}</p>
 			{/if}
 			{#each group.items as item (item.option.id)}
-				{@render render(item, false)}
+				{@render render(item, !group.orgName)}
 			{/each}
 		{/each}
 	</section>

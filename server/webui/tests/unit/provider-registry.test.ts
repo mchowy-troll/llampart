@@ -34,8 +34,13 @@ describe('api provider registry', () => {
 
 		const openAiCapabilities = getApiProviderCapabilities(API_PROVIDER_IDS.OPENAI_COMPATIBLE);
 		expect(openAiCapabilities.supportsServerProps).toBe(false);
+		expect(openAiCapabilities.supportsModelLoadUnload).toBe(false);
+		expect(openAiCapabilities.supportsModelProps).toBe(false);
 		expect(openAiCapabilities.supportsTopK).toBe(false);
 		expect(openAiCapabilities.supportsPreEncode).toBe(false);
+		expect(openAiCapabilities.supportsLlamaReasoningControls).toBe(false);
+		expect(openAiCapabilities.supportsOpenAiToolCalls).toBe(false);
+		expect(openAiCapabilities.supportsCustomJsonPayload).toBe(false);
 		expect(openAiCapabilities.supportsStreamUsage).toBe(true);
 		expect(openAiCapabilities.requiresModelInChatRequest).toBe(true);
 	});
