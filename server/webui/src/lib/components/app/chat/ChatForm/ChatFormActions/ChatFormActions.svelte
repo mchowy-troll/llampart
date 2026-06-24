@@ -15,6 +15,7 @@
 	import { FileTypeCategory } from '$lib/enums';
 	import { getFileTypeCategory } from '$lib/utils';
 	import { config } from '$lib/stores/settings.svelte';
+	import { getApiProvider } from '$lib/services/providers';
 	import { modelsStore, modelOptions, selectedModelId } from '$lib/stores/models.svelte';
 	import { isRouterMode, serverError } from '$lib/stores/server.svelte';
 	import { chatStore } from '$lib/stores/chat.svelte';
@@ -54,6 +55,17 @@
 	}: Props = $props();
 
 	let currentConfig = $derived(config());
+	let providerCapabilities = $derived(
+		getApiProvider(String(currentConfig.apiProvider ?? '')).capabilities
+	);
+	let canUseToolCalling = $derived(providerCapabilities.supportsOpenAiToolCalls === true);
+	let canUseLlamaReasoningControls = $derived(
+		providerCapabilities.supportsLlamaReasoningControls === true
+	);
+	let canShowModelDrivenAttachmentOptions = $derived(
+		providerCapabilities.supportsModelProps === true ||
+			providerCapabilities.supportsVisionInput === true
+	);
 	let isRouter = $derived(isRouterMode());
 	let usesSelectableModelList = $derived(modelsStore.usesSelectableModelList);
 	let isOffline = $derived(!!serverError());
@@ -119,7 +131,7 @@
 		if (activeModelId) {
 			void modelPropsVersion;
 
-			return modelsStore.modelSupportsAudio(activeModelId);
+			return canShowModelDrivenAttachmentOptions && modelsStore.modelSupportsAudio(activeModelId);
 		}
 
 		return false;
@@ -129,7 +141,7 @@
 		if (activeModelId) {
 			void modelPropsVersion;
 
-			return modelsStore.modelSupportsVision(activeModelId);
+			return canShowModelDrivenAttachmentOptions && modelsStore.modelSupportsVision(activeModelId);
 		}
 
 		return false;
@@ -139,7 +151,11 @@
 		uploadedFiles.some((file) => getFileTypeCategory(file.type) === FileTypeCategory.AUDIO)
 	);
 	let shouldShowRecordButton = $derived(
-		hasAudioModality && !hasText && !hasAudioAttachments && currentConfig.autoMicOnEmpty
+		canShowModelDrivenAttachmentOptions &&
+			hasAudioModality &&
+			!hasText &&
+			!hasAudioAttachments &&
+			currentConfig.autoMicOnEmpty
 	);
 
 	let hasModelSelected = $derived(
@@ -180,12 +196,16 @@
 	const chatSettingsDialog = getChatSettingsDialogContext();
 
 	let hasMcpPromptsSupport = $derived.by(() => {
+		if (!canUseToolCalling) return false;
+
 		const perChatOverrides = conversationsStore.getAllMcpServerOverrides();
 
 		return mcpStore.hasPromptsCapability(perChatOverrides);
 	});
 
 	let hasMcpResourcesSupport = $derived.by(() => {
+		if (!canUseToolCalling) return false;
+
 		const perChatOverrides = conversationsStore.getAllMcpServerOverrides();
 
 		return mcpStore.hasResourcesCapability(perChatOverrides);
@@ -200,6 +220,8 @@
 			{hasVisionModality}
 			{hasMcpPromptsSupport}
 			{hasMcpResourcesSupport}
+			showModelDrivenAttachmentOptions={canShowModelDrivenAttachmentOptions}
+			showToolCallingOptions={canUseToolCalling}
 			{onFileUpload}
 			{onSystemPromptClick}
 			{onMcpPromptClick}
@@ -207,14 +229,18 @@
 			onMcpSettingsClick={() => chatSettingsDialog.open(SETTINGS_SECTION_TITLES.MCP)}
 		/>
 
-		<McpServersSelector
-			{disabled}
-			onSettingsClick={() => chatSettingsDialog.open(SETTINGS_SECTION_TITLES.MCP)}
-		/>
+		{#if canUseToolCalling}
+			<McpServersSelector
+				{disabled}
+				onSettingsClick={() => chatSettingsDialog.open(SETTINGS_SECTION_TITLES.MCP)}
+			/>
+		{/if}
 	</div>
 
 	<div class="ml-auto flex items-center gap-1.5">
-		<ChatFormReasoningToggle />
+		{#if canUseLlamaReasoningControls}
+			<ChatFormReasoningToggle />
+		{/if}
 
 		<ModelsSelector
 			disabled={disabled || isOffline}

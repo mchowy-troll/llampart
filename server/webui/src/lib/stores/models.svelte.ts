@@ -1,9 +1,11 @@
+import { browser } from '$app/environment';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
 import { ServerModelStatus, ModelModality } from '$lib/enums';
 import { ModelsService } from '$lib/services/models.service';
 import { PropsService } from '$lib/services/props.service';
 import { getApiProvider } from '$lib/services/providers';
+import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers';
 import { config } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { detectThinkingSupport, detectThinkingSupportWithReason, TTLCache } from '$lib/utils';
@@ -62,6 +64,8 @@ class ModelsStore {
 	selectedModelId = $state<string | null>(null);
 	selectedModelName = $state<string | null>(null);
 
+	private selectedModelsBySourceKey = $state<Record<string, { id: string; model: string }>>({});
+
 	private modelUsage = $state<Map<string, SvelteSet<string>>>(new Map());
 	private modelLoadingStates = new SvelteMap<string, boolean>();
 
@@ -94,6 +98,44 @@ class ModelsStore {
 
 	private get currentProvider() {
 		return getApiProvider(String(config().apiProvider ?? ''));
+	}
+
+	private get currentProviderId() {
+		const providerId = config().apiProvider;
+
+		return isApiProviderId(providerId) ? providerId : API_PROVIDER_IDS.LLAMA_SERVER;
+	}
+
+	private getFavoriteStorageKey(providerId = this.currentProviderId): string {
+		return `${FAVORITE_MODELS_LOCALSTORAGE_KEY}.${providerId}`;
+	}
+
+	private saveCurrentSelectionForSource(): void {
+		if (!this.loadedModelListSourceKey || !this.selectedModelId || !this.selectedModelName) return;
+
+		this.selectedModelsBySourceKey = {
+			...this.selectedModelsBySourceKey,
+			[this.loadedModelListSourceKey]: {
+				id: this.selectedModelId,
+				model: this.selectedModelName
+			}
+		};
+	}
+
+	private restoreSelectionForSource(sourceKey: string): boolean {
+		const cachedSelection = this.selectedModelsBySourceKey[sourceKey];
+		if (!cachedSelection) return false;
+
+		const option = this.models.find(
+			(model) => model.id === cachedSelection.id || model.model === cachedSelection.model
+		);
+
+		if (!option) return false;
+
+		this.selectedModelId = option.id;
+		this.selectedModelName = option.model;
+
+		return true;
 	}
 
 	get modelListSourceKey(): string {
@@ -362,10 +404,12 @@ class ModelsStore {
 		const sourceChanged = this.loadedModelListSourceKey !== sourceKey;
 
 		if (sourceChanged) {
+			this.saveCurrentSelectionForSource();
 			this.models = [];
 			this.routerModels = [];
 			this.selectedModelId = null;
 			this.selectedModelName = null;
+			this.favoriteModelIds = new SvelteSet(this.loadFavoritesFromStorage(provider.id));
 			this.modelPropsCache.clear();
 			this.modelPropsFetching.clear();
 		}
@@ -423,6 +467,10 @@ class ModelsStore {
 				this.models = this.models.map((model, index) =>
 					index === 0 ? { ...model, modalities } : model
 				);
+			}
+
+			if (!this.selectedModelId) {
+				this.restoreSelectionForSource(sourceKey);
 			}
 
 			if (
@@ -594,6 +642,10 @@ class ModelsStore {
 		try {
 			this.selectedModelId = option.id;
 			this.selectedModelName = option.model;
+			this.selectedModelsBySourceKey = {
+				...this.selectedModelsBySourceKey,
+				[this.modelListSourceKey]: { id: option.id, model: option.model }
+			};
 		} finally {
 			this.updating = false;
 		}
@@ -608,6 +660,10 @@ class ModelsStore {
 		if (option) {
 			this.selectedModelId = option.id;
 			this.selectedModelName = option.model;
+			this.selectedModelsBySourceKey = {
+				...this.selectedModelsBySourceKey,
+				[this.modelListSourceKey]: { id: option.id, model: option.model }
+			};
 		}
 	}
 
@@ -808,17 +864,32 @@ class ModelsStore {
 		this.favoriteModelIds = next;
 
 		try {
-			localStorage.setItem(FAVORITE_MODELS_LOCALSTORAGE_KEY, JSON.stringify([...next]));
+			if (!browser) return;
+
+			localStorage.setItem(this.getFavoriteStorageKey(), JSON.stringify([...next]));
 		} catch {
 			toast.error('Failed to save favorite models to local storage');
 		}
 	}
 
-	private loadFavoritesFromStorage(): Set<string> {
+	private loadFavoritesFromStorage(providerId = this.currentProviderId): Set<string> {
 		try {
-			const raw = localStorage.getItem(FAVORITE_MODELS_LOCALSTORAGE_KEY);
+			if (!browser) return new Set();
 
-			return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
+			const providerKey = this.getFavoriteStorageKey(providerId);
+			const raw = localStorage.getItem(providerKey);
+
+			if (raw) return new Set(JSON.parse(raw) as string[]);
+
+			// Migration: keep old favorites only for llama-server, so OpenAI-compatible
+			// starts with its own provider-owned favorites list.
+			if (providerId === API_PROVIDER_IDS.LLAMA_SERVER) {
+				const legacyRaw = localStorage.getItem(FAVORITE_MODELS_LOCALSTORAGE_KEY);
+
+				return legacyRaw ? new Set(JSON.parse(legacyRaw) as string[]) : new Set();
+			}
+
+			return new Set();
 		} catch {
 			toast.error('Failed to load favorite models from local storage');
 
@@ -854,6 +925,7 @@ class ModelsStore {
 		this.modelPropsCache.clear();
 		this.modelPropsFetching.clear();
 		this.loadedModelListSourceKey = null;
+		this.selectedModelsBySourceKey = {};
 	}
 
 	/**

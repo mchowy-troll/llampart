@@ -9,6 +9,7 @@ import type {
 	SettingsFieldType
 } from '$lib/enums';
 import type { Icon } from '@lucide/svelte';
+import type { ProviderCapabilityKey } from '$lib/types/provider';
 
 export type SettingsConfigValue = string | number | boolean | undefined;
 
@@ -58,6 +59,7 @@ export interface SettingsFieldConfig {
 	cluster?: SettingsFieldCluster;
 	hideHelp?: boolean;
 	options?: Array<{ value: string; label: string; icon?: typeof Icon }>;
+	requiredProviderCapabilities?: ProviderCapabilityKey[];
 }
 
 export interface SettingsFieldGroup {
@@ -69,6 +71,7 @@ export interface SettingsFieldGroup {
 	halfWidth?: boolean;
 	framed?: boolean;
 	layout?: SettingsFieldGroupLayout;
+	requiredProviderCapabilities?: ProviderCapabilityKey[];
 }
 
 export interface SettingsChatServiceOptions {

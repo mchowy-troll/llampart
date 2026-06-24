@@ -34,9 +34,12 @@
 import { browser } from '$app/environment';
 import {
 	CONFIG_LOCALSTORAGE_KEY,
+	PROVIDER_CONNECTION_SETTING_KEYS,
 	SETTING_CONFIG_DEFAULT,
 	USER_OVERRIDES_LOCALSTORAGE_KEY
 } from '$lib/constants';
+import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers';
+import type { ApiProviderId } from '$lib/constants/api-providers';
 import { ParameterSyncService } from '$lib/services/parameter-sync.service';
 import { serverStore } from '$lib/stores/server.svelte';
 import {
@@ -78,6 +81,64 @@ class SettingsStore {
 		return ParameterSyncService.extractServerDefaults(serverParams, webuiSettings);
 	}
 
+	private normalizeProviderId(providerId: unknown): ApiProviderId {
+		return isApiProviderId(providerId) ? providerId : API_PROVIDER_IDS.LLAMA_SERVER;
+	}
+
+	private getConnectionKeys(providerId: unknown) {
+		return PROVIDER_CONNECTION_SETTING_KEYS[this.normalizeProviderId(providerId)];
+	}
+
+	private withSyncedProviderConnection(
+		config: SettingsConfigType,
+		updatedKeys: Set<string> = new Set()
+	): SettingsConfigType {
+		const next = { ...config };
+		const activeProvider = this.normalizeProviderId(next.apiProvider);
+		const activeKeys = this.getConnectionKeys(activeProvider);
+
+		for (const providerId of Object.values(API_PROVIDER_IDS)) {
+			const keys = this.getConnectionKeys(providerId);
+
+			if (next[keys.serverBaseUrl] === undefined) {
+				next[keys.serverBaseUrl] = '';
+			}
+
+			if (next[keys.apiKey] === undefined) {
+				next[keys.apiKey] = '';
+			}
+		}
+
+		if (updatedKeys.has('serverBaseUrl')) {
+			next[activeKeys.serverBaseUrl] = next.serverBaseUrl;
+		}
+
+		if (updatedKeys.has('apiKey')) {
+			next[activeKeys.apiKey] = next.apiKey;
+		}
+
+		// Migration from the previously shared connection fields: preserve the current
+		// provider's address/key in its provider-owned profile without copying one
+		// provider's values into another when only apiProvider changes.
+		if (!updatedKeys.has('apiProvider')) {
+			if (
+				!String(next[activeKeys.serverBaseUrl] ?? '').trim() &&
+				String(next.serverBaseUrl ?? '').trim()
+			) {
+				next[activeKeys.serverBaseUrl] = next.serverBaseUrl;
+			}
+
+			if (!String(next[activeKeys.apiKey] ?? '').trim() && String(next.apiKey ?? '').trim()) {
+				next[activeKeys.apiKey] = next.apiKey;
+			}
+		}
+
+		next.serverBaseUrl = next[activeKeys.serverBaseUrl];
+		next.apiKey = next[activeKeys.apiKey];
+
+		return next;
+	}
+
 	constructor() {
 		if (browser) {
 			this.initialize();
@@ -117,10 +178,10 @@ class SettingsStore {
 			const savedVal = JSON.parse(storedConfigRaw || '{}');
 
 			// Merge with defaults to prevent breaking changes
-			this.config = {
+			this.config = this.withSyncedProviderConnection({
 				...SETTING_CONFIG_DEFAULT,
 				...savedVal
-			};
+			} as SettingsConfigType);
 
 			// Load user overrides
 			const savedOverrides = JSON.parse(
@@ -156,7 +217,13 @@ class SettingsStore {
 	 * @param value - The new value for the configuration key
 	 */
 	updateConfig<K extends keyof SettingsConfigType>(key: K, value: SettingsConfigType[K]): void {
-		this.config[key] = value;
+		this.config = this.withSyncedProviderConnection(
+			{
+				...this.config,
+				[key]: value
+			} as SettingsConfigType,
+			new Set([key as string])
+		);
 
 		if (ParameterSyncService.canSyncParameter(key as string)) {
 			const propsDefaults = this.getServerDefaults();
@@ -182,7 +249,13 @@ class SettingsStore {
 	 * @param updates - Object containing the configuration updates
 	 */
 	updateMultipleConfig(updates: Partial<SettingsConfigType>) {
-		Object.assign(this.config, updates);
+		this.config = this.withSyncedProviderConnection(
+			{
+				...this.config,
+				...updates
+			} as SettingsConfigType,
+			new Set(Object.keys(updates))
+		);
 
 		const propsDefaults = this.getServerDefaults();
 

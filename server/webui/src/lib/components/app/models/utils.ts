@@ -33,7 +33,8 @@ export function filterModelOptions(options: ModelOption[], searchTerm: string): 
 export function groupModelOptions(
 	filteredOptions: ModelOption[],
 	favoriteIds: Set<string>,
-	isModelLoaded: (model: string) => boolean
+	isModelLoaded: (model: string) => boolean,
+	groupByOrg = true
 ): GroupedModelOptions {
 	// Loaded models
 	const loaded: ModelItem[] = [];
@@ -62,7 +63,7 @@ export function groupModelOptions(
 		const option = filteredOptions[i];
 		if (loadedModelIds.has(option.model) || favoriteIds.has(option.model)) continue;
 
-		const key = option.parsedId?.orgName ?? '';
+		const key = groupByOrg ? (option.parsedId?.orgName ?? '') : '';
 		if (!orgGroups.has(key)) orgGroups.set(key, []);
 		orgGroups.get(key)!.push({ option, flatIndex: i });
 	}

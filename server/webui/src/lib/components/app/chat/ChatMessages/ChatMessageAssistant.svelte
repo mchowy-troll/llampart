@@ -211,6 +211,7 @@
 	);
 
 	let displayedModel = $derived(message.model ?? null);
+	let canShowModelProps = $derived(modelsStore.supportsModelProps);
 
 	let isCurrentlyLoading = $derived(isLoading());
 	let isStreaming = $derived(isChatStreaming());
@@ -275,7 +276,7 @@
 	}
 
 	function handleShowModelInformation() {
-		if (!displayedModel) return;
+		if (!displayedModel || !canShowModelProps) return;
 
 		infoModelId = displayedModel;
 		showModelDialog = true;
@@ -384,13 +385,15 @@
 											<ModelBadge model={displayedModel || undefined} onclick={handleCopyModel} />
 										{/if}
 
-										<ActionIcon
-											icon={Info}
-											tooltip={t('models.modelInformation')}
-											iconSize="h-2.5 w-2.5"
-											class="llampart-assistant-model-info-action h-3 w-3 hover:text-foreground"
-											onclick={handleShowModelInformation}
-										/>
+										{#if canShowModelProps}
+											<ActionIcon
+												icon={Info}
+												tooltip={t('models.modelInformation')}
+												iconSize="h-2.5 w-2.5"
+												class="llampart-assistant-model-info-action h-3 w-3 hover:text-foreground"
+												onclick={handleShowModelInformation}
+											/>
+										{/if}
 
 										{#if currentConfig.showMessageStats && message.timings && message.timings.predicted_n && message.timings.predicted_ms}
 											{@const agentic = message.timings.agentic}
@@ -505,7 +508,9 @@
 	{/if}
 </div>
 
-<DialogModelInformation bind:open={showModelDialog} modelId={infoModelId} />
+{#if canShowModelProps}
+	<DialogModelInformation bind:open={showModelDialog} modelId={infoModelId} />
+{/if}
 
 <style>
 	.llampart-assistant-message {

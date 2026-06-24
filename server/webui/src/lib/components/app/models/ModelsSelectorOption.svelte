@@ -48,12 +48,17 @@
 		return (model?.status?.value as ServerModelStatus) ?? null;
 	});
 	let isOperationInProgress = $derived(modelsStore.isModelOperationInProgress(option.model));
-	let isFailed = $derived(serverStatus === ServerModelStatus.FAILED);
-	let isSleeping = $derived(serverStatus === ServerModelStatus.SLEEPING);
+	let shouldShowLoadState = $derived(showLoadState);
+	let isFailed = $derived(shouldShowLoadState && serverStatus === ServerModelStatus.FAILED);
+	let isSleeping = $derived(shouldShowLoadState && serverStatus === ServerModelStatus.SLEEPING);
 	let isLoaded = $derived(
-		(serverStatus === ServerModelStatus.LOADED || isSleeping) && !isOperationInProgress
+		shouldShowLoadState &&
+			(serverStatus === ServerModelStatus.LOADED || isSleeping) &&
+			!isOperationInProgress
 	);
-	let isLoading = $derived(serverStatus === ServerModelStatus.LOADING || isOperationInProgress);
+	let isLoading = $derived(
+		shouldShowLoadState && (serverStatus === ServerModelStatus.LOADING || isOperationInProgress)
+	);
 </script>
 
 <div
@@ -96,7 +101,7 @@
 					class="h-3 w-3 hover:text-foreground"
 					onclick={() => modelsStore.toggleFavorite(option.model)}
 				/>
-			{:else if showLoadState}
+			{:else}
 				<ActionIcon
 					iconSize="h-2.5 w-2.5"
 					icon={Heart}
@@ -118,9 +123,9 @@
 			{/if}
 		</div>
 
-		{#if isLoading}
+		{#if shouldShowLoadState && isLoading}
 			<Loader2 class="llampart-model-loading-icon h-4 w-4 animate-spin text-muted-foreground" />
-		{:else if isFailed}
+		{:else if shouldShowLoadState && isFailed}
 			<div class="flex w-4 items-center justify-center">
 				<CircleAlert class="h-3.5 w-3.5 text-red-500 group-hover:hidden" />
 
@@ -136,7 +141,7 @@
 					/>
 				</div>
 			</div>
-		{:else if isSleeping}
+		{:else if shouldShowLoadState && isSleeping}
 			<div class="flex w-4 items-center justify-center">
 				<span class="h-2 w-2 rounded-full bg-orange-400 group-hover:hidden"></span>
 
@@ -153,7 +158,7 @@
 					/>
 				</div>
 			</div>
-		{:else if isLoaded}
+		{:else if shouldShowLoadState && isLoaded}
 			<div class="flex w-4 items-center justify-center">
 				<span class="h-2 w-2 rounded-full bg-green-500 group-hover:hidden"></span>
 
@@ -169,7 +174,7 @@
 					/>
 				</div>
 			</div>
-		{:else}
+		{:else if shouldShowLoadState}
 			<div class="flex w-4 items-center justify-center">
 				<span class="h-2 w-2 rounded-full bg-muted-foreground/50 group-hover:hidden"></span>
 
