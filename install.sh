@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-INSTALLER_VERSION="0.1.4"
+INSTALLER_VERSION="0.1.5"
 APP_NAME="llampart"
 REPO_OWNER="mchowy-troll"
 REPO_NAME="llampart"
@@ -237,6 +237,15 @@ success() { printf '%s\n' "$(green "OK") $*"; }
 warn() { printf '%s\n' "$(yellow "WARNING") $*"; }
 fatal() { printf '%s\n' "$(red "ERROR") $*" >&2; exit 1; }
 
+read_interactive() {
+  local target_var="$1"
+  if [[ -r /dev/tty ]]; then
+    IFS= read -r "$target_var" </dev/tty || fatal "Interactive input is unavailable. Re-run from a terminal or pass --yes with explicit options."
+  else
+    IFS= read -r "$target_var" || fatal "Interactive input is unavailable. Re-run from a terminal or pass --yes with explicit options."
+  fi
+}
+
 tr_msg() {
   local key="$1"
   case "${LANG_CODE:-en}:$key" in
@@ -329,7 +338,7 @@ choose_language() {
   local choice=""
   while true; do
     printf "> "
-    read -r choice
+    read_interactive choice
     case "$choice" in
       1|en|EN|English|english) LANG_CODE="en"; break ;;
       2|pl|PL|Polski|polski) LANG_CODE="pl"; break ;;
@@ -354,7 +363,7 @@ confirm() {
   fi
   local answer=""
   printf "%s %s " "$prompt" "$suffix"
-  read -r answer
+  read_interactive answer
   case "$answer" in
     "") [[ "$default_yes" == "1" ]] ;;
     y|Y|yes|YES|Yes|tak|TAK|t|T|ja|JA|sí|si|SI|oui|OUI) return 0 ;;
@@ -523,7 +532,7 @@ determine_mode() {
     local choice=""
     while true; do
       printf "> "
-      read -r choice
+      read_interactive choice
       case "$choice" in
         1) MODE="update"; break ;;
         2) MODE="reinstall"; break ;;
@@ -632,7 +641,7 @@ prompt_public_port() {
         value="$default"
       else
         printf "%s [default: %s]: " "$(tr_msg port_prompt)" "$default"
-        read -r value
+        read_interactive value
         value="${value:-$default}"
       fi
     fi
@@ -669,7 +678,7 @@ prompt_backend_port() {
         value="$default"
       else
         printf "%s [default: %s]: " "$(tr_msg backend_port_prompt)" "$default"
-        read -r value
+        read_interactive value
         value="${value:-$default}"
       fi
     fi
@@ -1514,7 +1523,7 @@ perform_install_like() {
       local choice=""
       while true; do
         printf "> "
-        read -r choice
+        read_interactive choice
         case "$choice" in
           1) MODE="reinstall"; break ;;
           2) MODE="configure"; perform_configure; return 0 ;;
