@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-INSTALLER_VERSION="0.1.5"
+INSTALLER_VERSION="0.1.7"
 APP_NAME="llampart"
 REPO_OWNER="mchowy-troll"
 REPO_NAME="llampart"
@@ -36,7 +36,7 @@ MODE=""
 VERSION_OVERRIDE="${LLAMPART_VERSION:-}"
 LLAMPART_PORT="${LLAMPART_PORT:-}"
 LLAMA_SERVER_PORT="${LLAMPART_LLAMA_SERVER_PORT:-}"
-BACKEND_HOST="${LLAMPART_BACKEND_HOST:-$DEFAULT_BACKEND_HOST}"
+BACKEND_HOST="${LLAMPART_BACKEND_HOST:-}"
 LANG_CODE="${LLAMPART_LANGUAGE:-}"
 ASSUME_YES="${LLAMPART_ASSUME_YES:-0}"
 DRY_RUN="${LLAMPART_DRY_RUN:-0}"
@@ -129,6 +129,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
+require_option_value() {
+  local option="$1"
+  local value="${2:-}"
+  if [[ -z "$value" || "$value" == --* ]]; then
+    fatal "Missing value for ${option}."
+  fi
+}
+
 parse_args() {
   if [[ -n "${LLAMPART_INSTALL_MODE:-}" ]]; then
     MODE="$LLAMPART_INSTALL_MODE"
@@ -141,23 +149,28 @@ parse_args() {
         shift
         ;;
       --version)
-        VERSION_OVERRIDE="${2:-}"
+        require_option_value "$1" "${2:-}"
+        VERSION_OVERRIDE="$2"
         shift 2
         ;;
       --port)
-        LLAMPART_PORT="${2:-}"
+        require_option_value "$1" "${2:-}"
+        LLAMPART_PORT="$2"
         shift 2
         ;;
       --llama-server-port)
-        LLAMA_SERVER_PORT="${2:-}"
+        require_option_value "$1" "${2:-}"
+        LLAMA_SERVER_PORT="$2"
         shift 2
         ;;
       --backend-host)
-        BACKEND_HOST="${2:-}"
+        require_option_value "$1" "${2:-}"
+        BACKEND_HOST="$2"
         shift 2
         ;;
       --language)
-        LANG_CODE="${2:-}"
+        require_option_value "$1" "${2:-}"
+        LANG_CODE="$2"
         shift 2
         ;;
       --skip-caddy-install)
@@ -173,7 +186,8 @@ parse_args() {
         shift
         ;;
       --keep-releases)
-        KEEP_RELEASES="${2:-}"
+        require_option_value "$1" "${2:-}"
+        KEEP_RELEASES="$2"
         shift 2
         ;;
       --purge)
@@ -399,11 +413,12 @@ init_logging() {
   if [[ "$DRY_RUN" == "1" ]]; then
     return 0
   fi
-  ensure_sudo
-  run_priv mkdir -p "$LOG_DIR"
-  LOG_FILE="${LOG_DIR}/install-${TIMESTAMP}.log"
-  run_priv touch "$LOG_FILE"
-  run_priv chmod 644 "$LOG_FILE"
+
+  # Keep the live log user-writable. In piped installs (`curl | bash`), the
+  # installer initially runs as the normal user; writing through tee directly
+  # into /var/log would fail even if the file was created with sudo.
+  LOG_FILE="$(mktemp -t "llampart-installer-${TIMESTAMP}.XXXXXXXX.log")"
+  chmod 600 "$LOG_FILE" || true
   exec > >(tee -a "$LOG_FILE") 2>&1
 }
 
@@ -931,10 +946,14 @@ validate_existing_caddy_config() {
   fi
   if priv_test -f "$CADDYFILE"; then
     info "Validating existing Caddy configuration before editing..."
-    if ! "${SUDO[@]}" caddy validate --config "$CADDYFILE" >/tmp/llampart-caddy-validate-before.log 2>&1; then
-      cat /tmp/llampart-caddy-validate-before.log >&2 || true
+    local validation_log=""
+    validation_log="$(mktemp -t llampart-caddy-validate-before-XXXXXXXX.log)"
+    if ! "${SUDO[@]}" caddy validate --config "$CADDYFILE" >"$validation_log" 2>&1; then
+      cat "$validation_log" >&2 || true
+      rm -f "$validation_log" || true
       fatal "Existing Caddy configuration is invalid. Not editing Caddy files."
     fi
+    rm -f "$validation_log" || true
   fi
 }
 
@@ -1281,15 +1300,19 @@ lan_urls() {
   if ! command -v ip >/dev/null 2>&1; then
     return 0
   fi
-  ip -o -4 addr show scope global 2>/dev/null \
-    | awk '{print $2, $4}' \
-    | while read -r iface cidr; do
-        case "$iface" in
-          lo|docker*|br-*|veth*|virbr*|tun*|wg*|zt*|tailscale*) continue ;;
-        esac
-        ipaddr="${cidr%%/*}"
-        [[ -n "$ipaddr" ]] && printf 'http://%s:%s/#/\n' "$ipaddr" "$LLAMPART_PORT"
-      done
+  ip -o -4 addr show scope global 2>/dev/null | awk -v port="$LLAMPART_PORT" '
+    {
+      iface = $2
+      cidr = $4
+      if (iface ~ /^(lo|docker|br-|veth|virbr|tun|wg|zt|tailscale)/) {
+        next
+      }
+      split(cidr, parts, "/")
+      if (parts[1] != "") {
+        printf "http://%s:%s/#/\n", parts[1], port
+      }
+    }
+  '
 }
 
 caddy_active_status() {
@@ -1494,7 +1517,7 @@ cleanup_old_releases() {
     | sort -rn > "$list_file"
   local index=0
   local path=""
-  while read -r _ path; do
+  while IFS=' ' read -r _ path; do
     index=$((index + 1))
     if (( index <= KEEP_RELEASES )); then
       continue
