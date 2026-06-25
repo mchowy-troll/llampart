@@ -91,6 +91,12 @@ curl -fsSL https://raw.githubusercontent.com/mchowy-troll/llampart/main/install.
 
 Full installation, update, configuration, uninstall, file layout, and troubleshooting documentation is available in [the Linux installation guide](docs/installation/linux-caddy.md).
 
+## Optional Caddy deployment
+
+llampart can also be served as a static frontend through Caddy, with selected API requests proxied to a local `llama-server`.
+
+For the current installer-based Linux workflow, see [the Linux installation guide](docs/installation/linux-caddy.md). For a practical local/LAN deployment example, see [Deploying llampart with Caddy](docs/deployment/caddy.md).
+
 ## Requirements
 
 For normal installed use:
