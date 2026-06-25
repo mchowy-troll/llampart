@@ -14,19 +14,6 @@ Current release:
 llampart 1.2.0
 ```
 
-## Relationship to llama.cpp
-
-llampart is based in part on the `llama-ui` work from the `llama.cpp` project and is designed to work with `llama-server` as its local backend.
-
-`llama.cpp` and `llama-server` are separate upstream projects. `OpenAI-compatible` API servers are also separate projects. llampart is not an official llama.cpp project.
-
-See:
-
-- `NOTICE`
-- `THIRD_PARTY_LICENSES.md`
-
-for attribution and third-party license information.
-
 ## Features
 
 llampart builds on the llama.cpp / llama-ui foundation and focuses on a more polished, desktop-oriented local chat experience.
@@ -61,13 +48,13 @@ Key llampart features include:
   llampart provides local import/export workflows. Settings export is designed to avoid including sensitive local configuration by default, such as API keys, server connection URLs, and MCP server definitions.
 
 - **Provider-aware connection workflow**
-  llampart supports both `llama-server` and OpenAI-compatible API servers. The selected provider controls the connection settings, available model-management actions, chat request behavior, and which advanced settings are shown.
+  llampart supports both `llama-server` and `OpenAI-compatible` API servers. The selected provider controls the connection settings, available model-management actions, chat request behavior, and which advanced settings are shown.
 
-- **OpenAI-compatible API support**
-  llampart can connect to local or remote OpenAI-compatible servers, including tools such as LM Studio, Ollama, or another endpoint that supports `/v1/models` and `/v1/chat/completions`. OpenAI-compatible mode has its own server URL and API key settings, keeps model selection and favorites scoped to that provider, and hides llama-server-specific controls that are not supported by the selected API provider.
+- **`OpenAI-compatible` API support**
+  llampart can connect to local or remote `OpenAI-compatible` servers, including tools such as LM Studio, Ollama, or another endpoint that supports `/v1/models` and `/v1/chat/completions`. `OpenAI-compatible` mode has its own server URL and API key settings, keeps model selection and favorites scoped to that provider, and hides `llama-server`-specific controls that are not supported by the selected API provider.
 
-- **Local llama-server support**
-  llampart continues to support `llama-server` as a first-class local backend. When the llama-server URL setting is left empty, llampart uses the default local llama-server address, typically `http://localhost:8080/`.
+- **Local `llama-server` support**
+  llampart continues to support `llama-server` as a first-class local backend. When the `llama-server` URL setting is left empty, llampart uses the default local `llama-server` address, typically `http://localhost:8080/`.
 
 - **MCP prompts, resources, and server-related UI flows**
   llampart keeps MCP prompt/resource workflows and server-related UI flows available while integrating them into the customized llampart chat interface.
@@ -92,29 +79,32 @@ Key llampart features include:
 
 ![llampart Frosted Glass settings](docs/assets/screenshots/llampart-settings-frosted-glass.png)
 
-## Repository layout
+## Installation
 
-```text
-server/
-├── public/      # generated frontend build consumed by the server
-└── webui/       # SvelteKit Web UI source, tests, docs, and helper scripts
+llampart can be installed on supported Linux systems with the bundled installer. The installer deploys the prebuilt llampart Web UI, serves it through Caddy, configures Caddy autostart, and keeps the backend/model server separate. It does not install `llama-server`, Ollama, LM Studio, models, Node.js, npm dependencies, or development tooling.
+
+Supported installer targets are Ubuntu-based and Arch Linux-based distributions with systemd.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mchowy-troll/llampart/main/install.sh | bash
 ```
 
-The main frontend project lives in:
-
-```text
-server/webui
-```
+Full installation, update, configuration, uninstall, file layout, and troubleshooting documentation is available in [the Linux installation guide](docs/installation/linux-caddy.md).
 
 ## Requirements
+
+For normal installed use:
+
+- a supported Linux distribution for the installer: Ubuntu-based or Arch Linux-based
+- systemd
+- Caddy, installed or installable by the installer
+- a separately running backend, such as `llama-server` or an `OpenAI-compatible` API server
 
 For Web UI development:
 
 - Node.js 20 or newer
 - npm
 - git
-
-For real local chat usage, start `llama-server` or an `OpenAI-compatible` API server separately and point llampart to it as needed.
 
 ## Development
 
@@ -137,17 +127,54 @@ npm run build
 
 The production Web UI build is generated into `server/public`.
 
+Release Web UI assets for the installer are packaged from an already-built `server/public` directory with:
+
+```bash
+cd server/webui
+bash scripts/package-release-llampart.sh
+```
+
+## Repository layout
+
+```text
+server/
+├── public/      # generated frontend build consumed by the server and release packager
+└── webui/       # SvelteKit Web UI source, tests, docs, and helper scripts
+
+docs/
+└── installation/ # user installation and maintenance documentation
+```
+
+The main frontend project lives in:
+
+```text
+server/webui
+```
+
+The root installer lives at:
+
+```text
+install.sh
+```
+
+## Relationship to llama.cpp
+
+llampart is based in part on the `llama-ui` work from the `llama.cpp` project and is designed to work with `llama-server` as a local backend.
+
+`llama.cpp` and `llama-server` are separate upstream projects. `OpenAI-compatible` API servers are also separate projects. llampart is not an official llama.cpp project.
+
+See:
+
+- `NOTICE`
+- `THIRD_PARTY_LICENSES.md`
+
+for attribution and third-party license information.
+
 ## Frontend framework
 
 llampart's frontend is built with Svelte and SvelteKit.
 
 Svelte and SvelteKit are MIT-licensed open-source projects. Their license information is preserved through npm package metadata, installed package license files, and the project third-party license notes.
-
-## Optional Caddy deployment
-
-llampart can also be served as a static frontend through Caddy, with selected API requests proxied to a local `llama-server`.
-
-See [Deploying llampart with Caddy](docs/deployment/caddy.md) for a practical local/LAN deployment example.
 
 ## Wallpapers
 
