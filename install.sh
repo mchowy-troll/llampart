@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-INSTALLER_VERSION="0.1.7"
+INSTALLER_VERSION="0.1.8"
 APP_NAME="llampart"
 REPO_OWNER="mchowy-troll"
 REPO_NAME="llampart"
@@ -522,7 +522,10 @@ manifest_get() {
 }
 
 existing_install_detected() {
-  [[ -f "$MANIFEST_PATH" || -e "$CURRENT_SYMLINK" || -d "$RELEASE_ROOT" || -f "$LLAMPART_CADDY_CONFIG" ]]
+  # Detect only active installation markers. Release directories may be kept
+  # intentionally after uninstall unless --purge was used, so they must not
+  # force the next run into the update/reinstall/configure/uninstall menu.
+  [[ -f "$MANIFEST_PATH" || -e "$CURRENT_SYMLINK" || -L "$CURRENT_SYMLINK" || -f "$LLAMPART_CADDY_CONFIG" ]]
 }
 
 determine_mode() {

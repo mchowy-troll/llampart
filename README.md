@@ -11,7 +11,7 @@ llampart is being prepared as an open-source project.
 Current release:
 
 ```text
-llampart 1.3.2
+llampart 1.3.3
 ```
 
 ## Features
@@ -95,7 +95,7 @@ Full installation, update, configuration, uninstall, file layout, and troublesho
 
 llampart can also be served as a static frontend through Caddy, with selected API requests proxied to a local `llama-server`.
 
-For the current installer-based Linux workflow, see [the Linux installation guide](docs/installation/linux-caddy.md). For a practical local/LAN deployment example, see [Deploying llampart with Caddy](docs/deployment/caddy.md).
+For a practical local/LAN deployment example, see [Deploying llampart with Caddy](docs/deployment/caddy.md).
 
 ## Requirements
 
