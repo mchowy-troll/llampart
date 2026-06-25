@@ -110,7 +110,7 @@ curl -fsSL https://raw.githubusercontent.com/mchowy-troll/llampart/main/install.
 Install a specific release version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mchowy-troll/llampart/main/install.sh | bash -s -- --version v1.3.0
+curl -fsSL https://raw.githubusercontent.com/mchowy-troll/llampart/main/install.sh | bash -s -- --version v1.3.1
 ```
 
 Use a custom public llampart port:
@@ -185,7 +185,7 @@ The installer uses versioned releases and a stable symlink:
 ```text
 /opt/llampart/
   releases/
-    v1.3.0/
+    v1.3.1/
     v1.3.1/
   downloads/
   tmp/
@@ -306,11 +306,11 @@ For example, on a typical Linux system this resolves to:
 /home/<user>/llampart/release-assets/
 ```
 
-For the current `v1.3.0` release, the packager creates:
+For the current `v1.3.1` release, the packager creates:
 
 ```text
-$HOME/llampart/release-assets/llampart-webui-v1.3.0.tar.xz
-$HOME/llampart/release-assets/llampart-webui-v1.3.0.sha256
+$HOME/llampart/release-assets/llampart-webui-v1.3.1.tar.xz
+$HOME/llampart/release-assets/llampart-webui-v1.3.1.sha256
 ```
 
 For future releases, the same naming pattern is:
