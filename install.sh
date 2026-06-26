@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-INSTALLER_VERSION="0.1.8"
+INSTALLER_VERSION="0.1.9"
 APP_NAME="llampart"
 REPO_OWNER="mchowy-troll"
 REPO_NAME="llampart"
@@ -1022,7 +1022,7 @@ generate_caddy_config() {
 :${LLAMPART_PORT} {
     root * ${CURRENT_SYMLINK}
 
-    @llampart_api path /props /models /cors-proxy /v1/*
+    @llampart_api path /props /models /models/* /slots /slots/* /cors-proxy /tools /tools/* /v1/*
     reverse_proxy @llampart_api ${BACKEND_HOST}:${LLAMA_SERVER_PORT}
 
     file_server

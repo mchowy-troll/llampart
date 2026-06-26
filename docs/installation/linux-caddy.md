@@ -110,7 +110,7 @@ curl -fsSL https://raw.githubusercontent.com/mchowy-troll/llampart/main/install.
 Install a specific release version:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mchowy-troll/llampart/main/install.sh | bash -s -- --version v1.3.1
+curl -fsSL https://raw.githubusercontent.com/mchowy-troll/llampart/main/install.sh | bash -s -- --version vX.Y.Z
 ```
 
 Use a custom public llampart port:
@@ -185,8 +185,8 @@ The installer uses versioned releases and a stable symlink:
 ```text
 /opt/llampart/
   releases/
-    v1.3.1/
-    v1.3.1/
+    vX.Y.Z/
+    vA.B.C/
   downloads/
   tmp/
 
@@ -201,8 +201,8 @@ The installer uses versioned releases and a stable symlink:
 /var/lib/llampart/
   install-manifest.json
 
-/var/log/llampart-installer/
-  install-YYYYMMDD-HHMMSS.log
+/tmp/
+  llampart-installer-YYYYMMDD-HHMMSS.XXXXXXXX.log
 ```
 
 The served Web UI root is:
@@ -210,6 +210,8 @@ The served Web UI root is:
 ```text
 /srv/llampart/current
 ```
+
+Installer logs are written to a user-writable temporary file, usually under `/tmp`, and the exact path is printed at the end of the run.
 
 ## Caddy behavior and safety
 
@@ -235,6 +237,22 @@ It does:
 
 The generated llampart Caddy config serves the Web UI and proxies selected API paths to the configured backend host and port.
 
+The installer-generated Caddy config proxies these same-origin backend paths:
+
+```text
+/props
+/models
+/models/*
+/slots
+/slots/*
+/cors-proxy
+/tools
+/tools/*
+/v1/*
+```
+
+These paths are needed for llama-server props, model listing, model lifecycle actions, tools, CORS proxy support, and OpenAI-compatible API requests. The installer intentionally does not proxy `/*`, so static Web UI files continue to be served by Caddy.
+
 ## Ports
 
 Default ports:
@@ -255,6 +273,16 @@ The installer rejects privileged ports below `1024`.
 The backend is separate from llampart.
 
 The installer can configure Caddy to proxy default llampart API paths to a local backend, but it does not install or start the backend.
+
+When `Server Address` is left empty in llampart settings, the Web UI uses same-origin relative API requests through the Caddy site, for example:
+
+```text
+http://localhost:8100/props
+http://localhost:8100/models
+http://localhost:8100/slots
+```
+
+With the installer-based Caddy setup, users normally do not need to enter `http://127.0.0.1:8080` as the Server Address. That direct backend URL is useful mainly for debugging or custom setups.
 
 Supported backend workflows include:
 
@@ -306,14 +334,7 @@ For example, on a typical Linux system this resolves to:
 /home/<user>/llampart/release-assets/
 ```
 
-For the current `v1.3.1` release, the packager creates:
-
-```text
-$HOME/llampart/release-assets/llampart-webui-v1.3.1.tar.xz
-$HOME/llampart/release-assets/llampart-webui-v1.3.1.sha256
-```
-
-For future releases, the same naming pattern is:
+For release `vX.Y.Z`, the packager creates:
 
 ```text
 $HOME/llampart/release-assets/llampart-webui-vX.Y.Z.tar.xz
