@@ -93,22 +93,24 @@
 
 		{#if message.content.trim()}
 			<Card
-				class="llampart-message-shell-card llampart-user-message-card w-full llampart-user-message-width overflow-y-auto rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5 dark:bg-primary/15"
+				class="llampart-message-shell-card llampart-user-message-card w-full llampart-user-message-width overflow-hidden rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5 dark:bg-primary/15"
 				data-multiline={isMultiline ? '' : undefined}
 				style="max-height: var(--max-message-height); overflow-wrap: anywhere; word-break: break-word;"
 			>
-				{#if currentConfig.renderUserContentAsMarkdown}
-					<div bind:this={messageElement} class="llampart-user-message-content">
-						<MarkdownContent class="markdown-user-content -my-4" content={message.content} />
-					</div>
-				{:else}
-					<span
-						bind:this={messageElement}
-						class="llampart-user-message-content text-md whitespace-pre-wrap"
-					>
-						{message.content}
-					</span>
-				{/if}
+				<div class="llampart-user-message-scroll-area">
+					{#if currentConfig.renderUserContentAsMarkdown}
+						<div bind:this={messageElement} class="llampart-user-message-content">
+							<MarkdownContent class="markdown-user-content -my-4" content={message.content} />
+						</div>
+					{:else}
+						<span
+							bind:this={messageElement}
+							class="llampart-user-message-content text-md whitespace-pre-wrap"
+						>
+							{message.content}
+						</span>
+					{/if}
+				</div>
 
 				{#if message.timestamp}
 					<div class="llampart-message-shell-footer llampart-user-message-footer">
@@ -216,7 +218,7 @@
 	}
 
 	:global(html.has-frosted-glass-theme) .llampart-user-message-card {
-		padding-bottom: 0.875rem !important;
+		padding-bottom: var(--llampart-message-shell-bottom-action-inset) !important;
 	}
 
 	:global(html.has-frosted-glass-theme) .llampart-user-message-footer {
@@ -355,20 +357,37 @@
 		box-shadow: none !important;
 	}
 
+	/* llampart-user-message-scroll-area-stable-actions
+	   Only message text scrolls; the message-shell footer stays owned by the shared action layout primitive. */
+	.llampart-user-message-scroll-area {
+		max-height: calc(
+			var(--max-message-height) - var(--llampart-message-shell-top-inset) -
+				var(--llampart-message-shell-bottom-action-inset)
+		);
+		min-height: 0;
+		overflow-x: hidden;
+		overflow-y: auto;
+		overflow-wrap: anywhere;
+		word-break: break-word;
+	}
+
+	/* /llampart-user-message-scroll-area-stable-actions */
+
 	/* llampart-user-footer-restore-height-lower-icons */
 	:global(html.has-frosted-glass-theme .llampart-user-message-card) {
 		display: flex !important;
 		min-height: 5.75rem !important;
 		flex-direction: column !important;
-		padding-bottom: 0.3125rem !important;
+		padding-bottom: var(--llampart-message-shell-bottom-action-inset) !important;
 	}
 
 	:global(html.has-frosted-glass-theme) .llampart-user-message-footer {
-		position: static !important;
-		right: auto !important;
-		bottom: auto !important;
-		margin-top: auto !important;
-		margin-right: -0.3125rem !important;
+		position: absolute !important;
+		right: var(--llampart-message-shell-footer-inline-inset) !important;
+		bottom: var(--llampart-message-shell-footer-bottom-inset) !important;
+		left: var(--llampart-message-shell-footer-inline-inset) !important;
+		margin-top: 0 !important;
+		margin-right: 0 !important;
 		margin-bottom: 0 !important;
 		padding: 0 !important;
 		font-weight: 400 !important;
@@ -450,7 +469,7 @@
 	/* llampart-user-footer-bottom-inset-match-llm */
 	:global(html.has-frosted-glass-theme) .llampart-user-message-footer {
 		margin-right: 0 !important;
-		margin-bottom: 0.3125rem !important;
+		margin-bottom: 0 !important;
 		padding-right: 0 !important;
 		padding-bottom: 0 !important;
 	}
@@ -536,7 +555,7 @@
 	/* llampart-1-0-2-user-message-padding-match-assistant */
 	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card),
 	:global(html.has-frosted-glass-theme .llampart-user-message-card) {
-		padding: 0.625rem 1.5rem 0.5rem !important;
+		padding: 0.625rem 1.5rem var(--llampart-message-shell-bottom-action-inset) !important;
 	}
 
 	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card[data-multiline]),
