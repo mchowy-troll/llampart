@@ -113,7 +113,15 @@ html[data-llampart-ui-scale='110'] {
 	align-items: start;
 	justify-content: space-between;
 	gap: var(--llampart-settings-wallpaper-preview-gap);
-	padding: 0.5rem 0.25rem;
+	box-sizing: border-box;
+	inline-size: 100%;
+	max-inline-size: 100%;
+	overflow-x: auto;
+	overflow-y: visible;
+	overscroll-behavior-x: contain;
+	scrollbar-gutter: stable;
+	scroll-padding-inline: 1rem;
+	padding: 0.5rem 1rem 0.75rem;
 }
 
 .llampart-settings-wallpaper-preview {
