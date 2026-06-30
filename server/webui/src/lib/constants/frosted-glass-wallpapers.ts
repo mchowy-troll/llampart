@@ -1,4 +1,4 @@
-export const DEFAULT_FROSTED_GLASS_WALLPAPER_ID = 'frosted-glass-01';
+export const DEFAULT_FROSTED_GLASS_WALLPAPER_ID = 'frosted-glass-02';
 export const CUSTOM_FROSTED_GLASS_WALLPAPER_ID = 'frosted-glass-user';
 export const CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY =
 	'llampart:frosted-glass:user-wallpaper';
