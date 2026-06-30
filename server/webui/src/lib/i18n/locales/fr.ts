@@ -234,16 +234,15 @@ export const fr: TranslationDictionary = {
 		frostedGlassWallpaper04: 'Frosted Glass 04',
 		frostedGlassWallpaper05: 'Frosted Glass 05',
 		frostedGlassWallpaperUser: 'Fond utilisateur',
-		frostedGlassWallpaperUserBadge: 'Utilisateur',
 		frostedGlassWallpaperUpload: 'Importer JPG/PNG',
+		frostedGlassWallpaperAdd: 'Ajouter',
 		frostedGlassWallpaperReplace: 'Remplacer',
 		frostedGlassWallpaperRemove: 'Supprimer',
-		frostedGlassWallpaperUserEmpty:
-			'JPG ou PNG jusqu’à 3 Mo, enregistré uniquement dans ce navigateur.',
 		frostedGlassWallpaperUserSaved: 'Fond utilisateur enregistré.',
 		frostedGlassWallpaperUserRemoved: 'Fond utilisateur supprimé.',
 		frostedGlassWallpaperUploadInvalidType: 'Choisissez un fichier JPG ou PNG.',
 		frostedGlassWallpaperUploadTooLarge: 'Le fond peut faire au maximum 3 Mo.',
+		frostedGlassWallpaperUploadRequirements: 'Utilisez un fichier JPG ou PNG de 3 Mo maximum.',
 		frostedGlassWallpaperUploadReadError:
 			'Impossible d’enregistrer le fond. Le localStorage du navigateur est peut-être plein.',
 		groupApplicationBackground: 'Arrière-plan de l’application',

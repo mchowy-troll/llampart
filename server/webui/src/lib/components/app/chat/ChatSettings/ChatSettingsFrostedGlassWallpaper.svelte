@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { Check } from '@lucide/svelte';
+	import { AlertTriangle } from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import {
 		clearCustomFrostedGlassWallpaperSrc,
 		CUSTOM_FROSTED_GLASS_WALLPAPER_ACCEPT,
@@ -19,11 +20,17 @@
 		onWallpaperChange: (wallpaperId: string) => void;
 	}
 
+	type WallpaperValidationDialog = {
+		title: string;
+		description: string;
+	};
+
 	let { selectedWallpaper, onWallpaperChange }: Props = $props();
 
 	let fileInput: HTMLInputElement | undefined = $state();
 	let customWallpaperSrc = $derived(getCustomFrostedGlassWallpaperSrc());
 	let isCustomWallpaperSelected = $derived(selectedWallpaper === CUSTOM_FROSTED_GLASS_WALLPAPER_ID);
+	let wallpaperValidationDialog = $state<WallpaperValidationDialog | undefined>(undefined);
 
 	function readFileAsDataUrl(file: File): Promise<string> {
 		return new Promise((resolve, reject) => {
@@ -46,6 +53,32 @@
 		});
 	}
 
+	function getWallpaperPreviewClass(isSelected: boolean): string {
+		return [
+			'llampart-settings-wallpaper-preview bg-muted bg-cover bg-center bg-no-repeat shadow-sm',
+			isSelected ? 'is-selected' : ''
+		]
+			.filter(Boolean)
+			.join(' ');
+	}
+
+	function showWallpaperValidationDialog(title: string) {
+		wallpaperValidationDialog = {
+			title,
+			description: t('settings.frostedGlassWallpaperUploadRequirements')
+		};
+	}
+
+	function handleValidationDialogOpenChange(open: boolean) {
+		if (!open) {
+			wallpaperValidationDialog = undefined;
+		}
+	}
+
+	function selectBundledWallpaper(wallpaperId: string) {
+		onWallpaperChange(wallpaperId);
+	}
+
 	function handleCustomWallpaperSelect() {
 		if (customWallpaperSrc) {
 			onWallpaperChange(CUSTOM_FROSTED_GLASS_WALLPAPER_ID);
@@ -53,6 +86,21 @@
 		}
 
 		fileInput?.click();
+	}
+
+	function handleCustomWallpaperAddOrReplaceClick() {
+		fileInput?.click();
+	}
+
+	function handleRemoveCustomWallpaper() {
+		clearCustomFrostedGlassWallpaperSrc();
+		customWallpaperSrc = undefined;
+
+		if (isCustomWallpaperSelected) {
+			onWallpaperChange(DEFAULT_FROSTED_GLASS_WALLPAPER_ID);
+		}
+
+		toast.success(t('settings.frostedGlassWallpaperUserRemoved'));
 	}
 
 	async function handleCustomWallpaperFileChange(event: Event) {
@@ -66,12 +114,12 @@
 		if (!file) return;
 
 		if (!isAcceptedCustomFrostedGlassWallpaperType(file.type)) {
-			toast.error(t('settings.frostedGlassWallpaperUploadInvalidType'));
+			showWallpaperValidationDialog(t('settings.frostedGlassWallpaperUploadInvalidType'));
 			return;
 		}
 
 		if (file.size > CUSTOM_FROSTED_GLASS_WALLPAPER_MAX_SIZE_BYTES) {
-			toast.error(t('settings.frostedGlassWallpaperUploadTooLarge'));
+			showWallpaperValidationDialog(t('settings.frostedGlassWallpaperUploadTooLarge'));
 			return;
 		}
 
@@ -91,123 +139,68 @@
 			toast.error(t('settings.frostedGlassWallpaperUploadReadError'));
 		}
 	}
-
-	function handleRemoveCustomWallpaper() {
-		clearCustomFrostedGlassWallpaperSrc();
-		customWallpaperSrc = undefined;
-
-		if (isCustomWallpaperSelected) {
-			onWallpaperChange(DEFAULT_FROSTED_GLASS_WALLPAPER_ID);
-		}
-
-		toast.success(t('settings.frostedGlassWallpaperUserRemoved'));
-	}
 </script>
 
-<div class="grid auto-rows-fr gap-3 sm:grid-cols-2 xl:grid-cols-3" data-llampart-wallpaper-grid>
+<div class="llampart-settings-wallpaper-selector" data-llampart-wallpaper-grid>
 	{#each FROSTED_GLASS_WALLPAPERS as wallpaper (wallpaper.id)}
 		{@const isSelected = selectedWallpaper === wallpaper.id}
 		<button
 			type="button"
-			class={[
-				'group flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-background text-left transition-all hover:border-ring/60 hover:bg-muted/30',
-				isSelected ? 'border-ring ring-2 ring-ring/20' : 'border-border'
-			]
-				.filter(Boolean)
-				.join(' ')}
-			onclick={() => onWallpaperChange(wallpaper.id)}
-			data-llampart-wallpaper-card
+			class={getWallpaperPreviewClass(isSelected)}
+			style={`background-image: url("${wallpaper.src}")`}
+			onclick={() => selectBundledWallpaper(wallpaper.id)}
+			aria-label={t(wallpaper.labelKey)}
 			aria-pressed={isSelected}
+			data-llampart-wallpaper-preview
+			data-selected={isSelected ? 'true' : undefined}
 		>
-			<div
-				class="relative aspect-video w-full flex-shrink-0 bg-muted bg-cover bg-center bg-no-repeat"
-				style={`background-image: url("${wallpaper.src}")`}
-			>
-				{#if isSelected}
-					<div
-						class="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-background/85 shadow-sm backdrop-blur-sm"
-					>
-						<Check class="h-4 w-4" />
-					</div>
-				{/if}
-			</div>
-
-			<div
-				class="flex min-h-[3.35rem] flex-shrink-0 items-center justify-between gap-3 border-t border-border/70 px-3 py-2.5"
-			>
-				<span class="min-w-0 truncate text-sm font-medium">{t(wallpaper.labelKey)}</span>
-				<span class="shrink-0 text-sm text-muted-foreground">
-					{isSelected ? t('settings.selected') : t('settings.select')}
-				</span>
-			</div>
+			<span class="sr-only">{t(wallpaper.labelKey)}</span>
 		</button>
 	{/each}
 
-	<div
-		class={[
-			'group flex h-full min-h-0 flex-col overflow-hidden rounded-xl border bg-background text-left transition-all hover:border-ring/60 hover:bg-muted/30',
-			isCustomWallpaperSelected ? 'border-ring ring-2 ring-ring/20' : 'border-border'
-		]
-			.filter(Boolean)
-			.join(' ')}
-		data-llampart-wallpaper-card
-	>
+	<div class="llampart-settings-wallpaper-user-slot" data-llampart-wallpaper-user-slot>
 		<button
 			type="button"
-			class="block w-full flex-shrink-0 text-left"
+			class={[
+				getWallpaperPreviewClass(isCustomWallpaperSelected),
+				'llampart-settings-wallpaper-user-preview',
+				customWallpaperSrc ? 'has-custom-wallpaper' : ''
+			]
+				.filter(Boolean)
+				.join(' ')}
+			style={customWallpaperSrc ? `background-image: url("${customWallpaperSrc}")` : undefined}
 			onclick={handleCustomWallpaperSelect}
+			aria-label={t('settings.frostedGlassWallpaperUser')}
 			aria-pressed={isCustomWallpaperSelected}
+			data-llampart-wallpaper-preview
+			data-llampart-user-wallpaper-preview
+			data-selected={isCustomWallpaperSelected ? 'true' : undefined}
 		>
-			<div
-				class="relative aspect-video w-full bg-muted bg-cover bg-center bg-no-repeat"
-				style={customWallpaperSrc ? `background-image: url("${customWallpaperSrc}")` : undefined}
-			>
-				{#if isCustomWallpaperSelected}
-					<div
-						class="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-background/85 shadow-sm backdrop-blur-sm"
-					>
-						<Check class="h-4 w-4" />
-					</div>
-				{/if}
-
-				{#if !customWallpaperSrc}
-					<div
-						class="flex h-full items-center justify-center px-4 text-center text-muted-foreground"
-					>
-						<p class="text-xs">{t('settings.frostedGlassWallpaperUserEmpty')}</p>
-					</div>
-				{/if}
-			</div>
+			<span class="sr-only">{t('settings.frostedGlassWallpaperUser')}</span>
 		</button>
 
-		<div
-			class="flex min-h-[3.35rem] flex-shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/70 px-3 py-2.5"
-		>
-			<span class="min-w-0 truncate text-sm font-medium">
-				{t('settings.frostedGlassWallpaperUser')}
-			</span>
+		<div class="llampart-settings-wallpaper-user-actions">
+			<button
+				type="button"
+				class="llampart-settings-wallpaper-user-action"
+				onclick={handleCustomWallpaperAddOrReplaceClick}
+			>
+				{t(
+					customWallpaperSrc
+						? 'settings.frostedGlassWallpaperReplace'
+						: 'settings.frostedGlassWallpaperAdd'
+				)}
+			</button>
 
-			<div class="ml-auto flex flex-wrap items-center justify-end gap-2">
+			{#if customWallpaperSrc}
 				<button
 					type="button"
-					class="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-					onclick={() => fileInput?.click()}
+					class="llampart-settings-wallpaper-user-action llampart-settings-wallpaper-user-action-muted"
+					onclick={handleRemoveCustomWallpaper}
 				>
-					{customWallpaperSrc
-						? t('settings.frostedGlassWallpaperReplace')
-						: t('settings.frostedGlassWallpaperUpload')}
+					{t('settings.frostedGlassWallpaperRemove')}
 				</button>
-
-				{#if customWallpaperSrc}
-					<button
-						type="button"
-						class="rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-						onclick={handleRemoveCustomWallpaper}
-					>
-						{t('settings.frostedGlassWallpaperRemove')}
-					</button>
-				{/if}
-			</div>
+			{/if}
 		</div>
 	</div>
 
@@ -220,43 +213,26 @@
 	/>
 </div>
 
-<style>
-	/* llampart-frosted-glass-wallpaper-card-equal-height */
-	:global([data-llampart-wallpaper-grid]) {
-		grid-auto-rows: 1fr;
-		align-items: stretch;
-	}
+<AlertDialog.Root
+	open={Boolean(wallpaperValidationDialog)}
+	onOpenChange={handleValidationDialogOpenChange}
+>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title class="flex items-center gap-2">
+				<AlertTriangle class="h-5 w-5 text-destructive" />
+				{wallpaperValidationDialog?.title}
+			</AlertDialog.Title>
 
-	:global([data-llampart-wallpaper-card]) {
-		display: flex;
-		height: 100%;
-		min-height: 0;
-		flex-direction: column;
-	}
+			<AlertDialog.Description>
+				{wallpaperValidationDialog?.description}
+			</AlertDialog.Description>
+		</AlertDialog.Header>
 
-	:global([data-llampart-wallpaper-card] > :first-child) {
-		width: 100%;
-		min-height: 0;
-		aspect-ratio: 16 / 9;
-		flex: 0 0 auto;
-		overflow: hidden;
-		background-size: cover !important;
-		background-position: center !important;
-		background-repeat: no-repeat !important;
-	}
-
-	:global([data-llampart-wallpaper-card] > button:first-child > :first-child) {
-		height: 100%;
-		width: 100%;
-		background-size: cover !important;
-		background-position: center !important;
-		background-repeat: no-repeat !important;
-	}
-
-	:global([data-llampart-wallpaper-card] > :not(:first-child)) {
-		position: relative;
-		z-index: 1;
-		flex: 0 0 auto;
-		flex-shrink: 0;
-	}
-</style>
+		<AlertDialog.Footer>
+			<AlertDialog.Action onclick={() => (wallpaperValidationDialog = undefined)}>
+				{t('common.gotIt')}
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>

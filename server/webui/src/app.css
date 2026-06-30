@@ -94,6 +94,113 @@ html[data-llampart-ui-scale='110'] {
 }
 /* /llampart-chat-layout-scale-primitives */
 
+/* llampart-settings-wallpaper-selector-primitives
+   app.css currently owns shared layout/style primitives until the style layer is split.
+   The settings wallpaper component consumes these semantic hooks instead of hard-coding
+   preview dimensions, selected scale, and user-wallpaper action styling locally. */
+:root {
+	--llampart-settings-wallpaper-preview-size: clamp(7rem, 7.5vw, 9rem);
+	--llampart-settings-wallpaper-preview-selected-scale: 1.1;
+	--llampart-settings-wallpaper-preview-gap: 1rem;
+	--llampart-settings-wallpaper-user-action-gap: 0.375rem;
+	--llampart-settings-wallpaper-user-action-offset: 0.25rem;
+	--llampart-settings-wallpaper-user-actions-width: max-content;
+}
+
+.llampart-settings-wallpaper-selector {
+	display: grid;
+	grid-template-columns: repeat(6, var(--llampart-settings-wallpaper-preview-size));
+	align-items: start;
+	justify-content: space-between;
+	gap: var(--llampart-settings-wallpaper-preview-gap);
+	padding: 0.5rem 0.25rem;
+}
+
+.llampart-settings-wallpaper-preview {
+	position: relative;
+	display: grid;
+	width: var(--llampart-settings-wallpaper-preview-size);
+	height: var(--llampart-settings-wallpaper-preview-size);
+	place-items: center;
+	overflow: hidden;
+	border-radius: 9999px;
+	transition:
+		transform 200ms ease,
+		border-color 200ms ease,
+		box-shadow 200ms ease,
+		background-color 200ms ease;
+}
+
+.llampart-settings-wallpaper-preview.is-selected {
+	z-index: 1;
+	transform: scale(var(--llampart-settings-wallpaper-preview-selected-scale));
+}
+
+.llampart-settings-wallpaper-user-slot {
+	display: grid;
+	width: var(--llampart-settings-wallpaper-preview-size);
+	justify-items: center;
+	gap: 0.625rem;
+	padding-top: var(--llampart-settings-wallpaper-user-action-offset);
+}
+
+.llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper) {
+	border: 1px solid hsl(var(--border) / 0.6);
+	background: hsl(var(--background));
+	color: hsl(var(--muted-foreground));
+}
+
+.llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper):is(:hover, :focus-visible) {
+	border-color: hsl(var(--ring) / 0.5);
+	color: hsl(var(--foreground));
+}
+
+.llampart-settings-wallpaper-user-actions {
+	display: flex;
+	width: var(--llampart-settings-wallpaper-user-actions-width);
+	max-width: none;
+	flex-wrap: nowrap;
+	justify-content: center;
+	gap: var(--llampart-settings-wallpaper-user-action-gap);
+	white-space: nowrap;
+}
+
+.llampart-settings-wallpaper-user-action {
+	border-radius: calc(var(--radius) - 2px);
+	border: 1px solid hsl(var(--border));
+	background: hsl(var(--background));
+	padding: 0.375rem 0.625rem;
+	font-size: 0.75rem;
+	font-weight: 500;
+	line-height: 1;
+	transition:
+		background-color 150ms ease,
+		color 150ms ease,
+		border-color 150ms ease;
+}
+
+.llampart-settings-wallpaper-user-action:is(:hover, :focus-visible) {
+	background: hsl(var(--muted));
+}
+
+.llampart-settings-wallpaper-user-action:focus-visible {
+	outline: 2px solid hsl(var(--ring));
+	outline-offset: 2px;
+}
+
+.llampart-settings-wallpaper-user-action-muted {
+	border-color: transparent;
+	background: transparent;
+	color: hsl(var(--muted-foreground));
+}
+
+.llampart-settings-wallpaper-user-action-muted:is(:hover, :focus-visible) {
+	background: hsl(var(--muted));
+	color: hsl(var(--foreground));
+}
+
+/* /llampart-settings-wallpaper-selector-primitives */
+
 @theme inline {
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
