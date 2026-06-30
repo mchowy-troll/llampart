@@ -328,27 +328,26 @@
 				{
 					id: 'conversation-titles',
 					title: t('settings.groupConversationTitles'),
+					layout: 'two-column',
 					fields: [
 						{
 							key: SETTINGS_KEYS.ASK_FOR_TITLE_CONFIRMATION,
 							label: t('settings.fieldAskConfirmationBeforeChangingConversationTitle'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'left'
 						},
 						{
 							key: SETTINGS_KEYS.TITLE_GENERATION_USE_FIRST_LINE,
 							label: t('settings.fieldUseFirstNonEmptyLineForConversationTitle'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							column: 'right'
 						},
 						{
 							key: SETTINGS_KEYS.TITLE_GENERATION_USE_LLM,
 							label: t('settings.fieldUseLLMToGenerateConversationTitle'),
 							type: SettingsFieldType.CHECKBOX,
-							isExperimental: true
-						},
-						{
-							key: SETTINGS_KEYS.TITLE_GENERATION_PROMPT,
-							label: t('settings.fieldLLMTitleGenerationPrompt'),
-							type: SettingsFieldType.TEXTAREA
+							isExperimental: true,
+							column: 'left'
 						}
 					]
 				},
@@ -605,6 +604,15 @@
 			icon: Code,
 			fields: [],
 			groups: [
+				{
+					fields: [
+						{
+							key: SETTINGS_KEYS.TITLE_GENERATION_PROMPT,
+							label: t('settings.fieldLLMTitleGenerationPrompt'),
+							type: SettingsFieldType.TEXTAREA
+						}
+					]
+				},
 				{
 					id: 'reasoning',
 					requiredProviderCapabilities: ['supportsLlamaReasoningControls'],
