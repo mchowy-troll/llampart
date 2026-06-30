@@ -228,12 +228,14 @@
 </script>
 
 <div class="grid grid-cols-1 items-start gap-4">
-	<section class="rounded-2xl border border-border bg-background p-4">
+	<section
+		class="llampart-settings-import-export-section rounded-2xl border border-border bg-background p-4"
+	>
 		<div class="mb-4 border-b border-border/30 pb-3">
 			<h4 class="text-sm font-semibold">{t('settings.groupImportExport')}</h4>
 		</div>
 
-		<div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+		<div class="llampart-settings-import-export-grid">
 			<div class="flex h-full flex-col">
 				<h4 class="mb-2 text-sm font-medium">
 					{t('settings.importExport.importConversationsTitle')}

@@ -209,6 +209,32 @@ html[data-llampart-ui-scale='110'] {
 
 /* /llampart-settings-wallpaper-selector-primitives */
 
+/* llampart-settings-import-export-layout-primitives
+   Data Import / Export uses container-based breakpoints so the grid responds to
+   the settings card width instead of the global viewport. */
+.llampart-settings-import-export-section {
+	container-type: inline-size;
+}
+
+.llampart-settings-import-export-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 1.25rem;
+}
+
+@container (min-width: 40rem) {
+	.llampart-settings-import-export-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@container (min-width: 56rem) {
+	.llampart-settings-import-export-grid {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+/* /llampart-settings-import-export-layout-primitives */
+
 @theme inline {
 	--radius-sm: calc(var(--radius) - 4px);
 	--radius-md: calc(var(--radius) - 2px);
