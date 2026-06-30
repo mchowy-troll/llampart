@@ -360,7 +360,6 @@ export { default as ChatFormResourcePicker } from './ChatForm/ChatFormResourcePi
  * - Edit with replacement: Modifies message in place
  * - Regenerate: Creates new assistant response as sibling
  * - Delete: Removes message and all descendants (cascade)
- * - Continue: Appends to incomplete assistant message
  *
  * @example
  * ```svelte
@@ -394,7 +393,6 @@ export { default as ChatMessages } from './ChatMessages/ChatMessages.svelte';
  * - Renders content via MarkdownContent or ChatMessageAgenticContent
  * - Shows model info badge (when enabled)
  * - Regenerate creates sibling with optional model override
- * - Continue action for incomplete responses
  *
  * **Features:**
  * - Inline editing with file attachments support

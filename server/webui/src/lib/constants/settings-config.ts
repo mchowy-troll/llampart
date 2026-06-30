@@ -77,8 +77,7 @@ export const SETTING_CONFIG_DEFAULT: Record<string, string | number | boolean | 
 	custom: '', // custom json-stringified object
 	preEncodeConversation: false,
 	// experimental features
-	pyInterpreterEnabled: false,
-	enableContinueGeneration: false
+	pyInterpreterEnabled: false
 };
 
 export const PROVIDER_CONNECTION_SETTING_KEYS = {
@@ -158,8 +157,7 @@ export const SETTING_CONFIG_INFO: Record<string, string> = {
 	showToolCallInProgress: 'settings.info.showToolCallInProgress',
 	alwaysShowAgenticTurns: 'settings.info.alwaysShowAgenticTurns',
 	pyInterpreterEnabled: 'settings.info.pyInterpreterEnabled',
-	preEncodeConversation: 'settings.info.preEncodeConversation',
-	enableContinueGeneration: 'settings.info.enableContinueGeneration'
+	preEncodeConversation: 'settings.info.preEncodeConversation'
 };
 
 export const SETTINGS_COLOR_MODES_CONFIG = [

@@ -153,12 +153,6 @@
 			refreshAllMessages();
 		},
 
-		continueAssistantMessage: async (message: DatabaseMessage) => {
-			onUserAction?.();
-			await chatStore.continueAssistantMessage(message.id);
-			refreshAllMessages();
-		},
-
 		forkConversation: async (
 			message: DatabaseMessage,
 			options: { name: string; includeAttachments: boolean }

@@ -178,10 +178,6 @@
 		chatActions.regenerateWithBranching(message, modelOverride);
 	}
 
-	function handleContinue() {
-		chatActions.continueAssistantMessage(message);
-	}
-
 	function handleForkConversation(options: { name: string; includeAttachments: boolean }) {
 		chatActions.forkConversation(message, options);
 	}
@@ -215,7 +211,6 @@
 			chatActions.editWithBranching(message, editedContent.trim(), finalExtras);
 		} else {
 			// For assistant messages, preserve exact content including trailing whitespace
-			// This is important for the Continue feature to work properly
 			chatActions.editWithReplacement(message, editedContent, shouldBranchAfterEdit);
 		}
 
@@ -307,7 +302,6 @@
 		{toolMessages}
 		messageContent={message.content}
 		onConfirmDelete={handleConfirmDelete}
-		onContinue={handleContinue}
 		onCopy={handleCopy}
 		onDelete={handleDelete}
 		onEdit={handleEdit}

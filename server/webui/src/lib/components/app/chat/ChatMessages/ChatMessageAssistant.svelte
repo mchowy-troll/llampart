@@ -47,7 +47,6 @@
 		messageContent: string | undefined;
 		onCopy: () => void;
 		onConfirmDelete: () => void;
-		onContinue?: () => void;
 		onDelete: () => void;
 		onEdit?: () => void;
 		onForkConversation?: (options: { name: string; includeAttachments: boolean }) => void;
@@ -67,7 +66,6 @@
 		toolMessages = [],
 		messageContent,
 		onConfirmDelete,
-		onContinue,
 		onCopy,
 		onDelete,
 		onEdit,
@@ -427,9 +425,6 @@
 									{onCopy}
 									{onEdit}
 									{onRegenerate}
-									onContinue={currentConfig.enableContinueGeneration && !hasReasoning
-										? onContinue
-										: undefined}
 									{onForkConversation}
 									{onDelete}
 									{onConfirmDelete}
