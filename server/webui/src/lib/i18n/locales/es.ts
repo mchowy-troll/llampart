@@ -149,7 +149,6 @@ export const es: TranslationDictionary = {
 		fieldPasteLongTextToFileLength: 'Longitud para convertir texto pegado largo en archivo',
 		fieldSendMessageOnEnter: 'Enviar mensaje con Intro',
 		fieldCopyTextAttachmentsAsPlainText: 'Copiar adjuntos de texto como texto plano',
-		fieldEnableContinueButton: 'Habilitar botón "Continuar"',
 		fieldParsePdfAsImage: 'Procesar PDF como imagen',
 		fieldAskConfirmationBeforeChangingConversationTitle:
 			'Pedir confirmación antes de cambiar el título de la conversación',
@@ -269,7 +268,6 @@ export const es: TranslationDictionary = {
 		groupInput: 'Entrada de mensajes',
 		groupAttachmentsFiles: 'Adjuntos y archivos',
 		groupConversationTitles: 'Títulos de conversaciones',
-		groupResponseGeneration: 'Generación de respuestas',
 		groupBasicGeneration: 'Generación básica',
 		groupDynamicTemperature: 'Temperatura dinámica',
 		groupXtc: 'XTC',
@@ -466,9 +464,7 @@ En servidores locales puede ser opcional o arbitraria, según la configuración.
 				'Mostrar siempre los turnos agentic en la conversación, incluso cuando normalmente estarían contraídos.',
 			pyInterpreterEnabled: 'Habilitar el intérprete de Python usando Pyodide.',
 			preEncodeConversation:
-				'Después de cada respuesta, volver a enviar la conversación para prellenar la caché KV del servidor y acelerar el siguiente turno.',
-			enableContinueGeneration:
-				'Habilitar el botón "Continuar" para los mensajes del asistente. Actualmente solo funciona con modelos sin reasoning.'
+				'Después de cada respuesta, volver a enviar la conversación para prellenar la caché KV del servidor y acelerar el siguiente turno.'
 		}
 	},
 	server: {
@@ -571,7 +567,6 @@ En servidores locales puede ser opcional o arbitraria, según la configuración.
 	},
 	messages: {
 		regenerate: 'Regenerar',
-		continue: 'Continuar',
 		forkConversation: 'Bifurcar conversación',
 		deleteMessageTitle: 'Eliminar mensaje',
 		deleteMessageDescription:

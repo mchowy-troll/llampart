@@ -147,7 +147,6 @@ export const it: TranslationDictionary = {
 		fieldPasteLongTextToFileLength: "Lunghezza del testo da convertire in file durante l'incolla",
 		fieldSendMessageOnEnter: 'Invia il messaggio con Invio',
 		fieldCopyTextAttachmentsAsPlainText: 'Copia gli allegati di testo come testo normale',
-		fieldEnableContinueButton: 'Abilita il pulsante "Continua"',
 		fieldParsePdfAsImage: 'Elabora il PDF come immagine',
 		fieldAskConfirmationBeforeChangingConversationTitle:
 			'Chiedi conferma prima di cambiare il titolo della conversazione',
@@ -267,7 +266,6 @@ export const it: TranslationDictionary = {
 		groupInput: 'Scrittura messaggi',
 		groupAttachmentsFiles: 'Allegati e file',
 		groupConversationTitles: 'Titoli delle conversazioni',
-		groupResponseGeneration: 'Generazione risposte',
 		groupBasicGeneration: 'Generazione di base',
 		groupDynamicTemperature: 'Temperatura dinamica',
 		groupXtc: 'XTC',
@@ -460,9 +458,7 @@ Nei server locali può essere facoltativa o arbitraria, a seconda della configur
 				'Mostra sempre i turni agentic nella conversazione, anche quando normalmente sarebbero compressi.',
 			pyInterpreterEnabled: 'Abilita l’interprete Python con Pyodide.',
 			preEncodeConversation:
-				'Dopo ogni risposta, reinvia la conversazione per precompilare la cache KV del server e velocizzare il turno successivo.',
-			enableContinueGeneration:
-				'Abilita il pulsante "Continua" per i messaggi dell\'assistente. Al momento funziona solo con modelli senza reasoning.'
+				'Dopo ogni risposta, reinvia la conversazione per precompilare la cache KV del server e velocizzare il turno successivo.'
 		},
 		serverAddress: 'Server Address',
 		apiKey: 'API Key'
@@ -569,7 +565,6 @@ Nei server locali può essere facoltativa o arbitraria, a seconda della configur
 	},
 	messages: {
 		regenerate: 'Rigenera',
-		continue: 'Continua',
 		forkConversation: 'Dirama conversazione',
 		deleteMessageTitle: 'Elimina messaggio',
 		deleteMessageDescription:

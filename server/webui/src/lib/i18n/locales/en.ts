@@ -149,7 +149,6 @@ export const en: TranslationDictionary = {
 		fieldPasteLongTextToFileLength: 'Paste long text to file length',
 		fieldSendMessageOnEnter: 'Send message on Enter',
 		fieldCopyTextAttachmentsAsPlainText: 'Copy text attachments as plain text',
-		fieldEnableContinueButton: 'Enable "Continue" button',
 		fieldParsePdfAsImage: 'Parse PDF as image',
 		fieldAskConfirmationBeforeChangingConversationTitle:
 			'Ask for confirmation before changing conversation title',
@@ -267,7 +266,6 @@ export const en: TranslationDictionary = {
 		groupInput: 'Message input',
 		groupAttachmentsFiles: 'Attachments and files',
 		groupConversationTitles: 'Conversation titles',
-		groupResponseGeneration: 'Response generation',
 		groupBasicGeneration: 'Basic generation',
 		groupDynamicTemperature: 'Dynamic temperature',
 		groupXtc: 'XTC',
@@ -458,9 +456,7 @@ For local servers, it may be optional or arbitrary depending on the configuratio
 				'Always show agentic turns in the conversation, even when they would normally be collapsed.',
 			pyInterpreterEnabled: 'Enable the Python interpreter using Pyodide.',
 			preEncodeConversation:
-				'After each response, re-submit the conversation to pre-fill the server KV cache and speed up the next turn.',
-			enableContinueGeneration:
-				'Enable the "Continue" button for assistant messages. Currently works only with non-reasoning models.'
+				'After each response, re-submit the conversation to pre-fill the server KV cache and speed up the next turn.'
 		}
 	},
 	server: {
@@ -560,7 +556,6 @@ For local servers, it may be optional or arbitrary depending on the configuratio
 	},
 	messages: {
 		regenerate: 'Regenerate',
-		continue: 'Continue',
 		forkConversation: 'Fork conversation',
 		deleteMessageTitle: 'Delete Message',
 		deleteMessageDescription:

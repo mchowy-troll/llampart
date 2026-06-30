@@ -376,18 +376,6 @@
 							column: 'left'
 						}
 					]
-				},
-				{
-					id: 'response-generation',
-					title: t('settings.groupResponseGeneration'),
-					fields: [
-						{
-							key: SETTINGS_KEYS.ENABLE_CONTINUE_GENERATION,
-							label: t('settings.fieldEnableContinueButton'),
-							type: SettingsFieldType.CHECKBOX,
-							isExperimental: true
-						}
-					]
 				}
 			]
 		},

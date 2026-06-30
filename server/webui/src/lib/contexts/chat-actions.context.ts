@@ -21,7 +21,6 @@ export interface ChatActionsContext {
 		newExtras?: DatabaseMessageExtra[]
 	) => void;
 	regenerateWithBranching: (message: DatabaseMessage, modelOverride?: string) => void;
-	continueAssistantMessage: (message: DatabaseMessage) => void;
 	forkConversation: (
 		message: DatabaseMessage,
 		options: { name: string; includeAttachments: boolean }

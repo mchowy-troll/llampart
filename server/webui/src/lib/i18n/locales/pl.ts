@@ -147,7 +147,6 @@ export const pl: TranslationDictionary = {
 		fieldPasteLongTextToFileLength: 'Długość tekstu do zamiany na plik przy wklejaniu',
 		fieldSendMessageOnEnter: 'Wysyłaj wiadomość Enterem',
 		fieldCopyTextAttachmentsAsPlainText: 'Kopiuj załączniki tekstowe jako zwykły tekst',
-		fieldEnableContinueButton: 'Włącz przycisk „Kontynuuj”',
 		fieldParsePdfAsImage: 'Przetwarzaj PDF jako obraz',
 		fieldAskConfirmationBeforeChangingConversationTitle:
 			'Pytaj o potwierdzenie przed zmianą tytułu rozmowy',
@@ -267,7 +266,6 @@ export const pl: TranslationDictionary = {
 		groupInput: 'Pisanie wiadomości',
 		groupAttachmentsFiles: 'Załączniki i pliki',
 		groupConversationTitles: 'Tytuły rozmów',
-		groupResponseGeneration: 'Generowanie odpowiedzi',
 		groupBasicGeneration: 'Podstawowe generowanie',
 		groupDynamicTemperature: 'Dynamiczna temperatura',
 		groupXtc: 'XTC',
@@ -460,9 +458,7 @@ W lokalnych serwerach może być opcjonalny albo dowolny, zależnie od konfigura
 				'Zawsze pokazuj tury agentic w rozmowie, nawet gdy normalnie byłyby zwinięte.',
 			pyInterpreterEnabled: 'Włącz interpreter Pythona oparty na Pyodide.',
 			preEncodeConversation:
-				'Po każdej odpowiedzi ponownie wyślij rozmowę, aby wstępnie wypełnić cache KV serwera i przyspieszyć następną turę.',
-			enableContinueGeneration:
-				'Włącz przycisk „Kontynuuj” dla wiadomości asystenta. Obecnie działa tylko z modelami bez rozumowania.'
+				'Po każdej odpowiedzi ponownie wyślij rozmowę, aby wstępnie wypełnić cache KV serwera i przyspieszyć następną turę.'
 		},
 		serverAddress: 'Adres serwera',
 		apiKey: 'API Key'
@@ -567,7 +563,6 @@ W lokalnych serwerach może być opcjonalny albo dowolny, zależnie od konfigura
 	},
 	messages: {
 		regenerate: 'Wygeneruj ponownie',
-		continue: 'Kontynuuj',
 		forkConversation: 'Rozwidl rozmowę',
 		deleteMessageTitle: 'Usuń wiadomość',
 		deleteMessageDescription:

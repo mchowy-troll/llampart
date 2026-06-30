@@ -147,7 +147,6 @@ export const de: TranslationDictionary = {
 		fieldPasteLongTextToFileLength: 'Länge für das Umwandeln langen Texts in eine Datei',
 		fieldSendMessageOnEnter: 'Nachricht mit Enter senden',
 		fieldCopyTextAttachmentsAsPlainText: 'Textanhänge als Klartext kopieren',
-		fieldEnableContinueButton: '„Weiter“-Schaltfläche aktivieren',
 		fieldParsePdfAsImage: 'PDF als Bild verarbeiten',
 		fieldAskConfirmationBeforeChangingConversationTitle:
 			'Vor dem Ändern des Gesprächstitels um Bestätigung bitten',
@@ -267,7 +266,6 @@ export const de: TranslationDictionary = {
 		groupInput: 'Nachrichteneingabe',
 		groupAttachmentsFiles: 'Anhänge und Dateien',
 		groupConversationTitles: 'Konversationstitel',
-		groupResponseGeneration: 'Antwortgenerierung',
 		groupBasicGeneration: 'Grundlegende Generierung',
 		groupDynamicTemperature: 'Dynamische Temperatur',
 		groupXtc: 'XTC',
@@ -459,9 +457,7 @@ Bei lokalen Servern kann er je nach Konfiguration optional oder beliebig sein.`,
 				'Agentic-Turns immer in der Konversation anzeigen, auch wenn sie normalerweise eingeklappt wären.',
 			pyInterpreterEnabled: 'Aktiviert den Python-Interpreter mit Pyodide.',
 			preEncodeConversation:
-				'Reicht die Unterhaltung nach jeder Antwort erneut ein, um den KV-Cache vorzufüllen und den nächsten Zug zu beschleunigen.',
-			enableContinueGeneration:
-				'Die „Weiter“-Schaltfläche für Assistentennachrichten aktivieren. Funktioniert derzeit nur mit Nicht-Reasoning-Modellen.'
+				'Reicht die Unterhaltung nach jeder Antwort erneut ein, um den KV-Cache vorzufüllen und den nächsten Zug zu beschleunigen.'
 		},
 		serverAddress: 'Server Address',
 		apiKey: 'API Key'
@@ -570,7 +566,6 @@ Bei lokalen Servern kann er je nach Konfiguration optional oder beliebig sein.`,
 	},
 	messages: {
 		regenerate: 'Neu generieren',
-		continue: 'Fortfahren',
 		forkConversation: 'Unterhaltung verzweigen',
 		deleteMessageTitle: 'Nachricht löschen',
 		deleteMessageDescription:

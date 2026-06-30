@@ -147,7 +147,6 @@ export const fr: TranslationDictionary = {
 		fieldPasteLongTextToFileLength: 'Longueur du texte à convertir en fichier lors du collage',
 		fieldSendMessageOnEnter: 'Envoyer le message avec Entrée',
 		fieldCopyTextAttachmentsAsPlainText: 'Copier les pièces jointes texte en texte brut',
-		fieldEnableContinueButton: 'Activer le bouton « Continuer »',
 		fieldParsePdfAsImage: 'Traiter le PDF comme une image',
 		fieldAskConfirmationBeforeChangingConversationTitle:
 			'Demander confirmation avant de changer le titre de la conversation',
@@ -271,7 +270,6 @@ export const fr: TranslationDictionary = {
 		groupInput: 'Saisie du message',
 		groupAttachmentsFiles: 'Pièces jointes et fichiers',
 		groupConversationTitles: 'Titres des conversations',
-		groupResponseGeneration: 'Génération des réponses',
 		groupBasicGeneration: 'Génération de base',
 		groupDynamicTemperature: 'Température dynamique',
 		groupXtc: 'XTC',
@@ -467,9 +465,7 @@ Sur les serveurs locaux, elle peut être facultative ou arbitraire selon la conf
 				'Toujours afficher les tours agentic dans la conversation, même lorsqu’ils seraient normalement repliés.',
 			pyInterpreterEnabled: 'Active l’interpréteur Python avec Pyodide.',
 			preEncodeConversation:
-				'Resoumet la conversation après chaque réponse pour préremplir le cache KV et accélérer le tour suivant.',
-			enableContinueGeneration:
-				'Active le bouton « Continuer » pour les messages de l’assistant. Fonctionne actuellement uniquement avec les modèles sans raisonnement.'
+				'Resoumet la conversation après chaque réponse pour préremplir le cache KV et accélérer le tour suivant.'
 		},
 		serverAddress: 'Server Address',
 		apiKey: 'API Key'
@@ -577,7 +573,6 @@ Sur les serveurs locaux, elle peut être facultative ou arbitraire selon la conf
 	},
 	messages: {
 		regenerate: 'Régénérer',
-		continue: 'Continuer',
 		forkConversation: 'Créer une branche de conversation',
 		deleteMessageTitle: 'Supprimer le message',
 		deleteMessageDescription:
