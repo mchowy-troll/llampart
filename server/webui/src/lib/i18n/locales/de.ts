@@ -216,7 +216,6 @@ export const de: TranslationDictionary = {
 		fieldPreFillKvCacheAfterResponse: 'KV-Cache nach der Antwort vorfüllen',
 		fieldDisableServerSideThinkingExtraction: 'Server-side extraction reasoning deaktivieren',
 		fieldStripThinkingFromMessageHistory: 'Reasoning aus dem Nachrichtenverlauf entfernen',
-		fieldEnableRawOutputToggle: 'Raw-output-Schalter aktivieren',
 		fieldCustomJson: 'Benutzerdefiniertes JSON',
 		groupConnection: 'Verbindung',
 		groupSystemMessage: 'Systemnachricht',
@@ -432,8 +431,6 @@ Bei lokalen Servern kann er je nach Konfiguration optional oder beliebig sein.`,
 				'Sendet reasoning_format=none, sodass der Server Thinking inline statt separat zurückgibt.',
 			excludeReasoningFromContext:
 				'Entfernt Thinking aus früheren Nachrichten, bevor sie erneut gesendet werden.',
-			showRawOutputSwitch:
-				'Zeigt einen Schalter, um Nachrichten als Klartext statt als Markdown anzuzeigen.',
 			keepStatsVisible: 'Verarbeitungsstatistiken nach Abschluss der Generierung sichtbar lassen.',
 			showMessageStats: 'Zeigt Generierungsstatistiken unter jeder Assistentennachricht an.',
 			disableAutoScroll:
@@ -575,7 +572,6 @@ Bei lokalen Servern kann er je nach Konfiguration optional oder beliebig sein.`,
 		regenerate: 'Neu generieren',
 		continue: 'Fortfahren',
 		forkConversation: 'Unterhaltung verzweigen',
-		showRawOutput: 'Rohausgabe anzeigen',
 		deleteMessageTitle: 'Nachricht löschen',
 		deleteMessageDescription:
 			'Sind Sie sicher, dass Sie diese Nachricht löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',

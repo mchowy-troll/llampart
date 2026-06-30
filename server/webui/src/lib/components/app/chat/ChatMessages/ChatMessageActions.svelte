@@ -5,7 +5,6 @@
 		ChatMessageBranchingControls,
 		DialogConfirmation
 	} from '$lib/components/app';
-	import { Switch } from '$lib/components/ui/switch';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -34,9 +33,6 @@
 		onConfirmDelete: () => void;
 		onNavigateToSibling?: (siblingId: string) => void;
 		onShowDeleteDialogChange: (show: boolean) => void;
-		showRawOutputSwitch?: boolean;
-		rawOutputEnabled?: boolean;
-		onRawOutputToggle?: (enabled: boolean) => void;
 	}
 
 	let {
@@ -54,10 +50,7 @@
 		onRegenerate,
 		role,
 		siblingInfo = null,
-		showDeleteDialog,
-		showRawOutputSwitch = false,
-		rawOutputEnabled = false,
-		onRawOutputToggle
+		showDeleteDialog
 	}: Props = $props();
 
 	let showForkDialog = $state(false);
@@ -133,16 +126,6 @@
 			<ActionIcon icon={Trash2} tooltip={t('common.delete')} onclick={onDelete} />
 		</div>
 	</div>
-
-	{#if showRawOutputSwitch}
-		<div class="flex items-center gap-2">
-			<span class="text-xs text-muted-foreground">{t('messages.showRawOutput')}</span>
-			<Switch
-				checked={rawOutputEnabled}
-				onCheckedChange={(checked) => onRawOutputToggle?.(checked)}
-			/>
-		</div>
-	{/if}
 </div>
 
 <DialogConfirmation

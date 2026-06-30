@@ -15,16 +15,14 @@
 	import {
 		autoResizeTextarea,
 		copyToClipboard,
-		isIMEComposing,
-		deriveAgenticSections
+		deriveAgenticSections,
+		isIMEComposing
 	} from '$lib/utils';
 	import { AgenticSectionType } from '$lib/enums';
-	import { REASONING_TAGS } from '$lib/constants/agentic';
 	import { tick } from 'svelte';
 	import { Check, X, Loader2, Brain, Wrench, Info } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
-	import { Switch } from '$lib/components/ui/switch';
 	import { INPUT_CLASSES } from '$lib/constants';
 	import { MessageRole, KeyboardKey, ChatMessageStatsView } from '$lib/enums';
 	import Label from '$lib/components/ui/label/label.svelte';
@@ -104,55 +102,12 @@
 
 	let currentConfig = $derived(config());
 	let isRouter = $derived(isRouterMode());
-	let showRawOutput = $state(false);
 	let showModelDialog = $state(false);
 	let infoModelId = $state<string | null>(null);
 
 	let hideMinimalisticProcessingInfo = $derived(
 		!!currentConfig.minimalAgenticIndicators && isLastAssistantMessage
 	);
-
-	let rawOutputContent = $derived.by(() => {
-		const sections = deriveAgenticSections(message, toolMessages, [], false);
-		const parts: string[] = [];
-
-		for (const section of sections) {
-			switch (section.type) {
-				case AgenticSectionType.REASONING:
-				case AgenticSectionType.REASONING_PENDING:
-					parts.push(`${REASONING_TAGS.START}\n${section.content}\n${REASONING_TAGS.END}`);
-					break;
-
-				case AgenticSectionType.TEXT:
-					parts.push(section.content);
-					break;
-
-				case AgenticSectionType.TOOL_CALL:
-				case AgenticSectionType.TOOL_CALL_PENDING:
-				case AgenticSectionType.TOOL_CALL_STREAMING: {
-					const callObj: Record<string, unknown> = { name: section.toolName };
-
-					if (section.toolArgs) {
-						try {
-							callObj.arguments = JSON.parse(section.toolArgs);
-						} catch {
-							callObj.arguments = section.toolArgs;
-						}
-					}
-
-					parts.push(JSON.stringify(callObj, null, 2));
-
-					if (section.toolResult) {
-						parts.push(`[Tool Result]\n${section.toolResult}`);
-					}
-
-					break;
-				}
-			}
-		}
-
-		return parts.join('\n\n\n');
-	});
 
 	let activeStatsView = $state<ChatMessageStatsView>(ChatMessageStatsView.GENERATION);
 	let statsContainerEl: HTMLDivElement | undefined = $state();
@@ -346,9 +301,7 @@
 			</div>
 		</div>
 	{:else if message.role === MessageRole.ASSISTANT}
-		{#if showRawOutput}
-			<pre class="raw-output">{rawOutputContent || ''}</pre>
-		{:else if showAssistantMessageBody}
+		{#if showAssistantMessageBody}
 			<!-- llampart-hide-empty-assistant-frame-while-processing -->
 			<ChatMessageAgenticContent
 				{message}
@@ -426,18 +379,6 @@
 													predictedMs={genStats?.timeMs}
 												/>
 											{/if}
-										{/if}
-
-										{#if currentConfig.showRawOutputSwitch}
-											<div class="assistant-message-raw-output-toggle">
-												<span class="text-xs text-muted-foreground"
-													>{t('messages.showRawOutput')}</span
-												>
-												<Switch
-													checked={showRawOutput}
-													onCheckedChange={(checked) => (showRawOutput = checked)}
-												/>
-											</div>
 										{/if}
 									</div>
 								{/if}
@@ -521,21 +462,6 @@
 		color: var(--llampart-assistant-message-foreground, #e8e8e8);
 	}
 
-	.raw-output {
-		width: 100%;
-		max-width: var(--llampart-chat-message-max-width, 57.6rem);
-		margin-top: 1.5rem;
-		padding: 1rem 1.25rem;
-		border-radius: 1rem;
-		background: hsl(var(--muted) / 0.3);
-		font-family:
-			ui-monospace, SFMono-Regular, 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
-			'Liberation Mono', Menlo, monospace;
-		font-size: 0.875rem;
-		line-height: 1.6;
-		white-space: pre-wrap;
-		word-break: break-word;
-	}
 	.llampart-assistant-model-info-action,
 	.llampart-assistant-model-info-action:is(:hover, :focus, :focus-visible, :active) {
 		border: 0 !important;
@@ -568,12 +494,6 @@
 		align-items: flex-start;
 		gap: 0.5rem;
 		font-variant-numeric: tabular-nums;
-	}
-
-	.assistant-message-raw-output-toggle {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
 	}
 
 	.assistant-message-footer-right {
