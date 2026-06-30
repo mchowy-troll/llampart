@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-INSTALLER_VERSION="0.2.0"
+INSTALLER_VERSION="0.2.1"
 APP_NAME="llampart"
 REPO_OWNER="mchowy-troll"
 REPO_NAME="llampart"
@@ -348,6 +348,11 @@ display_mode_name() {
 
 print_intro() {
   local default_choice="$1"
+  local installed="0"
+
+  if existing_install_detected; then
+    installed="1"
+  fi
 
   echo
   bold "llampart installer"; echo
@@ -363,6 +368,14 @@ print_intro() {
   yellow "REQUIREMENT:"; echo
   echo "    Caddy must already be installed and available as a systemd service."
   echo
+  if [[ "$installed" == "1" ]]; then
+    green "STATUS:"; echo " llampart is already installed on this computer."
+    echo "    Install is not available. Choose Update, Configure, or Uninstall."
+  else
+    yellow "STATUS:"; echo " llampart is not installed on this computer."
+    echo "    Only Install is available."
+  fi
+  echo
   blue "OPTIONS:"; echo
   echo
   echo "    [1] Install"
@@ -374,13 +387,31 @@ print_intro() {
   printf 'Enter choice [%s]: ' "$default_choice"
 }
 
-determine_mode() {
-  case "$MODE" in
-    install|update|configure|uninstall) return 0 ;;
-    "") ;;
-    *) fatal "Invalid mode: $MODE" ;;
-  esac
+mode_available_for_install_state() {
+  local mode="$1"
 
+  if existing_install_detected; then
+    [[ "$mode" != "install" ]]
+  else
+    [[ "$mode" == "install" ]]
+  fi
+}
+
+print_unavailable_mode_message() {
+  local mode="$1"
+
+  echo
+  if existing_install_detected; then
+    warn "llampart is already installed. Install cannot be run again over an existing installation."
+    echo "Choose Update to refresh the Web UI, Configure to change ports, or Uninstall to remove llampart."
+  else
+    warn "llampart is not installed. $(display_mode_name "$mode") is not available."
+    echo "The only available action is Install."
+  fi
+  echo
+}
+
+choose_mode_from_menu() {
   local default_choice="1"
   if existing_install_detected; then
     default_choice="2"
@@ -393,13 +424,42 @@ determine_mode() {
     choice="${choice:-$default_choice}"
 
     case "$choice" in
-      1) MODE="install"; break ;;
-      2) MODE="update"; break ;;
-      3) MODE="configure"; break ;;
-      4) MODE="uninstall"; break ;;
+      1) MODE="install" ;;
+      2) MODE="update" ;;
+      3) MODE="configure" ;;
+      4) MODE="uninstall" ;;
       5) echo "Cancelled without changes."; exit 0 ;;
-      *) echo "Choose 1-5."; echo ;;
+      *) echo "Choose 1-5."; echo; continue ;;
     esac
+
+    if mode_available_for_install_state "$MODE"; then
+      return 0
+    fi
+
+    print_unavailable_mode_message "$MODE"
+    MODE=""
+  done
+}
+
+determine_mode() {
+  case "$MODE" in
+    install|update|configure|uninstall) ;;
+    "") ;;
+    *) fatal "Invalid mode: $MODE" ;;
+  esac
+
+  while true; do
+    if [[ -z "$MODE" ]]; then
+      choose_mode_from_menu
+      return 0
+    fi
+
+    if mode_available_for_install_state "$MODE"; then
+      return 0
+    fi
+
+    print_unavailable_mode_message "$MODE"
+    MODE=""
   done
 }
 
@@ -989,29 +1049,73 @@ caddy_enabled_status() {
   fi
 }
 
+summary_value_color() {
+  local value="$1"
+
+  case "$value" in
+    active|enabled)
+      green "$value"
+      ;;
+    deactivated|disabled|failed|inactive)
+      red "$value"
+      ;;
+    *)
+      printf '%s' "$value"
+      ;;
+  esac
+}
+
+summary_row() {
+  local label="$1"
+  local value="$2"
+
+  printf '    %-22s %s\n' "${label}:" "$value"
+}
+
+summary_multiline_row() {
+  local label="$1"
+  local values="$2"
+  local first="1"
+  local value=""
+
+  if [[ -z "$values" ]]; then
+    summary_row "$label" "No LAN IPv4 address detected."
+    return 0
+  fi
+
+  while IFS= read -r value; do
+    [[ -z "$value" ]] && continue
+    if [[ "$first" == "1" ]]; then
+      summary_row "$label" "$value"
+      first="0"
+    else
+      summary_row "" "$value"
+    fi
+  done <<< "$values"
+}
+
 print_success_summary() {
   local lan=""
+  local caddy_status=""
+  local caddy_autostart=""
+
   lan="$(lan_urls || true)"
+  caddy_status="$(caddy_active_status)"
+  caddy_autostart="$(caddy_enabled_status)"
 
   echo
   bold "llampart is ready"; echo
   echo
   echo "Open llampart:"
   echo
-  printf '    %-16s %s\n' "Local:" "$(cyan "http://localhost:${LLAMPART_PORT}/#/")"
-  echo
-  echo "    Home network:"
-  if [[ -n "$lan" ]]; then
-    printf '%s\n' "$lan" | sed 's/^/        /'
-  else
-    echo "        No LAN IPv4 address detected."
-  fi
-  echo
-  printf '    %-16s %s\n' "backend proxy:" "http://${BACKEND_HOST}:${BACKEND_PORT}"
+  summary_row "local" "$(cyan "http://localhost:${LLAMPART_PORT}/#/")"
+  summary_multiline_row "home network" "$lan"
+  summary_row "backend proxy" "http://${BACKEND_HOST}:${BACKEND_PORT}"
   echo
   echo "Caddy:"
-  printf '    %-16s %s\n' "status:" "$(caddy_active_status)"
-  printf '    %-16s %s\n' "autostart:" "$(caddy_enabled_status)"
+  echo
+  summary_row "status" "$(summary_value_color "$caddy_status")"
+  summary_row "autostart" "$(summary_value_color "$caddy_autostart")"
   echo
   echo "Next step:"
   echo "    Start your backend if it is not running yet."
