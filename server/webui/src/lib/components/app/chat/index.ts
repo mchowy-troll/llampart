@@ -454,7 +454,7 @@ export { default as ChatMessageAgenticContent } from './ChatMessages/ChatMessage
 /**
  * Action buttons toolbar for messages. Displays copy, edit, delete, and regenerate
  * buttons based on message role. Includes branching controls when message has siblings.
- * Shows delete confirmation dialog with cascade delete count. Handles raw output toggle
+ * Shows delete confirmation dialog with cascade delete count.
  * for assistant messages.
  */
 export { default as ChatMessageActions } from './ChatMessages/ChatMessageActions.svelte';

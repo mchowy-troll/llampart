@@ -632,11 +632,6 @@
 							key: SETTINGS_KEYS.EXCLUDE_REASONING_FROM_CONTEXT,
 							label: t('settings.fieldStripThinkingFromMessageHistory'),
 							type: SettingsFieldType.CHECKBOX
-						},
-						{
-							key: SETTINGS_KEYS.SHOW_RAW_OUTPUT_SWITCH,
-							label: t('settings.fieldEnableRawOutputToggle'),
-							type: SettingsFieldType.CHECKBOX
 						}
 					]
 				},

@@ -218,7 +218,6 @@ export const en: TranslationDictionary = {
 		fieldPreFillKvCacheAfterResponse: 'Pre-fill KV cache after response',
 		fieldDisableServerSideThinkingExtraction: 'Disable server-side thinking extraction',
 		fieldStripThinkingFromMessageHistory: 'Strip thinking from message history',
-		fieldEnableRawOutputToggle: 'Enable raw output toggle',
 		fieldCustomJson: 'Custom JSON',
 		groupConnection: 'Connection',
 		groupSystemMessage: 'System message',
@@ -432,7 +431,6 @@ For local servers, it may be optional or arbitrary depending on the configuratio
 				'Send reasoning_format=none so the server returns thinking inline instead of extracting it separately.',
 			excludeReasoningFromContext:
 				'Remove thinking from previous messages before sending them back. When disabled, thinking is returned through reasoning_content.',
-			showRawOutputSwitch: 'Show a toggle to display messages as plain text instead of Markdown.',
 			keepStatsVisible: 'Keep processing statistics visible after generation finishes.',
 			showMessageStats: 'Display generation statistics below each assistant message.',
 			disableAutoScroll:
@@ -564,7 +562,6 @@ For local servers, it may be optional or arbitrary depending on the configuratio
 		regenerate: 'Regenerate',
 		continue: 'Continue',
 		forkConversation: 'Fork conversation',
-		showRawOutput: 'Show raw output',
 		deleteMessageTitle: 'Delete Message',
 		deleteMessageDescription:
 			'Are you sure you want to delete this message? This action cannot be undone.',

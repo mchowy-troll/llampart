@@ -216,7 +216,6 @@ export const it: TranslationDictionary = {
 		fieldPreFillKvCacheAfterResponse: 'Precompila la cache KV dopo la risposta',
 		fieldDisableServerSideThinkingExtraction: 'Disabilita server-side extraction reasoning',
 		fieldStripThinkingFromMessageHistory: 'Rimuovi Reasoning dalla cronologia dei messaggi',
-		fieldEnableRawOutputToggle: 'Abilita il toggle raw output',
 		fieldCustomJson: 'JSON personalizzato',
 		groupConnection: 'Connessione',
 		groupSystemMessage: 'Messaggio di sistema',
@@ -429,8 +428,6 @@ Nei server locali può essere facoltativa o arbitraria, a seconda della configur
 				'Invia reasoning_format=none in modo che il server restituisca il ragionamento inline invece di estrarlo separatamente.',
 			excludeReasoningFromContext:
 				'Rimuove il ragionamento dai messaggi precedenti prima di reinviarli.',
-			showRawOutputSwitch:
-				'Mostra un interruttore per visualizzare i messaggi come testo semplice invece che Markdown.',
 			keepStatsVisible: 'Mantiene visibili le statistiche di elaborazione dopo la generazione.',
 			showMessageStats:
 				'Mostra le statistiche di generazione sotto ogni messaggio dell’assistente.',
@@ -574,7 +571,6 @@ Nei server locali può essere facoltativa o arbitraria, a seconda della configur
 		regenerate: 'Rigenera',
 		continue: 'Continua',
 		forkConversation: 'Dirama conversazione',
-		showRawOutput: 'Mostra output grezzo',
 		deleteMessageTitle: 'Elimina messaggio',
 		deleteMessageDescription:
 			'Sei sicuro di voler eliminare questo messaggio? Questa azione non può essere annullata.',

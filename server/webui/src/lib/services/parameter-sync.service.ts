@@ -198,12 +198,6 @@ export const SYNCABLE_PARAMETERS: SyncableParameter[] = [
 		canSync: true
 	},
 	{
-		key: 'showRawOutputSwitch',
-		serverKey: 'showRawOutputSwitch',
-		type: SyncableParameterType.BOOLEAN,
-		canSync: true
-	},
-	{
 		key: 'alwaysShowSidebarOnDesktop',
 		serverKey: 'alwaysShowSidebarOnDesktop',
 		type: SyncableParameterType.BOOLEAN,
