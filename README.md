@@ -79,19 +79,13 @@ curl -fsSL https://raw.githubusercontent.com/mchowy-troll/llampart/main/install.
 
 Full installation, update, configuration, uninstall, file layout, and troubleshooting documentation is available in [the Linux installation guide](docs/installation/linux-caddy.md).
 
-## Optional Caddy deployment
-
-llampart can also be served as a static frontend through Caddy, with selected API requests proxied to a local `llama-server`.
-
-For a practical local/LAN deployment example, see [Deploying llampart with Caddy](docs/deployment/caddy.md).
-
 ## Requirements
 
 For normal installed use:
 
 - a supported Linux distribution for the installer: Ubuntu-based or Arch Linux-based
 - systemd
-- Caddy, installed or installable by the installer
+- Caddy
 - a separately running backend, such as `llama-server` or an `OpenAI-compatible` API server
 
 For Web UI development:
@@ -134,9 +128,6 @@ bash scripts/package-release-llampart.sh
 server/
 ├── public/      # generated frontend build consumed by the server and release packager
 └── webui/       # SvelteKit Web UI source, tests, docs, and helper scripts
-
-docs/
-└── installation/ # user installation and maintenance documentation
 ```
 
 The main frontend project lives in:
