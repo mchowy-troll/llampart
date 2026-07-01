@@ -610,6 +610,8 @@ Sur les serveurs locaux, elle peut être facultative ou arbitraire selon la conf
 		systemMessageWithActions: 'Message système avec actions',
 		userMessageWithActions: 'Message utilisateur avec actions',
 		processingEllipsis: 'Traitement...',
+		minimalReasoningStatus: 'Je réfléchis...',
+		minimalToolsStatus: 'J’utilise des outils...',
 		agenticReasoning: 'Reasoning',
 		agenticReasoningStreaming: 'Reasoning...',
 		messageCopiedToClipboard: 'Message copié dans le presse-papiers',

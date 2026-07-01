@@ -82,6 +82,24 @@
 		}))
 	);
 
+	const showMinimalReasoningStatus = $derived(
+		minimalAgenticIndicators &&
+			isStreaming &&
+			sectionsParsed.some((section) => section.type === AgenticSectionType.REASONING_PENDING)
+	);
+
+	const showMinimalToolsStatus = $derived(
+		minimalAgenticIndicators &&
+			isStreaming &&
+			sectionsParsed.some(
+				(section) =>
+					section.type === AgenticSectionType.TOOL_CALL_PENDING ||
+					section.type === AgenticSectionType.TOOL_CALL_STREAMING
+			)
+	);
+
+	const showMinimalInlineStatuses = $derived(showMinimalReasoningStatus || showMinimalToolsStatus);
+
 	function shouldRenderAgenticPanel(section: AgenticSection): boolean {
 		if (!minimalAgenticIndicators) return true;
 
@@ -164,6 +182,22 @@
 		};
 	}
 </script>
+
+{#snippet renderMinimalInlineStatus(label: string)}
+	<div
+		class="llampart-inline-processing-status llampart-agentic-inline-status"
+		role="status"
+		aria-label={label}
+	>
+		<span
+			class="llampart-inline-processing-status__symbol llampart-inline-processing-status__symbol--animated"
+			aria-hidden="true"
+		>
+			•
+		</span>
+		<span class="llampart-inline-processing-status__label">{label}</span>
+	</div>
+{/snippet}
 
 {#snippet renderSection(section: (typeof sectionsParsed)[number], index: number)}
 	{#if !shouldRenderAgenticPanel(section)}
@@ -349,6 +383,18 @@
 		{/each}
 	{/if}
 
+	{#if showMinimalInlineStatuses}
+		<div class="minimal-agentic-inline-statuses" aria-live="polite">
+			{#if showMinimalReasoningStatus}
+				{@render renderMinimalInlineStatus(t('messages.minimalReasoningStatus'))}
+			{/if}
+
+			{#if showMinimalToolsStatus}
+				{@render renderMinimalInlineStatus(t('messages.minimalToolsStatus'))}
+			{/if}
+		</div>
+	{/if}
+
 	{#if pendingPermission && !permissionDismissed}
 		<ChatMessageActionCardPermissionRequest
 			toolName={pendingPermission.toolName}
@@ -386,8 +432,26 @@
 	}
 
 	.minimal-agentic-mode {
+		position: relative;
 		min-height: 5.75rem;
 		padding-top: 0.9375rem;
+	}
+
+	.minimal-agentic-inline-statuses {
+		position: absolute;
+		top: 0.9375rem;
+		left: 1.25rem;
+		right: 1.25rem;
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.25rem;
+		margin-top: 0;
+		pointer-events: none;
+	}
+
+	.llampart-agentic-inline-status {
+		max-width: 100%;
 	}
 
 	:global(.dark) .agentic-content {

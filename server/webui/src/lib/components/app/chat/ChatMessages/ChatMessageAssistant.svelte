@@ -12,15 +12,9 @@
 	import { getMessageEditContext } from '$lib/contexts';
 	import { useProcessingState } from '$lib/hooks/use-processing-state.svelte';
 	import { isLoading, isChatStreaming } from '$lib/stores/chat.svelte';
-	import {
-		autoResizeTextarea,
-		copyToClipboard,
-		deriveAgenticSections,
-		isIMEComposing
-	} from '$lib/utils';
-	import { AgenticSectionType } from '$lib/enums';
+	import { autoResizeTextarea, copyToClipboard, isIMEComposing } from '$lib/utils';
 	import { tick } from 'svelte';
-	import { Check, X, Loader2, Brain, Wrench, Info } from '@lucide/svelte';
+	import { Check, X, Info } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { INPUT_CLASSES } from '$lib/constants';
@@ -169,37 +163,6 @@
 	let isCurrentlyLoading = $derived(isLoading());
 	let isStreaming = $derived(isChatStreaming());
 
-	let minimalAgenticIndicatorsActive = $derived(
-		!!currentConfig.minimalAgenticIndicators && isAgentic
-	);
-
-	let minimalAgenticUiSections = $derived(
-		minimalAgenticIndicatorsActive
-			? deriveAgenticSections(message, toolMessages, [], isStreaming)
-			: []
-	);
-
-	let hasActiveMinimalFooterReasoningIndicator = $derived(
-		minimalAgenticIndicatorsActive &&
-			isStreaming &&
-			minimalAgenticUiSections.some(
-				(section) => section.type === AgenticSectionType.REASONING_PENDING
-			)
-	);
-
-	let hasActiveMinimalFooterToolIndicator = $derived(
-		minimalAgenticIndicatorsActive &&
-			isStreaming &&
-			minimalAgenticUiSections.some(
-				(section) =>
-					section.type === AgenticSectionType.TOOL_CALL_PENDING ||
-					section.type === AgenticSectionType.TOOL_CALL_STREAMING
-			)
-	);
-
-	let showMinimalAgenticFooterIndicators = $derived(
-		hasActiveMinimalFooterReasoningIndicator || hasActiveMinimalFooterToolIndicator
-	);
 	let hasNoContent = $derived(!message?.content?.trim());
 	let isActivelyProcessing = $derived(isCurrentlyLoading || isStreaming);
 
@@ -383,38 +346,6 @@
 							</div>
 
 							<div class="assistant-message-footer-right">
-								{#if showMinimalAgenticFooterIndicators}
-									<div class="minimal-agentic-footer-indicators" aria-live="polite">
-										{#if hasActiveMinimalFooterReasoningIndicator}
-											<span
-												class="minimal-agentic-footer-indicator"
-												aria-label={t('messages.agenticReasoningStreaming')}
-											>
-												<span class="minimal-agentic-footer-spinner" aria-hidden="true">
-													<Loader2 />
-												</span>
-												<span class="minimal-agentic-footer-center-icon" aria-hidden="true">
-													<Brain />
-												</span>
-											</span>
-										{/if}
-
-										{#if hasActiveMinimalFooterToolIndicator}
-											<span
-												class="minimal-agentic-footer-indicator"
-												aria-label={t('messages.agenticExecuting')}
-											>
-												<span class="minimal-agentic-footer-spinner" aria-hidden="true">
-													<Loader2 />
-												</span>
-												<span class="minimal-agentic-footer-center-icon" aria-hidden="true">
-													<Wrench />
-												</span>
-											</span>
-										{/if}
-									</div>
-								{/if}
-
 								<ChatMessageActions
 									role={MessageRole.ASSISTANT}
 									justify="end"
@@ -564,85 +495,6 @@
 			0 1px 2px rgba(0, 0, 0, 0.05) !important;
 		backdrop-filter: blur(10px) saturate(115%);
 		-webkit-backdrop-filter: blur(10px) saturate(115%);
-	}
-
-	.minimal-agentic-footer-indicators {
-		display: inline-flex;
-		height: 1.5rem;
-		align-items: center;
-		gap: 0.125rem;
-		margin-right: 0.125rem;
-		pointer-events: none;
-	}
-
-	.minimal-agentic-footer-indicator {
-		position: relative;
-		display: inline-flex;
-		height: 1.5rem;
-		width: 1.5rem;
-		flex: 0 0 1.5rem;
-		align-items: center;
-		justify-content: center;
-		color: hsl(var(--foreground));
-	}
-
-	.minimal-agentic-footer-spinner {
-		position: absolute;
-		inset: 0;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		opacity: 0.52;
-	}
-
-	.minimal-agentic-footer-spinner :global(svg) {
-		height: 1.35rem;
-		width: 1.35rem;
-		animation: spin 1s linear infinite;
-		stroke-width: 1.05;
-	}
-
-	.minimal-agentic-footer-center-icon {
-		position: relative;
-		z-index: 1;
-		display: inline-flex;
-		height: 0.75rem;
-		width: 0.75rem;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.minimal-agentic-footer-center-icon :global(svg) {
-		height: 0.75rem;
-		width: 0.75rem;
-		stroke-width: 1.7;
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.minimal-agentic-footer-spinner :global(svg) {
-			animation: none !important;
-		}
-	}
-
-	:global(html.has-frosted-glass-theme) .minimal-agentic-footer-indicator {
-		color: var(--llampart-frosted-user-message-foreground, #000000);
-		filter: none;
-	}
-
-	:global(html.has-frosted-glass-theme) .minimal-agentic-footer-spinner {
-		opacity: 0.5;
-	}
-
-	/* minimal-agentic-footer-spinner-specific-stroke */
-	:global(html.has-frosted-glass-theme)
-		.assistant-message-footer
-		.minimal-agentic-footer-spinner
-		:global(svg),
-	:global(html.has-frosted-glass-theme)
-		.assistant-message-footer
-		.minimal-agentic-footer-spinner
-		:global(svg *) {
-		stroke-width: 1.05 !important;
 	}
 
 	@media (max-width: 640px) {
