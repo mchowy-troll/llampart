@@ -9,7 +9,14 @@
 	--llampart-ui-scale-max-font-size: 14.4px;
 
 	--llampart-desktop-sidebar-width: 25vw;
-	--llampart-compact-sidebar-width: 12.5vw;
+	--llampart-compact-sidebar-min-width: 20rem;
+	--llampart-compact-sidebar-ideal-width: 12.5vw;
+	--llampart-compact-sidebar-max-width: 24rem;
+	--llampart-compact-sidebar-width: clamp(
+		var(--llampart-compact-sidebar-min-width),
+		var(--llampart-compact-sidebar-ideal-width),
+		var(--llampart-compact-sidebar-max-width)
+	);
 
 	/* Chat layout scale primitives. Keep values visual-parity first; tune them in the UI scale redesign step. */
 	--llampart-chat-composer-max-width: 48rem;

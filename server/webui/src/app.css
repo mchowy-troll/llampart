@@ -49,7 +49,7 @@ html[data-llampart-ui-scale='110'] {
    Na 1080p przeglądarka ma 1920 CSS px, więc wymuszamy tę samą szerokość sidebara,
    żeby dwie kolumny kafelków miały taką samą logikę jak na 5K. */
 @media (min-width: 1024px) and (max-width: 2559.98px) {
-	[data-slot='sidebar-wrapper'] {
+	html:not(.llampart-compact-sidebar) [data-slot='sidebar-wrapper'] {
 		--sidebar-width: var(--llampart-desktop-sidebar-width) !important;
 	}
 }
@@ -1137,10 +1137,26 @@ html.has-frosted-glass-theme
 
 /* llampart-compact-sidebar-layout-primitives
    The compact sidebar setting is state-owned by settings; this layer owns the
-   shared desktop width and one-column conversation grid presentation. */
+   independent desktop compact sidebar layout. The one-column mode uses its own
+   tokenized width clamp so it does not inherit the two-column sidebar width
+   scale and does not collapse proportionally on narrower desktop windows. */
 @media (min-width: 768px) {
-	html.llampart-compact-sidebar [data-slot='sidebar-wrapper'] {
+	html.llampart-compact-sidebar [data-slot='sidebar-wrapper'],
+	html.llampart-compact-sidebar [data-slot='sidebar'],
+	html.llampart-compact-sidebar [data-slot='sidebar-gap'],
+	html.llampart-compact-sidebar [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
 		--sidebar-width: var(--llampart-compact-sidebar-width) !important;
+	}
+
+	html.llampart-compact-sidebar [data-slot='sidebar-gap'],
+	html.llampart-compact-sidebar [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
+		width: var(--llampart-compact-sidebar-width) !important;
+		inline-size: var(--llampart-compact-sidebar-width) !important;
+		min-width: var(--llampart-compact-sidebar-width) !important;
+		min-inline-size: var(--llampart-compact-sidebar-width) !important;
+		max-width: var(--llampart-compact-sidebar-width) !important;
+		max-inline-size: var(--llampart-compact-sidebar-width) !important;
+		flex-basis: var(--llampart-compact-sidebar-width) !important;
 	}
 
 	html.llampart-compact-sidebar .llampart-conversation-grid-menu {
