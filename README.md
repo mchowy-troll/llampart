@@ -11,7 +11,7 @@ llampart is being prepared as an open-source project.
 Current release:
 
 ```text
-llampart 1.3.5
+llampart 1.4.0
 ```
 
 ## Features
@@ -21,43 +21,31 @@ llampart builds on the llama.cpp / llama-ui foundation and focuses on a more pol
 Key llampart features include:
 
 - **Frosted Glass visual theme**
-  A custom translucent interface style with wallpaper-backed surfaces, blur, softened panels, redesigned menus, and tuned contrast for everyday desktop use.
+  A custom translucent interface style with wallpaper-backed surfaces, blur, softened panels, redesigned menus, bundled/custom wallpapers, and readability controls.
 
-- **Wallpaper customization for Frosted Glass**
-  Support for bundled wallpapers and a user-selected custom wallpaper. The Frosted Glass wallpaper system also includes a milkiness/readability mode that softens the background and improves text legibility.
+- **Desktop-oriented conversation sidebar**
+  A redesigned sidebar with tiled conversations, adaptive one- or two-column layout, optional compact mode, pinned conversations, date/time display, and direct conversation management.
 
-- **Two-column tiled conversation sidebar**
-  A redesigned conversation sidebar with a tiled layout that can use two columns on wider desktop viewports and adapts to a single-column layout when space is limited.
-
-- **Interface scaling controls**
-  llampart includes a local interface scaling option for adjusting the desktop UI size to better fit different displays, resolutions, and personal readability preferences.
-
-- **Conversation organization tools**
-  Conversations can show their date and time, be pinned for quick access, and be managed directly from the sidebar. llampart also supports selective conversation deletion and a one-click “delete all conversations” flow that preserves pinned conversations.
+- **Interface scaling and appearance settings**
+  Local controls for UI scale, visual theme, sidebar layout, message/statistics display behavior, model display preferences, and generation-related chat parameters.
 
 - **Localized interface**
-  llampart includes interface translations for multiple languages, including English, Polish, German, French, Italian, and Spanish. User-facing settings and chat UI labels are designed to follow the selected interface language.
+  Interface translations for multiple languages, including English, Polish, German, French, Italian, and Spanish, with user-facing settings and chat labels following the selected language.
 
 - **Minimalistic Reasoning and Tools display**
-  Optional cleaner presentation for reasoning and tool-related assistant sections, designed to reduce visual noise while keeping reasoning/tool information accessible when needed.
+  Optional cleaner presentation for reasoning and tool-related assistant activity, including inline status indicators while the assistant is thinking or using tools.
 
-- **Extended chat and interface settings**
-  llampart includes additional local settings for the chat experience, including visual theme selection, Frosted Glass wallpaper options, interface scaling, conversation date/time display, message/statistics display behavior, model display preferences, and generation-related chat parameters.
+- **Local import/export flows**
+  Local import/export workflows for settings and conversations, with settings export designed to avoid sensitive local configuration by default.
 
-- **Local import/export flows for settings and conversations**
-  llampart provides local import/export workflows. Settings export is designed to avoid including sensitive local configuration by default, such as API keys, server connection URLs, and MCP server definitions.
-
-- **Provider-aware connection workflow**
-  llampart supports both `llama-server` and `OpenAI-compatible` API servers. The selected provider controls the connection settings, available model-management actions, chat request behavior, and which advanced settings are shown.
-
-- **`OpenAI-compatible` API support**
-  llampart can connect to local or remote `OpenAI-compatible` servers, including tools such as LM Studio, Ollama, or another endpoint that supports `/v1/models` and `/v1/chat/completions`. `OpenAI-compatible` mode has its own server URL and API key settings, keeps model selection and favorites scoped to that provider, and hides `llama-server`-specific controls that are not supported by the selected API provider.
-
-- **Local `llama-server` support**
-  llampart continues to support `llama-server` as a first-class local backend. When the `llama-server` URL setting is left empty, llampart uses the default local `llama-server` address, typically `http://localhost:8080/`.
+- **Provider-aware backend support**
+  Support for both `llama-server` and `OpenAI-compatible` API servers, with provider-specific connection settings, model actions, chat request behavior, and advanced settings.
 
 - **MCP prompts, resources, and server-related UI flows**
-  llampart keeps MCP prompt/resource workflows and server-related UI flows available while integrating them into the customized llampart chat interface.
+  MCP prompt/resource workflows and server-related UI flows integrated into the customized llampart chat interface.
+
+- **Linux Installer**
+  A bundled Linux installer for deploying prebuilt llampart release assets, serving them through Caddy, and supporting installation, update, status, and maintenance flows.
 
 ## Screenshots
 
