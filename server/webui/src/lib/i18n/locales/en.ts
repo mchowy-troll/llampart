@@ -184,6 +184,8 @@ export const en: TranslationDictionary = {
 		fieldDisableAutomaticScroll: 'Disable automatic scroll',
 		fieldAlwaysShowSidebarOnDesktop: 'Always show sidebar on desktop',
 		fieldAutoShowSidebarOnNewChat: 'Auto-show sidebar on new chat',
+		fieldCompactSidebar: 'Compact sidebar',
+
 		fieldShowConversationTimestamps: 'Show conversation dates and times',
 		fieldConversationTimestampFormat: 'Conversation date and time format',
 		fieldChooseConversationTimestampFormat: 'Choose format',
@@ -437,6 +439,8 @@ For local servers, it may be optional or arbitrary depending on the configuratio
 			alwaysShowSidebarOnDesktop:
 				'Always keep the sidebar visible on desktop instead of auto-hiding it.',
 			autoShowSidebarOnNewChat: 'Automatically show the sidebar when starting a new chat.',
+			compactSidebar: 'Narrows the sidebar and shows conversations in one column.',
+
 			autoMicOnEmpty:
 				'Automatically show the microphone button instead of send when the input is empty for audio-capable models.',
 			fullHeightCodeBlocks: 'Always display code blocks at their full natural height.',

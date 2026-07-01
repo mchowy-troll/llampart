@@ -37,6 +37,7 @@ export const SETTINGS_KEYS = {
 	DISABLE_AUTO_SCROLL: 'disableAutoScroll',
 	ALWAYS_SHOW_SIDEBAR_ON_DESKTOP: 'alwaysShowSidebarOnDesktop',
 	AUTO_SHOW_SIDEBAR_ON_NEW_CHAT: 'autoShowSidebarOnNewChat',
+	COMPACT_SIDEBAR: 'compactSidebar',
 	FULL_HEIGHT_CODE_BLOCKS: 'fullHeightCodeBlocks',
 	SHOW_RAW_MODEL_NAMES: 'showRawModelNames',
 	SHOW_CONVERSATION_TIMESTAMPS: 'showConversationTimestamps',

@@ -224,6 +224,11 @@
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
+							key: SETTINGS_KEYS.COMPACT_SIDEBAR,
+							label: t('settings.fieldCompactSidebar'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
 							key: SETTINGS_KEYS.SHOW_CONVERSATION_TIMESTAMPS,
 							label: t('settings.fieldShowConversationTimestamps'),
 							type: SettingsFieldType.CHECKBOX,

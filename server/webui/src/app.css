@@ -1083,6 +1083,20 @@ html.has-frosted-glass-theme
 	}
 }
 
+/* llampart-compact-sidebar-layout-primitives
+   The compact sidebar setting is state-owned by settings; this layer owns the
+   shared desktop width and one-column conversation grid presentation. */
+@media (min-width: 768px) {
+	html.llampart-compact-sidebar [data-slot='sidebar-wrapper'] {
+		--sidebar-width: var(--llampart-compact-sidebar-width) !important;
+	}
+
+	html.llampart-compact-sidebar .llampart-conversation-grid-menu {
+		grid-template-columns: minmax(0, 1fr) !important;
+	}
+}
+/* /llampart-compact-sidebar-layout-primitives */
+
 /* llampart sidebar redesign: split light/dark fade from Frosted Glass blur path */
 @media (min-width: 768px) {
 	[data-slot='sidebar']:has(> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell)
