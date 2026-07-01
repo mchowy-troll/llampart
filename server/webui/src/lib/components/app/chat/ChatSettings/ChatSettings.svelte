@@ -87,8 +87,8 @@
 	];
 
 	const CONVERSATION_TIMESTAMP_FORMAT_OPTIONS = [
-		{ value: 'ddmmyyyy24', label: '01.31.2026 20:00' },
-		{ value: 'mmddyyyy12', label: '31.01.2026 08:00 p.m.' }
+		{ value: 'ddmmyyyy24', label: '31.01.2026 20:00' },
+		{ value: 'mmddyyyy12', label: '01.31.2026 08:00 p.m.' }
 	];
 
 	function getSectionLabel(title: SettingsSectionTitle): string {
