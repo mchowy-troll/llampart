@@ -184,6 +184,8 @@ export const es: TranslationDictionary = {
 		fieldDisableAutomaticScroll: 'Desactivar desplazamiento automático',
 		fieldAlwaysShowSidebarOnDesktop: 'Mostrar siempre la barra lateral en escritorio',
 		fieldAutoShowSidebarOnNewChat: 'Mostrar automáticamente la barra lateral en un chat nuevo',
+		fieldCompactSidebar: 'Barra lateral compacta',
+
 		fieldShowConversationTimestamps: 'Mostrar fecha y hora de las conversaciones',
 		fieldConversationTimestampFormat: 'Formato de fecha y hora de las conversaciones',
 		fieldChooseConversationTimestampFormat: 'Elegir formato',
@@ -442,6 +444,8 @@ En servidores locales puede ser opcional o arbitraria, según la configuración.
 				'Mantener siempre visible la barra lateral en escritorio en lugar de ocultarla automáticamente.',
 			autoShowSidebarOnNewChat:
 				'Mostrar automáticamente la barra lateral al iniciar un chat nuevo.',
+			compactSidebar: 'Estrecha la barra lateral y muestra las conversaciones en una sola columna.',
+
 			autoMicOnEmpty:
 				'Mostrar automáticamente el botón del micrófono en lugar de enviar cuando la entrada está vacía para modelos compatibles con audio.',
 			fullHeightCodeBlocks: 'Mostrar siempre los bloques de código con su altura natural completa.',

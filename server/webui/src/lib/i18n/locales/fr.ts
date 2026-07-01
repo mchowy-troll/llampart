@@ -184,6 +184,8 @@ export const fr: TranslationDictionary = {
 		fieldAlwaysShowSidebarOnDesktop: 'Toujours afficher la barre latérale sur ordinateur',
 		fieldAutoShowSidebarOnNewChat:
 			'Afficher automatiquement la barre latérale pour un nouveau chat',
+		fieldCompactSidebar: 'Barre latérale compacte',
+
 		fieldShowConversationTimestamps: 'Afficher la date et l’heure des conversations',
 		fieldConversationTimestampFormat: 'Format de date et d’heure des conversations',
 		fieldChooseConversationTimestampFormat: 'Choisir le format',
@@ -442,6 +444,9 @@ Sur les serveurs locaux, elle peut être facultative ou arbitraire selon la conf
 			alwaysShowSidebarOnDesktop: 'Garde toujours la barre latérale visible sur ordinateur.',
 			autoShowSidebarOnNewChat:
 				'Affiche automatiquement la barre latérale lors du démarrage d’un nouveau chat.',
+			compactSidebar:
+				'Réduit la largeur de la barre latérale et affiche les conversations sur une seule colonne.',
+
 			autoMicOnEmpty:
 				'Affiche automatiquement le bouton micro au lieu d’envoyer quand le champ est vide et que le modèle gère l’audio.',
 			fullHeightCodeBlocks: 'Affiche toujours les blocs de code à leur hauteur naturelle complète.',

@@ -17,6 +17,7 @@
 		buildConversationTree
 	} from '$lib/stores/conversations.svelte';
 	import { chatStore } from '$lib/stores/chat.svelte';
+	import { config } from '$lib/stores/settings.svelte';
 	import { getPreviewText } from '$lib/utils';
 	import { getChatSettingsDialogContext } from '$lib/contexts';
 	import { getInterfaceLanguage, t } from '$lib/i18n';
@@ -68,11 +69,13 @@
 	let editedName = $state('');
 	let sidebarSearchInput: HTMLInputElement | null = $state(null);
 	let sidebarViewportWidth = $state(0);
+	let isCompactSidebar = $derived(Boolean(config().compactSidebar));
 	let isConversationGridSingleColumn = $derived(
-		sidebarViewportWidth > 0 &&
-			typeof window !== 'undefined' &&
-			window.screen.width > 0 &&
-			sidebarViewportWidth <= window.screen.width * (2 / 3)
+		isCompactSidebar ||
+			(sidebarViewportWidth > 0 &&
+				typeof window !== 'undefined' &&
+				window.screen.width > 0 &&
+				sidebarViewportWidth <= window.screen.width * (2 / 3))
 	);
 	let hasMeasuredConversationGridViewport = $derived(
 		sidebarViewportWidth > 0 && typeof window !== 'undefined' && window.screen.width > 0
@@ -221,6 +224,17 @@
 
 		return () => {
 			document.documentElement.classList.remove('llampart-sidebar-search-active');
+		};
+	});
+
+	// llampart-compact-sidebar-layout-trigger
+	$effect(() => {
+		if (typeof document === 'undefined') return;
+
+		document.documentElement.classList.toggle('llampart-compact-sidebar', isCompactSidebar);
+
+		return () => {
+			document.documentElement.classList.remove('llampart-compact-sidebar');
 		};
 	});
 

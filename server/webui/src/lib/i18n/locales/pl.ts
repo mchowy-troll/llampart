@@ -182,6 +182,8 @@ export const pl: TranslationDictionary = {
 		fieldDisableAutomaticScroll: 'Wyłącz automatyczne przewijanie',
 		fieldAlwaysShowSidebarOnDesktop: 'Zawsze pokazuj pasek boczny na komputerze',
 		fieldAutoShowSidebarOnNewChat: 'Automatycznie pokazuj pasek boczny w nowym czacie',
+		fieldCompactSidebar: 'Kompaktowy sidebar',
+
 		fieldShowConversationTimestamps: 'Pokazuj datę i godzinę rozmów',
 		fieldConversationTimestampFormat: 'Format daty i godziny rozmów',
 		fieldChooseConversationTimestampFormat: 'Wybierz format',
@@ -438,6 +440,8 @@ W lokalnych serwerach może być opcjonalny albo dowolny, zależnie od konfigura
 			alwaysShowSidebarOnDesktop:
 				'Zawsze pokazuj pasek boczny na komputerze zamiast go automatycznie ukrywać.',
 			autoShowSidebarOnNewChat: 'Automatycznie pokazuj pasek boczny po rozpoczęciu nowego czatu.',
+			compactSidebar: 'Zwęża sidebar i układa rozmowy w jednej kolumnie.',
+
 			autoMicOnEmpty:
 				'Automatycznie pokazuj przycisk mikrofonu zamiast wysyłania, gdy pole jest puste i model obsługuje audio.',
 			fullHeightCodeBlocks: 'Zawsze pokazuj bloki kodu w ich pełnej naturalnej wysokości.',

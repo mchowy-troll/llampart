@@ -182,6 +182,8 @@ export const de: TranslationDictionary = {
 		fieldDisableAutomaticScroll: 'Automatisches Scrollen deaktivieren',
 		fieldAlwaysShowSidebarOnDesktop: 'Seitenleiste auf dem Desktop immer anzeigen',
 		fieldAutoShowSidebarOnNewChat: 'Seitenleiste bei neuem Chat automatisch anzeigen',
+		fieldCompactSidebar: 'Kompakte Seitenleiste',
+
 		fieldShowConversationTimestamps: 'Datum und Uhrzeit von Gesprächen anzeigen',
 		fieldConversationTimestampFormat: 'Datums- und Uhrzeitformat für Gespräche',
 		fieldChooseConversationTimestampFormat: 'Format auswählen',
@@ -437,6 +439,8 @@ Bei lokalen Servern kann er je nach Konfiguration optional oder beliebig sein.`,
 			alwaysShowSidebarOnDesktop: 'Die Seitenleiste auf dem Desktop immer sichtbar halten.',
 			autoShowSidebarOnNewChat:
 				'Die Seitenleiste beim Start eines neuen Chats automatisch anzeigen.',
+			compactSidebar: 'Verengt die Seitenleiste und zeigt Unterhaltungen in einer Spalte an.',
+
 			autoMicOnEmpty:
 				'Zeigt automatisch die Mikrofontaste statt Senden an, wenn das Eingabefeld leer ist und das Modell Audio unterstützt.',
 			fullHeightCodeBlocks: 'Codeblöcke immer in ihrer natürlichen vollen Höhe anzeigen.',
