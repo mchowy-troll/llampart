@@ -601,6 +601,8 @@ Nei server locali può essere facoltativa o arbitraria, a seconda della configur
 		systemMessageWithActions: 'Messaggio di sistema con azioni',
 		userMessageWithActions: 'Messaggio utente con azioni',
 		processingEllipsis: 'Elaborazione...',
+		minimalReasoningStatus: 'Sto pensando...',
+		minimalToolsStatus: 'Sto usando gli strumenti...',
 		agenticReasoning: 'Reasoning',
 		agenticReasoningStreaming: 'Reasoning...',
 		messageCopiedToClipboard: 'Messaggio copiato negli appunti',

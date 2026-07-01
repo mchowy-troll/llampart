@@ -603,6 +603,8 @@ En servidores locales puede ser opcional o arbitraria, según la configuración.
 		systemMessageWithActions: 'Mensaje del sistema con acciones',
 		userMessageWithActions: 'Mensaje del usuario con acciones',
 		processingEllipsis: 'Procesando...',
+		minimalReasoningStatus: 'Pensando...',
+		minimalToolsStatus: 'Usando herramientas...',
 		agenticReasoning: 'Reasoning',
 		agenticReasoningStreaming: 'Reasoning...',
 		messageCopiedToClipboard: 'Mensaje copiado al portapapeles',

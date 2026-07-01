@@ -55,6 +55,58 @@ html[data-llampart-ui-scale='110'] {
 }
 /* /llampart-desktop-sidebar-width-scale */
 
+/* llampart-inline-processing-status-primitives
+   Shared owner for small inline processing windows used by streaming math and
+   Minimalistic Reasoning/Tools statuses. Components provide semantics only. */
+.llampart-inline-processing-status {
+	display: inline-flex;
+	align-items: center;
+	max-width: 100%;
+	gap: 0.5rem;
+	margin: 0.5rem 0;
+	color: hsl(var(--muted-foreground));
+	font-size: 0.875rem;
+	line-height: 1.35;
+}
+
+.llampart-inline-processing-status__symbol {
+	display: inline-flex;
+	min-width: 0.75rem;
+	align-items: center;
+	justify-content: center;
+	font-weight: 600;
+	line-height: 1;
+}
+
+.llampart-inline-processing-status__symbol--animated {
+	animation: llampart-inline-processing-status-pulse 1.15s ease-in-out infinite;
+}
+
+.llampart-inline-processing-status__label {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+@keyframes llampart-inline-processing-status-pulse {
+	0%,
+	100% {
+		opacity: 0.42;
+		transform: scale(0.88);
+	}
+
+	50% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.llampart-inline-processing-status__symbol--animated {
+		animation: none !important;
+	}
+}
+/* /llampart-inline-processing-status-primitives */
+
 /* llampart-chat-layout-scale-primitives
    CSS classes consume tokenized chat/composer widths and spacing so the UI scale redesign can tune layout values in one owner layer.
    Initial values intentionally preserve the current rendered layout. */

@@ -592,6 +592,8 @@ For local servers, it may be optional or arbitrary depending on the configuratio
 		systemMessageWithActions: 'System message with actions',
 		userMessageWithActions: 'User message with actions',
 		processingEllipsis: 'Processing...',
+		minimalReasoningStatus: 'Thinking...',
+		minimalToolsStatus: 'Using tools...',
 		agenticReasoning: 'Reasoning',
 		agenticReasoningStreaming: 'Reasoning...',
 		messageCopiedToClipboard: 'Message copied to clipboard',

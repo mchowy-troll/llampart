@@ -770,9 +770,18 @@
 	{/if}
 
 	{#if incompleteMathBlock}
-		<div class="markdown-math-pending" role="status" aria-label={t('messages.processingEllipsis')}>
-			<span class="markdown-math-pending__symbol" aria-hidden="true">∑</span>
-			<span class="markdown-math-pending__label">{t('messages.processingEllipsis')}</span>
+		<div
+			class="markdown-math-pending llampart-inline-processing-status"
+			role="status"
+			aria-label={t('messages.processingEllipsis')}
+		>
+			<span
+				class="markdown-math-pending__symbol llampart-inline-processing-status__symbol"
+				aria-hidden="true">∑</span
+			>
+			<span class="markdown-math-pending__label llampart-inline-processing-status__label"
+				>{t('messages.processingEllipsis')}</span
+			>
 		</div>
 	{/if}
 

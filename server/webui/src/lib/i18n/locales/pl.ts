@@ -599,6 +599,8 @@ W lokalnych serwerach może być opcjonalny albo dowolny, zależnie od konfigura
 		systemMessageWithActions: 'Wiadomość systemowa z akcjami',
 		userMessageWithActions: 'Wiadomość użytkownika z akcjami',
 		processingEllipsis: 'Przetwarzanie...',
+		minimalReasoningStatus: 'Myślę...',
+		minimalToolsStatus: 'Używam narzędzi...',
 		agenticReasoning: 'Reasoning',
 		agenticReasoningStreaming: 'Reasoning...',
 		messageCopiedToClipboard: 'Wiadomość skopiowana do schowka',
