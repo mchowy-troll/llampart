@@ -161,6 +161,18 @@ html[data-llampart-ui-scale='110'] {
 	--llampart-settings-wallpaper-user-actions-width: max-content;
 }
 
+/* llampart-settings-wallpaper-scale-110-fit
+   UI scale 110 increases rem-based preview caps. Keep the selector close to the
+   visual density of the 90-100% layouts and reserve more room for selected cards. */
+html[data-llampart-ui-scale='110'] {
+	--llampart-settings-wallpaper-preview-width: clamp(8.75rem, 9.5vw, 11.75rem);
+	--llampart-settings-wallpaper-preview-height: clamp(5.35rem, 5.65vw, 6.55rem);
+	--llampart-settings-wallpaper-preview-selected-scale: 1.06;
+	--llampart-settings-wallpaper-preview-gap: 1.125rem;
+}
+
+/* /llampart-settings-wallpaper-scale-110-fit */
+
 .llampart-settings-wallpaper-selector {
 	display: grid;
 	grid-template-columns: repeat(6, minmax(0, var(--llampart-settings-wallpaper-preview-width)));
