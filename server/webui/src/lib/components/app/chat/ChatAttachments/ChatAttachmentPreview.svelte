@@ -1,7 +1,14 @@
 <script lang="ts">
 	import * as Alert from '$lib/components/ui/alert';
-	import { FileText, Image, Music, FileIcon, Info } from '@lucide/svelte';
-	import { isTextFile, isImageFile, isPdfFile, isAudioFile, createBase64DataUrl } from '$lib/utils';
+	import { FileText, Image, Music, Video, FileIcon, Info } from '@lucide/svelte';
+	import {
+		isTextFile,
+		isImageFile,
+		isPdfFile,
+		isAudioFile,
+		isVideoFile,
+		createBase64DataUrl
+	} from '$lib/utils';
 	import { convertPDFToImage } from '$lib/utils/browser-only';
 	import { MarkdownContent } from '$lib/components/app/content';
 	import { modelsStore } from '$lib/stores/models.svelte';
@@ -37,6 +44,7 @@
 	);
 
 	let isAudio = $derived(isAudioFile(attachment, uploadedFile));
+	let isVideo = $derived(isVideoFile(attachment, uploadedFile));
 	let isImage = $derived(isImageFile(attachment, uploadedFile));
 	let isPdf = $derived(isPdfFile(attachment, uploadedFile));
 	let isText = $derived(isTextFile(attachment, uploadedFile));
@@ -56,6 +64,7 @@
 		if (isImage) return Image;
 		if (isText || isPdf) return FileText;
 		if (isAudio) return Music;
+		if (isVideo) return Video;
 
 		return FileIcon;
 	});
@@ -225,6 +234,34 @@
 					</audio>
 				{:else}
 					<p class="mb-4 text-muted-foreground">{t('attachments.audioPreviewNotAvailable')}</p>
+				{/if}
+
+				<p class="text-sm text-muted-foreground">
+					{displayName}
+				</p>
+			</div>
+		</div>
+	{:else if isVideo}
+		<div class="flex items-center justify-center p-8">
+			<div class="w-full max-w-3xl text-center">
+				<Video class="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+
+				{#if uploadedFile?.preview}
+					<video controls class="mb-4 max-h-[60dvh] w-full rounded-lg" src={uploadedFile.preview}>
+						<track kind="captions" />
+						{t('attachments.browserDoesNotSupportVideoElement')}
+					</video>
+				{:else if isVideo && attachment && 'mimeType' in attachment && 'base64Data' in attachment}
+					<video
+						controls
+						class="mb-4 max-h-[60dvh] w-full rounded-lg"
+						src={createBase64DataUrl(attachment.mimeType, attachment.base64Data)}
+					>
+						<track kind="captions" />
+						{t('attachments.browserDoesNotSupportVideoElement')}
+					</video>
+				{:else}
+					<p class="mb-4 text-muted-foreground">{t('attachments.videoPreviewNotAvailable')}</p>
 				{/if}
 
 				<p class="text-sm text-muted-foreground">

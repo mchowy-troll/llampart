@@ -696,16 +696,20 @@ export const de: TranslationDictionary = {
 			'Dateien, Systemnachricht hinzufügen oder MCP-Server konfigurieren',
 		images: 'Bilder',
 		audioFiles: 'Audiodateien',
+		videoFiles: 'Videodateien',
 		textFiles: 'Textdateien',
 		pdfFiles: 'PDF-Dateien',
 		systemMessage: 'Systemnachricht',
 		imageProcessingRequiresVisionModel: 'Für die Bildverarbeitung wird ein Vision-Modell benötigt',
 		audioFilesRequireAudioModel:
 			'Für die Verarbeitung von Audiodateien wird ein Audiomodell benötigt',
+		videoFilesRequireVideoModel:
+			'Für die Verarbeitung von Videodateien wird ein Videomodell benötigt',
 		pdfsConvertedToTextHint:
 			'PDFs werden in Text umgewandelt. Bildbasierte PDFs funktionieren möglicherweise nicht richtig.',
 		requiresVisionModel: 'Vision-Modell erforderlich',
 		requiresAudioModel: 'Audiomodell erforderlich',
+		requiresVideoModel: 'Videomodell erforderlich',
 		textOnly: 'Nur Text',
 		addCustomSystemMessageNewConversation:
 			'Benutzerdefinierte Systemnachricht für eine neue Unterhaltung hinzufügen',
@@ -719,7 +723,9 @@ export const de: TranslationDictionary = {
 		allAttachments: 'Alle Anhänge',
 		attachFile: 'Datei anhängen',
 		audioPreviewNotAvailable: 'Audiovorschau nicht verfügbar',
+		videoPreviewNotAvailable: 'Videovorschau nicht verfügbar',
 		browserDoesNotSupportAudioElement: 'Ihr Browser unterstützt das Audio-Element nicht',
+		browserDoesNotSupportVideoElement: 'Ihr Browser unterstützt das Videoelement nicht',
 		convertingPdfToImages: 'PDF wird in Bilder umgewandelt...',
 		dropFilesHereToUpload: 'Dateien hier ablegen, um sie hochzuladen',
 		emptyFilesAutomaticallyRemoved: 'Leere Dateien wurden automatisch entfernt',

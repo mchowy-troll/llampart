@@ -25,6 +25,13 @@ export interface DatabaseMessageExtraAudioFile {
 	mimeType: string;
 }
 
+export interface DatabaseMessageExtraVideoFile {
+	type: AttachmentType.VIDEO;
+	name: string;
+	base64Data: string;
+	mimeType: string;
+}
+
 export interface DatabaseMessageExtraImageFile {
 	type: AttachmentType.IMAGE;
 	name: string;
@@ -79,6 +86,7 @@ export type DatabaseMessageExtra =
 	| DatabaseMessageExtraImageFile
 	| DatabaseMessageExtraTextFile
 	| DatabaseMessageExtraAudioFile
+	| DatabaseMessageExtraVideoFile
 	| DatabaseMessageExtraPdfFile
 	| DatabaseMessageExtraMcpPrompt
 	| DatabaseMessageExtraMcpResource

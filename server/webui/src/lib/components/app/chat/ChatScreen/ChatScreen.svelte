@@ -135,6 +135,16 @@
 		return false;
 	});
 
+	let hasVideoModality = $derived.by(() => {
+		if (activeModelId) {
+			void modelPropsVersion;
+
+			return modelsStore.modelSupportsVideo(activeModelId);
+		}
+
+		return false;
+	});
+
 	let hasVisionModality = $derived.by(() => {
 		if (activeModelId) {
 			void modelPropsVersion;
@@ -282,7 +292,11 @@
 		}
 
 		// Use model-specific capabilities for file validation
-		const capabilities = { hasVision: hasVisionModality, hasAudio: hasAudioModality };
+		const capabilities = {
+			hasVision: hasVisionModality,
+			hasAudio: hasAudioModality,
+			hasVideo: hasVideoModality
+		};
 		const { supportedFiles, unsupportedFiles, modalityReasons } = filterFilesByModalities(
 			generallySupported,
 			capabilities
@@ -295,6 +309,7 @@
 
 			if (hasVisionModality) supportedTypes.push('images');
 			if (hasAudioModality) supportedTypes.push('audio files');
+			if (hasVideoModality) supportedTypes.push('video files');
 
 			fileErrorData = {
 				generallyUnsupported,

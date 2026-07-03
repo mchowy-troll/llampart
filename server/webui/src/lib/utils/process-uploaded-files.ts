@@ -4,7 +4,7 @@ import { FileTypeCategory } from '$lib/enums';
 import { modelsStore } from '$lib/stores/models.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { toast } from 'svelte-sonner';
-import { getFileTypeCategory } from '$lib/utils';
+import { getFileTypeCategory, getFileTypeCategoryByExtension } from '$lib/utils';
 import { convertPDFToText } from './pdf-processing';
 import { t } from '$lib/i18n';
 
@@ -36,6 +36,10 @@ function readFileAsUTF8(file: File): Promise<string> {
 	});
 }
 
+function getUploadedFileCategory(file: File): FileTypeCategory | null {
+	return getFileTypeCategory(file.type) || getFileTypeCategoryByExtension(file.name);
+}
+
 /**
  * Process uploaded files into ChatUploadedFile format with previews and content
  *
@@ -44,6 +48,7 @@ function readFileAsUTF8(file: File): Promise<string> {
  * - Text files: UTF-8 content extraction
  * - PDFs: Metadata only (processed later in conversion pipeline)
  * - Audio: Base64 data URLs for preview
+ * - Video: Base64 data URLs for preview
  *
  * @param files - Array of File objects to process
  * @returns Promise resolving to array of ChatUploadedFile objects
@@ -65,7 +70,9 @@ export async function processFilesToChatUploaded(
 		};
 
 		try {
-			if (getFileTypeCategory(file.type) === FileTypeCategory.IMAGE) {
+			const category = getUploadedFileCategory(file);
+
+			if (category === FileTypeCategory.IMAGE) {
 				let preview = await readFileAsDataURL(file);
 
 				// Normalize SVG and WebP to PNG in previews
@@ -84,7 +91,7 @@ export async function processFilesToChatUploaded(
 				}
 
 				results.push({ ...base, preview });
-			} else if (getFileTypeCategory(file.type) === FileTypeCategory.PDF) {
+			} else if (category === FileTypeCategory.PDF) {
 				// Extract text content from PDF for preview
 				try {
 					const textContent = await convertPDFToText(file);
@@ -113,8 +120,12 @@ export async function processFilesToChatUploaded(
 						}
 					});
 				}
-			} else if (getFileTypeCategory(file.type) === FileTypeCategory.AUDIO) {
+			} else if (category === FileTypeCategory.AUDIO) {
 				// Generate preview URL for audio files
+				const preview = await readFileAsDataURL(file);
+				results.push({ ...base, preview });
+			} else if (category === FileTypeCategory.VIDEO) {
+				// Generate preview URL for video files
 				const preview = await readFileAsDataURL(file);
 				results.push({ ...base, preview });
 			} else {

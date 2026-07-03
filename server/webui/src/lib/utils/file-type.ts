@@ -1,17 +1,20 @@
 import {
 	AUDIO_FILE_TYPES,
+	VIDEO_FILE_TYPES,
 	IMAGE_FILE_TYPES,
 	PDF_FILE_TYPES,
 	TEXT_FILE_TYPES
 } from '$lib/constants';
 import {
 	FileExtensionAudio,
+	FileExtensionVideo,
 	FileExtensionImage,
 	FileExtensionPdf,
 	FileExtensionText,
 	FileTypeCategory,
 	MimeTypeApplication,
 	MimeTypeAudio,
+	MimeTypeVideo,
 	MimeTypeImage,
 	MimeTypeText
 } from '$lib/enums';
@@ -34,6 +37,11 @@ export function getFileTypeCategory(mimeType: string): FileTypeCategory | null {
 		case MimeTypeAudio.WEBM:
 		case MimeTypeAudio.WEBM_OPUS:
 			return FileTypeCategory.AUDIO;
+
+		// Video
+		case MimeTypeVideo.MP4:
+		case MimeTypeVideo.OGG:
+			return FileTypeCategory.VIDEO;
 
 		// PDF
 		case MimeTypeApplication.PDF:
@@ -109,6 +117,11 @@ export function getFileTypeCategoryByExtension(filename: string): FileTypeCatego
 		case FileExtensionAudio.WAV:
 			return FileTypeCategory.AUDIO;
 
+		// Video
+		case FileExtensionVideo.MP4:
+		case FileExtensionVideo.OGG:
+			return FileTypeCategory.VIDEO;
+
 		// PDF
 		case FileExtensionPdf.PDF:
 			return FileTypeCategory.PDF;
@@ -179,6 +192,12 @@ export function getFileTypeByExtension(filename: string): string | null {
 		}
 	}
 
+	for (const [key, type] of Object.entries(VIDEO_FILE_TYPES)) {
+		if ((type.extensions as readonly string[]).includes(extension)) {
+			return `${FileTypeCategory.VIDEO}:${key}`;
+		}
+	}
+
 	for (const [key, type] of Object.entries(PDF_FILE_TYPES)) {
 		if ((type.extensions as readonly string[]).includes(extension)) {
 			return `${FileTypeCategory.PDF}:${key}`;
@@ -201,6 +220,7 @@ export function isFileTypeSupported(filename: string, mimeType?: string): boolea
 		if (
 			category === FileTypeCategory.IMAGE ||
 			category === FileTypeCategory.AUDIO ||
+			category === FileTypeCategory.VIDEO ||
 			category === FileTypeCategory.PDF
 		) {
 			return true;
@@ -212,6 +232,7 @@ export function isFileTypeSupported(filename: string, mimeType?: string): boolea
 	if (
 		extCategory === FileTypeCategory.IMAGE ||
 		extCategory === FileTypeCategory.AUDIO ||
+		extCategory === FileTypeCategory.VIDEO ||
 		extCategory === FileTypeCategory.PDF
 	) {
 		return true;

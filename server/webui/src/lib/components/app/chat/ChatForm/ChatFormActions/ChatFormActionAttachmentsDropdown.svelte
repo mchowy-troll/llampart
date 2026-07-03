@@ -18,6 +18,7 @@
 		class?: string;
 		disabled?: boolean;
 		hasAudioModality?: boolean;
+		hasVideoModality?: boolean;
 		hasVisionModality?: boolean;
 		hasMcpPromptsSupport?: boolean;
 		hasMcpResourcesSupport?: boolean;
@@ -34,6 +35,7 @@
 		class: className = '',
 		disabled = false,
 		hasAudioModality = false,
+		hasVideoModality = false,
 		hasVisionModality = false,
 		hasMcpPromptsSupport = false,
 		hasMcpResourcesSupport = false,
@@ -59,6 +61,7 @@
 	let attachmentMenuTooltipsEnabled = $state(false);
 	let imagesTooltipOpen = $state(false);
 	let audioTooltipOpen = $state(false);
+	let videoTooltipOpen = $state(false);
 	let pdfTooltipOpen = $state(false);
 	let systemTooltipOpen = $state(false);
 
@@ -90,6 +93,7 @@
 	function closeFirstLevelAttachmentTooltips() {
 		imagesTooltipOpen = false;
 		audioTooltipOpen = false;
+		videoTooltipOpen = false;
 		pdfTooltipOpen = false;
 		systemTooltipOpen = false;
 	}
@@ -139,6 +143,7 @@
 		attachmentMenuTooltipsEnabled = false;
 		imagesTooltipOpen = false;
 		audioTooltipOpen = false;
+		videoTooltipOpen = false;
 		pdfTooltipOpen = false;
 		systemTooltipOpen = false;
 
@@ -237,6 +242,36 @@
 
 					<Tooltip.Content side="right">
 						<p>{t('attachments.audioFilesRequireAudioModel')}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+			{/if}
+
+			{#if showModelDrivenAttachmentOptions && hasVideoModality}
+				<DropdownMenu.Item
+					class="video-button flex cursor-pointer items-center gap-2"
+					onclick={() => onFileUpload?.()}
+				>
+					<FILE_TYPE_ICONS.video class="h-4 w-4" />
+					<span>{t('attachments.videoFiles')}</span>
+				</DropdownMenu.Item>
+			{:else if showModelDrivenAttachmentOptions}
+				<Tooltip.Root
+					delayDuration={TOOLTIP_DELAY_DURATION}
+					bind:open={videoTooltipOpen}
+					onOpenChange={(open) => {
+						videoTooltipOpen =
+							attachmentMenuTooltipsEnabled && !mcpServersSubmenuOpenedInSession && open;
+					}}
+				>
+					<Tooltip.Trigger class="w-full">
+						<DropdownMenu.Item class="video-button flex cursor-pointer items-center gap-2" disabled>
+							<FILE_TYPE_ICONS.video class="h-4 w-4" />
+							<span>{t('attachments.videoFiles')}</span>
+						</DropdownMenu.Item>
+					</Tooltip.Trigger>
+
+					<Tooltip.Content side="right">
+						<p>{t('attachments.videoFilesRequireVideoModel')}</p>
 					</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}

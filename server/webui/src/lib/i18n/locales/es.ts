@@ -694,6 +694,7 @@ export const es: TranslationDictionary = {
 			'Añadir archivos, prompt del sistema o configurar servidores MCP',
 		images: 'Imágenes',
 		audioFiles: 'Archivos de audio',
+		videoFiles: 'Archivos de video',
 		textFiles: 'Archivos de texto',
 		pdfFiles: 'Archivos PDF',
 		systemMessage: 'Mensaje del sistema',
@@ -701,10 +702,13 @@ export const es: TranslationDictionary = {
 			'El procesamiento de imágenes requiere un modelo con visión',
 		audioFilesRequireAudioModel:
 			'El procesamiento de archivos de audio requiere un modelo de audio',
+		videoFilesRequireVideoModel:
+			'El procesamiento de archivos de video requiere un modelo de video',
 		pdfsConvertedToTextHint:
 			'Los PDF se convertirán a texto. Los PDF basados en imágenes pueden no funcionar correctamente.',
 		requiresVisionModel: 'Requiere modelo con visión',
 		requiresAudioModel: 'Requiere modelo de audio',
+		requiresVideoModel: 'Requiere modelo de video',
 		textOnly: 'Solo texto',
 		addCustomSystemMessageNewConversation:
 			'Añadir mensaje del sistema personalizado para una nueva conversación',
@@ -718,7 +722,9 @@ export const es: TranslationDictionary = {
 		allAttachments: 'Todos los adjuntos',
 		attachFile: 'Adjuntar archivo',
 		audioPreviewNotAvailable: 'Vista previa de audio no disponible',
+		videoPreviewNotAvailable: 'La vista previa de video no está disponible',
 		browserDoesNotSupportAudioElement: 'Tu navegador no admite el elemento de audio',
+		browserDoesNotSupportVideoElement: 'Tu navegador no admite el elemento de video',
 		convertingPdfToImages: 'Convirtiendo PDF en imágenes...',
 		dropFilesHereToUpload: 'Suelta archivos aquí para subirlos',
 		emptyFilesAutomaticallyRemoved: 'Los archivos vacíos se eliminaron automáticamente',

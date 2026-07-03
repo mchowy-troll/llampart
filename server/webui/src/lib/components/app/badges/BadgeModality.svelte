@@ -3,7 +3,7 @@
 	import { MODALITY_ICONS, MODALITY_LABELS } from '$lib/constants';
 	import { cn } from '$lib/components/ui/utils';
 
-	type DisplayableModality = ModelModality.VISION | ModelModality.AUDIO;
+	type DisplayableModality = ModelModality.VISION | ModelModality.AUDIO | ModelModality.VIDEO;
 
 	interface Props {
 		modalities: ModelModality[];
@@ -12,10 +12,11 @@
 
 	let { modalities, class: className = '' }: Props = $props();
 
-	// Filter to only modalities that have icons (VISION, AUDIO)
+	// Filter to only modalities that have icons (VISION, AUDIO, VIDEO)
 	const displayableModalities = $derived(
 		modalities.filter(
-			(m): m is DisplayableModality => m === ModelModality.VISION || m === ModelModality.AUDIO
+			(m): m is DisplayableModality =>
+				m === ModelModality.VISION || m === ModelModality.AUDIO || m === ModelModality.VIDEO
 		)
 	);
 </script>
