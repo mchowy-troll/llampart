@@ -137,6 +137,16 @@
 		return false;
 	});
 
+	let hasVideoModality = $derived.by(() => {
+		if (activeModelId) {
+			void modelPropsVersion;
+
+			return canShowModelDrivenAttachmentOptions && modelsStore.modelSupportsVideo(activeModelId);
+		}
+
+		return false;
+	});
+
 	let hasVisionModality = $derived.by(() => {
 		if (activeModelId) {
 			void modelPropsVersion;
@@ -217,6 +227,7 @@
 		<ChatFormActionAttachmentsDropdown
 			{disabled}
 			{hasAudioModality}
+			{hasVideoModality}
 			{hasVisionModality}
 			{hasMcpPromptsSupport}
 			{hasMcpResourcesSupport}

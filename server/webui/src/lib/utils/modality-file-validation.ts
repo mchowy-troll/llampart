@@ -3,7 +3,7 @@
  * Ensures only compatible file types are processed based on model capabilities
  */
 
-import { getFileTypeCategory } from '$lib/utils';
+import { getFileTypeCategory, getFileTypeCategoryByExtension } from '$lib/utils';
 import { FileTypeCategory } from '$lib/enums';
 import type { ModalityCapabilities } from '$lib/types';
 
@@ -19,7 +19,9 @@ export function isFileTypeSupportedByModel(
 	mimeType: string | undefined,
 	capabilities: ModalityCapabilities
 ): boolean {
-	const category = mimeType ? getFileTypeCategory(mimeType) : null;
+	const category = mimeType
+		? getFileTypeCategory(mimeType) || getFileTypeCategoryByExtension(filename)
+		: getFileTypeCategoryByExtension(filename);
 
 	// If we can't determine the category from MIME type, fall back to general support check
 	if (!category) {
@@ -45,6 +47,10 @@ export function isFileTypeSupportedByModel(
 			// Audio files require audio support
 			return capabilities.hasAudio;
 
+		case FileTypeCategory.VIDEO:
+			// Video files require video support
+			return capabilities.hasVideo;
+
 		default:
 			// Unknown categories - be conservative and allow
 			return true;
@@ -69,10 +75,10 @@ export function filterFilesByModalities(
 	const unsupportedFiles: File[] = [];
 	const modalityReasons: Record<string, string> = {};
 
-	const { hasVision, hasAudio } = capabilities;
+	const { hasVision, hasAudio, hasVideo } = capabilities;
 
 	for (const file of files) {
-		const category = getFileTypeCategory(file.type);
+		const category = getFileTypeCategory(file.type) || getFileTypeCategoryByExtension(file.name);
 		let isSupported = true;
 		let reason = '';
 
@@ -88,6 +94,13 @@ export function filterFilesByModalities(
 				if (!hasAudio) {
 					isSupported = false;
 					reason = 'Audio files require an audio-capable model';
+				}
+				break;
+
+			case FileTypeCategory.VIDEO:
+				if (!hasVideo) {
+					isSupported = false;
+					reason = 'Video files require a video-capable model';
 				}
 				break;
 
@@ -127,7 +140,7 @@ export function generateModalityErrorMessage(
 ): string {
 	if (unsupportedFiles.length === 0) return '';
 
-	const { hasVision, hasAudio } = capabilities;
+	const { hasVision, hasAudio, hasVideo } = capabilities;
 
 	let message = '';
 
@@ -144,6 +157,7 @@ export function generateModalityErrorMessage(
 	const supportedTypes: string[] = ['text files', 'PDFs'];
 	if (hasVision) supportedTypes.push('images');
 	if (hasAudio) supportedTypes.push('audio files');
+	if (hasVideo) supportedTypes.push('video files');
 
 	message += ` This model supports: ${supportedTypes.join(', ')}.`;
 

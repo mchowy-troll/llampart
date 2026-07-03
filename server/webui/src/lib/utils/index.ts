@@ -217,3 +217,4 @@ export {
 export { uuid } from './uuid';
 export * from './chat-template-thinking-detector';
 export * from './document-title';
+export { isVideoFile } from './attachment-type';

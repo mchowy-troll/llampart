@@ -1,10 +1,10 @@
 import { convertPDFToImage, convertPDFToText } from './pdf-processing';
 import { isSvgMimeType, svgBase64UrlToPngDataURL } from './svg-to-png';
 import { isWebpMimeType, webpBase64UrlToPngDataURL } from './webp-to-png';
-import { FileTypeCategory, AttachmentType, SpecialFileType } from '$lib/enums';
+import { FileTypeCategory, AttachmentType, SpecialFileType, MimeTypeVideo } from '$lib/enums';
 import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { modelsStore } from '$lib/stores/models.svelte';
-import { getFileTypeCategory } from '$lib/utils';
+import { getFileTypeCategory, getFileTypeCategoryByExtension } from '$lib/utils';
 import { readFileAsText, isLikelyTextFile } from './text-files';
 import { toast } from 'svelte-sonner';
 import { t } from '$lib/i18n';
@@ -33,6 +33,16 @@ function readFileAsBase64(file: File): Promise<string> {
 	});
 }
 
+function getUploadedFileCategory(file: ChatUploadedFile): FileTypeCategory | null {
+	return getFileTypeCategory(file.type) || getFileTypeCategoryByExtension(file.name);
+}
+
+function getVideoMimeType(file: ChatUploadedFile): string {
+	if (file.type) return file.type;
+
+	return file.name.toLowerCase().endsWith('.ogg') ? MimeTypeVideo.OGG : MimeTypeVideo.MP4;
+}
+
 export async function parseFilesToMessageExtras(
 	files: ChatUploadedFile[],
 	activeModelId?: string
@@ -41,6 +51,7 @@ export async function parseFilesToMessageExtras(
 	const emptyFiles: string[] = [];
 
 	for (const file of files) {
+		const category = getUploadedFileCategory(file);
 		if (file.type === SpecialFileType.MCP_PROMPT && file.mcpPrompt) {
 			extras.push({
 				type: AttachmentType.MCP_PROMPT,
@@ -54,7 +65,7 @@ export async function parseFilesToMessageExtras(
 			continue;
 		}
 
-		if (getFileTypeCategory(file.type) === FileTypeCategory.IMAGE) {
+		if (category === FileTypeCategory.IMAGE) {
 			if (file.preview) {
 				let base64Url = file.preview;
 
@@ -78,7 +89,7 @@ export async function parseFilesToMessageExtras(
 					base64Url
 				});
 			}
-		} else if (getFileTypeCategory(file.type) === FileTypeCategory.AUDIO) {
+		} else if (category === FileTypeCategory.AUDIO) {
 			// Process audio files (MP3 and WAV)
 			try {
 				const base64Data = await readFileAsBase64(file.file);
@@ -92,7 +103,20 @@ export async function parseFilesToMessageExtras(
 			} catch (error) {
 				console.error(`Failed to process audio file ${file.name}:`, error);
 			}
-		} else if (getFileTypeCategory(file.type) === FileTypeCategory.PDF) {
+		} else if (category === FileTypeCategory.VIDEO) {
+			try {
+				const base64Data = await readFileAsBase64(file.file);
+
+				extras.push({
+					type: AttachmentType.VIDEO,
+					name: file.name,
+					base64Data,
+					mimeType: getVideoMimeType(file)
+				});
+			} catch (error) {
+				console.error(`Failed to process video file ${file.name}:`, error);
+			}
+		} else if (category === FileTypeCategory.PDF) {
 			try {
 				// Always get base64 data for preview functionality
 				const base64Data = await readFileAsBase64(file.file);

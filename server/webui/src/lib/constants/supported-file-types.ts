@@ -5,14 +5,17 @@
 
 import {
 	FileExtensionAudio,
+	FileExtensionVideo,
 	FileExtensionImage,
 	FileExtensionPdf,
 	FileExtensionText,
 	FileTypeAudio,
+	FileTypeVideo,
 	FileTypeImage,
 	FileTypePdf,
 	FileTypeText,
 	MimeTypeAudio,
+	MimeTypeVideo,
 	MimeTypeImage,
 	MimeTypeApplication,
 	MimeTypeText
@@ -27,6 +30,17 @@ export const AUDIO_FILE_TYPES = {
 	[FileTypeAudio.WAV]: {
 		extensions: [FileExtensionAudio.WAV],
 		mimeTypes: [MimeTypeAudio.WAV]
+	}
+} as const;
+
+export const VIDEO_FILE_TYPES = {
+	[FileTypeVideo.MP4]: {
+		extensions: [FileExtensionVideo.MP4],
+		mimeTypes: [MimeTypeVideo.MP4]
+	},
+	[FileTypeVideo.OGG]: {
+		extensions: [FileExtensionVideo.OGG],
+		mimeTypes: [MimeTypeVideo.OGG]
 	}
 } as const;
 
