@@ -30,8 +30,12 @@
 		PROVIDER_CONNECTION_SETTING_KEYS
 	} from '$lib/constants';
 	import { validateConnectionSettings } from '$lib/utils';
-	import { getApiProvider } from '$lib/services/providers';
-	import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers';
+	import { getApiProviderCapabilities } from '$lib/services/providers';
+	import {
+		API_PROVIDER_IDS,
+		isApiProviderId,
+		type ApiProviderId
+	} from '$lib/constants/api-providers';
 	import { setMode } from 'mode-watcher';
 	import { ColorMode } from '$lib/enums/ui';
 	import { SettingsFieldType } from '$lib/enums/settings';
@@ -122,6 +126,7 @@
 		icon: Component;
 		title: SettingsSectionTitle;
 		requiredProviderCapabilities?: ProviderCapabilityKey[];
+		visibleForProviders?: ApiProviderId[];
 	};
 
 	function normalizeProviderId(providerId: unknown) {
@@ -158,6 +163,12 @@
 							key: SETTINGS_KEYS.API_KEY,
 							label: t('settings.fieldApiKey'),
 							type: SettingsFieldType.INPUT
+						},
+						{
+							key: SETTINGS_KEYS.DISABLE_OPENAI_COMPATIBLE_TOOLS,
+							label: t('settings.fieldDisableOpenAiCompatibleTools'),
+							type: SettingsFieldType.CHECKBOX,
+							visibleForProviders: [API_PROVIDER_IDS.OPENAI_COMPATIBLE]
 						}
 					]
 				},
@@ -661,13 +672,17 @@
 	let localConfig: SettingsConfigType = $state({ ...config() });
 	let activeConnectionKeys = $derived(getConnectionKeys(localConfig.apiProvider));
 	let providerCapabilities = $derived(
-		getApiProvider(String(localConfig.apiProvider ?? '')).capabilities
+		getApiProviderCapabilities(String(localConfig.apiProvider ?? ''), localConfig)
 	);
 
 	function supportsRequiredCapabilities(capabilities?: ProviderCapabilityKey[]): boolean {
 		return (
 			!capabilities || capabilities.every((capability) => providerCapabilities[capability] === true)
 		);
+	}
+
+	function supportsVisibleForProviders(providers?: ApiProviderId[]): boolean {
+		return !providers || providers.includes(normalizeProviderId(localConfig.apiProvider));
 	}
 
 	function getProviderScopedField(field: SettingsFieldConfig): SettingsFieldConfig {
@@ -684,21 +699,23 @@
 
 	function getVisibleFields(fields: SettingsFieldConfig[]): SettingsFieldConfig[] {
 		return fields
+			.filter((field) => supportsVisibleForProviders(field.visibleForProviders))
 			.filter((field) => supportsRequiredCapabilities(field.requiredProviderCapabilities))
 			.map(getProviderScopedField);
 	}
 
 	function getVisibleGroups(groups: SettingsFieldGroup[] = []): SettingsFieldGroup[] {
 		return groups
+			.filter((group) => supportsVisibleForProviders(group.visibleForProviders))
 			.filter((group) => supportsRequiredCapabilities(group.requiredProviderCapabilities))
 			.map((group) => ({ ...group, fields: getVisibleFields(group.fields) }))
 			.filter((group) => group.fields.length > 0);
 	}
 
 	let visibleSettingSections = $derived(
-		settingSections.filter((section) =>
-			supportsRequiredCapabilities(section.requiredProviderCapabilities)
-		)
+		settingSections
+			.filter((section) => supportsVisibleForProviders(section.visibleForProviders))
+			.filter((section) => supportsRequiredCapabilities(section.requiredProviderCapabilities))
 	);
 
 	let currentSection = $derived(

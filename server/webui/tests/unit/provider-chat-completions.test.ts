@@ -55,6 +55,46 @@ describe('provider-owned chat completions', () => {
 		expect(body.return_progress).toBeUndefined();
 	});
 
+	it('passes OpenAI-compatible tools and tool-call history when provided', () => {
+		const provider = getApiProvider(API_PROVIDER_IDS.OPENAI_COMPATIBLE);
+		const tools = [
+			{
+				type: 'function' as const,
+				function: {
+					name: 'lookup_weather',
+					description: 'Look up weather',
+					parameters: {
+						type: 'object',
+						properties: { city: { type: 'string' } },
+						required: ['city']
+					}
+				}
+			}
+		];
+		const toolCalls = [
+			{
+				id: 'call_1',
+				type: 'function',
+				function: { name: 'lookup_weather', arguments: '{"city":"Warsaw"}' }
+			}
+		];
+		const request = provider.buildChatCompletionRequest({
+			...baseInput,
+			serverBaseUrl: 'http://localhost:11434/v1',
+			messages: [
+				{ role: MessageRole.USER, content: 'weather in Warsaw' },
+				{ role: MessageRole.ASSISTANT, content: '', tool_calls: toolCalls },
+				{ role: MessageRole.TOOL, content: 'sunny', tool_call_id: 'call_1' }
+			],
+			options: { ...baseInput.options, tools }
+		});
+		const body = JSON.parse(String(request.init.body));
+
+		expect(body.tools).toEqual(tools);
+		expect(body.messages[1].tool_calls).toEqual(toolCalls);
+		expect(body.messages[2].tool_call_id).toBe('call_1');
+	});
+
 	it('keeps llama-server chat payload behavior provider-scoped', () => {
 		const provider = getApiProvider(API_PROVIDER_IDS.LLAMA_SERVER);
 		const request = provider.buildChatCompletionRequest({

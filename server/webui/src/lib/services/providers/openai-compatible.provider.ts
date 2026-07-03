@@ -114,9 +114,11 @@ function buildOpenAiCompatibleChatBody(
 		messages: input.messages.map((msg) => ({
 			role: msg.role,
 			content: msg.content,
+			tool_calls: msg.tool_calls,
 			tool_call_id: msg.tool_call_id
 		})),
-		stream: options.stream
+		stream: options.stream,
+		tools: options.tools && options.tools.length > 0 ? options.tools : undefined
 	};
 
 	if (options.model) requestBody.model = options.model;

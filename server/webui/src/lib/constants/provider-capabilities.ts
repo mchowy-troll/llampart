@@ -67,7 +67,7 @@ export const OPENAI_COMPATIBLE_PROVIDER_CAPABILITIES = {
 	supportsSamplerOrder: false,
 	supportsBackendSampling: false,
 	supportsLlamaReasoningControls: false,
-	supportsOpenAiToolCalls: false,
+	supportsOpenAiToolCalls: true,
 	supportsVisionInput: 'unknown',
 	supportsCustomJsonPayload: false
 } as const satisfies ProviderCapabilities;

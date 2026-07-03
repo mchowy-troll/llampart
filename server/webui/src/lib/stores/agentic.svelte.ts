@@ -21,7 +21,7 @@
  */
 
 import { ChatService, ToolsService } from '$lib/services';
-import { getApiProvider } from '$lib/services/providers';
+import { getApiProviderCapabilities } from '$lib/services/providers';
 import { config } from '$lib/stores/settings.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
@@ -215,8 +215,10 @@ class AgenticStore {
 	}
 
 	getConfig(settings: SettingsConfigType, perChatOverrides?: McpServerOverride[]): AgenticConfig {
-		const provider = getApiProvider(String(settings.apiProvider ?? ''));
-		const supportsToolCalling = provider.capabilities.supportsOpenAiToolCalls;
+		const supportsToolCalling = getApiProviderCapabilities(
+			String(settings.apiProvider ?? ''),
+			settings
+		).supportsOpenAiToolCalls;
 		const maxTurns = Number(settings.agenticMaxTurns) || DEFAULT_AGENTIC_CONFIG.maxTurns;
 		const maxToolPreviewLines =
 			Number(settings.agenticMaxToolPreviewLines) || DEFAULT_AGENTIC_CONFIG.maxToolPreviewLines;
