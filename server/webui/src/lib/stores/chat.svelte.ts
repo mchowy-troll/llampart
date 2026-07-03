@@ -39,8 +39,7 @@ import {
 	INACTIVE_CONVERSATION_STATE_MAX_AGE_MS,
 	SYSTEM_MESSAGE_PLACEHOLDER,
 	TITLE_GENERATION,
-	getLocalizedTitleGenerationPrompt,
-	isBuiltInTitleGenerationPrompt
+	getLocalizedTitleGenerationPrompt
 } from '$lib/constants';
 import type {
 	ChatMessageTimings,
@@ -894,15 +893,9 @@ class ChatStore {
 			const effectiveModel =
 				isRouterMode() && selectedModelName() ? selectedModelName() : undefined;
 			const currentConfig = config();
-			const configuredTitlePrompt =
-				typeof currentConfig.titleGenerationPrompt === 'string'
-					? currentConfig.titleGenerationPrompt
-					: '';
-
-			const titlePromptTemplate =
-				!configuredTitlePrompt.trim() || isBuiltInTitleGenerationPrompt(configuredTitlePrompt)
-					? getLocalizedTitleGenerationPrompt(String(currentConfig.interfaceLanguage || 'en'))
-					: configuredTitlePrompt;
+			const titlePromptTemplate = getLocalizedTitleGenerationPrompt(
+				String(currentConfig.interfaceLanguage || 'en')
+			);
 
 			const titlePrompt = titlePromptTemplate
 				.split('{{USER}}')

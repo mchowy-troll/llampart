@@ -180,15 +180,15 @@ export const pl: TranslationDictionary = {
 		fieldRenderUserContentAsMarkdown: 'Renderuj treść użytkownika jako Markdown',
 		fieldUseFullHeightCodeBlocks: 'Używaj bloków kodu o pełnej wysokości',
 		fieldDisableAutomaticScroll: 'Wyłącz automatyczne przewijanie',
-		fieldAlwaysShowSidebarOnDesktop: 'Zawsze pokazuj pasek boczny na komputerze',
-		fieldAutoShowSidebarOnNewChat: 'Automatycznie pokazuj pasek boczny w nowym czacie',
-		fieldCompactSidebar: 'Kompaktowy sidebar',
+		fieldAlwaysShowSidebarOnDesktop: 'Zawsze pokazuj Sidebar na komputerze',
+		fieldAutoShowSidebarOnNewChat: 'Automatycznie pokazuj Sidebar w nowym czacie',
+		fieldCompactSidebar: 'Kompaktowy Sidebar',
 
 		fieldShowConversationTimestamps: 'Pokazuj datę i godzinę rozmów',
 		fieldConversationTimestampFormat: 'Format daty i godziny rozmów',
 		fieldChooseConversationTimestampFormat: 'Wybierz format',
 		sidebarTimestampCombinedHelp:
-			'Pokazuje datę i godzinę pod każdą rozmową w sidebarze. Poniżej wybierasz format tej daty.',
+			'Pokazuje datę i godzinę pod każdą rozmową w Sidebarze. Poniżej wybierasz format tej daty.',
 		fieldShowRawModelNames: 'Pokazuj surowe nazwy modeli',
 		fieldTemperature: 'Temperature',
 		fieldDynamicTemperatureRange: 'Dynamic temperature range',
@@ -221,7 +221,7 @@ export const pl: TranslationDictionary = {
 		groupConnection: 'Połączenie',
 		groupSystemMessage: 'Wiadomość systemowa',
 		groupInterface: 'Interfejs',
-		groupFrostedGlassWallpaper: 'Tapeta Frosted Glass',
+		groupFrostedGlassWallpaper: 'Tapeta',
 		frostedGlassWallpaperDescription:
 			'Wybierz jedną z 5 wbudowanych tapet albo własną tapetę zapisaną lokalnie w tej przeglądarce.',
 		frostedGlassWallpaperMilk: 'Mleczna tapeta',
