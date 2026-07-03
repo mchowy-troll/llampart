@@ -145,6 +145,7 @@ export const en: TranslationDictionary = {
 		fieldServerAddress: 'Server Address',
 		fieldApiProvider: 'API provider',
 		fieldApiKey: 'API Key',
+		fieldDisableOpenAiCompatibleTools: 'Disable MCP and Tools for OpenAI-compatible',
 		fieldSystemMessage: 'System Message',
 		fieldPasteLongTextToFileLength: 'Paste long text to file length',
 		fieldSendMessageOnEnter: 'Send message on Enter',
@@ -365,6 +366,8 @@ Leave empty if you use the default local llama-server address: http://localhost:
 			openAiCompatibleBaseUrl: `OpenAI-compatible server address - e.g. LM Studio, Ollama, or another endpoint that supports /v1/models and /v1/chat/completions.`,
 			openAiCompatibleApiKey: `API key required by the selected OpenAI-compatible server.
 For local servers, it may be optional or arbitrary depending on the configuration.`,
+			disableOpenAiCompatibleTools:
+				'Hide MCP/Tools and do not send tool definitions to the selected OpenAI-compatible backend. Use this if that backend rejects tool calls.',
 			systemMessage: 'The starting message that defines how the model should behave.',
 			showSystemMessage: 'Display the system message at the top of each conversation.',
 			theme:

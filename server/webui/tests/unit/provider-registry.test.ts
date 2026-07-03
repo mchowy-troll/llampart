@@ -39,7 +39,17 @@ describe('api provider registry', () => {
 		expect(openAiCapabilities.supportsTopK).toBe(false);
 		expect(openAiCapabilities.supportsPreEncode).toBe(false);
 		expect(openAiCapabilities.supportsLlamaReasoningControls).toBe(false);
-		expect(openAiCapabilities.supportsOpenAiToolCalls).toBe(false);
+		expect(openAiCapabilities.supportsOpenAiToolCalls).toBe(true);
+		expect(
+			getApiProviderCapabilities(API_PROVIDER_IDS.OPENAI_COMPATIBLE, {
+				disableOpenAiCompatibleTools: true
+			}).supportsOpenAiToolCalls
+		).toBe(false);
+		expect(
+			getApiProviderCapabilities(API_PROVIDER_IDS.LLAMA_SERVER, {
+				disableOpenAiCompatibleTools: true
+			}).supportsOpenAiToolCalls
+		).toBe(true);
 		expect(openAiCapabilities.supportsCustomJsonPayload).toBe(false);
 		expect(openAiCapabilities.supportsStreamUsage).toBe(true);
 		expect(openAiCapabilities.requiresModelInChatRequest).toBe(true);

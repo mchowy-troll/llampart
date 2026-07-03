@@ -1,6 +1,6 @@
 import type { OpenAIToolDefinition, ToolEntry, ToolGroup } from '$lib/types';
 import { ToolsService } from '$lib/services/tools.service';
-import { getApiProvider } from '$lib/services/providers';
+import { getApiProviderCapabilities } from '$lib/services/providers';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { HealthCheckStatus, JsonSchemaType, ToolCallType, ToolSource } from '$lib/enums';
 import { config } from '$lib/stores/settings.svelte';
@@ -94,7 +94,10 @@ class ToolsStore {
 	}
 
 	get supportsProviderTools(): boolean {
-		return getApiProvider(String(config().apiProvider ?? '')).capabilities.supportsOpenAiToolCalls;
+		const currentConfig = config();
+
+		return getApiProviderCapabilities(String(currentConfig.apiProvider ?? ''), currentConfig)
+			.supportsOpenAiToolCalls;
 	}
 
 	get builtinTools(): OpenAIToolDefinition[] {

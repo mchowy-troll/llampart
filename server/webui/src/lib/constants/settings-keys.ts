@@ -18,6 +18,7 @@ export const SETTINGS_KEYS = {
 	LLAMA_SERVER_API_KEY: 'llamaServerApiKey',
 	OPENAI_COMPATIBLE_BASE_URL: 'openAiCompatibleBaseUrl',
 	OPENAI_COMPATIBLE_API_KEY: 'openAiCompatibleApiKey',
+	DISABLE_OPENAI_COMPATIBLE_TOOLS: 'disableOpenAiCompatibleTools',
 	SYSTEM_MESSAGE: 'systemMessage',
 	PASTE_LONG_TEXT_TO_FILE_LEN: 'pasteLongTextToFileLen',
 	COPY_TEXT_ATTACHMENTS_AS_PLAIN_TEXT: 'copyTextAttachmentsAsPlainText',

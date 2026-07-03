@@ -5,6 +5,10 @@ import {
 	type ApiProviderId
 } from '$lib/constants/api-providers';
 import type { ProviderCapabilities } from '$lib/types/provider';
+
+type ProviderCapabilitySettings = {
+	disableOpenAiCompatibleTools?: unknown;
+};
 import { llamaServerProvider } from './llama-server.provider';
 import { openAiCompatibleProvider } from './openai-compatible.provider';
 import type { ApiProviderAdapter } from './provider.types';
@@ -19,6 +23,18 @@ export function getApiProvider(providerId?: string | null): ApiProviderAdapter {
 	return API_PROVIDER_REGISTRY[normalizedProviderId];
 }
 
-export function getApiProviderCapabilities(providerId?: string | null): ProviderCapabilities {
-	return getApiProvider(providerId).capabilities;
+export function getApiProviderCapabilities(
+	providerId?: string | null,
+	settings?: ProviderCapabilitySettings
+): ProviderCapabilities {
+	const provider = getApiProvider(providerId);
+
+	if (
+		provider.id === API_PROVIDER_IDS.OPENAI_COMPATIBLE &&
+		settings?.disableOpenAiCompatibleTools === true
+	) {
+		return { ...provider.capabilities, supportsOpenAiToolCalls: false };
+	}
+
+	return provider.capabilities;
 }

@@ -143,6 +143,7 @@ export const fr: TranslationDictionary = {
 		fieldServerAddress: 'Adresse du serveur',
 		fieldApiProvider: 'Fournisseur API',
 		fieldApiKey: 'Clé API',
+		fieldDisableOpenAiCompatibleTools: 'Désactiver MCP et Tools pour OpenAI-compatible',
 		fieldSystemMessage: 'Message système',
 		fieldPasteLongTextToFileLength: 'Longueur du texte à convertir en fichier lors du collage',
 		fieldSendMessageOnEnter: 'Envoyer le message avec Entrée',
@@ -369,6 +370,8 @@ Laissez vide si vous utilisez l’adresse locale par défaut de llama-server : h
 			openAiCompatibleBaseUrl: `Adresse du serveur OpenAI-compatible - par exemple LM Studio, Ollama ou un autre point de terminaison prenant en charge /v1/models et /v1/chat/completions.`,
 			openAiCompatibleApiKey: `Clé API requise par le serveur OpenAI-compatible sélectionné.
 Sur les serveurs locaux, elle peut être facultative ou arbitraire selon la configuration.`,
+			disableOpenAiCompatibleTools:
+				'Masque MCP/Tools et n’envoie pas les définitions d’outils au backend OpenAI-compatible sélectionné. Utilisez cette option si ce backend rejette les tool calls.',
 			systemMessage: 'Le message de départ qui définit le comportement du modèle.',
 			showSystemMessage: 'Afficher le message système en haut de chaque conversation.',
 			theme:
