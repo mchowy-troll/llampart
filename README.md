@@ -161,15 +161,6 @@ llampart's frontend is built with Svelte and SvelteKit.
 
 Svelte and SvelteKit are MIT-licensed open-source projects. Their license information is preserved through npm package metadata, installed package license files, and the project third-party license notes.
 
-## Wallpapers
-
-llampart supports a Frosted Glass wallpaper workflow:
-
-- five bundled/default wallpaper slots
-- one user-selected custom wallpaper option
-
-The bundled Frosted Glass wallpaper files are part of the public release asset set. Wallpaper photo credits are maintained in `AUTHORS.md` and preserved in `NOTICE`; llampart's About / Welcome dialog links to the authors document.
-
 ## Credits
 
 llampart is developed by Marcin Gluziński.
