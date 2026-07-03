@@ -35,6 +35,7 @@ export const SETTINGS_KEYS = {
 	KEEP_STATS_VISIBLE: 'keepStatsVisible',
 	AUTO_MIC_ON_EMPTY: 'autoMicOnEmpty',
 	RENDER_USER_CONTENT_AS_MARKDOWN: 'renderUserContentAsMarkdown',
+	RENDER_REASONING_CONTENT_AS_MARKDOWN: 'renderReasoningContentAsMarkdown',
 	DISABLE_AUTO_SCROLL: 'disableAutoScroll',
 	ALWAYS_SHOW_SIDEBAR_ON_DESKTOP: 'alwaysShowSidebarOnDesktop',
 	AUTO_SHOW_SIDEBAR_ON_NEW_CHAT: 'autoShowSidebarOnNewChat',

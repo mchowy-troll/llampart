@@ -155,6 +155,12 @@ export const SYNCABLE_PARAMETERS: SyncableParameter[] = [
 		canSync: true
 	},
 	{
+		key: 'renderReasoningContentAsMarkdown',
+		serverKey: 'renderReasoningContentAsMarkdown',
+		type: SyncableParameterType.BOOLEAN,
+		canSync: true
+	},
+	{
 		key: 'autoMicOnEmpty',
 		serverKey: 'autoMicOnEmpty',
 		type: SyncableParameterType.BOOLEAN,
