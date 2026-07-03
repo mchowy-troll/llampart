@@ -294,6 +294,12 @@
 							column: 'right'
 						},
 						{
+							key: SETTINGS_KEYS.RENDER_REASONING_CONTENT_AS_MARKDOWN,
+							label: t('settings.fieldRenderReasoningContentAsMarkdown'),
+							type: SettingsFieldType.CHECKBOX,
+							column: 'right'
+						},
+						{
 							key: SETTINGS_KEYS.DISABLE_AUTO_SCROLL,
 							label: t('settings.fieldDisableAutomaticScroll'),
 							type: SettingsFieldType.CHECKBOX,

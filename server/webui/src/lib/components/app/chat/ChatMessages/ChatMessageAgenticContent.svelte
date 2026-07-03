@@ -49,6 +49,9 @@
 	const showToolCallInProgress = $derived(config().showToolCallInProgress as boolean);
 	const showThoughtInProgress = $derived(config().showThoughtInProgress as boolean);
 	const minimalAgenticIndicators = $derived(config().minimalAgenticIndicators as boolean);
+	const renderReasoningContentAsMarkdown = $derived(
+		config().renderReasoningContentAsMarkdown as boolean
+	);
 
 	let permissionDismissed = $state(false);
 
@@ -319,8 +322,18 @@
 			onToggle={() => toggleExpanded(index, section)}
 		>
 			<div class="pt-3">
-				<div class="text-xs leading-relaxed break-words whitespace-pre-wrap">
-					{section.content}
+				<div class="llampart-reasoning-content text-xs leading-relaxed break-words">
+					{#if renderReasoningContentAsMarkdown}
+						<div class="llampart-reasoning-markdown">
+							<MarkdownContent
+								content={section.content}
+								attachments={message?.extra}
+								inheritTypography
+							/>
+						</div>
+					{:else}
+						<div class="whitespace-pre-wrap">{section.content}</div>
+					{/if}
 				</div>
 			</div>
 		</CollapsibleContentBlock>
@@ -340,8 +353,18 @@
 			onToggle={() => toggleExpanded(index, section)}
 		>
 			<div class="pt-3">
-				<div class="text-xs leading-relaxed break-words whitespace-pre-wrap">
-					{section.content}
+				<div class="llampart-reasoning-content text-xs leading-relaxed break-words">
+					{#if renderReasoningContentAsMarkdown}
+						<div class="llampart-reasoning-markdown">
+							<MarkdownContent
+								content={section.content}
+								attachments={message?.extra}
+								inheritTypography
+							/>
+						</div>
+					{:else}
+						<div class="whitespace-pre-wrap">{section.content}</div>
+					{/if}
 				</div>
 			</div>
 		</CollapsibleContentBlock>
@@ -460,6 +483,18 @@
 
 	.agentic-text {
 		width: 100%;
+	}
+
+	.llampart-reasoning-content {
+		font-family: inherit;
+		font-size: 0.75rem;
+		line-height: 1.625;
+	}
+
+	.llampart-reasoning-markdown {
+		font-family: inherit;
+		font-size: inherit;
+		line-height: inherit;
 	}
 
 	/* llampart-assistant-markdown-top-edge-alignment */

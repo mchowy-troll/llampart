@@ -50,6 +50,7 @@
 		content: string;
 		class?: string;
 		disableMath?: boolean;
+		inheritTypography?: boolean;
 	}
 
 	interface MarkdownBlock {
@@ -58,7 +59,13 @@
 		contentHash?: string;
 	}
 
-	let { content, attachments, class: className = '', disableMath = false }: Props = $props();
+	let {
+		content,
+		attachments,
+		class: className = '',
+		disableMath = false,
+		inheritTypography = false
+	}: Props = $props();
 
 	let containerRef = $state<HTMLDivElement>();
 	let renderedBlocks = $state<MarkdownBlock[]>([]);
@@ -751,7 +758,9 @@
 
 <div
 	bind:this={containerRef}
-	class="{className}{config()[SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS]
+	class="{className}{inheritTypography ? ' markdown-inherit-typography' : ''}{config()[
+		SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS
+	]
 		? ' full-height-code-blocks'
 		: ''}"
 >
@@ -2106,5 +2115,112 @@
 		transform: translateX(-50%) rotate(45deg);
 		opacity: 1;
 		pointer-events: none;
+	}
+
+	/* llampart-markdown-inherit-typography-variant
+	   Compact containers such as Reasoning can reuse Markdown parsing while keeping
+	   their own font family, size and line height. MarkdownContent owns this because
+	   it owns markdown presentation resets. */
+	div.markdown-inherit-typography,
+	div.markdown-inherit-typography :global(*) {
+		font-family: inherit !important;
+		font-size: inherit !important;
+		line-height: inherit !important;
+	}
+
+	div.markdown-inherit-typography :global(:is(h1, h2, h3, h4, h5, h6)) {
+		font-size: inherit !important;
+		line-height: inherit !important;
+		margin: 0.5em 0 0.25em !important;
+	}
+
+	div.markdown-inherit-typography :global(p) {
+		font-size: inherit !important;
+		line-height: inherit !important;
+		margin: 0.5em 0 !important;
+	}
+
+	div.markdown-inherit-typography :global(ul),
+	div.markdown-inherit-typography :global(ol) {
+		font-size: inherit !important;
+		line-height: inherit !important;
+		margin: 0.5em 0 0.5em 1.35em !important;
+		padding-inline-start: 0 !important;
+	}
+
+	div.markdown-inherit-typography :global(li) {
+		font-size: inherit !important;
+		line-height: inherit !important;
+		margin-bottom: 0.25em !important;
+		padding-inline-start: 0.25em !important;
+	}
+
+	div.markdown-inherit-typography :global(blockquote) {
+		font-size: inherit !important;
+		line-height: inherit !important;
+		margin: 0.5em 0 !important;
+		padding: 0.25em 0.75em !important;
+	}
+
+	div.markdown-inherit-typography :global(table) {
+		font-size: inherit !important;
+		line-height: inherit !important;
+		margin: 0.75em 0 !important;
+	}
+
+	div.markdown-inherit-typography :global(th),
+	div.markdown-inherit-typography :global(td) {
+		font-size: inherit !important;
+		line-height: inherit !important;
+		padding: 0.35em 0.55em !important;
+	}
+
+	div.markdown-inherit-typography :global(code),
+	div.markdown-inherit-typography :global(pre),
+	div.markdown-inherit-typography :global(pre code),
+	div.markdown-inherit-typography :global(.code-block-wrapper),
+	div.markdown-inherit-typography :global(.code-block-wrapper *),
+	div.markdown-inherit-typography :global(.markdown-rendered-code-block),
+	div.markdown-inherit-typography :global(.markdown-rendered-code-block *) {
+		font-family: inherit !important;
+		font-size: inherit !important;
+		line-height: inherit !important;
+	}
+
+	div.markdown-inherit-typography :global(.code-block-wrapper) {
+		margin: 0.75em 0 !important;
+		min-height: 0 !important;
+	}
+
+	div.markdown-inherit-typography :global(.code-block-header) {
+		padding: 0.55em 0.65em 0.4em !important;
+	}
+
+	div.markdown-inherit-typography :global(.code-block-scroll-container),
+	div.markdown-inherit-typography :global(.streaming-code-scroll-container) {
+		min-height: 0 !important;
+		padding: 0.65em !important;
+	}
+
+	div.markdown-inherit-typography :global(> :first-child),
+	div.markdown-inherit-typography :global(.markdown-block:first-child > :first-child),
+	div.markdown-inherit-typography :global(.markdown-block:first-child p:first-child),
+	div.markdown-inherit-typography :global(.markdown-block:first-child ul:first-child),
+	div.markdown-inherit-typography :global(.markdown-block:first-child ol:first-child),
+	div.markdown-inherit-typography :global(.markdown-block:first-child blockquote:first-child),
+	div.markdown-inherit-typography :global(.markdown-block:first-child pre:first-child),
+	div.markdown-inherit-typography :global(.markdown-block:first-child table:first-child) {
+		margin-top: 0 !important;
+	}
+
+	div.markdown-inherit-typography :global(> :last-child),
+	div.markdown-inherit-typography :global(.markdown-block:last-child > :last-child),
+	div.markdown-inherit-typography :global(.markdown-block:last-child p:last-child),
+	div.markdown-inherit-typography :global(.markdown-block:last-child ul:last-child),
+	div.markdown-inherit-typography :global(.markdown-block:last-child ol:last-child),
+	div.markdown-inherit-typography :global(.markdown-block:last-child blockquote:last-child),
+	div.markdown-inherit-typography :global(.markdown-block:last-child pre:last-child),
+	div.markdown-inherit-typography :global(.markdown-block:last-child table:last-child) {
+		margin-bottom: 0 !important;
 	}
 </style>

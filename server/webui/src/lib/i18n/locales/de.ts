@@ -183,6 +183,7 @@ export const de: TranslationDictionary = {
 		fieldKeepStatsVisibleAfterGeneration: 'Statistiken nach der Generierung sichtbar lassen',
 		fieldShowMicrophoneOnEmptyInput: 'Mikrofon bei leerem Eingabefeld anzeigen',
 		fieldRenderUserContentAsMarkdown: 'Benutzerinhalte als Markdown rendern',
+		fieldRenderReasoningContentAsMarkdown: 'Reasoning-Inhalt als Markdown rendern',
 		fieldUseFullHeightCodeBlocks: 'Codeblöcke in voller Höhe anzeigen',
 		fieldDisableAutomaticScroll: 'Automatisches Scrollen deaktivieren',
 		fieldAlwaysShowSidebarOnDesktop: 'Sidebar auf dem Desktop immer anzeigen',
@@ -440,6 +441,8 @@ export const de: TranslationDictionary = {
 			disableAutoScroll:
 				'Deaktiviert automatisches Scrollen während des Streamings, damit Sie den Viewport manuell steuern können.',
 			renderUserContentAsMarkdown: 'Rendert Benutzernachrichten im Chat mit Markdown-Formatierung.',
+			renderReasoningContentAsMarkdown:
+				'Rendert Reasoning-Inhalte mit Markdown-Formatierung, ohne die aktuelle Typografie zu ändern.',
 			alwaysShowSidebarOnDesktop: 'Die Seitenleiste auf dem Desktop immer sichtbar halten.',
 			autoShowSidebarOnNewChat:
 				'Die Seitenleiste beim Start eines neuen Chats automatisch anzeigen.',

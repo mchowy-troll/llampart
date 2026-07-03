@@ -183,6 +183,7 @@ export const pl: TranslationDictionary = {
 		fieldKeepStatsVisibleAfterGeneration: 'Pozostaw statystyki widoczne po generowaniu',
 		fieldShowMicrophoneOnEmptyInput: 'Pokazuj mikrofon przy pustym polu',
 		fieldRenderUserContentAsMarkdown: 'Renderuj treść użytkownika jako Markdown',
+		fieldRenderReasoningContentAsMarkdown: 'Renderuj treść Reasoning jako Markdown',
 		fieldUseFullHeightCodeBlocks: 'Używaj bloków kodu o pełnej wysokości',
 		fieldDisableAutomaticScroll: 'Wyłącz automatyczne przewijanie',
 		fieldAlwaysShowSidebarOnDesktop: 'Zawsze pokazuj Sidebar na komputerze',
@@ -440,6 +441,8 @@ export const pl: TranslationDictionary = {
 				'Wyłącz automatyczne przewijanie podczas strumieniowania wiadomości, aby ręcznie sterować widokiem.',
 			renderUserContentAsMarkdown:
 				'Renderuj wiadomości użytkownika z użyciem formatowania Markdown.',
+			renderReasoningContentAsMarkdown:
+				'Renderuje treść Reasoning z formatowaniem Markdown bez zmiany obecnej typografii.',
 			alwaysShowSidebarOnDesktop:
 				'Zawsze pokazuj pasek boczny na komputerze zamiast go automatycznie ukrywać.',
 			autoShowSidebarOnNewChat: 'Automatycznie pokazuj pasek boczny po rozpoczęciu nowego czatu.',

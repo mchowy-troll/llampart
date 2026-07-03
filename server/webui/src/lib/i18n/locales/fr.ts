@@ -184,6 +184,7 @@ export const fr: TranslationDictionary = {
 		fieldKeepStatsVisibleAfterGeneration: 'Garder les statistiques visibles après la génération',
 		fieldShowMicrophoneOnEmptyInput: 'Afficher le microphone si le champ est vide',
 		fieldRenderUserContentAsMarkdown: 'Afficher le contenu utilisateur en Markdown',
+		fieldRenderReasoningContentAsMarkdown: 'Afficher le contenu Reasoning en Markdown',
 		fieldUseFullHeightCodeBlocks: 'Utiliser des blocs de code à hauteur complète',
 		fieldDisableAutomaticScroll: 'Désactiver le défilement automatique',
 		fieldAlwaysShowSidebarOnDesktop: 'Toujours afficher la Sidebar sur ordinateur',
@@ -443,6 +444,8 @@ export const fr: TranslationDictionary = {
 			disableAutoScroll:
 				'Désactive le défilement automatique pendant le streaming pour laisser le contrôle manuel de la vue.',
 			renderUserContentAsMarkdown: 'Affiche les messages utilisateur avec le formatage Markdown.',
+			renderReasoningContentAsMarkdown:
+				'Affiche le contenu Reasoning avec le formatage Markdown sans changer la typographie actuelle.',
 			alwaysShowSidebarOnDesktop: 'Garde toujours la barre latérale visible sur ordinateur.',
 			autoShowSidebarOnNewChat:
 				'Affiche automatiquement la barre latérale lors du démarrage d’un nouveau chat.',
