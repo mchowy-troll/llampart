@@ -181,16 +181,15 @@ export const fr: TranslationDictionary = {
 		fieldRenderUserContentAsMarkdown: 'Afficher le contenu utilisateur en Markdown',
 		fieldUseFullHeightCodeBlocks: 'Utiliser des blocs de code à hauteur complète',
 		fieldDisableAutomaticScroll: 'Désactiver le défilement automatique',
-		fieldAlwaysShowSidebarOnDesktop: 'Toujours afficher la barre latérale sur ordinateur',
-		fieldAutoShowSidebarOnNewChat:
-			'Afficher automatiquement la barre latérale pour un nouveau chat',
-		fieldCompactSidebar: 'Barre latérale compacte',
+		fieldAlwaysShowSidebarOnDesktop: 'Toujours afficher la Sidebar sur ordinateur',
+		fieldAutoShowSidebarOnNewChat: 'Afficher automatiquement la Sidebar pour un nouveau chat',
+		fieldCompactSidebar: 'Sidebar compacte',
 
 		fieldShowConversationTimestamps: 'Afficher la date et l’heure des conversations',
 		fieldConversationTimestampFormat: 'Format de date et d’heure des conversations',
 		fieldChooseConversationTimestampFormat: 'Choisir le format',
 		sidebarTimestampCombinedHelp:
-			'Affiche la date et l’heure sous chaque conversation dans la barre latérale. Choisissez le format de date ci-dessous.',
+			'Affiche la date et l’heure sous chaque conversation dans la Sidebar. Choisissez le format de date ci-dessous.',
 		fieldShowRawModelNames: 'Afficher les noms bruts des modèles',
 		fieldTemperature: 'Température',
 		fieldDynamicTemperatureRange: 'Plage de température dynamique',
@@ -224,7 +223,7 @@ export const fr: TranslationDictionary = {
 		groupConnection: 'Connexion',
 		groupSystemMessage: 'Message système',
 		groupInterface: 'Interface',
-		groupFrostedGlassWallpaper: 'Fond d’écran Frosted Glass',
+		groupFrostedGlassWallpaper: 'Fond d’écran',
 		frostedGlassWallpaperDescription:
 			'Choisissez l’un des 5 fonds intégrés ou un fond personnalisé enregistré localement dans ce navigateur.',
 		frostedGlassWallpaperMilk: 'Fond laiteux',
@@ -266,7 +265,7 @@ export const fr: TranslationDictionary = {
 		backgroundImageSaveFailed: 'Impossible d’enregistrer l’image d’arrière-plan.',
 		backgroundImagePreview: 'Aperçu de l’image d’arrière-plan',
 		backgroundImageNoPreview: 'Aucun arrière-plan',
-		groupSidebar: 'Barre latérale',
+		groupSidebar: 'Sidebar',
 		groupMessageDisplay: 'Affichage des messages',
 		groupInput: 'Saisie du message',
 		groupAttachmentsFiles: 'Pièces jointes et fichiers',

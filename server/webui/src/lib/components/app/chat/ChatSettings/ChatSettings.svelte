@@ -27,9 +27,7 @@
 		SETTINGS_COLOR_MODES_CONFIG,
 		SETTINGS_KEYS,
 		API_PROVIDER_OPTIONS,
-		PROVIDER_CONNECTION_SETTING_KEYS,
-		getLocalizedTitleGenerationPrompt,
-		isBuiltInTitleGenerationPrompt
+		PROVIDER_CONNECTION_SETTING_KEYS
 	} from '$lib/constants';
 	import { validateConnectionSettings } from '$lib/utils';
 	import { getApiProvider } from '$lib/services/providers';
@@ -610,15 +608,6 @@
 			fields: [],
 			groups: [
 				{
-					fields: [
-						{
-							key: SETTINGS_KEYS.TITLE_GENERATION_PROMPT,
-							label: t('settings.fieldLLMTitleGenerationPrompt'),
-							type: SettingsFieldType.TEXTAREA
-						}
-					]
-				},
-				{
 					id: 'reasoning',
 					requiredProviderCapabilities: ['supportsLlamaReasoningControls'],
 					title: t('settings.groupReasoning'),
@@ -718,18 +707,6 @@
 			settingSections[0]
 	);
 
-	function syncLocalizedTitleGenerationPrompt(language: unknown, value: unknown) {
-		const currentPrompt = String(value ?? '');
-		const localizedPrompt = getLocalizedTitleGenerationPrompt(String(language || 'en'));
-
-		if (
-			currentPrompt !== localizedPrompt &&
-			(!currentPrompt.trim() || isBuiltInTitleGenerationPrompt(currentPrompt))
-		) {
-			localConfig.titleGenerationPrompt = localizedPrompt;
-		}
-	}
-
 	$effect(() => {
 		if (
 			initialSection &&
@@ -743,14 +720,6 @@
 		if (!visibleSettingSections.some((section) => section.title === activeSection)) {
 			activeSection = visibleSettingSections[0]?.title ?? SETTINGS_SECTION_TITLES.GENERAL;
 		}
-	});
-
-	// llampart-localized-title-generation-prompt
-	$effect(() => {
-		syncLocalizedTitleGenerationPrompt(
-			localConfig.interfaceLanguage,
-			localConfig.titleGenerationPrompt
-		);
 	});
 
 	function getCurrentGroups(): SettingsFieldGroup[] {

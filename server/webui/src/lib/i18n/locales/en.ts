@@ -182,15 +182,15 @@ export const en: TranslationDictionary = {
 		fieldRenderUserContentAsMarkdown: 'Render user content as Markdown',
 		fieldUseFullHeightCodeBlocks: 'Use full height code blocks',
 		fieldDisableAutomaticScroll: 'Disable automatic scroll',
-		fieldAlwaysShowSidebarOnDesktop: 'Always show sidebar on desktop',
-		fieldAutoShowSidebarOnNewChat: 'Auto-show sidebar on new chat',
-		fieldCompactSidebar: 'Compact sidebar',
+		fieldAlwaysShowSidebarOnDesktop: 'Always show Sidebar on desktop',
+		fieldAutoShowSidebarOnNewChat: 'Auto-show Sidebar on new chat',
+		fieldCompactSidebar: 'Compact Sidebar',
 
 		fieldShowConversationTimestamps: 'Show conversation dates and times',
 		fieldConversationTimestampFormat: 'Conversation date and time format',
 		fieldChooseConversationTimestampFormat: 'Choose format',
 		sidebarTimestampCombinedHelp:
-			'Shows the date and time under each conversation in the sidebar. Choose the date format below.',
+			'Shows the date and time under each conversation in the Sidebar. Choose the date format below.',
 		fieldShowRawModelNames: 'Show raw model names',
 		fieldTemperature: 'Temperature',
 		fieldDynamicTemperatureRange: 'Dynamic temperature range',
@@ -223,7 +223,7 @@ export const en: TranslationDictionary = {
 		groupConnection: 'Connection',
 		groupSystemMessage: 'System message',
 		groupInterface: 'Interface',
-		groupFrostedGlassWallpaper: 'Frosted Glass wallpaper',
+		groupFrostedGlassWallpaper: 'Wallpaper',
 		frostedGlassWallpaperDescription:
 			'Choose one of 5 built-in wallpapers or a custom wallpaper stored locally in this browser.',
 		frostedGlassWallpaperMilk: 'Milky wallpaper',
