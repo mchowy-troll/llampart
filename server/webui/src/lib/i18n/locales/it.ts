@@ -173,6 +173,10 @@ export const it: TranslationDictionary = {
 		invalidNumericValueFor: 'Valore numerico non valido per',
 		enterValidNumber: 'Inserisci un numero valido.',
 		invalidServerConnectionSettings: 'Impostazioni di connessione al server non valide.',
+		settingsValidationDialogTitle: 'Le impostazioni richiedono attenzione',
+		connectionValidationDialogTitle: 'Controllo della connessione non riuscito',
+		openAiCompatibleServerAddressRequired:
+			'Inserisci l’indirizzo del server OpenAI-compatible prima di salvare le impostazioni.',
 		fieldShowMessageGenerationStatistics: 'Mostra le statistiche di generazione dei messaggi',
 		fieldShowThoughtInProgress: 'Mostra Reasoning durante la generazione',
 		fieldMinimalAgenticIndicators: 'Modalità Minimalistic per Reasoning e Tools',
@@ -357,24 +361,20 @@ export const it: TranslationDictionary = {
 		},
 		info: {
 			apiProvider: `Scegli il provider API che llampart deve usare.`,
-			serverBaseUrl: `URL di llama-server.
-Lascia vuoto se usi l’indirizzo locale predefinito di llama-server: http://localhost:8080/`,
+			serverBaseUrl: 'URL di llama-server.',
 			apiKey: `Chiave API facoltativa se llama-server è stata avviata con --api-key.`,
-			llamaServerBaseUrl: `URL di llama-server.
-Lascia vuoto se usi l’indirizzo locale predefinito di llama-server: http://localhost:8080/`,
+			llamaServerBaseUrl: 'URL di llama-server.',
 			llamaServerApiKey: `Chiave API facoltativa se llama-server è stata avviata con --api-key.`,
 			openAiCompatibleBaseUrl: `Indirizzo del server OpenAI-compatible - ad esempio LM Studio, Ollama o un altro endpoint che supporta /v1/models e /v1/chat/completions.`,
-			openAiCompatibleApiKey: `Chiave API richiesta dal server OpenAI-compatible selezionato.
-Nei server locali può essere facoltativa o arbitraria, a seconda della configurazione.`,
-			disableOpenAiCompatibleTools:
-				'Nasconde MCP/Tools e non invia le definizioni degli strumenti al backend OpenAI-compatible selezionato. Usalo se quel backend rifiuta i tool calls.',
+			openAiCompatibleApiKey: 'Chiave API richiesta dal server OpenAI-compatible selezionato.',
+			disableOpenAiCompatibleTools: 'Nasconde strumenti e MCP al backend OpenAI.',
 			systemMessage: 'Il messaggio iniziale che definisce il comportamento del modello.',
 			showSystemMessage: "Mostra il messaggio di sistema all'inizio di ogni conversazione.",
 			theme: "Scegli il tema colore dell'interfaccia. Puoi usare Sistema, Chiaro o Scuro.",
 			interfaceLanguage:
 				"L'inglese è la lingua predefinita al primo avvio. Qui puoi scegliere la lingua dell'interfaccia.",
 			uiScale:
-				'Regola la scala desktop dell’interfaccia sopra la base responsive automatica. 100% mantiene il layout predefinito, 90% lo rende più compatto e 110% lo ingrandisce.',
+				'Regola la scala dell’interfaccia desktop in base all’impostazione responsiva automatica.',
 			pasteLongTextToFileLen:
 				'Quando incolli un testo lungo, verrà convertito in un file. Questo valore controlla la lunghezza. Il valore 0 disabilita questo comportamento.',
 			copyTextAttachmentsAsPlainText:
