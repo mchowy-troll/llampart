@@ -39,6 +39,24 @@ describe('provider-aware connection validation', () => {
 		);
 	});
 
+	it('requires an OpenAI-compatible server address before saving settings', async () => {
+		const fetchMock = vi.fn();
+
+		const result = await validateConnectionSettings(
+			'',
+			'lmstudio',
+			API_PROVIDER_IDS.OPENAI_COMPATIBLE,
+			fetchMock as unknown as typeof fetch
+		);
+
+		expect(result).toEqual({
+			ok: false,
+			provider: API_PROVIDER_IDS.OPENAI_COMPATIBLE,
+			errorMessage: 'Enter the OpenAI-compatible server address before saving settings.'
+		});
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
 	it('validates OpenAI-compatible providers through /v1/models', async () => {
 		const fetchMock = vi.fn().mockResolvedValue(
 			jsonResponse({

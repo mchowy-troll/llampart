@@ -175,6 +175,10 @@ export const en: TranslationDictionary = {
 		invalidNumericValueFor: 'Invalid numeric value for',
 		enterValidNumber: 'Please enter a valid number.',
 		invalidServerConnectionSettings: 'Invalid server connection settings.',
+		settingsValidationDialogTitle: 'Settings need attention',
+		connectionValidationDialogTitle: 'Connection check failed',
+		openAiCompatibleServerAddressRequired:
+			'Enter the OpenAI-compatible server address before saving settings.',
 		fieldShowMessageGenerationStatistics: 'Show message generation statistics',
 		fieldShowThoughtInProgress: 'Show Reasoning while generating',
 		fieldMinimalAgenticIndicators: 'Minimalistic Reasoning and Tools mode',
@@ -357,17 +361,13 @@ export const en: TranslationDictionary = {
 		},
 		info: {
 			apiProvider: `Choose the API provider llampart should use.`,
-			serverBaseUrl: `llama-server URL.
-Leave empty if you use the default local llama-server address: http://localhost:8080/`,
+			serverBaseUrl: 'llama-server URL.',
 			apiKey: `Optional API key if llama-server was started with --api-key.`,
-			llamaServerBaseUrl: `llama-server URL.
-Leave empty if you use the default local llama-server address: http://localhost:8080/`,
+			llamaServerBaseUrl: 'llama-server URL.',
 			llamaServerApiKey: `Optional API key if llama-server was started with --api-key.`,
 			openAiCompatibleBaseUrl: `OpenAI-compatible server address - e.g. LM Studio, Ollama, or another endpoint that supports /v1/models and /v1/chat/completions.`,
-			openAiCompatibleApiKey: `API key required by the selected OpenAI-compatible server.
-For local servers, it may be optional or arbitrary depending on the configuration.`,
-			disableOpenAiCompatibleTools:
-				'Hide MCP/Tools and do not send tool definitions to the selected OpenAI-compatible backend. Use this if that backend rejects tool calls.',
+			openAiCompatibleApiKey: 'API key required by the selected OpenAI-compatible server.',
+			disableOpenAiCompatibleTools: 'Hides tools and MCP from the OpenAI backend.',
 			systemMessage: 'The starting message that defines how the model should behave.',
 			showSystemMessage: 'Display the system message at the top of each conversation.',
 			theme:
@@ -376,8 +376,7 @@ For local servers, it may be optional or arbitrary depending on the configuratio
 				"Selected Frosted Glass wallpaper. Built-in wallpapers are shipped with llampart; custom wallpaper data is stored only in this browser's localStorage.",
 			interfaceLanguage:
 				'Choose the interface language. English is the default language on first launch.',
-			uiScale:
-				'Adjust the desktop interface scale on top of the automatic responsive baseline. 100% keeps the default layout, 90% makes it denser, and 110% makes it larger.',
+			uiScale: 'Adjust the desktop interface scale based on the automatic responsive setting.',
 			pasteLongTextToFileLen:
 				'When pasting long text, it will be converted into a file. Set the value to control the length. Value 0 disables this behavior.',
 			copyTextAttachmentsAsPlainText:

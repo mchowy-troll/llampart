@@ -6,7 +6,8 @@
 		Database,
 		MessageSquare,
 		SlidersHorizontal,
-		Wrench
+		Wrench,
+		AlertTriangle
 	} from '@lucide/svelte';
 	import {
 		ChatSettingsFooter,
@@ -18,6 +19,7 @@
 		McpServersSettings
 	} from '$lib/components/app';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
+	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { config, settingsStore } from '$lib/stores/settings.svelte';
 	import {
 		SETTINGS_SECTION_TITLES,
@@ -146,7 +148,7 @@
 				{
 					id: 'connection',
 					title: t('settings.groupConnection'),
-					layout: 'two-column',
+					layout: 'three-column',
 					fields: [
 						{
 							key: SETTINGS_KEYS.API_PROVIDER,
@@ -194,6 +196,7 @@
 				{
 					id: 'interface',
 					title: t('settings.groupInterface'),
+					layout: 'two-column',
 					halfWidth: true,
 					fields: [
 						{
@@ -674,6 +677,9 @@
 	let providerCapabilities = $derived(
 		getApiProviderCapabilities(String(localConfig.apiProvider ?? ''), localConfig)
 	);
+	let settingsWarningDialogOpen = $state(false);
+	let settingsWarningDialogTitle = $state('');
+	let settingsWarningDialogMessage = $state('');
 
 	function supportsRequiredCapabilities(capabilities?: ProviderCapabilityKey[]): boolean {
 		return (
@@ -790,12 +796,21 @@
 		setMode(getModeWatcherColorMode(String(config().theme)));
 	}
 
+	function showSettingsWarning(
+		message: string,
+		title = t('settings.settingsValidationDialogTitle')
+	) {
+		settingsWarningDialogTitle = title;
+		settingsWarningDialogMessage = message;
+		settingsWarningDialogOpen = true;
+	}
+
 	async function handleSave() {
 		if (localConfig.custom && typeof localConfig.custom === 'string' && localConfig.custom.trim()) {
 			try {
 				JSON.parse(localConfig.custom);
 			} catch (error) {
-				alert(t('settings.invalidJsonCustomParameters'));
+				showSettingsWarning(t('settings.invalidJsonCustomParameters'));
 				console.error(error);
 				return;
 			}
@@ -814,7 +829,7 @@
 						processedConfig[field] = numValue;
 					}
 				} else {
-					alert(
+					showSettingsWarning(
 						`${t('settings.invalidNumericValueFor')} ${field}. ${t('settings.enterValidNumber')}`
 					);
 					return;
@@ -834,7 +849,10 @@
 		);
 
 		if (!connectionValidation.ok) {
-			alert(connectionValidation.errorMessage || t('settings.invalidServerConnectionSettings'));
+			showSettingsWarning(
+				connectionValidation.errorMessage || t('settings.invalidServerConnectionSettings'),
+				t('settings.connectionValidationDialogTitle')
+			);
 			return;
 		}
 
@@ -993,3 +1011,20 @@
 </div>
 
 <ChatSettingsFooter onReset={handleReset} onSave={handleSave} />
+
+<AlertDialog.Root bind:open={settingsWarningDialogOpen}>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title class="flex items-center gap-2">
+				<AlertTriangle class="h-5 w-5 text-amber-500" />
+				{settingsWarningDialogTitle}
+			</AlertDialog.Title>
+			<AlertDialog.Description>{settingsWarningDialogMessage}</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Action onclick={() => (settingsWarningDialogOpen = false)}>
+				{t('common.close')}
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>
