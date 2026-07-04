@@ -99,7 +99,6 @@ export type {
 	SettingsFieldGroup,
 	SettingsFieldLayout,
 	SettingsFieldGroupLayout,
-	SettingsFieldColumn,
 	SettingsFieldCluster,
 	SettingsChatServiceOptions,
 	SettingsConfigType,

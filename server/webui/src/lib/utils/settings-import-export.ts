@@ -16,6 +16,8 @@ const EXCLUDED_CONFIG_KEYS = new Set([
 	'llamaServerApiKey',
 	'openAiCompatibleBaseUrl',
 	'openAiCompatibleApiKey',
+	// OpenAI-compatible backend compatibility toggle
+	'disableOpenAiCompatibleTools',
 	// Hidden internal title-generation prompt template
 	'titleGenerationPrompt',
 	// MCP servers, MCP section settings and MCP usage metadata

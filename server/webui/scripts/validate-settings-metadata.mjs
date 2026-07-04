@@ -94,6 +94,7 @@ function parseFields(groupBlock, groupStartLine) {
 				line: groupStartLine + beforeFieldsLineOffset + fieldLineOffset,
 				type: block.match(/\btype\s*:\s*SettingsFieldType\.([A-Z0-9_]+)/)?.[1],
 				layout: getStringProperty(block, 'layout'),
+				order: Number(block.match(/\border\s*:\s*(\d+)/)?.[1]),
 				column: getStringProperty(block, 'column'),
 				cluster: getStringProperty(block, 'cluster'),
 				hideHelp: hasTrueProperty(block, 'hideHelp')
@@ -148,40 +149,18 @@ function parseGroups(source) {
 	});
 }
 
-function supportsExplicitTwoColumnMetadata(rendererSource) {
-	return [
-		'isExplicitTwoColumnGroup',
-		'getFieldsWithoutColumn',
-		'{:else if isExplicitTwoColumnGroup}',
-		"getFieldsByColumn('left')",
-		"getFieldsByColumn('right')"
-	].every((token) => rendererSource.includes(token));
-}
-
 const chatSettingsSource = read(files.chatSettings);
-const fieldsRendererSource = read(files.fieldsRenderer);
 const settingsTypesSource = read(files.settingsTypes);
 
 const groupLayouts = extractUnionValues(settingsTypesSource, 'SettingsFieldGroupLayout');
 const fieldLayouts = extractUnionValues(settingsTypesSource, 'SettingsFieldLayout');
-const columns = extractUnionValues(settingsTypesSource, 'SettingsFieldColumn');
 const clusters = extractUnionValues(settingsTypesSource, 'SettingsFieldCluster');
 
 const groups = parseGroups(chatSettingsSource);
-const rendererSupportsExplicitTwoColumn = supportsExplicitTwoColumnMetadata(fieldsRendererSource);
-
-const columnCapableLayouts = new Set([
-	'two-column',
-	'three-column',
-	'message-display',
-	'attachments-files'
-]);
-const splitByColumnLayouts = new Set(['message-display', 'attachments-files']);
 const clusterCapableLayouts = new Set(['sidebar']);
 
 const errors = [];
 const warnings = [];
-const notes = [];
 const groupIds = new Map();
 
 for (const group of groups) {
@@ -195,40 +174,38 @@ for (const group of groups) {
 		errors.push(`${group.id}:${group.line} has both fullWidth and halfWidth.`);
 	}
 
-	const hasColumnFields = group.fields.some((field) => field.column);
 	const hasClusterFields = group.fields.some((field) => field.cluster);
 
-	if (hasColumnFields && !columnCapableLayouts.has(group.layout)) {
-		errors.push(
-			`${group.id}:${group.line} has field column metadata but layout "${group.layout}" is not column-capable.`
+	if (group.fields.length > 0) {
+		const orders = group.fields.map((field) => field.order);
+		const invalidOrders = group.fields.filter(
+			(field) => !Number.isInteger(field.order) || field.order < 1
 		);
+		if (invalidOrders.length > 0) {
+			const invalidOrderKeys = invalidOrders.map((field) => field.key).join(', ');
+			errors.push(
+				`${group.id}:${group.line} has fields without valid positive integer order: ${invalidOrderKeys}.`
+			);
+		}
+
+		const uniqueOrders = new Set(orders);
+		if (uniqueOrders.size !== orders.length) {
+			errors.push(`${group.id}:${group.line} has duplicate field order values.`);
+		}
+
+		for (let expectedOrder = 1; expectedOrder <= group.fields.length; expectedOrder += 1) {
+			if (!uniqueOrders.has(expectedOrder)) {
+				errors.push(
+					`${group.id}:${group.line} has non-continuous field order; missing order ${expectedOrder}.`
+				);
+			}
+		}
 	}
 
 	if (hasClusterFields && !clusterCapableLayouts.has(group.layout)) {
 		errors.push(
 			`${group.id}:${group.line} has field cluster metadata but layout "${group.layout}" is not cluster-capable.`
 		);
-	}
-
-	if (splitByColumnLayouts.has(group.layout)) {
-		const missingColumns = group.fields.filter((field) => !field.column).map((field) => field.key);
-		if (missingColumns.length > 0) {
-			warnings.push(
-				`${group.id}:${group.line} layout "${group.layout}" has fields without column metadata: ${missingColumns.join(', ')}.`
-			);
-		}
-	}
-
-	if (group.layout === 'two-column' && hasColumnFields) {
-		if (!rendererSupportsExplicitTwoColumn) {
-			errors.push(
-				`${group.id}:${group.line} uses explicit two-column field columns but renderer support was not found.`
-			);
-		} else {
-			notes.push(
-				`${group.id}:${group.line} uses explicit two-column field columns supported by the renderer.`
-			);
-		}
 	}
 
 	for (const field of group.fields) {
@@ -238,21 +215,15 @@ for (const group of groups) {
 			);
 		}
 
-		if (field.column && !columns.has(field.column)) {
+		if (field.column) {
 			errors.push(
-				`${group.id}:${field.line} field ${field.key} uses unknown column "${field.column}".`
+				`${group.id}:${field.line} field ${field.key} uses obsolete column metadata. Use order instead.`
 			);
 		}
 
 		if (field.cluster && !clusters.has(field.cluster)) {
 			errors.push(
 				`${group.id}:${field.line} field ${field.key} uses unknown cluster "${field.cluster}".`
-			);
-		}
-
-		if (field.layout === 'sidebar-nested' && group.layout !== 'sidebar') {
-			errors.push(
-				`${group.id}:${field.line} field ${field.key} uses sidebar-nested outside sidebar layout.`
 			);
 		}
 
@@ -276,17 +247,10 @@ if (groups.length === 0) {
 
 console.log('Settings metadata validation');
 console.log(`- Groups parsed: ${groups.length}`);
-console.log(
-	`- Explicit two-column renderer support: ${rendererSupportsExplicitTwoColumn ? 'yes' : 'no'}`
-);
+console.log('- Explicit order metadata: required for every field');
 console.log(`- Files:`);
 for (const path of Object.values(files)) {
 	console.log(`  - ${relative(ROOT, path)}`);
-}
-
-if (notes.length > 0) {
-	console.log('\nNotes:');
-	for (const note of notes) console.log(`- ${note}`);
 }
 
 if (warnings.length > 0) {

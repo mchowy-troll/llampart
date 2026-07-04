@@ -18,12 +18,7 @@ export type SettingsConfigValue = string | number | boolean | undefined;
  * Describes small visual variants for individual settings controls.
  * Keep field shape decisions here so render components do not grow key-specific exception lists.
  */
-export type SettingsFieldLayout =
-	| 'default'
-	| 'compact-inline-number'
-	| 'compact-peer-checkbox'
-	| 'aligned-mcp-number'
-	| 'sidebar-nested';
+export type SettingsFieldLayout = 'default' | 'compact-inline-number';
 
 /**
  * Describes the layout used by a complete settings group.
@@ -34,14 +29,7 @@ export type SettingsFieldGroupLayout =
 	| 'two-column'
 	| 'three-column'
 	| 'sidebar'
-	| 'message-display'
 	| 'attachments-files';
-
-/**
- * Places fields inside named multi-column group layouts.
- * Column ownership belongs to field metadata so renderers do not depend on field order.
- */
-export type SettingsFieldColumn = 'left' | 'right';
 
 /**
  * Groups related fields inside a named settings group layout.
@@ -53,10 +41,13 @@ export interface SettingsFieldConfig {
 	key: string;
 	label: string;
 	type: SettingsFieldType;
+	/**
+	 * 1-based position inside its settings group. Must be continuous per group.
+	 */
+	order: number;
 	isExperimental?: boolean;
 	help?: string;
 	layout?: SettingsFieldLayout;
-	column?: SettingsFieldColumn;
 	cluster?: SettingsFieldCluster;
 	hideHelp?: boolean;
 	options?: Array<{ value: string; label: string; icon?: typeof Icon }>;
