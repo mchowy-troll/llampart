@@ -37,7 +37,7 @@ export const SETTING_CONFIG_DEFAULT: Record<string, string | number | boolean | 
 	pdfAsImage: true,
 	disableAutoScroll: false,
 	renderUserContentAsMarkdown: true,
-	renderReasoningContentAsMarkdown: false,
+	renderReasoningContentAsMarkdown: true,
 	alwaysShowSidebarOnDesktop: false,
 	autoShowSidebarOnNewChat: true,
 	compactSidebar: false,

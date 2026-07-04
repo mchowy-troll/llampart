@@ -152,22 +152,26 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.API_PROVIDER,
+							order: 1,
 							label: t('settings.fieldApiProvider'),
 							type: SettingsFieldType.SELECT,
 							options: API_PROVIDER_SELECT_OPTIONS
 						},
 						{
 							key: SETTINGS_KEYS.SERVER_BASE_URL,
+							order: 2,
 							label: t('settings.fieldServerAddress'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.API_KEY,
+							order: 3,
 							label: t('settings.fieldApiKey'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.DISABLE_OPENAI_COMPATIBLE_TOOLS,
+							order: 4,
 							label: t('settings.fieldDisableOpenAiCompatibleTools'),
 							type: SettingsFieldType.CHECKBOX,
 							visibleForProviders: [API_PROVIDER_IDS.OPENAI_COMPATIBLE]
@@ -180,6 +184,7 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.SYSTEM_MESSAGE,
+							order: 1,
 							label: t('settings.fieldSystemMessage'),
 							type: SettingsFieldType.TEXTAREA
 						}
@@ -201,18 +206,21 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.THEME,
+							order: 1,
 							label: t('settings.fieldTheme'),
 							type: SettingsFieldType.SELECT,
 							options: THEME_OPTIONS
 						},
 						{
 							key: SETTINGS_KEYS.UI_SCALE,
+							order: 2,
 							label: t('settings.fieldUiScale'),
 							type: SettingsFieldType.SELECT,
 							options: UI_SCALE_OPTIONS
 						},
 						{
 							key: SETTINGS_KEYS.INTERFACE_LANGUAGE,
+							order: 3,
 							label: t('settings.fieldInterfaceLanguage'),
 							type: SettingsFieldType.SELECT,
 							options: INTERFACE_LANGUAGE_OPTIONS
@@ -227,21 +235,25 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.ALWAYS_SHOW_SIDEBAR_ON_DESKTOP,
+							order: 1,
 							label: t('settings.fieldAlwaysShowSidebarOnDesktop'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.AUTO_SHOW_SIDEBAR_ON_NEW_CHAT,
+							order: 2,
 							label: t('settings.fieldAutoShowSidebarOnNewChat'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.COMPACT_SIDEBAR,
+							order: 3,
 							label: t('settings.fieldCompactSidebar'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.SHOW_CONVERSATION_TIMESTAMPS,
+							order: 4,
 							label: t('settings.fieldShowConversationTimestamps'),
 							type: SettingsFieldType.CHECKBOX,
 							help: t('settings.sidebarTimestampCombinedHelp'),
@@ -249,9 +261,9 @@
 						},
 						{
 							key: SETTINGS_KEYS.CONVERSATION_TIMESTAMP_FORMAT,
+							order: 5,
 							label: t('settings.fieldChooseConversationTimestampFormat'),
 							type: SettingsFieldType.SELECT,
-							layout: 'sidebar-nested',
 							cluster: 'sidebar-timestamp',
 							hideHelp: true,
 							options: CONVERSATION_TIMESTAMP_FORMAT_OPTIONS
@@ -261,61 +273,61 @@
 				{
 					id: 'message-display',
 					title: t('settings.groupMessageDisplay'),
-					layout: 'message-display',
+					layout: 'two-column',
 					fields: [
 						{
 							key: SETTINGS_KEYS.SHOW_MESSAGE_STATS,
+							order: 1,
 							label: t('settings.fieldShowMessageGenerationStatistics'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'left'
-						},
-						{
-							key: SETTINGS_KEYS.SHOW_THOUGHT_IN_PROGRESS,
-							label: t('settings.fieldShowThoughtInProgress'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'left'
-						},
-						{
-							key: SETTINGS_KEYS.MINIMAL_AGENTIC_INDICATORS,
-							label: t('settings.fieldMinimalAgenticIndicators'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'left'
+							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.KEEP_STATS_VISIBLE,
+							order: 2,
 							label: t('settings.fieldKeepStatsVisibleAfterGeneration'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'left'
+							type: SettingsFieldType.CHECKBOX
 						},
 						{
-							key: SETTINGS_KEYS.RENDER_USER_CONTENT_AS_MARKDOWN,
-							label: t('settings.fieldRenderUserContentAsMarkdown'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'right'
+							key: SETTINGS_KEYS.MINIMAL_AGENTIC_INDICATORS,
+							order: 3,
+							label: t('settings.fieldMinimalAgenticIndicators'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.SHOW_THOUGHT_IN_PROGRESS,
+							order: 4,
+							label: t('settings.fieldShowThoughtInProgress'),
+							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.RENDER_REASONING_CONTENT_AS_MARKDOWN,
+							order: 5,
 							label: t('settings.fieldRenderReasoningContentAsMarkdown'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'right'
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.RENDER_USER_CONTENT_AS_MARKDOWN,
+							order: 6,
+							label: t('settings.fieldRenderUserContentAsMarkdown'),
+							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.DISABLE_AUTO_SCROLL,
+							order: 7,
 							label: t('settings.fieldDisableAutomaticScroll'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'right'
+							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS,
+							order: 8,
 							label: t('settings.fieldUseFullHeightCodeBlocks'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'right'
+							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.SHOW_RAW_MODEL_NAMES,
+							order: 9,
 							label: t('settings.fieldShowRawModelNames'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'right'
+							type: SettingsFieldType.CHECKBOX
 						}
 					],
 					fullWidth: true
@@ -334,16 +346,16 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.SEND_ON_ENTER,
+							order: 1,
 							label: t('settings.fieldSendMessageOnEnter'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'left'
+							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.AUTO_MIC_ON_EMPTY,
+							order: 2,
 							label: t('settings.fieldShowMicrophoneOnEmptyInput'),
 							type: SettingsFieldType.CHECKBOX,
-							isExperimental: true,
-							column: 'right'
+							isExperimental: true
 						}
 					],
 					fullWidth: true
@@ -354,23 +366,23 @@
 					layout: 'two-column',
 					fields: [
 						{
-							key: SETTINGS_KEYS.ASK_FOR_TITLE_CONFIRMATION,
-							label: t('settings.fieldAskConfirmationBeforeChangingConversationTitle'),
+							key: SETTINGS_KEYS.TITLE_GENERATION_USE_LLM,
+							order: 1,
+							label: t('settings.fieldUseLLMToGenerateConversationTitle'),
 							type: SettingsFieldType.CHECKBOX,
-							column: 'left'
+							isExperimental: true
 						},
 						{
 							key: SETTINGS_KEYS.TITLE_GENERATION_USE_FIRST_LINE,
+							order: 2,
 							label: t('settings.fieldUseFirstNonEmptyLineForConversationTitle'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'right'
+							type: SettingsFieldType.CHECKBOX
 						},
 						{
-							key: SETTINGS_KEYS.TITLE_GENERATION_USE_LLM,
-							label: t('settings.fieldUseLLMToGenerateConversationTitle'),
-							type: SettingsFieldType.CHECKBOX,
-							isExperimental: true,
-							column: 'left'
+							key: SETTINGS_KEYS.ASK_FOR_TITLE_CONFIRMATION,
+							order: 3,
+							label: t('settings.fieldAskConfirmationBeforeChangingConversationTitle'),
+							type: SettingsFieldType.CHECKBOX
 						}
 					]
 				},
@@ -381,21 +393,21 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.COPY_TEXT_ATTACHMENTS_AS_PLAIN_TEXT,
+							order: 1,
 							label: t('settings.fieldCopyTextAttachmentsAsPlainText'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'left'
+							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.PASTE_LONG_TEXT_TO_FILE_LEN,
+							order: 2,
 							label: t('settings.fieldPasteLongTextToFileLength'),
-							type: SettingsFieldType.INPUT,
-							column: 'right'
+							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.PDF_AS_IMAGE,
+							order: 3,
 							label: t('settings.fieldParsePdfAsImage'),
-							type: SettingsFieldType.CHECKBOX,
-							column: 'left'
+							type: SettingsFieldType.CHECKBOX
 						}
 					]
 				}
@@ -413,34 +425,40 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.TEMPERATURE,
+							order: 1,
 							label: t('settings.fieldTemperature'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.TOP_K,
+							order: 2,
 							label: t('settings.fieldTopK'),
 							type: SettingsFieldType.INPUT,
 							requiredProviderCapabilities: ['supportsTopK']
 						},
 						{
 							key: SETTINGS_KEYS.TOP_P,
+							order: 3,
 							label: t('settings.fieldTopP'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.MIN_P,
+							order: 4,
 							label: t('settings.fieldMinP'),
 							type: SettingsFieldType.INPUT,
 							requiredProviderCapabilities: ['supportsMinP']
 						},
 						{
 							key: SETTINGS_KEYS.TYP_P,
+							order: 5,
 							label: t('settings.fieldTypicalP'),
 							type: SettingsFieldType.INPUT,
 							requiredProviderCapabilities: ['supportsTypicalP']
 						},
 						{
 							key: SETTINGS_KEYS.MAX_TOKENS,
+							order: 6,
 							label: t('settings.fieldMaxTokens'),
 							type: SettingsFieldType.INPUT
 						}
@@ -454,11 +472,13 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.DYNATEMP_RANGE,
+							order: 1,
 							label: t('settings.fieldDynamicTemperatureRange'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.DYNATEMP_EXPONENT,
+							order: 2,
 							label: t('settings.fieldDynamicTemperatureExponent'),
 							type: SettingsFieldType.INPUT
 						}
@@ -472,11 +492,13 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.XTC_PROBABILITY,
+							order: 1,
 							label: t('settings.fieldXtcProbability'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.XTC_THRESHOLD,
+							order: 2,
 							label: t('settings.fieldXtcThreshold'),
 							type: SettingsFieldType.INPUT
 						}
@@ -490,11 +512,13 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.SAMPLERS,
+							order: 1,
 							label: t('settings.fieldSamplers'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.BACKEND_SAMPLING,
+							order: 2,
 							label: t('settings.fieldBackendSampling'),
 							type: SettingsFieldType.CHECKBOX
 						}
@@ -508,11 +532,13 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.REPEAT_LAST_N,
+							order: 1,
 							label: t('settings.fieldRepeatLastN'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.REPEAT_PENALTY,
+							order: 2,
 							label: t('settings.fieldRepeatPenalty'),
 							type: SettingsFieldType.INPUT
 						}
@@ -525,11 +551,13 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.PRESENCE_PENALTY,
+							order: 1,
 							label: t('settings.fieldPresencePenalty'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.FREQUENCY_PENALTY,
+							order: 2,
 							label: t('settings.fieldFrequencyPenalty'),
 							type: SettingsFieldType.INPUT
 						}
@@ -543,21 +571,25 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.DRY_MULTIPLIER,
+							order: 1,
 							label: t('settings.fieldDryMultiplier'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.DRY_BASE,
+							order: 2,
 							label: t('settings.fieldDryBase'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.DRY_ALLOWED_LENGTH,
+							order: 3,
 							label: t('settings.fieldDryAllowedLength'),
 							type: SettingsFieldType.INPUT
 						},
 						{
 							key: SETTINGS_KEYS.DRY_PENALTY_LAST_N,
+							order: 4,
 							label: t('settings.fieldDryPenaltyLastN'),
 							type: SettingsFieldType.INPUT
 						}
@@ -578,15 +610,15 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.ALWAYS_SHOW_AGENTIC_TURNS,
+							order: 1,
 							label: t('settings.fieldAlwaysShowAgenticTurnsInConversation'),
-							type: SettingsFieldType.CHECKBOX,
-							layout: 'compact-peer-checkbox'
+							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.AGENTIC_MAX_TURNS,
+							order: 2,
 							label: t('settings.fieldAgenticLoopMaxTurns'),
-							type: SettingsFieldType.INPUT,
-							layout: 'aligned-mcp-number'
+							type: SettingsFieldType.INPUT
 						}
 					]
 				},
@@ -597,15 +629,15 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.SHOW_TOOL_CALL_IN_PROGRESS,
+							order: 1,
 							label: t('settings.fieldShowToolCallInProgress'),
-							type: SettingsFieldType.CHECKBOX,
-							layout: 'compact-peer-checkbox'
+							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.AGENTIC_MAX_TOOL_PREVIEW_LINES,
+							order: 2,
 							label: t('settings.fieldMaxLinesPerToolPreview'),
-							type: SettingsFieldType.INPUT,
-							layout: 'aligned-mcp-number'
+							type: SettingsFieldType.INPUT
 						}
 					]
 				}
@@ -635,11 +667,13 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.DISABLE_REASONING_PARSING,
+							order: 1,
 							label: t('settings.fieldDisableServerSideThinkingExtraction'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.EXCLUDE_REASONING_FROM_CONTEXT,
+							order: 2,
 							label: t('settings.fieldStripThinkingFromMessageHistory'),
 							type: SettingsFieldType.CHECKBOX
 						}
@@ -653,6 +687,7 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.PRE_ENCODE_CONVERSATION,
+							order: 1,
 							label: t('settings.fieldPreFillKvCacheAfterResponse'),
 							type: SettingsFieldType.CHECKBOX
 						}
@@ -665,6 +700,7 @@
 					fields: [
 						{
 							key: SETTINGS_KEYS.CUSTOM,
+							order: 1,
 							label: t('settings.fieldCustomJson'),
 							type: SettingsFieldType.TEXTAREA
 						}

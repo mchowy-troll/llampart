@@ -44,11 +44,16 @@
 	const isSidebarGroup = $derived(layout === 'sidebar');
 	const isThreeColumnModelGroup = $derived(layout === 'three-column');
 	const isTwoColumnGroup = $derived(layout === 'two-column');
-	const isMessageDisplayGroup = $derived(layout === 'message-display');
 	const isAttachmentsFilesGroup = $derived(layout === 'attachments-files');
-	const isExplicitTwoColumnGroup = $derived(
-		isTwoColumnGroup && fields.some((field) => field.column)
+	const isMultiColumnGroup = $derived(
+		isTwoColumnGroup || isThreeColumnModelGroup || isAttachmentsFilesGroup
 	);
+	const orderedFields = $derived.by(() => getOrderedFields(fields));
+	const multiColumnFields = $derived.by(() =>
+		distributeFieldsIntoColumns(orderedFields, getMultiColumnCount())
+	);
+	const fieldsWithoutCluster = $derived.by(() => getFieldsWithoutCluster());
+	const sidebarTimestampFields = $derived.by(() => getFieldsByCluster('sidebar-timestamp'));
 
 	/**
 	 * Field layout helpers keep compact variants named and reusable across the template.
@@ -62,18 +67,6 @@
 		return hasFieldLayout(field, 'compact-inline-number');
 	}
 
-	function isCompactPeerCheckboxField(field: SettingsFieldConfig): boolean {
-		return hasFieldLayout(field, 'compact-peer-checkbox');
-	}
-
-	function isAlignedMcpNumberField(field: SettingsFieldConfig): boolean {
-		return hasFieldLayout(field, 'aligned-mcp-number');
-	}
-
-	function isSidebarNestedField(field: SettingsFieldConfig): boolean {
-		return hasFieldLayout(field, 'sidebar-nested');
-	}
-
 	function getSettingInfo(fieldKey: string, fieldHelp?: string): string {
 		if (fieldHelp) return fieldHelp;
 
@@ -84,27 +77,61 @@
 	}
 
 	function getFieldsWrapperClass(): string {
-		if (isThreeColumnModelGroup) {
-			return 'grid gap-5 md:grid-cols-2 xl:grid-cols-3';
-		}
-
-		return isTwoColumnGroup ? 'grid gap-5 lg:grid-cols-2' : 'space-y-5';
+		return 'space-y-5';
 	}
 
-	function getFieldsByColumn(column: SettingsFieldColumn): SettingsFieldConfig[] {
-		return fields.filter((field) => field.column === column);
+	function getOrderedFields(inputFields: SettingsFieldConfig[]): SettingsFieldConfig[] {
+		return [...inputFields].sort((left, right) => left.order - right.order);
 	}
 
-	function getFieldsWithoutColumn(): SettingsFieldConfig[] {
-		return fields.filter((field) => !field.column);
+	function getMultiColumnCount(): number {
+		if (isThreeColumnModelGroup) return 3;
+		if (isTwoColumnGroup || isAttachmentsFilesGroup) return 2;
+
+		return 1;
+	}
+
+	function getMultiColumnWrapperClass(): string {
+		return isThreeColumnModelGroup
+			? 'grid gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-3'
+			: 'grid gap-x-5 gap-y-4 lg:grid-cols-2';
+	}
+
+	function distributeFieldsIntoColumns(
+		inputFields: SettingsFieldConfig[],
+		columnCount: number
+	): SettingsFieldConfig[][] {
+		if (inputFields.length === 0) return [];
+
+		const effectiveColumnCount = Math.max(1, Math.min(columnCount, inputFields.length));
+		const chunkSize = Math.ceil(inputFields.length / effectiveColumnCount);
+
+		return Array.from({ length: effectiveColumnCount }, (_, columnIndex) => {
+			const start = columnIndex * chunkSize;
+			return inputFields.slice(start, start + chunkSize);
+		}).filter((columnFields) => columnFields.length > 0);
 	}
 
 	function getFieldsWithoutCluster(): SettingsFieldConfig[] {
-		return fields.filter((field) => !field.cluster);
+		return orderedFields.filter((field) => !field.cluster);
 	}
 
 	function getFieldsByCluster(cluster: SettingsFieldCluster): SettingsFieldConfig[] {
-		return fields.filter((field) => field.cluster === cluster);
+		return orderedFields.filter((field) => field.cluster === cluster);
+	}
+
+	function isDependentFieldAfterCheckbox(
+		inputFields: SettingsFieldConfig[],
+		fieldIndex: number
+	): boolean {
+		if (fieldIndex <= 0) return false;
+
+		const field = inputFields[fieldIndex];
+		const previousField = inputFields[fieldIndex - 1];
+
+		return (
+			field.type !== SettingsFieldType.CHECKBOX && previousField.type === SettingsFieldType.CHECKBOX
+		);
 	}
 
 	function getFieldHelp(field: SettingsFieldConfig, helpOverride = '', hideHelp = false): string {
@@ -118,32 +145,37 @@
 		return labelOverride || field.label;
 	}
 
-	function getFieldContainerClass(extraClass = '', field?: SettingsFieldConfig): string {
-		if (field && (isCompactInlineNumberField(field) || isCompactPeerCheckboxField(field))) {
+	function getFieldContainerClass(
+		extraClass = '',
+		field?: SettingsFieldConfig,
+		isDependentOnCheckbox = false
+	): string {
+		if (field && isCompactInlineNumberField(field)) {
 			return ['grid grid-rows-[2rem_auto] gap-y-1', extraClass].filter(Boolean).join(' ');
 		}
 
-		if (field && isAlignedMcpNumberField(field)) {
+		if (field && isDependentOnCheckbox) {
 			return ['grid grid-rows-[2rem_auto_auto] gap-y-1 pl-7', extraClass].filter(Boolean).join(' ');
 		}
 
 		return ['space-y-2', extraClass].filter(Boolean).join(' ');
 	}
 
-	function getHelpClass(field: SettingsFieldConfig): string {
-		return isCompactInlineNumberField(field) || isAlignedMcpNumberField(field)
+	function getHelpClass(field: SettingsFieldConfig, isDependentOnCheckbox = false): string {
+		return isCompactInlineNumberField(field) || isDependentOnCheckbox
 			? 'w-full whitespace-pre-line text-xs text-muted-foreground'
 			: 'mt-1 w-full whitespace-pre-line text-xs text-muted-foreground';
 	}
 
-	function getInputLabelRowClass(field: SettingsFieldConfig): string {
-		return isAlignedMcpNumberField(field)
-			? 'flex h-8 items-center gap-2'
-			: 'flex items-center gap-2';
+	function getInputLabelRowClass(
+		_field: SettingsFieldConfig,
+		isDependentOnCheckbox = false
+	): string {
+		return isDependentOnCheckbox ? 'flex h-8 items-center gap-2' : 'flex items-center gap-2';
 	}
 
-	function getInputLabelClass(field: SettingsFieldConfig): string {
-		return isAlignedMcpNumberField(field)
+	function getInputLabelClass(_field: SettingsFieldConfig, isDependentOnCheckbox = false): string {
+		return isDependentOnCheckbox
 			? 'flex h-8 items-center gap-1.5 text-sm leading-8 font-medium'
 			: 'flex items-center gap-1.5 text-sm font-medium';
 	}
@@ -180,9 +212,10 @@
 	labelOverride = '',
 	helpOverride = '',
 	hideHelp = false,
-	extraClass = ''
+	extraClass = '',
+	isDependentOnCheckbox = false
 )}
-	<div class={getFieldContainerClass(extraClass, field)}>
+	<div class={getFieldContainerClass(extraClass, field, isDependentOnCheckbox)}>
 		{#if field.type === SettingsFieldType.INPUT}
 			{@const currentValue = String(localConfig[field.key] ?? '')}
 			{@const serverDefault = sp[field.key]}
@@ -241,8 +274,8 @@
 					</div>
 				</div>
 			{:else}
-				<div class={getInputLabelRowClass(field)}>
-					<Label for={field.key} class={getInputLabelClass(field)}>
+				<div class={getInputLabelRowClass(field, isDependentOnCheckbox)}>
+					<Label for={field.key} class={getInputLabelClass(field, isDependentOnCheckbox)}>
 						{getFieldLabel(field, labelOverride)}
 
 						{#if field.isExperimental}
@@ -285,7 +318,7 @@
 
 			{@const help = getFieldHelp(field, helpOverride, hideHelp)}
 			{#if help}
-				<p class={getHelpClass(field)}>
+				<p class={getHelpClass(field, isDependentOnCheckbox)}>
 					{@html help}
 				</p>
 			{/if}
@@ -308,7 +341,7 @@
 
 			{@const help = getFieldHelp(field, helpOverride, hideHelp)}
 			{#if help}
-				<p class="mt-1 whitespace-pre-line text-xs text-muted-foreground">
+				<p class={getHelpClass(field, isDependentOnCheckbox)}>
 					{@html help}
 				</p>
 			{/if}
@@ -339,8 +372,8 @@
 				return currentValue !== serverDefault;
 			})()}
 
-			<div class="flex items-center gap-2">
-				<Label for={field.key} class="flex items-center gap-1.5 text-sm font-medium">
+			<div class={getInputLabelRowClass(field, isDependentOnCheckbox)}>
+				<Label for={field.key} class={getInputLabelClass(field, isDependentOnCheckbox)}>
 					{getFieldLabel(field, labelOverride)}
 
 					{#if field.isExperimental}
@@ -409,24 +442,23 @@
 			</Select.Root>
 			{@const help = getFieldHelp(field, helpOverride, hideHelp)}
 			{#if help}
-				<p class="mt-1 whitespace-pre-line text-xs text-muted-foreground">
+				<p class={getHelpClass(field, isDependentOnCheckbox)}>
 					{@html help}
 				</p>
 			{/if}
 		{:else if field.type === SettingsFieldType.CHECKBOX}
-			{#if isCompactPeerCheckboxField(field)}
-				<div class="flex h-8 items-end gap-3">
-					<div class="flex h-8 items-center">
-						<Checkbox
-							id={field.key}
-							checked={Boolean(localConfig[field.key])}
-							onCheckedChange={(checked) => onConfigChange(field.key, Boolean(checked))}
-						/>
-					</div>
+			<div class="flex items-start space-x-3">
+				<Checkbox
+					id={field.key}
+					checked={Boolean(localConfig[field.key])}
+					onCheckedChange={(checked) => onConfigChange(field.key, Boolean(checked))}
+					class="mt-1"
+				/>
 
+				<div class="min-w-0 space-y-1">
 					<label
 						for={field.key}
-						class="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 text-sm leading-8 font-medium"
+						class="flex min-w-0 cursor-pointer items-center gap-1.5 pt-1 pb-0.5 text-sm leading-none font-medium"
 					>
 						{getFieldLabel(field, labelOverride)}
 
@@ -434,116 +466,72 @@
 							<FlaskConical class="h-3.5 w-3.5 text-muted-foreground" />
 						{/if}
 					</label>
+
+					{#if getFieldHelp(field, helpOverride, hideHelp)}
+						<p class="max-w-full whitespace-pre-line text-xs break-words text-muted-foreground">
+							{@html getFieldHelp(field, helpOverride, hideHelp)}
+						</p>
+					{/if}
 				</div>
-
-				{#if getFieldHelp(field, helpOverride, hideHelp)}
-					<p class="ml-7 whitespace-pre-line text-xs text-muted-foreground">
-						{@html getFieldHelp(field, helpOverride, hideHelp)}
-					</p>
-				{/if}
-			{:else}
-				<div class="flex items-start space-x-3">
-					<Checkbox
-						id={field.key}
-						checked={Boolean(localConfig[field.key])}
-						onCheckedChange={(checked) => onConfigChange(field.key, Boolean(checked))}
-						class="mt-1"
-					/>
-
-					<div class="min-w-0 space-y-1">
-						<label
-							for={field.key}
-							class="flex min-w-0 cursor-pointer items-center gap-1.5 pt-1 pb-0.5 text-sm leading-none font-medium"
-						>
-							{getFieldLabel(field, labelOverride)}
-
-							{#if field.isExperimental}
-								<FlaskConical class="h-3.5 w-3.5 text-muted-foreground" />
-							{/if}
-						</label>
-
-						{#if getFieldHelp(field, helpOverride, hideHelp)}
-							<p class="max-w-full whitespace-pre-line text-xs break-words text-muted-foreground">
-								{@html getFieldHelp(field, helpOverride, hideHelp)}
-							</p>
-						{/if}
-					</div>
-				</div>
-			{/if}
+			</div>
 		{/if}
 	</div>
 {/snippet}
 
 {#if isSidebarGroup}
 	<div class="space-y-5">
-		{#each getFieldsWithoutCluster() as field (field.key)}
-			{@render renderField(field)}
+		{#each fieldsWithoutCluster as field, fieldIndex (field.key)}
+			{@render renderField(
+				field,
+				'',
+				'',
+				false,
+				'',
+				isDependentFieldAfterCheckbox(fieldsWithoutCluster, fieldIndex)
+			)}
 		{/each}
 
 		<div class="space-y-4">
-			{#each getFieldsByCluster('sidebar-timestamp') as field (field.key)}
+			{#each sidebarTimestampFields as field, fieldIndex (field.key)}
 				{@render renderField(
 					field,
 					'',
 					'',
 					field.hideHelp,
-					isSidebarNestedField(field) ? 'ml-[1.625rem]' : ''
+					'',
+					isDependentFieldAfterCheckbox(sidebarTimestampFields, fieldIndex)
 				)}
 			{/each}
 		</div>
 	</div>
-{:else if isMessageDisplayGroup}
-	<div class="grid gap-x-5 gap-y-4 lg:grid-cols-2">
-		<div class="space-y-4">
-			{#each getFieldsByColumn('left') as field (field.key)}
-				{@render renderField(field)}
-			{/each}
-		</div>
-
-		<div class="space-y-4">
-			{#each getFieldsByColumn('right') as field (field.key)}
-				{@render renderField(field)}
-			{/each}
-		</div>
-	</div>
-{:else if isAttachmentsFilesGroup}
-	<div class="grid gap-x-5 gap-y-4 lg:grid-cols-2">
-		<div class="space-y-4">
-			{#each getFieldsByColumn('left') as field (field.key)}
-				{@render renderField(field)}
-			{/each}
-		</div>
-
-		<div>
-			{#each getFieldsByColumn('right') as field (field.key)}
-				{@render renderField(field)}
-			{/each}
-		</div>
-	</div>
-{:else if isExplicitTwoColumnGroup}
-	<div class="space-y-5">
-		<div class="grid gap-x-5 gap-y-4 lg:grid-cols-2">
+{:else if isMultiColumnGroup}
+	<div class={getMultiColumnWrapperClass()}>
+		{#each multiColumnFields as columnFields, columnIndex (columnIndex)}
 			<div class="space-y-4">
-				{#each getFieldsByColumn('left') as field (field.key)}
-					{@render renderField(field)}
+				{#each columnFields as field, fieldIndex (field.key)}
+					{@render renderField(
+						field,
+						'',
+						'',
+						false,
+						'',
+						isDependentFieldAfterCheckbox(columnFields, fieldIndex)
+					)}
 				{/each}
 			</div>
-
-			<div class="space-y-4">
-				{#each getFieldsByColumn('right') as field (field.key)}
-					{@render renderField(field)}
-				{/each}
-			</div>
-		</div>
-
-		{#each getFieldsWithoutColumn() as field (field.key)}
-			{@render renderField(field)}
 		{/each}
 	</div>
 {:else}
 	<div class={getFieldsWrapperClass()}>
-		{#each fields as field (field.key)}
-			{@render renderField(field)}
+		{#each orderedFields as field, fieldIndex (field.key)}
+			{@render renderField(
+				field,
+				'',
+				'',
+				false,
+				'',
+				isDependentFieldAfterCheckbox(orderedFields, fieldIndex)
+			)}
 		{/each}
 	</div>
 {/if}
