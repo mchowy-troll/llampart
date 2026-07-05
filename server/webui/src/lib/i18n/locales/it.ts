@@ -225,6 +225,7 @@ export const it: TranslationDictionary = {
 		fieldStripThinkingFromMessageHistory: 'Rimuovi Reasoning dalla cronologia dei messaggi',
 		fieldCustomJson: 'JSON personalizzato',
 		groupConnection: 'Connessione',
+		groupOpenAiCompatibleOptions: 'Opzioni OpenAI-compatible',
 		groupSystemMessage: 'Messaggio di sistema',
 		groupInterface: 'Interfaccia',
 		groupFrostedGlassWallpaper: 'Sfondo',
