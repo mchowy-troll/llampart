@@ -82,6 +82,22 @@ function extractModelName(data: unknown): string | undefined {
 	return undefined;
 }
 
+type OpenAiCompatibleReasoningSource = {
+	reasoning_content?: unknown;
+	reasoning?: unknown;
+	reasoningContent?: unknown;
+};
+
+function extractOpenAiCompatibleReasoningContent(
+	source: OpenAiCompatibleReasoningSource | undefined
+): string | undefined {
+	if (!source) return undefined;
+
+	return [source.reasoning_content, source.reasoning, source.reasoningContent].find(
+		(value): value is string => typeof value === 'string' && value.length > 0
+	);
+}
+
 async function readOpenAiModelsResponse(response: Response): Promise<ApiModelListResponse> {
 	if (!response.ok) {
 		throw new Error(`${t('server.connectionFailed')} (${response.status})`);
@@ -170,7 +186,7 @@ function parseOpenAiCompatibleChatCompletionStreamData(
 
 	return {
 		content: choice?.delta?.content,
-		reasoningContent: choice?.delta?.reasoning_content,
+		reasoningContent: extractOpenAiCompatibleReasoningContent(choice?.delta),
 		toolCalls: choice?.delta?.tool_calls,
 		model: extractModelName(parsed),
 		completionId: parsed.id
@@ -185,7 +201,7 @@ function parseOpenAiCompatibleChatCompletionResponse(
 
 	return {
 		content: choice?.message?.content || '',
-		reasoningContent: choice?.message?.reasoning_content,
+		reasoningContent: extractOpenAiCompatibleReasoningContent(choice?.message),
 		toolCalls: choice?.message?.tool_calls,
 		model: extractModelName(data)
 	};
