@@ -127,4 +127,51 @@ describe('provider-owned chat completions', () => {
 		});
 		expect(provider.parseChatCompletionStreamData('[DONE]')).toEqual({ done: true });
 	});
+
+	it('parses OpenAI-compatible reasoning content variants from stream chunks', () => {
+		const provider = getApiProvider(API_PROVIDER_IDS.OPENAI_COMPATIBLE);
+
+		const reasoningContentEvent = provider.parseChatCompletionStreamData(
+			JSON.stringify({
+				id: 'chatcmpl-reasoning-content',
+				choices: [{ delta: { reasoning_content: '**plan**' } }]
+			})
+		);
+		const reasoningEvent = provider.parseChatCompletionStreamData(
+			JSON.stringify({
+				id: 'chatcmpl-reasoning',
+				choices: [{ delta: { reasoning: '- step' } }]
+			})
+		);
+		const camelReasoningEvent = provider.parseChatCompletionStreamData(
+			JSON.stringify({
+				id: 'chatcmpl-camel-reasoning',
+				choices: [{ delta: { reasoningContent: '## heading' } }]
+			})
+		);
+
+		expect(reasoningContentEvent?.reasoningContent).toBe('**plan**');
+		expect(reasoningEvent?.reasoningContent).toBe('- step');
+		expect(camelReasoningEvent?.reasoningContent).toBe('## heading');
+	});
+
+	it('parses OpenAI-compatible reasoning content variants from full responses', () => {
+		const provider = getApiProvider(API_PROVIDER_IDS.OPENAI_COMPATIBLE);
+
+		expect(
+			provider.parseChatCompletionResponse({
+				choices: [{ message: { content: 'answer', reasoning_content: '**plan**' } }]
+			})
+		).toMatchObject({ content: 'answer', reasoningContent: '**plan**' });
+		expect(
+			provider.parseChatCompletionResponse({
+				choices: [{ message: { content: 'answer', reasoning: '- step' } }]
+			})
+		).toMatchObject({ content: 'answer', reasoningContent: '- step' });
+		expect(
+			provider.parseChatCompletionResponse({
+				choices: [{ message: { content: 'answer', reasoningContent: '## heading' } }]
+			})
+		).toMatchObject({ content: 'answer', reasoningContent: '## heading' });
+	});
 });
