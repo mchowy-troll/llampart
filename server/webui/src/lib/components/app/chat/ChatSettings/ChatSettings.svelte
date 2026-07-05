@@ -292,7 +292,8 @@
 							key: SETTINGS_KEYS.KEEP_STATS_VISIBLE,
 							order: 2,
 							label: t('settings.fieldKeepStatsVisibleAfterGeneration'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							requiredProviderCapabilities: ['supportsPromptProgress']
 						},
 						{
 							key: SETTINGS_KEYS.MINIMAL_AGENTIC_INDICATORS,

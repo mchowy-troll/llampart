@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import { PROCESSING_INFO_TIMEOUT } from '$lib/constants';
 	import { useProcessingState } from '$lib/hooks/use-processing-state.svelte';
+	import { getApiProviderCapabilities } from '$lib/services/providers';
 	import { chatStore, isLoading, isChatStreaming } from '$lib/stores/chat.svelte';
 	import { activeMessages, activeConversation } from '$lib/stores/conversations.svelte';
 	import { config } from '$lib/stores/settings.svelte';
@@ -10,20 +11,40 @@
 
 	let isCurrentConversationLoading = $derived(isLoading());
 	let isStreaming = $derived(isChatStreaming());
-	let hasProcessingData = $derived(processingState.processingState !== null);
-	let processingDetails = $derived(processingState.getTechnicalDetails());
+	let supportsComposerProcessingStats = $derived(
+		getApiProviderCapabilities(String(config().apiProvider ?? ''), config()).supportsPromptProgress
+	);
+	let hasProcessingData = $derived(
+		supportsComposerProcessingStats && processingState.processingState !== null
+	);
+	let processingDetails = $derived(
+		supportsComposerProcessingStats ? processingState.getTechnicalDetails() : []
+	);
 
 	let showProcessingInfo = $derived(
-		isCurrentConversationLoading || isStreaming || config().keepStatsVisible || hasProcessingData
+		supportsComposerProcessingStats &&
+			(isCurrentConversationLoading ||
+				isStreaming ||
+				config().keepStatsVisible ||
+				hasProcessingData)
 	);
 
 	$effect(() => {
 		const conversation = activeConversation();
 
-		untrack(() => chatStore.setActiveProcessingConversation(conversation?.id ?? null));
+		untrack(() =>
+			chatStore.setActiveProcessingConversation(
+				supportsComposerProcessingStats ? (conversation?.id ?? null) : null
+			)
+		);
 	});
 
 	$effect(() => {
+		if (!supportsComposerProcessingStats) {
+			processingState.stopMonitoring();
+			return;
+		}
+
 		const keepStatsVisible = config().keepStatsVisible;
 		const shouldMonitor = keepStatsVisible || isCurrentConversationLoading || isStreaming;
 
@@ -43,6 +64,10 @@
 	});
 
 	$effect(() => {
+		if (!supportsComposerProcessingStats) {
+			return;
+		}
+
 		const conversation = activeConversation();
 		const messages = activeMessages() as DatabaseMessage[];
 		const keepStatsVisible = config().keepStatsVisible;

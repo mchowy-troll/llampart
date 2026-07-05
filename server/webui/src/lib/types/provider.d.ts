@@ -96,6 +96,7 @@ export interface ProviderChatCompletionStreamEvent {
 	completionId?: string;
 	timings?: ChatMessageTimings;
 	promptProgress?: ChatMessagePromptProgress;
+	usage?: ProviderUsage;
 }
 
 export interface ProviderChatCompletionResponse {
@@ -103,6 +104,7 @@ export interface ProviderChatCompletionResponse {
 	reasoningContent?: string;
 	toolCalls?: ApiChatCompletionToolCall[];
 	model?: string;
+	usage?: ProviderUsage;
 }
 
 export interface ProviderUsage {
