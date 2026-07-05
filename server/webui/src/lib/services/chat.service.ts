@@ -2,6 +2,7 @@ import { t } from '$lib/i18n';
 import { getApiBaseUrl } from '$lib/utils';
 import { getApiProvider } from '$lib/services/providers';
 import type { ApiProviderAdapter } from '$lib/services/providers/provider.types';
+import type { ProviderUsage } from '$lib/types/provider';
 import { formatAttachmentText } from '$lib/utils/formatters';
 import { isAbortError } from '$lib/utils/abort';
 import {
@@ -147,6 +148,8 @@ export class ChatService {
 			options: effectiveOptions
 		});
 
+		const requestStartedAt = ChatService.getMonotonicNow();
+
 		try {
 			const response = await fetch(providerRequest.url, {
 				...providerRequest.init,
@@ -187,7 +190,8 @@ export class ChatService {
 					onComplete,
 					onError,
 					onToolCallChunk,
-					onModel
+					onModel,
+					requestStartedAt
 				);
 			}
 		} catch (error) {
@@ -344,6 +348,28 @@ export class ChatService {
 	 *
 	 */
 
+	private static getMonotonicNow(): number {
+		return typeof performance !== 'undefined' && typeof performance.now === 'function'
+			? performance.now()
+			: Date.now();
+	}
+
+	private static buildProviderUsageTimings(
+		usage: ProviderUsage | undefined,
+		startedAtMs: number,
+		completedAtMs: number
+	): ChatMessageTimings | undefined {
+		if (!usage?.completionTokens || usage.completionTokens <= 0) return undefined;
+
+		const elapsedMs = Math.max(1, Math.round(completedAtMs - startedAtMs));
+
+		return {
+			prompt_n: usage.promptTokens,
+			predicted_n: usage.completionTokens,
+			predicted_ms: elapsedMs
+		};
+	}
+
 	/**
 	 * Handles streaming response from the chat completion API
 	 * @param response - The Response object from the fetch request
@@ -385,6 +411,7 @@ export class ChatService {
 		let fullReasoningContent = '';
 		let aggregatedToolCalls: ApiChatCompletionToolCall[] = [];
 		let lastTimings: ChatMessageTimings | undefined;
+		const streamStartedAt = ChatService.getMonotonicNow();
 		let streamFinished = false;
 		let modelEmitted = false;
 		let idEmitted = false;
@@ -474,6 +501,17 @@ export class ChatService {
 							if (event.timings) {
 								ChatService.notifyTimings(event.timings, event.promptProgress, onTimings);
 								lastTimings = event.timings;
+							} else if (event.usage) {
+								const usageTimings = ChatService.buildProviderUsageTimings(
+									event.usage,
+									streamStartedAt,
+									ChatService.getMonotonicNow()
+								);
+
+								if (usageTimings) {
+									ChatService.notifyTimings(usageTimings, event.promptProgress, onTimings);
+									lastTimings = usageTimings;
+								}
 							}
 
 							if (event.content) {
@@ -549,7 +587,8 @@ export class ChatService {
 		) => void,
 		onError?: (error: Error) => void,
 		onToolCallChunk?: (chunk: string) => void,
-		onModel?: (model: string) => void
+		onModel?: (model: string) => void,
+		requestStartedAt?: number
 	): Promise<string> {
 		try {
 			const responseText = await response.text();
@@ -590,7 +629,13 @@ export class ChatService {
 				throw noResponseError;
 			}
 
-			onComplete?.(content, reasoningContent, undefined, serializedToolCalls);
+			const timings = ChatService.buildProviderUsageTimings(
+				parsedResponse.usage,
+				requestStartedAt ?? ChatService.getMonotonicNow(),
+				ChatService.getMonotonicNow()
+			);
+
+			onComplete?.(content, reasoningContent, timings, serializedToolCalls);
 
 			return content;
 		} catch (error) {

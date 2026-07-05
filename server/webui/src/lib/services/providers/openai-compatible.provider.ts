@@ -15,7 +15,8 @@ import type {
 	ProviderChatCompletionStreamEvent,
 	ProviderConnectionInput,
 	ProviderConnectionValidationResult,
-	ProviderModelListInput
+	ProviderModelListInput,
+	ProviderUsage
 } from '$lib/types/provider';
 import {
 	buildProviderEndpointUrl,
@@ -88,6 +89,15 @@ type OpenAiCompatibleReasoningSource = {
 	reasoningContent?: unknown;
 };
 
+type OpenAiCompatibleUsageSource = {
+	prompt_tokens?: unknown;
+	completion_tokens?: unknown;
+	total_tokens?: unknown;
+	promptTokens?: unknown;
+	completionTokens?: unknown;
+	totalTokens?: unknown;
+};
+
 function extractOpenAiCompatibleReasoningContent(
 	source: OpenAiCompatibleReasoningSource | undefined
 ): string | undefined {
@@ -96,6 +106,32 @@ function extractOpenAiCompatibleReasoningContent(
 	return [source.reasoning_content, source.reasoning, source.reasoningContent].find(
 		(value): value is string => typeof value === 'string' && value.length > 0
 	);
+}
+
+function readOptionalUsageNumber(...values: unknown[]): number | undefined {
+	return values.find(
+		(value): value is number => typeof value === 'number' && Number.isFinite(value)
+	);
+}
+
+function normalizeOpenAiCompatibleUsage(source: unknown): ProviderUsage | undefined {
+	if (!source || typeof source !== 'object') return undefined;
+
+	const usage = source as OpenAiCompatibleUsageSource;
+	const promptTokens = readOptionalUsageNumber(usage.prompt_tokens, usage.promptTokens);
+	const completionTokens = readOptionalUsageNumber(usage.completion_tokens, usage.completionTokens);
+	const totalTokens = readOptionalUsageNumber(usage.total_tokens, usage.totalTokens);
+
+	if (promptTokens === undefined && completionTokens === undefined && totalTokens === undefined) {
+		return undefined;
+	}
+
+	return {
+		promptTokens,
+		completionTokens,
+		totalTokens,
+		raw: source
+	};
 }
 
 async function readOpenAiModelsResponse(response: Response): Promise<ApiModelListResponse> {
@@ -134,6 +170,7 @@ function buildOpenAiCompatibleChatBody(
 			tool_call_id: msg.tool_call_id
 		})),
 		stream: options.stream,
+		stream_options: options.stream ? { include_usage: true } : undefined,
 		tools: options.tools && options.tools.length > 0 ? options.tools : undefined
 	};
 
@@ -189,7 +226,8 @@ function parseOpenAiCompatibleChatCompletionStreamData(
 		reasoningContent: extractOpenAiCompatibleReasoningContent(choice?.delta),
 		toolCalls: choice?.delta?.tool_calls,
 		model: extractModelName(parsed),
-		completionId: parsed.id
+		completionId: parsed.id,
+		usage: normalizeOpenAiCompatibleUsage(parsed.usage)
 	};
 }
 
@@ -203,7 +241,8 @@ function parseOpenAiCompatibleChatCompletionResponse(
 		content: choice?.message?.content || '',
 		reasoningContent: extractOpenAiCompatibleReasoningContent(choice?.message),
 		toolCalls: choice?.message?.tool_calls,
-		model: extractModelName(data)
+		model: extractModelName(data),
+		usage: normalizeOpenAiCompatibleUsage(parsed.usage)
 	};
 }
 

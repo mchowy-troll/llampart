@@ -213,6 +213,9 @@ export interface ApiChatCompletionRequest {
 		tool_call_id?: string;
 	}>;
 	stream?: boolean;
+	stream_options?: {
+		include_usage?: boolean;
+	};
 	model?: string;
 	return_progress?: boolean;
 	tools?: ApiChatCompletionTool[];
@@ -266,6 +269,15 @@ export interface ApiChatCompletionToolCall extends ApiChatCompletionToolCallDelt
 	function?: ApiChatCompletionToolCallFunctionDelta & { arguments?: string };
 }
 
+export interface ApiChatCompletionUsage {
+	prompt_tokens?: number;
+	completion_tokens?: number;
+	total_tokens?: number;
+	promptTokens?: number;
+	completionTokens?: number;
+	totalTokens?: number;
+}
+
 export interface ApiChatCompletionStreamChunk {
 	id?: string;
 	object?: string;
@@ -291,6 +303,7 @@ export interface ApiChatCompletionStreamChunk {
 		cache_n?: number;
 	};
 	prompt_progress?: ChatMessagePromptProgress;
+	usage?: ApiChatCompletionUsage | null;
 }
 
 export interface ApiChatCompletionResponse {
@@ -308,6 +321,7 @@ export interface ApiChatCompletionResponse {
 		};
 		finish_reason?: string | null;
 	}>;
+	usage?: ApiChatCompletionUsage | null;
 }
 
 export interface ApiSlotData {
