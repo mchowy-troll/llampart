@@ -168,13 +168,20 @@
 							order: 3,
 							label: t('settings.fieldApiKey'),
 							type: SettingsFieldType.INPUT
-						},
+						}
+					]
+				},
+				{
+					id: 'openai-compatible-options',
+					title: t('settings.groupOpenAiCompatibleOptions'),
+					layout: 'two-column',
+					visibleForProviders: [API_PROVIDER_IDS.OPENAI_COMPATIBLE],
+					fields: [
 						{
 							key: SETTINGS_KEYS.DISABLE_OPENAI_COMPATIBLE_TOOLS,
-							order: 4,
+							order: 1,
 							label: t('settings.fieldDisableOpenAiCompatibleTools'),
-							type: SettingsFieldType.CHECKBOX,
-							visibleForProviders: [API_PROVIDER_IDS.OPENAI_COMPATIBLE]
+							type: SettingsFieldType.CHECKBOX
 						}
 					]
 				},

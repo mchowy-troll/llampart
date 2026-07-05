@@ -225,6 +225,7 @@ export const pl: TranslationDictionary = {
 		fieldStripThinkingFromMessageHistory: 'Usuwaj reasoning z historii wiadomości',
 		fieldCustomJson: 'Własny JSON',
 		groupConnection: 'Połączenie',
+		groupOpenAiCompatibleOptions: 'Opcje OpenAI-compatible',
 		groupSystemMessage: 'Wiadomość systemowa',
 		groupInterface: 'Interfejs',
 		groupFrostedGlassWallpaper: 'Tapeta',

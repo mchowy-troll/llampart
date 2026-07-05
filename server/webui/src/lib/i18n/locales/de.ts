@@ -225,6 +225,7 @@ export const de: TranslationDictionary = {
 		fieldStripThinkingFromMessageHistory: 'Reasoning aus dem Nachrichtenverlauf entfernen',
 		fieldCustomJson: 'Benutzerdefiniertes JSON',
 		groupConnection: 'Verbindung',
+		groupOpenAiCompatibleOptions: 'OpenAI-compatible-Optionen',
 		groupSystemMessage: 'Systemnachricht',
 		groupInterface: 'Oberfläche',
 		groupFrostedGlassWallpaper: 'Hintergrundbild',
