@@ -249,10 +249,6 @@
 	</div>
 
 	<div class="ml-auto flex items-center gap-1.5">
-		{#if canUseLlamaReasoningControls}
-			<ChatFormReasoningToggle />
-		{/if}
-
 		<ModelsSelector
 			disabled={disabled || isOffline}
 			bind:this={selectorModelRef}
@@ -260,6 +256,10 @@
 			forceForegroundText
 			useGlobalSelection
 		/>
+
+		{#if canUseLlamaReasoningControls}
+			<ChatFormReasoningToggle class="ml-1.5" />
+		{/if}
 	</div>
 
 	{#if isLoading}

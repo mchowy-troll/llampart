@@ -2,6 +2,8 @@
 	import { Check, Info, Lightbulb } from '@lucide/svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { buttonVariants } from '$lib/components/ui/button';
+	import { cn } from '$lib/components/ui/utils';
 	import { REASONING_EFFORT_LEVELS, REASONING_EFFORT_TOKENS } from '$lib/constants';
 	import { MessageRole, ReasoningEffort } from '$lib/enums';
 	import { t } from '$lib/i18n';
@@ -16,6 +18,12 @@
 	import { chatStore } from '$lib/stores/chat.svelte';
 	import { activeMessages, conversationsStore } from '$lib/stores/conversations.svelte';
 	import type { DatabaseMessage, ReasoningEffortLevel } from '$lib/types';
+
+	interface Props {
+		class?: string;
+	}
+
+	let { class: className = '' }: Props = $props();
 
 	let thinkingEnabled = $derived(conversationsStore.getThinkingEnabled());
 	let currentEffort = $derived(conversationsStore.getReasoningEffort());
@@ -91,21 +99,27 @@
 			{#snippet child({ props })}
 				<span
 					{...props}
-					class="llampart-reasoning-trigger-shell inline-flex h-8 w-8 shrink-0 items-center justify-center"
+					class={cn(
+						'llampart-reasoning-trigger-shell inline-flex h-8 w-8 shrink-0 items-center justify-center',
+						className
+					)}
 				>
 					<DropdownMenu.Root bind:open={subOpen}>
 						<DropdownMenu.Trigger
-							class="llampart-reasoning-trigger llampart-composer-bare-action inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent p-0 text-muted-foreground shadow-none ring-0 transition-colors outline-none hover:bg-transparent hover:text-foreground focus:bg-transparent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=open]:bg-transparent"
+							class={cn(
+								buttonVariants({ variant: 'default' }),
+								'llampart-reasoning-trigger llampart-composer-action-button llampart-composer-submit-button inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full p-0 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+								thinkingEnabled
+									? 'llampart-composer-reasoning-button-on'
+									: 'llampart-composer-reasoning-button-off'
+							)}
 							aria-label={`${tooltipText}. ${t('chat.reasoningConfigureHint')}`}
 						>
-							<Lightbulb
-								class={`h-4 w-4 shrink-0${!thinkingEnabled ? ' llampart-reasoning-trigger-icon-disabled' : ''}`}
-								color={!thinkingEnabled ? '#e7000b' : undefined}
-							/>
+							<Lightbulb class="h-4 w-4 shrink-0" />
 						</DropdownMenu.Trigger>
 
 						<DropdownMenu.Content
-							align="start"
+							align="end"
 							class="llampart-composer-menu-content llampart-reasoning-effort-menu w-[28rem] max-w-[calc(100vw-2rem)] overflow-hidden p-2"
 						>
 							<p
@@ -169,6 +183,25 @@
 {/if}
 
 <style>
+	:global(.llampart-composer-reasoning-button-off) {
+		opacity: 0.5;
+	}
+
+	:global(html.has-frosted-glass-theme .llampart-composer-reasoning-button-off),
+	:global(html.has-frosted-glass-theme .llampart-composer-reasoning-button-off:hover),
+	:global(html.has-frosted-glass-theme .llampart-composer-reasoning-button-off:focus-visible),
+	:global(html.has-frosted-glass-theme .llampart-composer-reasoning-button-off[data-state='open']) {
+		background: rgba(255, 255, 255, 0.54) !important;
+		border-color: rgba(255, 255, 255, 0.38) !important;
+		color: rgba(17, 17, 17, 0.62) !important;
+		opacity: 1 !important;
+	}
+
+	:global(html.has-frosted-glass-theme .llampart-composer-reasoning-button-off svg) {
+		color: rgba(17, 17, 17, 0.62) !important;
+		stroke: currentColor !important;
+	}
+
 	.llampart-reasoning-effort-option :global(svg),
 	.llampart-reasoning-effort-option :global(svg *) {
 		stroke-width: 1.65;
