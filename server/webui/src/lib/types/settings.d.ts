@@ -53,6 +53,7 @@ export interface SettingsFieldConfig {
 	options?: Array<{ value: string; label: string; icon?: typeof Icon }>;
 	requiredProviderCapabilities?: ProviderCapabilityKey[];
 	visibleForProviders?: ApiProviderId[];
+	visibleWhen?: (config: SettingsConfigType) => boolean;
 }
 
 export interface SettingsFieldGroup {

@@ -30,6 +30,7 @@ export const SETTINGS_KEYS = {
 	TITLE_GENERATION_PROMPT: 'titleGenerationPrompt',
 	// Display
 	SHOW_MESSAGE_STATS: 'showMessageStats',
+	SHOW_COMPOSER_STATS: 'showComposerStats',
 	SHOW_THOUGHT_IN_PROGRESS: 'showThoughtInProgress',
 	MINIMAL_AGENTIC_INDICATORS: 'minimalAgenticIndicators',
 	KEEP_STATS_VISIBLE: 'keepStatsVisible',

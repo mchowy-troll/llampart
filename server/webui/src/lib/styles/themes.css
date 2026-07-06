@@ -51,7 +51,24 @@
 	--llampart-composer-surface-background: #f9f9f9;
 	--llampart-composer-surface-border: oklch(0.875 0 0 / 64%);
 	--llampart-composer-surface-filter: blur(18px) saturate(116%);
+	--llampart-composer-surface-radius: 0.75rem;
 	--llampart-composer-fade-background: var(--background);
+	--llampart-composer-processing-stats-radius: var(--llampart-composer-surface-radius);
+	--llampart-composer-processing-stats-background: var(--llampart-composer-surface-background);
+	--llampart-composer-processing-stats-border: var(--llampart-composer-surface-border);
+	--llampart-composer-processing-stats-shadow: none;
+	--llampart-composer-processing-stats-filter: var(--llampart-composer-surface-filter);
+	--llampart-composer-processing-stats-foreground: var(--muted-foreground);
+	--llampart-composer-processing-stats-separator: color-mix(
+		in oklch,
+		var(--muted-foreground) 56%,
+		transparent
+	);
+	--llampart-composer-processing-stats-text-shadow: none;
+	--llampart-composer-processing-stats-font-size: 0.8125rem;
+	--llampart-composer-processing-stats-font-size-sm: 0.75rem;
+	--llampart-composer-processing-stats-line-height: 1.125rem;
+	--llampart-composer-processing-stats-font-weight: 400;
 	--llampart-toast-surface-background: oklch(0.985 0 0 / 96%);
 	--llampart-toast-surface-border: oklch(0.875 0 0 / 74%);
 	--llampart-toast-surface-foreground: var(--foreground);
@@ -104,6 +121,14 @@
 	--llampart-composer-surface-border: oklch(1 0 0 / 18%);
 	--llampart-composer-surface-filter: blur(18px) saturate(116%);
 	--llampart-composer-fade-background: var(--background);
+	--llampart-composer-processing-stats-background: var(--llampart-composer-surface-background);
+	--llampart-composer-processing-stats-border: var(--llampart-composer-surface-border);
+	--llampart-composer-processing-stats-foreground: var(--muted-foreground);
+	--llampart-composer-processing-stats-separator: color-mix(
+		in oklch,
+		var(--muted-foreground) 62%,
+		transparent
+	);
 	--llampart-toast-surface-background: oklch(0.205 0 0 / 96%);
 	--llampart-toast-surface-border: oklch(1 0 0 / 12%);
 	--llampart-toast-surface-foreground: var(--foreground);
@@ -127,6 +152,19 @@ html.has-frosted-glass-theme {
 	--llampart-frosted-surface-text-shadow:
 		0 0 2px rgba(255, 255, 255, 0.64), 0 0 8px rgba(255, 255, 255, 0.5),
 		0 0 16px rgba(255, 255, 255, 0.34);
+	--llampart-composer-processing-stats-radius: var(
+		--llampart-frosted-glass-composer-radius,
+		1.5rem
+	);
+	--llampart-composer-processing-stats-background: rgba(255, 255, 255, 0.34);
+	--llampart-composer-processing-stats-border: rgba(255, 255, 255, 0.34);
+	--llampart-composer-processing-stats-shadow:
+		0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 26px rgba(0, 0, 0, 0.036), 0 20px 48px rgba(0, 0, 0, 0.028);
+	--llampart-composer-processing-stats-filter: blur(28px) saturate(132%);
+	--llampart-composer-processing-stats-foreground: rgba(48, 54, 56, 0.88);
+	--llampart-composer-processing-stats-separator: rgba(48, 54, 56, 0.48);
+	--llampart-composer-processing-stats-text-shadow: none;
+	--llampart-composer-processing-stats-font-weight: 400;
 }
 
 /* llampart-agentic-panel-and-dialog-overlay-token-owner

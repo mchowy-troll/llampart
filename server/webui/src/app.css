@@ -146,6 +146,37 @@ html[data-llampart-ui-scale='110'] {
 }
 /* /llampart-chat-layout-scale-primitives */
 
+/* llampart-composer-processing-stats-layout-primitives
+   app.css owns the shared geometry for the llama-server composer stats micro frame.
+   Theme-specific visual values live in lib/styles/themes.css and the component only
+   consumes these primitives while rendering translated labels and values. */
+:root {
+	--llampart-composer-processing-stats-min-height: 2.25rem;
+	--llampart-composer-processing-stats-bottom-gap: 1.0625rem;
+	--llampart-composer-processing-stats-enter-offset: 0.5rem;
+	--llampart-composer-processing-stats-padding-inline: 1.25rem;
+	--llampart-composer-processing-stats-frame-gap: 1rem;
+	--llampart-composer-processing-stats-item-gap: 0.875rem;
+	--llampart-composer-processing-stats-value-min-width: 0;
+	--llampart-composer-processing-stats-context-value-width: 20ch;
+	--llampart-composer-processing-stats-speed-value-min-width: 0;
+	--llampart-composer-processing-stats-speed-value-width: 8.5ch;
+	--llampart-composer-processing-stats-value-letter-spacing: 0;
+}
+
+@media (max-width: 768px) {
+	:root {
+		--llampart-composer-processing-stats-min-height: 2.125rem;
+		--llampart-composer-processing-stats-bottom-gap: 0.75rem;
+		--llampart-composer-processing-stats-padding-inline: 0.875rem;
+		--llampart-composer-processing-stats-frame-gap: 0.75rem;
+		--llampart-composer-processing-stats-item-gap: 0.5rem;
+		--llampart-composer-processing-stats-context-value-width: 17ch;
+		--llampart-composer-processing-stats-speed-value-width: 7.25ch;
+	}
+}
+/* /llampart-composer-processing-stats-layout-primitives */
+
 /* llampart-settings-wallpaper-selector-primitives
    app.css currently owns shared layout/style primitives until the style layer is split.
    The settings wallpaper component consumes these semantic hooks instead of hard-coding
@@ -431,6 +462,7 @@ html.has-frosted-glass-theme #llampart-frosted-glass-preload-background {
    Theme tokens live in lib/styles/themes.css; app.css owns the shared light/dark surface selectors while surfaces.css is still planned. */
 html:not(.has-frosted-glass-theme) .llampart-chat-input-frame {
 	border-color: var(--llampart-composer-surface-border) !important;
+	border-radius: var(--llampart-composer-surface-radius) !important;
 	background: var(--llampart-composer-surface-background) !important;
 	background-color: var(--llampart-composer-surface-background) !important;
 	background-image: none !important;

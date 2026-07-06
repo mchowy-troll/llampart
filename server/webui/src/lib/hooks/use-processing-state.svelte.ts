@@ -3,10 +3,22 @@ import { config } from '$lib/stores/settings.svelte';
 import { STATS_UNITS } from '$lib/constants';
 import type { ApiProcessingState, LiveProcessingStats, LiveGenerationStats } from '$lib/types';
 
+export interface ComposerProcessingStats {
+	readonly context: {
+		readonly used: number;
+		readonly total: number;
+		readonly percent: number;
+	};
+	readonly speed: {
+		readonly tokensPerSecond: number | null;
+	};
+}
+
 export interface UseProcessingStateReturn {
 	readonly processingState: ApiProcessingState | null;
 	getProcessingDetails(): string[];
 	getTechnicalDetails(): string[];
+	getComposerProcessingStats(): ComposerProcessingStats | null;
 	getProcessingMessage(): string;
 	getPromptProgressText(): string | null;
 	getLiveProcessingStats(): LiveProcessingStats | null;
@@ -116,6 +128,38 @@ export function useProcessingState(): UseProcessingStateReturn {
 			default:
 				return 'Processing...';
 		}
+	}
+
+	function getComposerProcessingStats(): ComposerProcessingStats | null {
+		const stateToUse = processingState || lastKnownState;
+		if (!stateToUse) {
+			return null;
+		}
+
+		if (
+			typeof stateToUse.contextTotal !== 'number' ||
+			stateToUse.contextUsed < 0 ||
+			stateToUse.contextTotal <= 0
+		) {
+			return null;
+		}
+
+		const contextPercent = Math.round((stateToUse.contextUsed / stateToUse.contextTotal) * 100);
+		const tokensPerSecond =
+			stateToUse.tokensPerSecond && stateToUse.tokensPerSecond > 0
+				? stateToUse.tokensPerSecond
+				: null;
+
+		return {
+			context: {
+				used: stateToUse.contextUsed,
+				total: stateToUse.contextTotal,
+				percent: contextPercent
+			},
+			speed: {
+				tokensPerSecond
+			}
+		};
 	}
 
 	function getProcessingDetails(): string[] {
@@ -314,6 +358,7 @@ export function useProcessingState(): UseProcessingStateReturn {
 		},
 		getProcessingDetails,
 		getTechnicalDetails,
+		getComposerProcessingStats,
 		getProcessingMessage,
 		getPromptProgressText,
 		getLiveProcessingStats,

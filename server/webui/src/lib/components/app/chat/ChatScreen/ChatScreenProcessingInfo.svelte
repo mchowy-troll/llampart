@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { PROCESSING_INFO_TIMEOUT } from '$lib/constants';
+	import { PROCESSING_INFO_TIMEOUT, STATS_UNITS } from '$lib/constants';
+	import { t } from '$lib/i18n';
 	import { useProcessingState } from '$lib/hooks/use-processing-state.svelte';
 	import { getApiProviderCapabilities } from '$lib/services/providers';
 	import { chatStore, isLoading, isChatStreaming } from '$lib/stores/chat.svelte';
@@ -11,18 +12,32 @@
 
 	let isCurrentConversationLoading = $derived(isLoading());
 	let isStreaming = $derived(isChatStreaming());
+	let showComposerProcessingStats = $derived(config().showComposerStats !== false);
 	let supportsComposerProcessingStats = $derived(
-		getApiProviderCapabilities(String(config().apiProvider ?? ''), config()).supportsPromptProgress
+		showComposerProcessingStats &&
+			getApiProviderCapabilities(String(config().apiProvider ?? ''), config())
+				.supportsPromptProgress
+	);
+	let composerProcessingStats = $derived(
+		supportsComposerProcessingStats ? processingState.getComposerProcessingStats() : null
 	);
 	let hasProcessingData = $derived(
-		supportsComposerProcessingStats && processingState.processingState !== null
+		supportsComposerProcessingStats && composerProcessingStats !== null
 	);
-	let processingDetails = $derived(
-		supportsComposerProcessingStats ? processingState.getTechnicalDetails() : []
+	let contextValue = $derived(
+		composerProcessingStats
+			? `${composerProcessingStats.context.used} ${t('messages.composerStatsContextOf')} ${composerProcessingStats.context.total} (${composerProcessingStats.context.percent}%)`
+			: ''
+	);
+	let speedValue = $derived(
+		composerProcessingStats?.speed.tokensPerSecond
+			? `${composerProcessingStats.speed.tokensPerSecond.toFixed(1)} ${STATS_UNITS.TOKENS_PER_SECOND}`
+			: `— ${STATS_UNITS.TOKENS_PER_SECOND}`
 	);
 
 	let showProcessingInfo = $derived(
 		supportsComposerProcessingStats &&
+			composerProcessingStats !== null &&
 			(isCurrentConversationLoading ||
 				isStreaming ||
 				config().keepStatsVisible ||
@@ -86,11 +101,26 @@
 </script>
 
 <div class="chat-processing-info-container pointer-events-none" class:visible={showProcessingInfo}>
-	<div class="chat-processing-info-content">
-		{#each processingDetails as detail (detail)}
-			<span class="chat-processing-info-detail pointer-events-auto">{detail}</span>
-		{/each}
-	</div>
+	{#if composerProcessingStats}
+		<dl
+			class="llampart-chat-composer-width chat-processing-info-frame pointer-events-auto"
+			aria-label={t('messages.composerStatsLabel')}
+		>
+			<div class="chat-processing-info-item chat-processing-info-item-context">
+				<dt class="chat-processing-info-label">{t('messages.composerStatsContext')}</dt>
+				<span class="chat-processing-info-separator" aria-hidden="true">|</span>
+				<dd class="chat-processing-info-value chat-processing-info-context-value">
+					{contextValue}
+				</dd>
+			</div>
+
+			<div class="chat-processing-info-item chat-processing-info-item-speed">
+				<dt class="chat-processing-info-label">{t('messages.composerStatsSpeed')}</dt>
+				<span class="chat-processing-info-separator" aria-hidden="true">|</span>
+				<dd class="chat-processing-info-value chat-processing-info-speed-value">{speedValue}</dd>
+			</div>
+		</dl>
+	{/if}
 </div>
 
 <style>
@@ -98,9 +128,9 @@
 		position: sticky;
 		top: 0;
 		z-index: 10;
-		padding: 0 1rem 0.75rem;
+		padding: 0 1rem var(--llampart-composer-processing-stats-bottom-gap);
 		opacity: 0;
-		transform: translateY(50%);
+		transform: translateY(var(--llampart-composer-processing-stats-enter-offset));
 		transition:
 			opacity 300ms ease-out,
 			transform 300ms ease-out;
@@ -111,84 +141,80 @@
 		transform: translateY(0);
 	}
 
-	.chat-processing-info-content {
+	.chat-processing-info-frame {
 		display: flex;
-		flex-wrap: wrap;
 		align-items: center;
-		gap: 1rem;
-		justify-content: center;
-		max-width: 48rem;
+		justify-content: space-between;
+		box-sizing: border-box;
+		width: 100%;
+		min-height: var(--llampart-composer-processing-stats-min-height);
 		margin: 0 auto;
+		padding-inline: var(--llampart-composer-processing-stats-padding-inline);
+		gap: var(--llampart-composer-processing-stats-frame-gap);
+		border: 1px solid var(--llampart-composer-processing-stats-border);
+		border-radius: var(--llampart-composer-processing-stats-radius);
+		background: var(--llampart-composer-processing-stats-background);
+		background-color: var(--llampart-composer-processing-stats-background);
+		background-image: none;
+		box-shadow: var(--llampart-composer-processing-stats-shadow);
+		-webkit-backdrop-filter: var(--llampart-composer-processing-stats-filter);
+		backdrop-filter: var(--llampart-composer-processing-stats-filter);
+		color: var(--llampart-composer-processing-stats-foreground);
+		text-shadow: var(--llampart-composer-processing-stats-text-shadow);
+		font-family: inherit;
+		font-size: var(--llampart-composer-processing-stats-font-size);
+		font-weight: var(--llampart-composer-processing-stats-font-weight);
+		line-height: var(--llampart-composer-processing-stats-line-height);
 	}
 
-	.chat-processing-info-detail {
-		display: inline-flex;
+	.chat-processing-info-item {
+		display: inline-grid;
+		grid-template-columns: auto auto minmax(
+				var(--llampart-composer-processing-stats-value-min-width),
+				max-content
+			);
 		align-items: center;
-		max-width: 100%;
 		min-width: 0;
-		gap: 0.25rem;
-		color: var(--muted-foreground);
-		background-color: var(--background);
-		border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
-		border-radius: 0.375rem;
-		box-shadow: none;
-		font-family: inherit;
-		font-size: 0.75rem;
-		line-height: 1rem;
-		padding: 0.125rem 0.375rem;
+		column-gap: var(--llampart-composer-processing-stats-item-gap);
 		white-space: nowrap;
 	}
 
-	/* llampart-frosted-glass-composer-processing-stats */
-	:global(html.has-frosted-glass-theme) .chat-processing-info-detail {
-		border: 1px solid rgba(255, 255, 255, 0.2) !important;
-		background: rgba(255, 255, 255, 0.16) !important;
-		color: #000000 !important;
-		font-weight: 400 !important;
-		text-shadow: none !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.12),
-			0 1px 2px rgba(0, 0, 0, 0.03) !important;
-		backdrop-filter: blur(12px) saturate(108%) !important;
-		-webkit-backdrop-filter: blur(12px) saturate(108%) !important;
+	.chat-processing-info-item-speed {
+		grid-template-columns: auto auto minmax(
+				var(--llampart-composer-processing-stats-speed-value-min-width),
+				max-content
+			);
+	}
+
+	.chat-processing-info-label,
+	.chat-processing-info-value {
+		min-width: 0;
+		margin: 0;
+	}
+
+	.chat-processing-info-separator {
+		color: var(--llampart-composer-processing-stats-separator);
+	}
+
+	.chat-processing-info-value {
+		font-variant-numeric: tabular-nums;
+		font-feature-settings: 'tnum' 1;
+		letter-spacing: var(--llampart-composer-processing-stats-value-letter-spacing);
+	}
+
+	.chat-processing-info-context-value {
+		min-inline-size: var(--llampart-composer-processing-stats-context-value-width);
+		text-align: left;
+	}
+
+	.chat-processing-info-speed-value {
+		min-inline-size: var(--llampart-composer-processing-stats-speed-value-width);
+		text-align: left;
 	}
 
 	@media (max-width: 768px) {
-		.chat-processing-info-content {
-			gap: 0.5rem;
+		.chat-processing-info-frame {
+			font-size: var(--llampart-composer-processing-stats-font-size-sm);
 		}
-
-		.chat-processing-info-detail {
-			font-size: 0.7rem;
-			padding: 0.125rem 0.375rem;
-		}
-	}
-	/* llampart-frosted-glass-composer-processing-stats-glow-final */
-	:global(html.has-frosted-glass-theme) .chat-processing-info-detail {
-		color: #000000 !important;
-		font-weight: 400 !important;
-		font-variation-settings: 'wght' 400 !important;
-		text-shadow:
-			0 0 2px rgba(255, 255, 255, 0.62),
-			0 0 7px rgba(255, 255, 255, 0.46),
-			0 0 14px rgba(255, 255, 255, 0.28) !important;
-	}
-
-	/* llampart-frosted-glass-composer-processing-stats-bold-round-4 */
-	:global(html.has-frosted-glass-theme) .chat-processing-info-detail {
-		border: 1px solid rgba(255, 255, 255, 0.28) !important;
-		background: rgba(255, 255, 255, 0.28) !important;
-		color: #000000 !important;
-		font-weight: 600 !important;
-		font-variation-settings: 'wght' 600 !important;
-		text-shadow:
-			0 0 2px rgba(255, 255, 255, 0.68),
-			0 0 7px rgba(255, 255, 255, 0.5),
-			0 0 14px rgba(255, 255, 255, 0.3) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.16),
-			0 1px 2px rgba(0, 0, 0, 0.04) !important;
-		backdrop-filter: blur(10px) saturate(108%) !important;
-		-webkit-backdrop-filter: blur(10px) saturate(108%) !important;
 	}
 </style>
