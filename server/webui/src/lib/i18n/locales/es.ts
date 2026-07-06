@@ -180,6 +180,7 @@ export const es: TranslationDictionary = {
 		openAiCompatibleServerAddressRequired:
 			'Introduce la dirección del servidor OpenAI-compatible antes de guardar la configuración.',
 		fieldShowMessageGenerationStatistics: 'Mostrar estadísticas de generación del mensaje',
+		fieldShowComposerGenerationStats: 'Mostrar estadísticas de generación sobre el composer',
 		fieldShowThoughtInProgress: 'Mostrar Reasoning durante la generación',
 		fieldMinimalAgenticIndicators: 'Modo Minimalistic para Reasoning y Tools',
 		fieldKeepStatsVisibleAfterGeneration: 'Mantener estadísticas visibles tras la generación',
@@ -441,6 +442,8 @@ export const es: TranslationDictionary = {
 			keepStatsVisible:
 				'Mantener visibles las estadísticas de procesamiento después de que finalice la generación.',
 			showMessageStats: 'Mostrar estadísticas de generación debajo de cada mensaje del asistente.',
+			showComposerStats:
+				'Muestra estadísticas de generación en vivo sobre el composer para proveedores compatibles.',
 			disableAutoScroll:
 				'Desactivar el desplazamiento automático mientras los mensajes se transmiten para que puedas controlar manualmente el viewport.',
 			renderUserContentAsMarkdown:
@@ -638,6 +641,10 @@ export const es: TranslationDictionary = {
 		of: 'de',
 		previousMessageVersion: 'Versión anterior del mensaje',
 		previousVersion: 'Versión anterior',
+		composerStatsLabel: 'Estadísticas de procesamiento en vivo',
+		composerStatsContext: 'Contexto',
+		composerStatsContextOf: 'de',
+		composerStatsSpeed: 'Velocidad',
 		statsAgenticSummary: 'Agentic summary',
 		statsAgenticTurns: 'Agentic turns',
 		statsGeneratedTokens: 'Tokens generados',

@@ -289,51 +289,60 @@
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
-							key: SETTINGS_KEYS.KEEP_STATS_VISIBLE,
+							key: SETTINGS_KEYS.SHOW_COMPOSER_STATS,
 							order: 2,
-							label: t('settings.fieldKeepStatsVisibleAfterGeneration'),
+							label: t('settings.fieldShowComposerGenerationStats'),
 							type: SettingsFieldType.CHECKBOX,
 							requiredProviderCapabilities: ['supportsPromptProgress']
 						},
 						{
-							key: SETTINGS_KEYS.MINIMAL_AGENTIC_INDICATORS,
+							key: SETTINGS_KEYS.KEEP_STATS_VISIBLE,
 							order: 3,
+							label: t('settings.fieldKeepStatsVisibleAfterGeneration'),
+							type: SettingsFieldType.CHECKBOX,
+							requiredProviderCapabilities: ['supportsPromptProgress'],
+							visibleWhen: (currentConfig: SettingsConfigType) =>
+								currentConfig.showComposerStats !== false
+						},
+						{
+							key: SETTINGS_KEYS.MINIMAL_AGENTIC_INDICATORS,
+							order: 4,
 							label: t('settings.fieldMinimalAgenticIndicators'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.SHOW_THOUGHT_IN_PROGRESS,
-							order: 4,
+							order: 5,
 							label: t('settings.fieldShowThoughtInProgress'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.RENDER_REASONING_CONTENT_AS_MARKDOWN,
-							order: 5,
+							order: 6,
 							label: t('settings.fieldRenderReasoningContentAsMarkdown'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.RENDER_USER_CONTENT_AS_MARKDOWN,
-							order: 6,
+							order: 7,
 							label: t('settings.fieldRenderUserContentAsMarkdown'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.DISABLE_AUTO_SCROLL,
-							order: 7,
+							order: 8,
 							label: t('settings.fieldDisableAutomaticScroll'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS,
-							order: 8,
+							order: 9,
 							label: t('settings.fieldUseFullHeightCodeBlocks'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.SHOW_RAW_MODEL_NAMES,
-							order: 9,
+							order: 10,
 							label: t('settings.fieldShowRawModelNames'),
 							type: SettingsFieldType.CHECKBOX
 						}
@@ -757,6 +766,7 @@
 		return fields
 			.filter((field) => supportsVisibleForProviders(field.visibleForProviders))
 			.filter((field) => supportsRequiredCapabilities(field.requiredProviderCapabilities))
+			.filter((field) => field.visibleWhen?.(localConfig) ?? true)
 			.map(getProviderScopedField);
 	}
 
