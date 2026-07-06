@@ -110,12 +110,17 @@
 								buttonVariants({ variant: 'default' }),
 								'llampart-reasoning-trigger llampart-composer-action-button llampart-composer-submit-button inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full p-0 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
 								thinkingEnabled
-									? 'llampart-composer-reasoning-button-on'
-									: 'llampart-composer-reasoning-button-off'
+									? 'llampart-composer-neutral-action-button llampart-composer-reasoning-button-on'
+									: 'llampart-composer-neutral-action-button llampart-composer-reasoning-button-off'
 							)}
 							aria-label={`${tooltipText}. ${t('chat.reasoningConfigureHint')}`}
 						>
-							<Lightbulb class="h-4 w-4 shrink-0" />
+							<Lightbulb
+								class={cn(
+									'h-4 w-4 shrink-0',
+									!thinkingEnabled ? 'llampart-reasoning-trigger-icon-disabled' : ''
+								)}
+							/>
 						</DropdownMenu.Trigger>
 
 						<DropdownMenu.Content
@@ -183,23 +188,21 @@
 {/if}
 
 <style>
-	:global(.llampart-composer-reasoning-button-off) {
-		opacity: 0.5;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-composer-reasoning-button-off),
-	:global(html.has-frosted-glass-theme .llampart-composer-reasoning-button-off:hover),
-	:global(html.has-frosted-glass-theme .llampart-composer-reasoning-button-off:focus-visible),
-	:global(html.has-frosted-glass-theme .llampart-composer-reasoning-button-off[data-state='open']) {
-		background: rgba(255, 255, 255, 0.54) !important;
-		border-color: rgba(255, 255, 255, 0.38) !important;
-		color: rgba(17, 17, 17, 0.62) !important;
+	/* llampart-reasoning-off-icon-red */
+	:global(html:not(.has-frosted-glass-theme) .llampart-reasoning-trigger-icon-disabled),
+	:global(html:not(.has-frosted-glass-theme) .llampart-reasoning-trigger-icon-disabled *) {
+		color: #ff4d55 !important;
+		stroke: #ff4d55 !important;
+		stroke-width: 2.35 !important;
 		opacity: 1 !important;
 	}
 
-	:global(html.has-frosted-glass-theme .llampart-composer-reasoning-button-off svg) {
-		color: rgba(17, 17, 17, 0.62) !important;
-		stroke: currentColor !important;
+	:global(html.has-frosted-glass-theme .llampart-reasoning-trigger-icon-disabled),
+	:global(html.has-frosted-glass-theme .llampart-reasoning-trigger-icon-disabled *) {
+		color: #e7000b !important;
+		stroke: #e7000b !important;
+		stroke-width: 2.35 !important;
+		opacity: 1 !important;
 	}
 
 	.llampart-reasoning-effort-option :global(svg),

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { Plus, MessageSquare, Settings, Zap, FolderOpen } from '@lucide/svelte';
-	import { Button } from '$lib/components/ui/button';
+	import { buttonVariants } from '$lib/components/ui/button';
+	import { cn } from '$lib/components/ui/utils';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Switch } from '$lib/components/ui/switch';
@@ -159,25 +160,33 @@
 
 <div class="llampart-composer-attachments-trigger flex items-center gap-1 {className}">
 	<DropdownMenu.Root bind:open={dropdownOpen}>
-		<DropdownMenu.Trigger name={t('attachments.attachFiles')} {disabled}>
-			<Tooltip.Root delayDuration={1200}>
-				<Tooltip.Trigger class="llampart-composer-plus-trigger inline-flex rounded-full">
-					<Button
-						class="llampart-composer-action-button llampart-composer-submit-button llampart-composer-plus-button h-8 w-8 rounded-full p-0"
-						{disabled}
-						type="button"
+		<Tooltip.Root delayDuration={1200}>
+			<Tooltip.Trigger>
+				{#snippet child({ props })}
+					<span
+						{...props}
+						class="llampart-composer-attachment-trigger-shell inline-flex h-8 min-h-8 w-8 min-w-8 shrink-0 items-center justify-center rounded-full"
 					>
-						<span class="sr-only">{fileUploadTooltipText}</span>
+						<DropdownMenu.Trigger
+							name={t('attachments.attachFiles')}
+							{disabled}
+							class={cn(
+								buttonVariants({ variant: 'default' }),
+								'llampart-composer-attachment-menu-trigger llampart-composer-attachment-menu-button llampart-composer-neutral-action-button llampart-composer-action-button llampart-composer-submit-button inline-flex h-8 min-h-8 w-8 min-w-8 cursor-pointer items-center justify-center rounded-full p-0 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+							)}
+							aria-label={fileUploadTooltipText}
+						>
+							<span class="sr-only">{fileUploadTooltipText}</span>
+							<Plus class="h-4 w-4 shrink-0" />
+						</DropdownMenu.Trigger>
+					</span>
+				{/snippet}
+			</Tooltip.Trigger>
 
-						<Plus class="h-12 w-12" />
-					</Button>
-				</Tooltip.Trigger>
-
-				<Tooltip.Content>
-					<p>{fileUploadTooltipText}</p>
-				</Tooltip.Content>
-			</Tooltip.Root>
-		</DropdownMenu.Trigger>
+			<Tooltip.Content>
+				<p>{fileUploadTooltipText}</p>
+			</Tooltip.Content>
+		</Tooltip.Root>
 
 		<DropdownMenu.Content
 			align="start"
