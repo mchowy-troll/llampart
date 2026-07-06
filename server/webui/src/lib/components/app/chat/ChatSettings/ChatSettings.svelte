@@ -208,8 +208,8 @@
 				{
 					id: 'interface',
 					title: t('settings.groupInterface'),
-					layout: 'two-column',
-					halfWidth: true,
+					layout: 'three-column',
+					fullWidth: true,
 					fields: [
 						{
 							key: SETTINGS_KEYS.THEME,
@@ -237,7 +237,7 @@
 				{
 					id: 'sidebar',
 					title: t('settings.groupSidebar'),
-					halfWidth: true,
+					fullWidth: true,
 					layout: 'sidebar',
 					fields: [
 						{

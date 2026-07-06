@@ -479,30 +479,34 @@
 {/snippet}
 
 {#if isSidebarGroup}
-	<div class="space-y-5">
-		{#each fieldsWithoutCluster as field, fieldIndex (field.key)}
-			{@render renderField(
-				field,
-				'',
-				'',
-				false,
-				'',
-				isDependentFieldAfterCheckbox(fieldsWithoutCluster, fieldIndex)
-			)}
-		{/each}
-
+	<div class="grid gap-x-5 gap-y-4 lg:grid-cols-2">
 		<div class="space-y-4">
-			{#each sidebarTimestampFields as field, fieldIndex (field.key)}
+			{#each fieldsWithoutCluster as field, fieldIndex (field.key)}
 				{@render renderField(
 					field,
 					'',
 					'',
-					field.hideHelp,
+					false,
 					'',
-					isDependentFieldAfterCheckbox(sidebarTimestampFields, fieldIndex)
+					isDependentFieldAfterCheckbox(fieldsWithoutCluster, fieldIndex)
 				)}
 			{/each}
 		</div>
+
+		{#if sidebarTimestampFields.length > 0}
+			<div class="space-y-4">
+				{#each sidebarTimestampFields as field, fieldIndex (field.key)}
+					{@render renderField(
+						field,
+						'',
+						'',
+						field.hideHelp,
+						'',
+						isDependentFieldAfterCheckbox(sidebarTimestampFields, fieldIndex)
+					)}
+				{/each}
+			</div>
+		{/if}
 	</div>
 {:else if isMultiColumnGroup}
 	<div class={getMultiColumnWrapperClass()}>
