@@ -9,6 +9,12 @@
 	import { config } from '$lib/stores/settings.svelte';
 
 	const processingState = useProcessingState();
+	const PROCESSING_INFO_TRANSITION_MS = 300;
+
+	type DisplayedProcessingStats = {
+		readonly contextValue: string;
+		readonly speedValue: string;
+	};
 
 	let isCurrentConversationLoading = $derived(isLoading());
 	let isStreaming = $derived(isChatStreaming());
@@ -34,15 +40,38 @@
 			? `${composerProcessingStats.speed.tokensPerSecond.toFixed(1)} ${STATS_UNITS.TOKENS_PER_SECOND}`
 			: `— ${STATS_UNITS.TOKENS_PER_SECOND}`
 	);
+	let displayedProcessingStats = $state<DisplayedProcessingStats | null>(null);
 
 	let showProcessingInfo = $derived(
 		supportsComposerProcessingStats &&
-			composerProcessingStats !== null &&
+			displayedProcessingStats !== null &&
 			(isCurrentConversationLoading ||
 				isStreaming ||
 				config().keepStatsVisible ||
 				hasProcessingData)
 	);
+
+	$effect(() => {
+		if (!composerProcessingStats) {
+			return;
+		}
+
+		displayedProcessingStats = { contextValue, speedValue };
+	});
+
+	$effect(() => {
+		if (showProcessingInfo || displayedProcessingStats === null) {
+			return;
+		}
+
+		const timeout = setTimeout(() => {
+			if (!showProcessingInfo) {
+				displayedProcessingStats = null;
+			}
+		}, PROCESSING_INFO_TRANSITION_MS);
+
+		return () => clearTimeout(timeout);
+	});
 
 	$effect(() => {
 		const conversation = activeConversation();
@@ -101,44 +130,60 @@
 </script>
 
 <div class="chat-processing-info-container pointer-events-none" class:visible={showProcessingInfo}>
-	{#if composerProcessingStats}
-		<dl
-			class="llampart-chat-composer-width chat-processing-info-frame pointer-events-auto"
-			aria-label={t('messages.composerStatsLabel')}
-		>
-			<div class="chat-processing-info-item chat-processing-info-item-context">
-				<dt class="chat-processing-info-label">{t('messages.composerStatsContext')}</dt>
-				<span class="chat-processing-info-separator" aria-hidden="true">|</span>
-				<dd class="chat-processing-info-value chat-processing-info-context-value">
-					{contextValue}
-				</dd>
-			</div>
+	{#if displayedProcessingStats}
+		<div class="chat-processing-info-slot">
+			<dl
+				class="llampart-chat-composer-width chat-processing-info-frame pointer-events-auto"
+				aria-label={t('messages.composerStatsLabel')}
+			>
+				<div class="chat-processing-info-item chat-processing-info-item-context">
+					<dt class="chat-processing-info-label">{t('messages.composerStatsContext')}</dt>
+					<span class="chat-processing-info-separator" aria-hidden="true">|</span>
+					<dd class="chat-processing-info-value chat-processing-info-context-value">
+						{displayedProcessingStats.contextValue}
+					</dd>
+				</div>
 
-			<div class="chat-processing-info-item chat-processing-info-item-speed">
-				<dt class="chat-processing-info-label">{t('messages.composerStatsSpeed')}</dt>
-				<span class="chat-processing-info-separator" aria-hidden="true">|</span>
-				<dd class="chat-processing-info-value chat-processing-info-speed-value">{speedValue}</dd>
-			</div>
-		</dl>
+				<div class="chat-processing-info-item chat-processing-info-item-speed">
+					<dt class="chat-processing-info-label">{t('messages.composerStatsSpeed')}</dt>
+					<span class="chat-processing-info-separator" aria-hidden="true">|</span>
+					<dd class="chat-processing-info-value chat-processing-info-speed-value">
+						{displayedProcessingStats.speedValue}
+					</dd>
+				</div>
+			</dl>
+		</div>
 	{/if}
 </div>
 
 <style>
 	.chat-processing-info-container {
+		display: grid;
+		grid-template-rows: 0fr;
+		overflow: hidden;
 		position: sticky;
 		top: 0;
 		z-index: 10;
-		padding: 0 1rem var(--llampart-composer-processing-stats-bottom-gap);
+		padding: 0 1rem 0;
 		opacity: 0;
 		transform: translateY(var(--llampart-composer-processing-stats-enter-offset));
 		transition:
 			opacity 300ms ease-out,
-			transform 300ms ease-out;
+			transform 300ms ease-out,
+			grid-template-rows 300ms ease-out,
+			padding-bottom 300ms ease-out;
 	}
 
 	.chat-processing-info-container.visible {
+		grid-template-rows: 1fr;
+		padding-bottom: var(--llampart-composer-processing-stats-bottom-gap);
 		opacity: 1;
 		transform: translateY(0);
+	}
+
+	.chat-processing-info-slot {
+		min-height: 0;
+		overflow: hidden;
 	}
 
 	.chat-processing-info-frame {
