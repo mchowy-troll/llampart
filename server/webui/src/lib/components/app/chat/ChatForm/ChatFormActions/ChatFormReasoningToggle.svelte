@@ -139,7 +139,7 @@
 								<button
 									type="button"
 									class={[
-										'llampart-reasoning-effort-option grid w-full cursor-pointer grid-cols-[1.25rem_minmax(7.5rem,1fr)_11.25rem_1.25rem] items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-normal transition hover:bg-accent/35 hover:text-accent-foreground focus:bg-accent/35 focus:outline-none',
+										'llampart-reasoning-effort-option grid w-full cursor-pointer grid-cols-[1.25rem_minmax(7.5rem,1fr)_11.25rem_1.25rem] items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-normal transition hover:bg-accent/35 hover:text-accent-foreground focus-visible:bg-accent/35 focus-visible:text-accent-foreground focus:outline-none',
 										selected ? 'bg-accent/45 text-accent-foreground' : 'text-popover-foreground'
 									]}
 									role="option"

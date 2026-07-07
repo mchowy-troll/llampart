@@ -206,7 +206,7 @@ html[data-llampart-ui-scale='110'] {
 
 .llampart-settings-wallpaper-selector {
 	display: grid;
-	grid-template-columns: repeat(6, minmax(0, var(--llampart-settings-wallpaper-preview-width)));
+	grid-template-columns: repeat(6, var(--llampart-settings-wallpaper-preview-width));
 	align-items: start;
 	justify-content: space-between;
 	gap: var(--llampart-settings-wallpaper-preview-gap);
