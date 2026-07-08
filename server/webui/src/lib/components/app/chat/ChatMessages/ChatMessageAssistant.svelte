@@ -18,7 +18,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { INPUT_CLASSES } from '$lib/constants';
-	import { MessageRole, KeyboardKey, ChatMessageStatsView } from '$lib/enums';
+	import { ColorMode, MessageRole, KeyboardKey, ChatMessageStatsView } from '$lib/enums';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { config } from '$lib/stores/settings.svelte';
 	import { isRouterMode } from '$lib/stores/server.svelte';
@@ -93,6 +93,7 @@
 	const processingState = useProcessingState();
 
 	let currentConfig = $derived(config());
+	let isFrostedGlassTheme = $derived(currentConfig.theme === ColorMode.FROSTED_GLASS);
 	let isRouter = $derived(isRouterMode());
 	let showModelDialog = $state(false);
 	let infoModelId = $state<string | null>(null);
@@ -219,11 +220,15 @@
 	<!-- llampart-no-processing-text-outside-assistant-frame: local Processing/Reasoning label intentionally not rendered here. -->
 
 	{#if editCtx.isEditing}
-		<div class="w-full">
+		<div
+			class={isFrostedGlassTheme
+				? 'llampart-message-edit-card llampart-assistant-message-edit-card w-full'
+				: 'w-full'}
+		>
 			<textarea
 				bind:this={textareaElement}
 				value={editCtx.editedContent}
-				class="min-h-[50vh] w-full resize-y rounded-2xl px-3 py-2 text-sm {INPUT_CLASSES}"
+				class="llampart-message-edit-textarea min-h-[50vh] w-full resize-y rounded-2xl px-3 py-2 text-sm {INPUT_CLASSES}"
 				onkeydown={handleEditKeydown}
 				oninput={(e) => {
 					autoResizeTextarea(e.currentTarget);
@@ -232,25 +237,34 @@
 				placeholder={t('messages.editAssistantMessagePlaceholder')}
 			></textarea>
 
-			<div class="mt-2 flex items-center justify-between">
-				<div class="flex items-center space-x-2">
+			<div class="llampart-message-edit-controls mt-3 flex items-center justify-between gap-3">
+				<div class="llampart-message-edit-option flex items-center space-x-2">
 					<Checkbox
+						class="llampart-message-edit-branch-checkbox"
 						id="branch-after-edit"
 						bind:checked={shouldBranchAfterEdit}
 						onCheckedChange={(checked) => (shouldBranchAfterEdit = checked === true)}
 					/>
-					<Label for="branch-after-edit" class="cursor-pointer text-sm text-muted-foreground">
+					<Label
+						for="branch-after-edit"
+						class="llampart-message-edit-option-label cursor-pointer text-sm text-muted-foreground"
+					>
 						{t('messages.branchConversationAfterEdit')}
 					</Label>
 				</div>
-				<div class="flex gap-2">
-					<Button class="h-8 px-3" onclick={editCtx.cancel} size="sm" variant="outline">
+				<div class="llampart-message-edit-actions flex gap-2">
+					<Button
+						class="llampart-message-edit-cancel-action h-8 px-3"
+						onclick={editCtx.cancel}
+						size="sm"
+						variant="outline"
+					>
 						<X class="mr-1 h-3 w-3" />
 						{t('common.cancel')}
 					</Button>
 
 					<Button
-						class="h-8 px-3"
+						class="llampart-message-edit-save-action h-8 px-3"
 						onclick={editCtx.save}
 						disabled={!editCtx.editedContent?.trim()}
 						size="sm"
