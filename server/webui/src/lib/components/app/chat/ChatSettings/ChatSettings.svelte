@@ -583,6 +583,7 @@
 				{
 					id: 'dry-penalty',
 					layout: 'three-column',
+					fillMode: 'row',
 					title: t('settings.groupDryPenalty'),
 					requiredProviderCapabilities: ['supportsDryPenalty'],
 					fields: [
@@ -1019,6 +1020,7 @@
 									<ChatSettingsFields
 										fields={group.fields}
 										layout={group.layout}
+										fillMode={group.fillMode}
 										{localConfig}
 										onConfigChange={handleConfigChange}
 										onThemeChange={handleThemeChange}
@@ -1045,6 +1047,7 @@
 									<ChatSettingsFields
 										fields={group.fields}
 										layout={group.layout}
+										fillMode={group.fillMode}
 										{localConfig}
 										onConfigChange={handleConfigChange}
 										onThemeChange={handleThemeChange}
