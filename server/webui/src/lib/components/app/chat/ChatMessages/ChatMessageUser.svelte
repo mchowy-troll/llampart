@@ -6,7 +6,7 @@
 	import { config } from '$lib/stores/settings.svelte';
 	import ChatMessageActions from './ChatMessageActions.svelte';
 	import ChatMessageEditForm from './ChatMessageEditForm.svelte';
-	import { MessageRole } from '$lib/enums';
+	import { ColorMode, MessageRole } from '$lib/enums';
 	import { isAttachmentOnlyMessage } from '$lib/utils';
 
 	interface Props {
@@ -51,6 +51,7 @@
 	let messageElement: HTMLElement | undefined = $state();
 	const currentConfig = config();
 	let hideAttachmentOnlyActions = $derived(isAttachmentOnlyMessage(message.content, message.extra));
+	let isFrostedGlassTheme = $derived(currentConfig.theme === ColorMode.FROSTED_GLASS);
 
 	$effect(() => {
 		if (!messageElement || !message.content.trim()) return;
@@ -83,7 +84,16 @@
 	role="group"
 >
 	{#if editCtx.isEditing}
-		<ChatMessageEditForm />
+		{#if isFrostedGlassTheme}
+			<Card
+				class="llampart-message-shell-card llampart-user-message-card llampart-user-message-edit-card w-full llampart-user-message-width overflow-hidden rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-2.5 text-foreground backdrop-blur-md dark:bg-primary/15"
+				style="overflow-wrap: anywhere; word-break: break-word;"
+			>
+				<ChatMessageEditForm class="llampart-user-message-edit-form w-full" />
+			</Card>
+		{:else}
+			<ChatMessageEditForm />
+		{/if}
 	{:else}
 		{#if message.extra && message.extra.length > 0}
 			<div class="llampart-user-message-attachments mb-2 w-full llampart-user-message-width">

@@ -9,6 +9,12 @@
 	import { chatStore } from '$lib/stores/chat.svelte';
 	import { processFilesToChatUploaded } from '$lib/utils/browser-only';
 
+	interface Props {
+		class?: string;
+	}
+
+	let { class: className = 'w-full max-w-[80%]' }: Props = $props();
+
 	const editCtx = getMessageEditContext();
 
 	let inputAreaRef: ChatForm | undefined = $state(undefined);
@@ -93,41 +99,56 @@
 
 <svelte:window onkeydown={handleGlobalKeydown} />
 
-<div class="relative w-full max-w-[80%]">
-	<ChatForm
-		bind:this={inputAreaRef}
-		value={editCtx.editedContent}
-		attachments={editCtx.editedExtras}
-		uploadedFiles={editCtx.editedUploadedFiles}
-		placeholder={t('messages.editYourMessagePlaceholder')}
-		showMcpPromptButton
-		onValueChange={editCtx.setContent}
-		onAttachmentRemove={handleAttachmentRemove}
-		onUploadedFileRemove={handleUploadedFileRemove}
-		onUploadedFilesChange={handleUploadedFilesChange}
-		onFilesAdd={handleFilesAdd}
-		onSubmit={handleSubmit}
-	/>
-</div>
+<div class="llampart-message-edit-form flex flex-col gap-3 {className}">
+	<div class="relative w-full">
+		<ChatForm
+			class="llampart-message-edit-chat-form"
+			bind:this={inputAreaRef}
+			value={editCtx.editedContent}
+			attachments={editCtx.editedExtras}
+			uploadedFiles={editCtx.editedUploadedFiles}
+			placeholder={t('messages.editYourMessagePlaceholder')}
+			showMcpPromptButton
+			onValueChange={editCtx.setContent}
+			onAttachmentRemove={handleAttachmentRemove}
+			onUploadedFileRemove={handleUploadedFileRemove}
+			onUploadedFilesChange={handleUploadedFilesChange}
+			onFilesAdd={handleFilesAdd}
+			onSubmit={handleSubmit}
+		/>
+	</div>
 
-<div class="mt-2 flex w-full max-w-[80%] items-center justify-between">
-	{#if editCtx.showSaveOnlyOption}
-		<div class="flex items-center gap-2">
-			<Switch id="save-only-switch" bind:checked={saveWithoutRegenerate} class="scale-75" />
+	<div class="llampart-message-edit-controls flex w-full items-center justify-between gap-3">
+		{#if editCtx.showSaveOnlyOption}
+			<div class="llampart-message-edit-option flex items-center gap-2">
+				<Switch
+					id="save-only-switch"
+					bind:checked={saveWithoutRegenerate}
+					class="llampart-message-edit-save-only-switch scale-75"
+				/>
 
-			<label for="save-only-switch" class="cursor-pointer text-xs text-muted-foreground">
-				{t('messages.updateWithoutResending')}
-			</label>
-		</div>
-	{:else}
-		<div></div>
-	{/if}
+				<label
+					for="save-only-switch"
+					class="llampart-message-edit-option-label cursor-pointer text-xs text-muted-foreground"
+				>
+					{t('messages.updateWithoutResending')}
+				</label>
+			</div>
+		{:else}
+			<div class="llampart-message-edit-control-spacer"></div>
+		{/if}
 
-	<Button class="h-7 px-3 text-xs" onclick={attemptCancel} size="sm" variant="ghost">
-		<X class="mr-1 h-3 w-3" />
+		<Button
+			class="llampart-message-edit-cancel-action h-7 px-3 text-xs"
+			onclick={attemptCancel}
+			size="sm"
+			variant="ghost"
+		>
+			<X class="mr-1 h-3 w-3" />
 
-		{t('common.cancel')}
-	</Button>
+			{t('common.cancel')}
+		</Button>
+	</div>
 </div>
 
 <DialogConfirmation

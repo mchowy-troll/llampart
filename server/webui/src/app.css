@@ -657,6 +657,175 @@ html
 }
 /* /llampart-message-shell-action-layout-primitives */
 
+/* llampart-frosted-glass-message-edit-primitives
+   app.css owns Frosted Glass edit surface selectors. Message edit components opt in with semantic edit classes. */
+html.has-frosted-glass-theme body .llampart-message-edit-form,
+html.has-frosted-glass-theme body .llampart-message-edit-card,
+html.has-frosted-glass-theme body .llampart-user-message-edit-card {
+	color: var(--llampart-frosted-surface-text) !important;
+	text-shadow: var(--llampart-frosted-surface-text-shadow) !important;
+}
+
+html.has-frosted-glass-theme body .llampart-user-message-edit-card.llampart-user-message-edit-card {
+	/* Radius is intentionally owned by the normal llampart-user-message-card class
+	   so edit mode keeps exact parity with the displayed user message bubble. */
+	padding: 0.875rem 0.875rem 0.75rem !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-assistant-message-edit-card.llampart-assistant-message-edit-card {
+	max-width: 57.6rem;
+	border: 1px solid var(--llampart-frosted-message-surface-border);
+	border-radius: 0.75rem;
+	padding: 1.5rem 1.5rem 1rem;
+	background: var(--llampart-frosted-surface-bg);
+	box-shadow: var(--llampart-frosted-message-surface-shadow);
+	-webkit-backdrop-filter: var(--llampart-frosted-surface-filter);
+	backdrop-filter: var(--llampart-frosted-surface-filter);
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-user-message-edit-card
+	.llampart-message-edit-chat-form
+	.llampart-chat-input-frame {
+	border: 0 !important;
+	border-radius: 1.125rem !important;
+	background: transparent !important;
+	background-color: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-user-message-edit-card
+	.llampart-message-edit-chat-form
+	.llampart-chat-input-frame
+	* {
+	color: var(--llampart-frosted-user-message-foreground, #000000) !important;
+	text-shadow: var(--llampart-frosted-user-message-text-shadow) !important;
+}
+
+html.has-frosted-glass-theme body .llampart-message-edit-textarea {
+	border: 1px solid rgba(255, 255, 255, 0.2) !important;
+	background: rgba(255, 255, 255, 0.12) !important;
+	background-color: rgba(255, 255, 255, 0.12) !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.12),
+		0 1px 2px rgba(0, 0, 0, 0.035) !important;
+	-webkit-backdrop-filter: blur(10px) saturate(108%) !important;
+	backdrop-filter: blur(10px) saturate(108%) !important;
+}
+
+html.has-frosted-glass-theme body .llampart-message-edit-controls {
+	min-height: 2rem;
+	padding-top: 0.125rem;
+}
+
+html.has-frosted-glass-theme body .llampart-message-edit-option,
+html.has-frosted-glass-theme body .llampart-message-edit-option-label {
+	color: var(--llampart-frosted-surface-text) !important;
+	text-shadow: var(--llampart-frosted-surface-text-shadow) !important;
+}
+
+html.has-frosted-glass-theme body .llampart-user-message-edit-card .llampart-message-edit-option,
+html.has-frosted-glass-theme
+	body
+	.llampart-user-message-edit-card
+	.llampart-message-edit-option-label {
+	color: var(--llampart-frosted-user-message-foreground, #000000) !important;
+	text-shadow: var(--llampart-frosted-user-message-text-shadow) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-message-edit-controls
+	:is(button, [data-slot='button']) {
+	border: 1px solid rgba(255, 255, 255, 0.2) !important;
+	border-radius: 0.75rem !important;
+	background: rgba(255, 255, 255, 0.2) !important;
+	background-color: rgba(255, 255, 255, 0.2) !important;
+	color: #000000 !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.18),
+		0 1px 2px rgba(0, 0, 0, 0.045) !important;
+	text-shadow: none !important;
+	-webkit-backdrop-filter: blur(10px) saturate(110%) !important;
+	backdrop-filter: blur(10px) saturate(110%) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-message-edit-controls
+	:is(button, [data-slot='button']):hover {
+	background: rgba(255, 255, 255, 0.28) !important;
+	background-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-message-edit-save-action.llampart-message-edit-save-action {
+	background: rgba(255, 255, 255, 0.28) !important;
+	background-color: rgba(255, 255, 255, 0.28) !important;
+}
+
+html.has-frosted-glass-theme body .llampart-message-edit-controls svg {
+	color: #000000 !important;
+	stroke: currentColor !important;
+	filter: none !important;
+	text-shadow: none !important;
+}
+
+html.has-frosted-glass-theme body .llampart-message-edit-save-only-switch[data-slot='switch'] {
+	border: 1px solid rgba(255, 255, 255, 0.22) !important;
+	background: rgba(255, 255, 255, 0.2) !important;
+	background-color: rgba(255, 255, 255, 0.2) !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.16),
+		0 1px 2px rgba(0, 0, 0, 0.04) !important;
+	-webkit-backdrop-filter: blur(10px) saturate(108%) !important;
+	backdrop-filter: blur(10px) saturate(108%) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-message-edit-save-only-switch[data-slot='switch'][data-state='checked'] {
+	background: rgba(255, 255, 255, 0.34) !important;
+	background-color: rgba(255, 255, 255, 0.34) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-message-edit-save-only-switch[data-slot='switch']
+	[data-slot='switch-thumb'] {
+	background: rgba(255, 255, 255, 0.88) !important;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12) !important;
+}
+
+html.has-frosted-glass-theme body .llampart-message-edit-branch-checkbox[data-slot='checkbox'] {
+	border: 1px solid rgba(255, 255, 255, 0.24) !important;
+	background: rgba(255, 255, 255, 0.18) !important;
+	background-color: rgba(255, 255, 255, 0.18) !important;
+	color: #000000 !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.14),
+		0 1px 2px rgba(0, 0, 0, 0.04) !important;
+	-webkit-backdrop-filter: blur(10px) saturate(108%) !important;
+	backdrop-filter: blur(10px) saturate(108%) !important;
+}
+
+html.has-frosted-glass-theme
+	body
+	.llampart-message-edit-branch-checkbox[data-slot='checkbox'][data-state='checked'] {
+	background: rgba(255, 255, 255, 0.34) !important;
+	background-color: rgba(255, 255, 255, 0.34) !important;
+}
+/* /llampart-frosted-glass-message-edit-primitives */
+
 /* llampart-mcp-prompt-picker-surface-consumer
    Prompt picker declares a semantic hook; this owner consumes theme tokens without changing the shared picker primitive. */
 html:not(.dark):not(.has-frosted-glass-theme) body .llampart-mcp-prompt-picker-popover {
