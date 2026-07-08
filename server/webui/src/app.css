@@ -465,6 +465,7 @@ html:not(.has-frosted-glass-theme) .llampart-chat-input-frame {
 	border-radius: var(--llampart-composer-surface-radius) !important;
 	background: var(--llampart-composer-surface-background) !important;
 	background-color: var(--llampart-composer-surface-background) !important;
+	box-shadow: var(--llampart-composer-surface-shadow, none) !important;
 	background-image: none !important;
 	-webkit-backdrop-filter: var(--llampart-composer-surface-filter) !important;
 	backdrop-filter: var(--llampart-composer-surface-filter) !important;
@@ -544,6 +545,43 @@ html body [data-sonner-toaster] [data-sonner-toast]:has([data-button]) [data-but
 	justify-self: center !important;
 	margin: 0 !important;
 }
+
+/* llampart-light-theme-shadow-primitives
+   Theme values live in themes.css. This layer applies light-only surface shadows and keeps shadow bleed visible. */
+html:not(.dark):not(.has-frosted-glass-theme) body .llampart-chat-messages-flow,
+html:not(.dark):not(.has-frosted-glass-theme) body .llampart-chat-message-width {
+	overflow: visible;
+}
+
+html:not(.dark):not(.has-frosted-glass-theme)
+	body
+	:is(
+		.agentic-content.llampart-assistant-message,
+		.llampart-message-shell-card.llampart-user-message-card,
+		.llampart-message-shell-card.llampart-system-message-card
+	) {
+	box-shadow: var(--llampart-message-surface-shadow, none) !important;
+}
+
+html:not(.dark):not(.has-frosted-glass-theme) body .agentic-content.llampart-assistant-message {
+	border-width: var(--llampart-light-assistant-message-border-width, 1px) !important;
+}
+
+@media (min-width: 768px) {
+	html:not(.dark):not(.has-frosted-glass-theme) [data-slot='sidebar-wrapper'],
+	html:not(.dark):not(.has-frosted-glass-theme) [data-slot='sidebar-gap'],
+	html:not(.dark):not(.has-frosted-glass-theme)
+		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell,
+	html:not(.dark):not(.has-frosted-glass-theme) .llampart-sidebar-conversations-frame {
+		overflow: visible;
+	}
+}
+html:not(.dark):not(.has-frosted-glass-theme) body .llampart-chat-input-frame {
+	-webkit-backdrop-filter: var(--llampart-composer-surface-filter) !important;
+	backdrop-filter: var(--llampart-composer-surface-filter) !important;
+}
+
+/* /llampart-light-theme-shadow-primitives */
 
 /* llampart-frosted-glass-surface-primitives
    app.css temporarily owns Frosted Glass surface selectors.

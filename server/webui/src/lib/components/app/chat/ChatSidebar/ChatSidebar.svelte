@@ -940,10 +940,12 @@
 	}
 
 	/* llampart-sidebar-frame-solid-light-dark-surface */
-	:global(html:not(.has-frosted-glass-theme)) .llampart-sidebar-conversations-frame {
+	:global(html:not(.dark):not(.has-frosted-glass-theme)) .llampart-sidebar-conversations-frame {
 		background: var(--llampart-sidebar-conversations-frame-background, #fcfcfc) !important;
 		background-color: var(--llampart-sidebar-conversations-frame-background, #fcfcfc) !important;
 		background-image: none !important;
+		border-width: var(--llampart-sidebar-conversations-frame-border-width, 0.5px) !important;
+		box-shadow: var(--llampart-sidebar-conversations-frame-shadow, none) !important;
 	}
 
 	:global(html.dark:not(.has-frosted-glass-theme)) .llampart-sidebar-conversations-frame {

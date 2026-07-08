@@ -603,16 +603,16 @@
 	}
 	/* /llampart-user-message-single-line-top-inset-stability */
 
-	/* llampart-light-user-message-no-frame-shadow-owner
-	   Light theme only: remove visible card frame/shadow from user messages.
+	/* llampart-light-user-message-surface-shadow-owner
+	   Light theme user messages keep a borderless bubble and consume the shared light message shadow token.
 	   Dark and Frosted Glass retain their own owners. */
 	:global(html:not(.dark):not(.has-frosted-glass-theme) .llampart-user-message-card) {
 		border-color: transparent !important;
-		box-shadow: none !important;
+		box-shadow: var(--llampart-message-surface-shadow, none) !important;
 		outline: none !important;
 		filter: none !important;
 		backdrop-filter: none !important;
 		-webkit-backdrop-filter: none !important;
 	}
-	/* /llampart-light-user-message-no-frame-shadow-owner */
+	/* /llampart-light-user-message-surface-shadow-owner */
 </style>

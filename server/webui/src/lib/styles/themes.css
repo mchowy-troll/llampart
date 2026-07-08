@@ -48,9 +48,17 @@
 	--chat-form-area-height: 8rem;
 	--chat-form-area-offset: 2rem;
 	--max-message-height: max(24rem, min(80dvh, calc(100dvh - var(--chat-form-area-height) - 12rem)));
-	--llampart-composer-surface-background: #f9f9f9;
+	--llampart-light-shadow-color: 0deg 0% 69%;
+	--llampart-light-shadow-elevation-medium:
+		0px 0.5px 0.6px hsl(var(--llampart-light-shadow-color) / 0.29),
+		0px 1.4px 1.6px -0.6px hsl(var(--llampart-light-shadow-color) / 0.29),
+		0px 2.8px 3.1px -1.2px hsl(var(--llampart-light-shadow-color) / 0.29),
+		0px 5.6px 6.3px -1.9px hsl(var(--llampart-light-shadow-color) / 0.29),
+		0px 10.8px 12.2px -2.5px hsl(var(--llampart-light-shadow-color) / 0.29);
+	--llampart-composer-surface-background: rgb(249 249 249 / 72%);
 	--llampart-composer-surface-border: oklch(0.875 0 0 / 64%);
 	--llampart-composer-surface-filter: blur(18px) saturate(116%);
+	--llampart-composer-surface-shadow: var(--llampart-light-shadow-elevation-medium);
 	--llampart-composer-surface-radius: 0.75rem;
 	--llampart-composer-fade-background: var(--background);
 	--llampart-composer-processing-stats-radius: var(--llampart-composer-surface-radius);
@@ -120,6 +128,7 @@
 	--llampart-composer-surface-background: oklch(0.205 0 0 / 72%);
 	--llampart-composer-surface-border: oklch(1 0 0 / 18%);
 	--llampart-composer-surface-filter: blur(18px) saturate(116%);
+	--llampart-composer-surface-shadow: none;
 	--llampart-composer-fade-background: var(--background);
 	--llampart-composer-processing-stats-background: var(--llampart-composer-surface-background);
 	--llampart-composer-processing-stats-border: var(--llampart-composer-surface-border);
@@ -204,6 +213,8 @@ html.dark:not(.has-frosted-glass-theme) body .llampart-dialog-overlay {
    Sidebar components consume these values while keeping local structure and state selectors. */
 :root {
 	--llampart-sidebar-conversations-frame-background: #fcfcfc;
+	--llampart-sidebar-conversations-frame-shadow: var(--llampart-light-shadow-elevation-medium);
+	--llampart-sidebar-conversations-frame-border-width: 0.5px;
 	--llampart-sidebar-conversation-item-border-color: var(--border);
 	--llampart-sidebar-conversation-item-shadow: none;
 }
@@ -274,8 +285,14 @@ html.has-frosted-glass-theme {
 /* llampart-message-surface-tokens
    Theme-owned message surface values.
    Message components keep layout, spacing, and footer positioning while consuming these contracts. */
+:root {
+	--llampart-message-surface-shadow: var(--llampart-light-shadow-elevation-medium);
+	--llampart-light-assistant-message-border-width: 0.5px;
+}
+
 html.dark:not(.has-frosted-glass-theme) {
 	--llampart-assistant-message-foreground: #e8e8e8;
+	--llampart-message-surface-shadow: none;
 }
 
 html.has-frosted-glass-theme {
