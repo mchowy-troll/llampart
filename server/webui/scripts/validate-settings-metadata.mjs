@@ -133,6 +133,7 @@ function parseGroups(source) {
 			id,
 			line: lineNumberFromIndex(source, idIndex),
 			layout: getStringProperty(beforeFields, 'layout') ?? 'default',
+			fillMode: getStringProperty(beforeFields, 'fillMode') ?? 'column',
 			fullWidth: hasTrueProperty(beforeFields, 'fullWidth'),
 			halfWidth: hasTrueProperty(beforeFields, 'halfWidth'),
 			framed: hasTrueProperty(beforeFields, 'framed'),
@@ -153,6 +154,7 @@ const chatSettingsSource = read(files.chatSettings);
 const settingsTypesSource = read(files.settingsTypes);
 
 const groupLayouts = extractUnionValues(settingsTypesSource, 'SettingsFieldGroupLayout');
+const groupFillModes = extractUnionValues(settingsTypesSource, 'SettingsFieldGroupFillMode');
 const fieldLayouts = extractUnionValues(settingsTypesSource, 'SettingsFieldLayout');
 const clusters = extractUnionValues(settingsTypesSource, 'SettingsFieldCluster');
 
@@ -168,6 +170,10 @@ for (const group of groups) {
 
 	if (!groupLayouts.has(group.layout)) {
 		errors.push(`${group.id}:${group.line} uses unknown group layout "${group.layout}".`);
+	}
+
+	if (!groupFillModes.has(group.fillMode)) {
+		errors.push(`${group.id}:${group.line} uses unknown group fillMode "${group.fillMode}".`);
 	}
 
 	if (group.fullWidth && group.halfWidth) {
@@ -248,6 +254,7 @@ if (groups.length === 0) {
 console.log('Settings metadata validation');
 console.log(`- Groups parsed: ${groups.length}`);
 console.log('- Explicit order metadata: required for every field');
+console.log('- Multi-column fill modes: validated from SettingsFieldGroupFillMode');
 console.log(`- Files:`);
 for (const path of Object.values(files)) {
 	console.log(`  - ${relative(ROOT, path)}`);

@@ -13,6 +13,7 @@
 	import { normalizeFloatingPoint } from '$lib/utils/precision';
 	import { ChatSettingsParameterSourceIndicator } from '$lib/components/app';
 	import type { Component } from 'svelte';
+	import type { SettingsFieldGroupFillMode } from '$lib/types';
 	import { t } from '$lib/i18n';
 
 	/**
@@ -22,12 +23,20 @@
 	interface Props {
 		fields: SettingsFieldConfig[];
 		layout?: SettingsFieldGroupLayout;
+		fillMode?: SettingsFieldGroupFillMode;
 		localConfig: SettingsConfigType;
 		onConfigChange: (key: string, value: string | boolean) => void;
 		onThemeChange?: (theme: string) => void;
 	}
 
-	let { fields, layout = 'default', localConfig, onConfigChange, onThemeChange }: Props = $props();
+	let {
+		fields,
+		layout = 'default',
+		fillMode = 'column',
+		localConfig,
+		onConfigChange,
+		onThemeChange
+	}: Props = $props();
 
 	// server sampling defaults for placeholders
 	let sp = $derived.by(() => {
@@ -48,10 +57,12 @@
 	const isMultiColumnGroup = $derived(
 		isTwoColumnGroup || isThreeColumnModelGroup || isAttachmentsFilesGroup
 	);
+	const isRowFillGroup = $derived(fillMode === 'row');
 	const orderedFields = $derived.by(() => getOrderedFields(fields));
-	const multiColumnFields = $derived.by(() =>
+	const multiColumnColumns = $derived.by(() =>
 		distributeFieldsIntoColumns(orderedFields, getMultiColumnCount())
 	);
+	const multiColumnRows = $derived.by(() => distributeColumnFieldsIntoRows(multiColumnColumns));
 	const fieldsWithoutCluster = $derived.by(() => getFieldsWithoutCluster());
 	const sidebarTimestampFields = $derived.by(() => getFieldsByCluster('sidebar-timestamp'));
 
@@ -112,6 +123,18 @@
 		}).filter((columnFields) => columnFields.length > 0);
 	}
 
+	function distributeColumnFieldsIntoRows(
+		columnFields: SettingsFieldConfig[][]
+	): SettingsFieldConfig[][] {
+		const rowCount = Math.max(0, ...columnFields.map((fieldsInColumn) => fieldsInColumn.length));
+
+		return Array.from({ length: rowCount }, (_, rowIndex) =>
+			columnFields
+				.map((fieldsInColumn) => fieldsInColumn[rowIndex])
+				.filter((field): field is SettingsFieldConfig => Boolean(field))
+		);
+	}
+
 	function getFieldsWithoutCluster(): SettingsFieldConfig[] {
 		return orderedFields.filter((field) => !field.cluster);
 	}
@@ -131,6 +154,13 @@
 
 		return (
 			field.type !== SettingsFieldType.CHECKBOX && previousField.type === SettingsFieldType.CHECKBOX
+		);
+	}
+
+	function isDependentOrderedField(field: SettingsFieldConfig): boolean {
+		return isDependentFieldAfterCheckbox(
+			orderedFields,
+			orderedFields.findIndex((orderedField) => orderedField.key === field.key)
 		);
 	}
 
@@ -508,19 +538,18 @@
 			</div>
 		{/if}
 	</div>
-{:else if isMultiColumnGroup}
+{:else if isMultiColumnGroup && isRowFillGroup}
 	<div class={getMultiColumnWrapperClass()}>
-		{#each multiColumnFields as columnFields, columnIndex (columnIndex)}
-			<div class="space-y-4">
-				{#each columnFields as field, fieldIndex (field.key)}
-					{@render renderField(
-						field,
-						'',
-						'',
-						false,
-						'',
-						isDependentFieldAfterCheckbox(columnFields, fieldIndex)
-					)}
+		{#each orderedFields as field (field.key)}
+			{@render renderField(field, '', '', false, '', isDependentOrderedField(field))}
+		{/each}
+	</div>
+{:else if isMultiColumnGroup}
+	<div class="space-y-4">
+		{#each multiColumnRows as rowFields, rowIndex (rowIndex)}
+			<div class={getMultiColumnWrapperClass()}>
+				{#each rowFields as field (field.key)}
+					{@render renderField(field, '', '', false, '', isDependentOrderedField(field))}
 				{/each}
 			</div>
 		{/each}

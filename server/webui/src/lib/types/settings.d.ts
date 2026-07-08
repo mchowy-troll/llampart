@@ -32,6 +32,12 @@ export type SettingsFieldGroupLayout =
 	| 'attachments-files';
 
 /**
+ * Describes the direction used to fill fields inside a multi-column settings group.
+ * Column fill preserves top-to-bottom ordering; row fill is useful when a short group should use horizontal space first.
+ */
+export type SettingsFieldGroupFillMode = 'column' | 'row';
+
+/**
  * Groups related fields inside a named settings group layout.
  * Cluster ownership belongs to field metadata so renderers do not depend on field order.
  */
@@ -65,6 +71,7 @@ export interface SettingsFieldGroup {
 	halfWidth?: boolean;
 	framed?: boolean;
 	layout?: SettingsFieldGroupLayout;
+	fillMode?: SettingsFieldGroupFillMode;
 	requiredProviderCapabilities?: ProviderCapabilityKey[];
 	visibleForProviders?: ApiProviderId[];
 }
