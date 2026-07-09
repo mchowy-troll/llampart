@@ -583,6 +583,46 @@ html:not(.dark):not(.has-frosted-glass-theme) body .llampart-chat-input-frame {
 
 /* /llampart-light-theme-shadow-primitives */
 
+/* llampart-dark-dialog-and-welcome-surface-primitives
+   Dark theme visual values live in themes.css. This layer applies shared dialog, alert dialog,
+   settings/about overlay, empty-chat welcome surface, and About info-card primitives. */
+html.dark body :is([data-slot='dialog-content'], [data-slot='alert-dialog-content']) {
+	background: var(--llampart-dark-dialog-surface-background, #141414) !important;
+	background-color: var(--llampart-dark-dialog-surface-background, #141414) !important;
+	background-image: none !important;
+}
+
+html.dark body .llampart-empty-chat-form .llampart-chat-input-frame {
+	background: var(--llampart-dark-welcome-surface-background, #141414) !important;
+	background-color: var(--llampart-dark-welcome-surface-background, #141414) !important;
+	background-image: none !important;
+	-webkit-backdrop-filter: var(
+		--llampart-dark-welcome-surface-filter,
+		var(--llampart-composer-surface-filter)
+	) !important;
+	backdrop-filter: var(
+		--llampart-dark-welcome-surface-filter,
+		var(--llampart-composer-surface-filter)
+	) !important;
+}
+
+html.dark body :is([data-slot='dialog-overlay'], [data-slot='alert-dialog-overlay']) {
+	background: var(--llampart-dark-dialog-overlay-background, rgb(84 84 84 / 58%)) !important;
+	background-color: var(--llampart-dark-dialog-overlay-background, rgb(84 84 84 / 58%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-dark-dialog-overlay-filter,
+		blur(18px) saturate(112%)
+	) !important;
+	backdrop-filter: var(--llampart-dark-dialog-overlay-filter, blur(18px) saturate(112%)) !important;
+}
+
+html.dark body .llampart-about-info-card {
+	background: var(--llampart-dark-about-info-card-background, #232323) !important;
+	background-color: var(--llampart-dark-about-info-card-background, #232323) !important;
+	background-image: none !important;
+}
+/* /llampart-dark-dialog-and-welcome-surface-primitives */
+
 /* llampart-frosted-glass-surface-primitives
    app.css temporarily owns Frosted Glass surface selectors.
    Theme-level Frosted Glass variables live in lib/styles/themes.css. */

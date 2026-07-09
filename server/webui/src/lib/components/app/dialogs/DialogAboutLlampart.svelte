@@ -82,7 +82,7 @@
 
 				<div class="grid w-full grid-cols-3 gap-4 text-left">
 					<div
-						class="col-span-2 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3"
+						class="col-span-2 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 llampart-about-info-card"
 					>
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 							{t('dialogs.aboutLlampartAuthorLabel')}
@@ -99,7 +99,7 @@
 					</div>
 
 					<div
-						class="col-span-1 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3"
+						class="col-span-1 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 llampart-about-info-card"
 					>
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 							{t('dialogs.aboutLlampartVersionLabel')}
@@ -108,7 +108,7 @@
 					</div>
 
 					<div
-						class="col-span-3 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3"
+						class="col-span-3 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 llampart-about-info-card"
 					>
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 							{t('dialogs.aboutLlampartRepositoryLabel')}
