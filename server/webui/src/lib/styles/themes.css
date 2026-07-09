@@ -129,6 +129,12 @@
 	--llampart-composer-surface-border: oklch(1 0 0 / 18%);
 	--llampart-composer-surface-filter: blur(18px) saturate(116%);
 	--llampart-composer-surface-shadow: none;
+	--llampart-dark-welcome-surface-filter: blur(27px) saturate(116%);
+	--llampart-dark-dialog-overlay-filter: blur(18px) saturate(112%);
+	--llampart-dark-dialog-overlay-background: rgb(84 84 84 / 58%);
+	--llampart-dark-welcome-surface-background: #141414;
+	--llampart-dark-dialog-surface-background: #141414;
+	--llampart-dark-about-info-card-background: #232323;
 	--llampart-composer-fade-background: var(--background);
 	--llampart-composer-processing-stats-background: var(--llampart-composer-surface-background);
 	--llampart-composer-processing-stats-border: var(--llampart-composer-surface-border);
