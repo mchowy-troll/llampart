@@ -77,7 +77,6 @@ but the installed package files contained local MIT license/readme evidence:
 If `server/webui/package-lock.json` changes before release, repeat the dependency
 license review using the final lockfile.
 
-<!-- llampart-third-party-svelte-sveltekit:start -->
 
 ## Frontend framework
 
@@ -94,4 +93,3 @@ The following framework packages are MIT-licensed open-source projects and are i
 
 Their license notices are preserved through npm package metadata and installed package license files. The full npm dependency tree is recorded in `server/webui/package-lock.json`.
 
-<!-- llampart-third-party-svelte-sveltekit:end -->
