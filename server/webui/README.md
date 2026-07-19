@@ -13,7 +13,7 @@ This WebUI lives in `server/webui` and builds into `server/public`, where it can
 
 ## Requirements
 
-- Node.js 20+
+- Node.js 20.19+ or 22.12+
 - npm 9+
 - git
 - optional: running `llama-server` locally for backend/API access during development
@@ -32,7 +32,7 @@ From the repository root:
 
 ```bash
 cd server/webui
-npm install
+npm ci
 npm run dev
 ```
 
@@ -93,8 +93,8 @@ server/webui -> SvelteKit static build -> server/public
 Important pieces:
 
 - `svelte.config.js` targets `../public`
-- `scripts/post-build.sh` removes obsolete leftovers after build
-- `scripts/vite-plugin-llampart-build.ts` normalizes final output for backend consumption
+- `scripts/post-build.sh` runs the static build normalizer
+- `scripts/normalize-static-build.mjs` prepares final output for backend consumption
 
 ## Frontend workflow
 
@@ -102,7 +102,7 @@ Typical loop:
 
 ```bash
 cd server/webui
-npm install
+npm ci
 npm run check
 npm run dev
 ```

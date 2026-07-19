@@ -11,7 +11,7 @@ llampart is being prepared as an open-source project.
 Current release:
 
 ```text
-llampart 1.6.3
+llampart 1.7.0
 ```
 
 ## Features
@@ -84,7 +84,7 @@ For normal installed use:
 
 For Web UI development:
 
-- Node.js 20 or newer
+- Node.js 20.19+ or 22.12+
 - npm
 - git
 
@@ -94,7 +94,7 @@ From the repository root:
 
 ```bash
 cd server/webui
-npm install
+npm ci
 npm run dev
 ```
 
@@ -104,6 +104,7 @@ Common validation commands:
 cd server/webui
 npm run check
 npm run lint
+npm test
 npm run build
 ```
 
