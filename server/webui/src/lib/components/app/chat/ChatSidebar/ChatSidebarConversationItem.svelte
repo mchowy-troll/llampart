@@ -294,18 +294,18 @@
 	.conversation-item:is(:hover, :focus-visible) .conversation-pin-button,
 	.conversation-item:is(:hover, :focus-visible) .conversation-timestamp-badge,
 	.conversation-item:is(:hover, :focus-visible) .conversation-parent-link {
-		color: #686868;
+		color: var(--llampart-sidebar-conversation-control-foreground);
 	}
 
 	.conversation-item:is(:hover, :focus-visible) .llampart-sidebar-select-checkbox:not(:checked) {
-		border-color: #686868;
+		border-color: var(--llampart-sidebar-conversation-control-foreground);
 	}
 
 	.conversation-title {
 		display: -webkit-box;
 		max-height: 2.75em;
 		overflow: hidden;
-		color: var(--llampart-sidebar-conversation-title-foreground, #686868);
+		color: var(--llampart-sidebar-conversation-title-foreground);
 		text-overflow: ellipsis;
 		-webkit-box-orient: vertical;
 		-webkit-line-clamp: 2;
@@ -318,7 +318,7 @@
 
 	.conversation-card-actions :global(.conversation-action-button),
 	.conversation-pin-button {
-		color: #686868;
+		color: var(--llampart-sidebar-conversation-control-foreground);
 	}
 
 	.conversation-item {
@@ -345,7 +345,7 @@
 
 	.conversation-timestamp-badge,
 	.conversation-timestamp-badge :global(svg) {
-		color: var(--llampart-sidebar-conversation-timestamp-foreground, #686868);
+		color: var(--llampart-sidebar-conversation-timestamp-foreground);
 		stroke: currentColor;
 	}
 

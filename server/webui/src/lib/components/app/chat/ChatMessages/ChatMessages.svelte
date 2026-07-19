@@ -4,10 +4,10 @@
 	import { ChatMessage } from '$lib/components/app';
 	import { setChatActionsContext } from '$lib/contexts';
 	import { AgenticSectionType, MessageRole } from '$lib/enums';
-	import { ColorMode } from '$lib/enums/ui';
 	import { chatStore } from '$lib/stores/chat.svelte';
 	import { conversationsStore, activeConversation } from '$lib/stores/conversations.svelte';
 	import { config } from '$lib/stores/settings.svelte';
+	import { getThemeDefinition } from '$lib/themes/registry';
 	import {
 		copyToClipboard,
 		deriveAgenticSections,
@@ -24,7 +24,7 @@
 
 	let { class: className, messages = [], onUserAction }: Props = $props();
 
-	let isFrostedGlassTheme = $derived(config().theme === ColorMode.FROSTED_GLASS);
+	let activeTheme = $derived(getThemeDefinition(config().theme));
 
 	let allConversationMessages = $state<DatabaseMessage[]>([]);
 	const currentConfig = config();
@@ -271,7 +271,7 @@
 	style="height: auto;"
 >
 	{#each displayMessages as { message, toolMessages, isLastAssistantMessage, siblingInfo } (message.id)}
-		<div use:fadeInView={{ disabled: isFrostedGlassTheme }}>
+		<div use:fadeInView={{ disabled: !activeTheme.motion.messageEntry }}>
 			<ChatMessage
 				class="llampart-chat-message-width mx-auto w-full"
 				{message}

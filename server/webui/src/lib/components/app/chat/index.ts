@@ -689,7 +689,6 @@ export { default as ChatSettingsFooter } from './ChatSettings/ChatSettingsFooter
  * Handles validation, help text display, and parameter source indicators.
  */
 export { default as ChatSettingsFields } from './ChatSettings/ChatSettingsFields.svelte';
-export { default as ChatSettingsFrostedGlassWallpaper } from './ChatSettings/ChatSettingsFrostedGlassWallpaper.svelte';
 
 /**
  * Import/export tab content for conversation data management. Provides buttons

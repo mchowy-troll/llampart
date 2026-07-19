@@ -17,7 +17,7 @@
  *
  * **Key Features:**
  * - **Model Parameters**: Temperature, max tokens, top-p, top-k, repeat penalty
- * - **Theme Management**: Auto, light, dark theme switching
+ * - **Theme Management**: Registered theme selection and persistence
  * - **Persistence**: Automatic localStorage synchronization
  * - **Reactive State**: Svelte 5 runes for automatic UI updates
  * - **Default Handling**: Graceful fallback to defaults for missing settings
@@ -40,9 +40,9 @@ import {
 } from '$lib/constants';
 import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers';
 import type { ApiProviderId } from '$lib/constants/api-providers';
-import { ColorMode } from '$lib/enums/ui';
 import { ParameterSyncService } from '$lib/services/parameter-sync.service';
 import { serverStore } from '$lib/stores/server.svelte';
+import { normalizeThemeId } from '$lib/themes/registry';
 import {
 	configToParameterRecord,
 	normalizeFloatingPoint,
@@ -60,7 +60,6 @@ class SettingsStore {
 	 */
 
 	config = $state<SettingsConfigType>({ ...SETTING_CONFIG_DEFAULT });
-	theme = $state<string>('auto');
 	isInitialized = $state(false);
 	userOverrides = $state<Set<string>>(new Set());
 
@@ -90,6 +89,10 @@ class SettingsStore {
 		return PROVIDER_CONNECTION_SETTING_KEYS[this.normalizeProviderId(providerId)];
 	}
 
+	private normalizeConfigValue(key: string, value: unknown): unknown {
+		return key === 'theme' ? normalizeThemeId(value) : value;
+	}
+
 	private withSyncedProviderConnection(
 		config: SettingsConfigType,
 		updatedKeys: Set<string> = new Set()
@@ -117,6 +120,8 @@ class SettingsStore {
 		if (updatedKeys.has('apiKey')) {
 			next[activeKeys.apiKey] = next.apiKey;
 		}
+
+		next.theme = normalizeThemeId(next.theme);
 
 		// Migration from the previously shared connection fields: preserve the current
 		// provider's address/key in its provider-owned profile without copying one
@@ -160,7 +165,6 @@ class SettingsStore {
 	initialize() {
 		try {
 			this.loadConfig();
-			this.loadTheme();
 			this.isInitialized = true;
 		} catch (error) {
 			console.error('Failed to initialize settings store:', error);
@@ -189,6 +193,11 @@ class SettingsStore {
 				localStorage.getItem(USER_OVERRIDES_LOCALSTORAGE_KEY) || '[]'
 			);
 			this.userOverrides = new Set(savedOverrides);
+
+			if (savedVal.theme !== this.config.theme || localStorage.getItem('theme') !== null) {
+				localStorage.removeItem('theme');
+				this.saveConfig();
+			}
 		} catch (error) {
 			console.warn('Failed to parse config from localStorage, using defaults:', error);
 			this.config = { ...SETTING_CONFIG_DEFAULT };
@@ -196,18 +205,6 @@ class SettingsStore {
 		}
 	}
 
-	/**
-	 * Load theme from localStorage, normalizing legacy values to frosted-glass
-	 */
-	private loadTheme() {
-		if (!browser) return;
-
-		const stored = localStorage.getItem('theme');
-		if (stored && stored !== ColorMode.FROSTED_GLASS) {
-			localStorage.setItem('theme', ColorMode.FROSTED_GLASS);
-		}
-		this.theme = ColorMode.FROSTED_GLASS;
-	}
 	/**
 	 *
 	 *
@@ -303,27 +300,6 @@ class SettingsStore {
 	}
 
 	/**
-	 * Update the theme setting (currently locked to frosted-glass)
-	 */
-	updateTheme() {
-		this.theme = ColorMode.FROSTED_GLASS;
-		this.saveTheme();
-	}
-
-	/**
-	 * Save the current theme to localStorage
-	 */
-	private saveTheme() {
-		if (!browser) return;
-
-		try {
-			localStorage.setItem('theme', ColorMode.FROSTED_GLASS);
-		} catch (error) {
-			console.error('Failed to save theme to localStorage:', error);
-		}
-	}
-
-	/**
 	 *
 	 *
 	 * Reset
@@ -340,19 +316,10 @@ class SettingsStore {
 	}
 
 	/**
-	 * Reset theme to frosted-glass
-	 */
-	resetTheme() {
-		this.theme = ColorMode.FROSTED_GLASS;
-		this.saveTheme();
-	}
-
-	/**
 	 * Reset all settings to defaults
 	 */
 	resetAll() {
 		this.resetConfig();
-		this.resetTheme();
 	}
 
 	/**
@@ -364,7 +331,7 @@ class SettingsStore {
 
 		if (webuiSettings && key in webuiSettings) {
 			// UI setting from admin config: write actual value
-			setConfigValue(this.config, key, webuiSettings[key]);
+			setConfigValue(this.config, key, this.normalizeConfigValue(key, webuiSettings[key]));
 		} else if (serverDefaults[key] !== undefined) {
 			// sampling param known by server: clear it, let server decide
 			setConfigValue(this.config, key, '');
@@ -396,7 +363,7 @@ class SettingsStore {
 			const currentValue = getConfigValue(this.config, key);
 
 			const normalizedCurrent = normalizeFloatingPoint(currentValue);
-			const normalizedDefault = normalizeFloatingPoint(propsValue);
+			const normalizedDefault = normalizeFloatingPoint(this.normalizeConfigValue(key, propsValue));
 
 			// if user value matches server, it's not a real override
 			if (normalizedCurrent === normalizedDefault) {
@@ -410,7 +377,7 @@ class SettingsStore {
 		if (webuiSettings) {
 			for (const [key, value] of Object.entries(webuiSettings)) {
 				if (!this.userOverrides.has(key) && value !== undefined) {
-					setConfigValue(this.config, key, value);
+					setConfigValue(this.config, key, this.normalizeConfigValue(key, value));
 				}
 			}
 		}
@@ -430,7 +397,7 @@ class SettingsStore {
 		for (const key of ParameterSyncService.getSyncableParameterKeys()) {
 			if (webuiSettings && key in webuiSettings) {
 				// UI setting from admin config: write actual value
-				setConfigValue(this.config, key, webuiSettings[key]);
+				setConfigValue(this.config, key, this.normalizeConfigValue(key, webuiSettings[key]));
 			} else if (propsDefaults[key] !== undefined) {
 				// sampling param: clear it, let server decide
 				setConfigValue(this.config, key, '');
@@ -515,5 +482,4 @@ class SettingsStore {
 export const settingsStore = new SettingsStore();
 
 export const config = () => settingsStore.config;
-export const theme = () => settingsStore.theme;
 export const isInitialized = () => settingsStore.isInitialized;

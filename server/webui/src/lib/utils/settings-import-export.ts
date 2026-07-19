@@ -4,6 +4,7 @@ import {
 	USER_OVERRIDES_LOCALSTORAGE_KEY
 } from '$lib/constants';
 import type { SettingsConfigValue } from '$lib/types';
+import { normalizeThemeId } from '$lib/themes/registry';
 
 const SETTINGS_EXPORT_TYPE = 'llampart-settings-export';
 const SETTINGS_EXPORT_FORMAT_VERSION = 1;
@@ -140,7 +141,7 @@ export function importApplicationSettings(fileText: string): void {
 	for (const [key, value] of Object.entries(parsed.settings)) {
 		if (!EXPORTABLE_CONFIG_KEY_SET.has(key) || !isSettingsConfigValue(value)) continue;
 
-		importedSettings[key] = value;
+		importedSettings[key] = key === 'theme' ? normalizeThemeId(value) : value;
 	}
 
 	localStorage.setItem(

@@ -44,7 +44,7 @@
 			'aria-invalid:border-destructive aria-invalid:ring-destructive/20',
 			className
 		)}
-		style="backdrop-filter: blur(0.5rem);"
+		style="backdrop-filter: var(--llampart-input-backdrop-filter);"
 		{type}
 		bind:value
 		{...restProps}

@@ -1,8 +1,6 @@
-import { ColorMode } from '$lib/enums/ui';
 import { API_PROVIDER_IDS, DEFAULT_API_PROVIDER_ID } from './api-providers';
-import { DEFAULT_FROSTED_GLASS_WALLPAPER_ID } from './frosted-glass-wallpapers';
+import { DEFAULT_THEME_ID, THEME_CONFIG_DEFAULTS, THEME_CONFIG_INFO } from '$lib/themes/registry';
 import { TITLE_GENERATION } from './title-generation';
-import { Sparkles } from '@lucide/svelte';
 
 export const SETTING_CONFIG_DEFAULT: Record<string, string | number | boolean | undefined> = {
 	// Note: in order not to introduce breaking changes, please keep the same data type (number, string, etc) if you want to change the default value.
@@ -17,9 +15,8 @@ export const SETTING_CONFIG_DEFAULT: Record<string, string | number | boolean | 
 	disableOpenAiCompatibleTools: false,
 	systemMessage: '',
 	showSystemMessage: false,
-	theme: ColorMode.FROSTED_GLASS,
-	frostedGlassWallpaper: DEFAULT_FROSTED_GLASS_WALLPAPER_ID,
-	frostedGlassWallpaperMilky: true,
+	theme: DEFAULT_THEME_ID,
+	...THEME_CONFIG_DEFAULTS,
 	interfaceLanguage: 'en',
 	uiScale: '100',
 	showThoughtInProgress: true,
@@ -107,8 +104,7 @@ export const SETTING_CONFIG_INFO: Record<string, string> = {
 	systemMessage: 'settings.info.systemMessage',
 	showSystemMessage: 'settings.info.showSystemMessage',
 	theme: 'settings.info.theme',
-	frostedGlassWallpaper: 'settings.info.frostedGlassWallpaper',
-	frostedGlassWallpaperMilky: 'settings.info.frostedGlassWallpaperMilk',
+	...THEME_CONFIG_INFO,
 	interfaceLanguage: 'settings.info.interfaceLanguage',
 	uiScale: 'settings.info.uiScale',
 	pasteLongTextToFileLen: 'settings.info.pasteLongTextToFileLen',
@@ -167,7 +163,3 @@ export const SETTING_CONFIG_INFO: Record<string, string> = {
 	pyInterpreterEnabled: 'settings.info.pyInterpreterEnabled',
 	preEncodeConversation: 'settings.info.preEncodeConversation'
 };
-
-export const SETTINGS_COLOR_MODES_CONFIG = [
-	{ value: ColorMode.FROSTED_GLASS, label: 'Frosted Glass', icon: Sparkles }
-];

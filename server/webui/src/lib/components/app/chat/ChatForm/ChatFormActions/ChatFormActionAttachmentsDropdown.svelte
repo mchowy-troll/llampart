@@ -415,7 +415,7 @@
 										</div>
 
 										<Switch
-											class="llampart-frosted-glass-switch"
+											class="llampart-composer-switch"
 											checked={isEnabledForChat}
 											disabled={hasError}
 											onclick={(e: MouseEvent) => e.stopPropagation()}

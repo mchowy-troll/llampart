@@ -753,11 +753,9 @@
 
 <div
 	bind:this={containerRef}
-	class="{className}{inheritTypography ? ' markdown-inherit-typography' : ''}{config()[
-		SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS
-	]
-		? ' full-height-code-blocks'
-		: ''}"
+	class="llampart-markdown-content {className}{inheritTypography
+		? ' markdown-inherit-typography'
+		: ''}{config()[SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS] ? ' full-height-code-blocks' : ''}"
 >
 	{#each renderedBlocks as block (block.id)}
 		<div class="markdown-block" data-block-id={block.id} use:fadeInView={{ skipIfVisible: true }}>
@@ -964,42 +962,6 @@
 	.markdown-rendered-preview-wrapper :global(.table-actions),
 	.markdown-rendered-preview-wrapper :global(code[data-code-id][hidden]) {
 		display: none !important;
-	}
-
-	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog-content),
-	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog),
-	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog .table-preview-header),
-	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog .table-preview-body),
-	:global(html.has-frosted-glass-theme .markdown-rendered-preview-body),
-	:global(html.has-frosted-glass-theme .markdown-rendered-preview-wrapper) {
-		background: #ffffff !important;
-		background-color: #ffffff !important;
-		background-image: none !important;
-		color: #111111 !important;
-		text-shadow: none !important;
-		box-shadow: none;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
-	}
-
-	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog-content) {
-		border: 1px solid rgba(0, 0, 0, 0.12) !important;
-		box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog .table-preview-header) {
-		border-bottom: 1px solid rgba(0, 0, 0, 0.12) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .markdown-rendered-preview-wrapper) {
-		border: 1px solid rgba(0, 0, 0, 0.12) !important;
-		border-radius: 0.5rem !important;
-		box-shadow: none !important;
-	}
-
-	:global(html.has-frosted-glass-theme .markdown-rendered-preview-wrapper *),
-	:global(html.has-frosted-glass-theme .markdown-rendered-preview-dialog .table-preview-title) {
-		text-shadow: none !important;
 	}
 
 	div :global(.table-preview-button svg) {
@@ -1667,86 +1629,6 @@
 		overflow-wrap: break-word;
 	}
 
-	/* Frosted Glass surfaces for generated content blocks. */
-	:global(html.has-frosted-glass-theme) div :global(.code-block-wrapper),
-	:global(html.has-frosted-glass-theme) div :global(.table-block) {
-		background: rgba(255, 255, 255, 0.11) !important;
-		border: 1px solid rgba(255, 255, 255, 0.12) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.1),
-			0 1px 2px rgba(0, 0, 0, 0.03),
-			0 3px 8px rgba(0, 0, 0, 0.025) !important;
-		backdrop-filter: blur(10px) saturate(104%) !important;
-		-webkit-backdrop-filter: blur(10px) saturate(104%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme) div :global(.code-block-wrapper pre),
-	:global(html.has-frosted-glass-theme) div :global(.code-block-wrapper code) {
-		background: transparent !important;
-	}
-
-	:global(html.has-frosted-glass-theme) div :global(.table-wrapper table),
-	:global(html.has-frosted-glass-theme) div :global(.table-wrapper th),
-	:global(html.has-frosted-glass-theme) div :global(.table-wrapper td) {
-		background-color: rgba(255, 255, 255, 0.05) !important;
-		border-color: rgba(255, 255, 255, 0.14) !important;
-	}
-
-	:global(html.has-frosted-glass-theme) div :global(.table-wrapper tr:nth-child(even)) {
-		background: rgba(255, 255, 255, 0.035) !important;
-	}
-
-	:global(html.has-frosted-glass-theme) div :global(blockquote) {
-		border: 1px solid rgba(255, 255, 255, 0.14) !important;
-		border-left: 4px solid rgba(255, 255, 255, 0.28) !important;
-		background: rgba(255, 255, 255, 0.1) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.1),
-			0 1px 2px rgba(0, 0, 0, 0.03),
-			0 3px 8px rgba(0, 0, 0, 0.025) !important;
-		color: #000000 !important;
-		text-shadow: 0 0 1px rgba(255, 255, 255, 0.18) !important;
-		backdrop-filter: blur(10px) saturate(104%) !important;
-		-webkit-backdrop-filter: blur(10px) saturate(104%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme) div :global(blockquote:hover) {
-		background: rgba(255, 255, 255, 0.12) !important;
-		transform: translateX(2px);
-	}
-
-	:global(html.has-frosted-glass-theme) div :global(blockquote::before) {
-		color: rgba(0, 0, 0, 0.28) !important;
-		text-shadow: none !important;
-	}
-
-	:global(html.has-frosted-glass-theme) div :global(img:not(.image-zoom-overlay img)) {
-		padding: 0.35rem;
-		border: 1px solid rgba(255, 255, 255, 0.14) !important;
-		background: rgba(255, 255, 255, 0.1) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.1),
-			0 1px 2px rgba(0, 0, 0, 0.03),
-			0 3px 8px rgba(0, 0, 0, 0.025) !important;
-		backdrop-filter: blur(10px) saturate(104%) !important;
-		-webkit-backdrop-filter: blur(10px) saturate(104%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme) div :global(code:not(pre code)) {
-		border: 1px solid rgba(255, 255, 255, 0.16) !important;
-		background: rgba(255, 255, 255, 0.16) !important;
-		color: #000000 !important;
-		text-shadow:
-			0 0 2px rgba(255, 255, 255, 0.62),
-			0 0 7px rgba(255, 255, 255, 0.46),
-			0 0 14px rgba(255, 255, 255, 0.28) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.14),
-			0 1px 2px rgba(0, 0, 0, 0.035) !important;
-		backdrop-filter: blur(8px) saturate(108%) !important;
-		-webkit-backdrop-filter: blur(8px) saturate(108%) !important;
-	}
-
 	div :global(blockquote .table-preview-button),
 	div :global(blockquote .table-preview-button *) {
 		font-style: normal !important;
@@ -1840,17 +1722,6 @@
 
 	:global(.table-preview-body .table-preview-wrapper::-webkit-scrollbar-thumb:hover) {
 		background: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
-	}
-
-	:global(html.has-frosted-glass-theme .table-preview-dialog-content),
-	:global(html.has-frosted-glass-theme .table-preview-dialog),
-	:global(html.has-frosted-glass-theme .table-preview-header),
-	:global(html.has-frosted-glass-theme .table-preview-body),
-	:global(html.has-frosted-glass-theme .table-preview-wrapper) {
-		background-image: none !important;
-		text-shadow: none !important;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
 	}
 
 	/* Responsive adjustments */
@@ -2020,10 +1891,6 @@
 		height: 1px;
 		background: color-mix(in oklch, var(--border) 48%, transparent);
 		pointer-events: none;
-	}
-
-	:global(html.has-frosted-glass-theme) div :global(.code-block-header)::after {
-		background: rgba(255, 255, 255, 0.26);
 	}
 
 	div :global(.code-block-header > *) {

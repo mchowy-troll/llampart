@@ -1,5 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html
+	lang="en"
+	data-theme="frosted-glass"
+	class="light has-frosted-glass-theme has-frosted-glass-wallpaper-milk"
+>
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" />
@@ -21,15 +25,20 @@
 					const requestedWallpaper =
 						typeof config.frostedGlassWallpaper === 'string'
 							? config.frostedGlassWallpaper
-							: 'frosted-glass-01';
+							: 'frosted-glass-02';
 					const wallpaper = knownWallpapers.has(requestedWallpaper)
 						? requestedWallpaper
-						: 'frosted-glass-01';
+						: 'frosted-glass-02';
 
+					document.documentElement.dataset.theme = 'frosted-glass';
 					document.documentElement.classList.add('has-frosted-glass-theme');
 					document.documentElement.classList.add('light');
+					document.documentElement.classList.toggle(
+						'has-frosted-glass-wallpaper-milk',
+						Boolean(config.frostedGlassWallpaperMilky ?? true)
+					);
 					document.documentElement.style.setProperty(
-						'--llampart-frosted-glass-wallpaper',
+						'--llampart-theme-wallpaper',
 						`url("/wallpapers/frosted-glass/${wallpaper}.jpg")`
 					);
 				} catch {
@@ -39,7 +48,7 @@
 		</script>
 	</head>
 	<body data-sveltekit-preload-data="hover">
-		<div id="llampart-frosted-glass-preload-background" aria-hidden="true"></div>
+		<div id="llampart-theme-preload-background" aria-hidden="true"></div>
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>

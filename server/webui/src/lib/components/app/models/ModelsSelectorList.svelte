@@ -90,10 +90,4 @@
 		border-top: 1px solid color-mix(in oklch, var(--border) 54%, transparent);
 		padding-top: 0.45rem;
 	}
-
-	:global(html.has-frosted-glass-theme)
-		.llampart-model-selector-section
-		+ .llampart-model-selector-section {
-		border-top-color: rgba(255, 255, 255, 0.18) !important;
-	}
 </style>

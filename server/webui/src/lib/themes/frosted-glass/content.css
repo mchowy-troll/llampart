@@ -1,0 +1,277 @@
+/* llampart-frosted-glass-markdown-blockquote-card-radius-final */
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-assistant-message blockquote,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-card blockquote,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-content blockquote,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .markdown-content blockquote {
+	border-left: 0 !important;
+	border-radius: 0.75rem !important;
+	border: 1px solid rgba(255, 255, 255, 0.24) !important;
+	background: rgba(255, 255, 255, 0.14) !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.18),
+		0 2px 8px rgba(0, 0, 0, 0.035) !important;
+	backdrop-filter: blur(12px) saturate(108%) !important;
+	-webkit-backdrop-filter: blur(12px) saturate(108%) !important;
+	padding: 1rem 1.125rem !important;
+	margin: 1rem 0 !important;
+	overflow: hidden !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-assistant-message
+	blockquote::before,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-system-message-card
+	blockquote::before,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-content blockquote::before,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .markdown-content blockquote::before {
+	content: none !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-assistant-message
+	blockquote
+	> :first-child,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-system-message-card
+	blockquote
+	> :first-child,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-content blockquote > :first-child,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.markdown-content
+	blockquote
+	> :first-child {
+	margin-top: 0 !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-assistant-message
+	blockquote
+	> :last-child,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-system-message-card
+	blockquote
+	> :last-child,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-content blockquote > :last-child,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.markdown-content
+	blockquote
+	> :last-child {
+	margin-bottom: 0 !important;
+}
+
+/* Markdown and generated content surfaces owned by Frosted Glass. */
+
+/* Frosted Glass surfaces for generated content blocks. */
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.code-block-wrapper,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-markdown-content .table-block {
+	background: rgba(255, 255, 255, 0.11) !important;
+	border: 1px solid rgba(255, 255, 255, 0.12) !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.1),
+		0 1px 2px rgba(0, 0, 0, 0.03),
+		0 3px 8px rgba(0, 0, 0, 0.025) !important;
+	backdrop-filter: blur(10px) saturate(104%) !important;
+	-webkit-backdrop-filter: blur(10px) saturate(104%) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.code-block-wrapper
+	pre,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.code-block-wrapper
+	code {
+	background: transparent !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.table-wrapper
+	table,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.table-wrapper
+	th,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.table-wrapper
+	td {
+	background-color: rgba(255, 255, 255, 0.05) !important;
+	border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.table-wrapper
+	tr:nth-child(even) {
+	background: rgba(255, 255, 255, 0.035) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-markdown-content blockquote {
+	border: 1px solid rgba(255, 255, 255, 0.14) !important;
+	border-left: 4px solid rgba(255, 255, 255, 0.28) !important;
+	background: rgba(255, 255, 255, 0.1) !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.1),
+		0 1px 2px rgba(0, 0, 0, 0.03),
+		0 3px 8px rgba(0, 0, 0, 0.025) !important;
+	color: #000000 !important;
+	text-shadow: 0 0 1px rgba(255, 255, 255, 0.18) !important;
+	backdrop-filter: blur(10px) saturate(104%) !important;
+	-webkit-backdrop-filter: blur(10px) saturate(104%) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	blockquote:hover {
+	background: rgba(255, 255, 255, 0.12) !important;
+	transform: translateX(2px);
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	blockquote::before {
+	color: rgba(0, 0, 0, 0.28) !important;
+	text-shadow: none !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	img:not(.image-zoom-overlay img) {
+	padding: 0.35rem;
+	border: 1px solid rgba(255, 255, 255, 0.14) !important;
+	background: rgba(255, 255, 255, 0.1) !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.1),
+		0 1px 2px rgba(0, 0, 0, 0.03),
+		0 3px 8px rgba(0, 0, 0, 0.025) !important;
+	backdrop-filter: blur(10px) saturate(104%) !important;
+	-webkit-backdrop-filter: blur(10px) saturate(104%) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	code:not(pre code) {
+	border: 1px solid rgba(255, 255, 255, 0.16) !important;
+	background: rgba(255, 255, 255, 0.16) !important;
+	color: #000000 !important;
+	text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.62),
+		0 0 7px rgba(255, 255, 255, 0.46),
+		0 0 14px rgba(255, 255, 255, 0.28) !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.14),
+		0 1px 2px rgba(0, 0, 0, 0.035) !important;
+	backdrop-filter: blur(8px) saturate(108%) !important;
+	-webkit-backdrop-filter: blur(8px) saturate(108%) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.code-block-header::after {
+	background: rgba(255, 255, 255, 0.26);
+}
+
+/* llampart-frosted-glass-collapsible-match-agentic-frame */
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel {
+	position: relative !important;
+	color: #000000 !important;
+	text-shadow:
+		0 0 1px rgba(255, 255, 255, 0.28),
+		0 0 3px rgba(255, 255, 255, 0.16) !important;
+	border: 1px solid rgba(255, 255, 255, 0.26) !important;
+	border-radius: 0.75rem !important;
+	background: rgba(255, 255, 255, 0.28) !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.18),
+		0 1px 2px rgba(0, 0, 0, 0.05),
+		0 4px 10px rgba(0, 0, 0, 0.04) !important;
+	backdrop-filter: blur(14px) saturate(108%) !important;
+	-webkit-backdrop-filter: blur(14px) saturate(108%) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel * {
+	color: #000000 !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel .card,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel [data-slot='card'],
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-agentic-panel
+	[data-slot='card-content'],
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-agentic-panel
+	[data-slot='card-header'],
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-agentic-panel
+	[data-slot='card-footer'] {
+	background: transparent !important;
+	box-shadow: none !important;
+	border-color: transparent !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel svg {
+	color: #000000 !important;
+	stroke: currentColor !important;
+	filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.22)) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel button,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel [role='button'] {
+	color: #000000 !important;
+	background: transparent !important;
+	border-color: transparent !important;
+	box-shadow: none !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel .h-6.w-6 {
+	background: rgba(255, 255, 255, 0.34) !important;
+	border: 1px solid rgba(255, 255, 255, 0.22) !important;
+	border-radius: 0.75rem !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.18),
+		0 1px 2px rgba(0, 0, 0, 0.04) !important;
+	backdrop-filter: blur(10px) saturate(106%) !important;
+	-webkit-backdrop-filter: blur(10px) saturate(106%) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel .border-t {
+	border-top-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* llampart-frosted-glass-agentic-panel-regular-title-icons */
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel * {
+	font-weight: 400 !important;
+	font-variation-settings: 'wght' 400 !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel svg,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel svg * {
+	stroke-width: 1.65 !important;
+	filter: none !important;
+}
+/* llampart-frosted-glass-agentic-panel-title-glow-regular-final */
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel-title,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel-subtitle,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel .text-xs,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel .text-sm {
+	color: #000000 !important;
+	font-weight: 400 !important;
+	font-variation-settings: 'wght' 400 !important;
+	text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.62),
+		0 0 7px rgba(255, 255, 255, 0.46),
+		0 0 14px rgba(255, 255, 255, 0.28) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel svg,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel svg * {
+	stroke-width: 1.65 !important;
+	filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.32)) !important;
+}

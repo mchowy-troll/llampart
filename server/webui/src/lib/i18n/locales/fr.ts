@@ -156,7 +156,6 @@ export const fr: TranslationDictionary = {
 		fieldUseLLMToGenerateConversationTitle:
 			'Utiliser le LLM pour générer le titre de la conversation',
 		fieldLLMTitleGenerationPrompt: 'Prompt de génération du titre par LLM',
-		themeFrostedGlass: 'Frosted Glass',
 		fieldUiScale: "Échelle de l'interface",
 		defaultPrefix: 'Par défaut :',
 		resetToDefault: 'Réinitialiser par défaut',
@@ -229,29 +228,6 @@ export const fr: TranslationDictionary = {
 		groupOpenAiCompatibleOptions: 'Options OpenAI-compatible',
 		groupSystemMessage: 'Message système',
 		groupInterface: 'Interface',
-		groupFrostedGlassWallpaper: 'Fond d’écran',
-		frostedGlassWallpaperDescription:
-			'Choisissez l’un des 5 fonds intégrés ou un fond personnalisé enregistré localement dans ce navigateur.',
-		frostedGlassWallpaperMilk: 'Fond laiteux',
-		frostedGlassWallpaperSofteningDescription:
-			'Ajoute un léger flou et un voile laiteux uniquement au fond d’écran. Le texte et le fondu au-dessus du composer ne sont pas floutés.',
-		frostedGlassWallpaper01: 'Frosted Glass 01',
-		frostedGlassWallpaper02: 'Frosted Glass 02',
-		frostedGlassWallpaper03: 'Frosted Glass 03',
-		frostedGlassWallpaper04: 'Frosted Glass 04',
-		frostedGlassWallpaper05: 'Frosted Glass 05',
-		frostedGlassWallpaperUser: 'Fond utilisateur',
-		frostedGlassWallpaperUpload: 'Importer JPG/PNG',
-		frostedGlassWallpaperAdd: 'Ajouter',
-		frostedGlassWallpaperReplace: 'Remplacer',
-		frostedGlassWallpaperRemove: 'Supprimer',
-		frostedGlassWallpaperUserSaved: 'Fond utilisateur enregistré.',
-		frostedGlassWallpaperUserRemoved: 'Fond utilisateur supprimé.',
-		frostedGlassWallpaperUploadInvalidType: 'Choisissez un fichier JPG ou PNG.',
-		frostedGlassWallpaperUploadTooLarge: 'Le fond peut faire au maximum 3 Mo.',
-		frostedGlassWallpaperUploadRequirements: 'Utilisez un fichier JPG ou PNG de 3 Mo maximum.',
-		frostedGlassWallpaperUploadReadError:
-			'Impossible d’enregistrer le fond. Le localStorage du navigateur est peut-être plein.',
 		groupApplicationBackground: 'Arrière-plan de l’application',
 		backgroundImageDescription:
 			'Choisissez une image locale utilisée comme arrière-plan de l’application dans ce navigateur.',
@@ -377,8 +353,6 @@ export const fr: TranslationDictionary = {
 			showSystemMessage: 'Afficher le message système en haut de chaque conversation.',
 			theme:
 				'Choisissez le style de l’interface. Frosted Glass utilise ses propres fonds intégrés et effets de verre.',
-			frostedGlassWallpaper:
-				'Fond d’écran Frosted Glass sélectionné. Les fonds intégrés sont fournis avec llampart ; le fond personnalisé est stocké uniquement dans le localStorage de ce navigateur.',
 			interfaceLanguage:
 				"L'anglais est la langue par défaut au premier lancement. Choisissez ici la langue de l'interface.",
 			uiScale:

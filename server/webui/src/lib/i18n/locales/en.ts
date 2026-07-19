@@ -157,7 +157,6 @@ export const en: TranslationDictionary = {
 			'Use first non-empty line for conversation title',
 		fieldUseLLMToGenerateConversationTitle: 'Use LLM to generate conversation title',
 		fieldLLMTitleGenerationPrompt: 'LLM title generation prompt',
-		themeFrostedGlass: 'Frosted Glass',
 		fieldUiScale: 'UI scale',
 		defaultPrefix: 'Default:',
 		resetToDefault: 'Reset to default',
@@ -228,29 +227,6 @@ export const en: TranslationDictionary = {
 		groupOpenAiCompatibleOptions: 'OpenAI-compatible options',
 		groupSystemMessage: 'System message',
 		groupInterface: 'Interface',
-		groupFrostedGlassWallpaper: 'Wallpaper',
-		frostedGlassWallpaperDescription:
-			'Choose one of 5 built-in wallpapers or a custom wallpaper stored locally in this browser.',
-		frostedGlassWallpaperMilk: 'Milky wallpaper',
-		frostedGlassWallpaperSofteningDescription:
-			'Adds subtle blur and a milky layer only to the wallpaper background. It does not blur text or the fade above the composer.',
-		frostedGlassWallpaper01: 'Frosted Glass 01',
-		frostedGlassWallpaper02: 'Frosted Glass 02',
-		frostedGlassWallpaper03: 'Frosted Glass 03',
-		frostedGlassWallpaper04: 'Frosted Glass 04',
-		frostedGlassWallpaper05: 'Frosted Glass 05',
-		frostedGlassWallpaperUser: 'User wallpaper',
-		frostedGlassWallpaperUpload: 'Upload JPG/PNG',
-		frostedGlassWallpaperAdd: 'Add',
-		frostedGlassWallpaperReplace: 'Replace',
-		frostedGlassWallpaperRemove: 'Remove',
-		frostedGlassWallpaperUserSaved: 'User wallpaper saved.',
-		frostedGlassWallpaperUserRemoved: 'User wallpaper removed.',
-		frostedGlassWallpaperUploadInvalidType: 'Choose a JPG or PNG file.',
-		frostedGlassWallpaperUploadTooLarge: 'Wallpaper file can be up to 3 MB.',
-		frostedGlassWallpaperUploadRequirements: 'Use a JPG or PNG file up to 3 MB.',
-		frostedGlassWallpaperUploadReadError:
-			'Could not save the wallpaper. Browser localStorage may be full.',
 		groupApplicationBackground: 'Application background',
 		backgroundImageDescription: 'Choose a local image used as the app background on this browser.',
 		backgroundImageChoose: 'Choose background',
@@ -372,8 +348,6 @@ export const en: TranslationDictionary = {
 			showSystemMessage: 'Display the system message at the top of each conversation.',
 			theme:
 				'Choose the interface style. Frosted Glass uses its own built-in wallpapers and frosted frame effects.',
-			frostedGlassWallpaper:
-				"Selected Frosted Glass wallpaper. Built-in wallpapers are shipped with llampart; custom wallpaper data is stored only in this browser's localStorage.",
 			interfaceLanguage:
 				'Choose the interface language. English is the default language on first launch.',
 			uiScale: 'Adjust the desktop interface scale based on the automatic responsive setting.',

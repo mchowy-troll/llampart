@@ -189,39 +189,3 @@
 		</div>
 	</div>
 </DialogConfirmation>
-
-<style>
-	/* llampart-frosted-glass-message-actions-regular-black */
-	:global(html.has-frosted-glass-theme .llampart-message-actions),
-	:global(html.has-frosted-glass-theme .llampart-message-actions *) {
-		color: #000000 !important;
-		font-weight: 400 !important;
-		font-variation-settings: 'wght' 400 !important;
-		text-shadow: none !important;
-		filter: none !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-message-actions svg),
-	:global(html.has-frosted-glass-theme .llampart-message-actions svg *) {
-		stroke-width: 1.65 !important;
-		filter: none !important;
-		text-shadow: none !important;
-	}
-
-	/* llampart-frosted-glass-message-actions-icon-glow */
-	:global(html.has-frosted-glass-theme .llampart-message-actions-icons svg),
-	:global(html.has-frosted-glass-theme .llampart-message-actions-icons svg *) {
-		filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.32))
-			drop-shadow(0 0 4px rgba(255, 255, 255, 0.24)) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-message-actions-icons button),
-	:global(html.has-frosted-glass-theme .llampart-message-actions-icons a),
-	:global(html.has-frosted-glass-theme .llampart-message-actions-icons [role='button']) {
-		text-shadow:
-			0 0 2px rgba(255, 255, 255, 0.62),
-			0 0 7px rgba(255, 255, 255, 0.46),
-			0 0 14px rgba(255, 255, 255, 0.28) !important;
-	}
-	/* /llampart-frosted-glass-message-actions-icon-glow */
-</style>

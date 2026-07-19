@@ -7,8 +7,6 @@
 export const SETTINGS_KEYS = {
 	// General
 	THEME: 'theme',
-	FROSTED_GLASS_WALLPAPER: 'frostedGlassWallpaper',
-	FROSTED_GLASS_WALLPAPER_MILKY: 'frostedGlassWallpaperMilky',
 	INTERFACE_LANGUAGE: 'interfaceLanguage',
 	UI_SCALE: 'uiScale',
 	API_PROVIDER: 'apiProvider',

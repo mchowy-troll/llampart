@@ -1,4 +1,5 @@
 import { config } from '$lib/stores/settings.svelte';
+import { getThemeTranslations } from '$lib/themes/translations';
 import type { InterfaceLanguage, TranslationDictionary, TranslationTree } from './types';
 import { INTERFACE_LANGUAGES } from './types';
 import { en } from './locales/en';
@@ -10,18 +11,33 @@ import { es } from './locales/es';
 
 const FALLBACK_LANGUAGE: InterfaceLanguage = 'en';
 
-const dictionaries: Record<InterfaceLanguage, TranslationDictionary> = {
-	en,
-	pl,
-	de,
-	fr,
-	it,
-	es
-};
-
 function isRecord(value: unknown): value is TranslationTree {
 	return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
+
+function mergeDictionaries(
+	base: TranslationDictionary,
+	extension: TranslationDictionary
+): TranslationDictionary {
+	const merged: TranslationDictionary = { ...base };
+
+	for (const [key, value] of Object.entries(extension)) {
+		const baseValue = base[key];
+		merged[key] =
+			isRecord(baseValue) && isRecord(value) ? mergeDictionaries(baseValue, value) : value;
+	}
+
+	return merged;
+}
+
+const dictionaries: Record<InterfaceLanguage, TranslationDictionary> = {
+	en: mergeDictionaries(en, getThemeTranslations('en')),
+	pl: mergeDictionaries(pl, getThemeTranslations('pl')),
+	de: mergeDictionaries(de, getThemeTranslations('de')),
+	fr: mergeDictionaries(fr, getThemeTranslations('fr')),
+	it: mergeDictionaries(it, getThemeTranslations('it')),
+	es: mergeDictionaries(es, getThemeTranslations('es'))
+};
 
 function getNestedValue(dictionary: TranslationDictionary, key: string): string | undefined {
 	const parts = key.split('.');

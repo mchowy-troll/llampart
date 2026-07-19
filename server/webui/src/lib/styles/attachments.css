@@ -7,11 +7,6 @@
 	--llampart-attachment-card-radius: 0.75rem;
 }
 
-html.has-frosted-glass-theme {
-	--llampart-attachment-card-border: var(--llampart-frosted-message-surface-border);
-	--llampart-attachment-card-shadow: var(--llampart-frosted-message-surface-shadow);
-}
-
 .llampart-attachment-thumbnail-file.llampart-attachment-card {
 	width: var(--llampart-attachment-card-width);
 	min-width: var(--llampart-attachment-card-width);
@@ -24,24 +19,6 @@ html.has-frosted-glass-theme {
 .llampart-attachment-thumbnail-file.llampart-attachment-card,
 .llampart-attachment-thumbnail-file.llampart-attachment-card:hover {
 	background-color: var(--llampart-attachment-card-background, var(--muted)) !important;
-}
-
-html.has-frosted-glass-theme .llampart-attachment-thumbnail-file.llampart-attachment-card {
-	background: var(--llampart-frosted-surface-bg) !important;
-	color: var(--llampart-frosted-surface-text) !important;
-	text-shadow: var(--llampart-frosted-surface-text-shadow) !important;
-	-webkit-backdrop-filter: var(--llampart-frosted-surface-filter) !important;
-	backdrop-filter: var(--llampart-frosted-surface-filter) !important;
-}
-
-html.has-frosted-glass-theme .llampart-attachment-thumbnail-file.llampart-attachment-card *,
-html.has-frosted-glass-theme .llampart-attachment-thumbnail-file.llampart-attachment-card-title {
-	color: var(--llampart-frosted-surface-text) !important;
-	text-shadow: var(--llampart-frosted-surface-text-shadow) !important;
-}
-
-html.has-frosted-glass-theme .llampart-attachment-thumbnail-file .text-muted-foreground {
-	color: rgba(0, 0, 0, 0.68) !important;
 }
 
 .llampart-attachment-thumbnail-file .llampart-attachment-file-label {
@@ -61,10 +38,6 @@ html.has-frosted-glass-theme .llampart-attachment-thumbnail-file .text-muted-for
 
 .llampart-attachment-thumbnail-image img {
 	border-color: var(--llampart-attachment-card-border, #cecece) !important;
-}
-
-html.has-frosted-glass-theme .llampart-attachment-thumbnail-image img {
-	border-color: var(--llampart-frosted-message-surface-border) !important;
 }
 
 /* /llampart-attachment-surface-primitives */
@@ -158,30 +131,12 @@ html.has-frosted-glass-theme .llampart-attachment-thumbnail-image img {
 	box-shadow: none;
 }
 
-html.has-frosted-glass-theme
-	[data-slot='dialog-content']
-	.llampart-attachment-thumbnail-file.llampart-attachment-card {
-	box-shadow: none !important;
-}
-
 /* /llampart-attachment-preview-dialog-shell */
 
-/* llampart-attachments-view-all-panel-surface
-   Inner attachment list panel is intentionally lighter than the dialog shell in Frosted Glass. */
 .llampart-attachments-view-all-panel {
 	border-radius: 0.875rem;
 	padding: 0.25rem;
 }
-
-html.has-frosted-glass-theme .llampart-attachments-view-all-panel {
-	border: 1px solid rgba(255, 255, 255, 0.18);
-	background: rgba(255, 255, 255, 0.1);
-	background-color: rgba(255, 255, 255, 0.1);
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-	backdrop-filter: blur(10px) saturate(108%);
-	-webkit-backdrop-filter: blur(10px) saturate(108%);
-}
-/* /llampart-attachments-view-all-panel-surface */
 
 /* llampart-attachment-preview-opaque-fill
    Fills attachment preview interiors with OKLCH-token-safe colors in all themes. */
@@ -199,29 +154,6 @@ html.has-frosted-glass-theme .llampart-attachments-view-all-panel {
 	text-shadow: none !important;
 }
 
-html.has-frosted-glass-theme .llampart-attachment-preview-dialog-content,
-html.has-frosted-glass-theme .llampart-attachment-preview-dialog-shell,
-html.has-frosted-glass-theme .llampart-attachment-preview-dialog-header,
-html.has-frosted-glass-theme .llampart-attachment-preview-dialog-body,
-html.has-frosted-glass-theme .llampart-attachment-preview-content,
-html.has-frosted-glass-theme .llampart-attachment-pdf-preview-pages,
-html.has-frosted-glass-theme .llampart-attachment-pdf-preview-page,
-html.has-frosted-glass-theme .llampart-attachment-image-preview-frame {
-	background: var(--llampart-frosted-preview-surface-background, var(--background)) !important;
-	background-color: var(
-		--llampart-frosted-preview-surface-background,
-		var(--background)
-	) !important;
-	color: var(--llampart-frosted-preview-surface-foreground, var(--foreground)) !important;
-	backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
-	-webkit-backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
-	text-shadow: var(--llampart-frosted-preview-surface-text-shadow, none) !important;
-}
-
-html.has-frosted-glass-theme .llampart-attachment-preview-dialog-content *,
-html.has-frosted-glass-theme .llampart-attachment-preview-dialog-shell * {
-	text-shadow: var(--llampart-frosted-preview-surface-text-shadow, none) !important;
-}
 /* /llampart-attachment-preview-opaque-fill */
 
 /* llampart-attachments-view-all-solid-surface
@@ -253,19 +185,6 @@ html.has-frosted-glass-theme .llampart-attachment-preview-dialog-shell * {
 	font-weight: 700;
 }
 
-html.has-frosted-glass-theme .llampart-attachments-view-all-dialog-content,
-html.has-frosted-glass-theme .llampart-attachments-view-all-panel {
-	background: var(--llampart-frosted-preview-surface-background, var(--background)) !important;
-	background-color: var(
-		--llampart-frosted-preview-surface-background,
-		var(--background)
-	) !important;
-	background-image: var(--llampart-frosted-preview-surface-background-image, none) !important;
-	color: var(--llampart-frosted-preview-surface-foreground, var(--foreground)) !important;
-	backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
-	-webkit-backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
-	text-shadow: var(--llampart-frosted-preview-surface-text-shadow, none) !important;
-}
 /* /llampart-attachments-view-all-solid-surface */
 
 /* llampart-attachment-file-label-size-polish

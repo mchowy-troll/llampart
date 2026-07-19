@@ -433,7 +433,7 @@
 
 <style>
 	.llampart-assistant-message {
-		color: #3c3c3c;
+		color: var(--llampart-assistant-message-foreground);
 	}
 
 	.agentic-content {
@@ -443,7 +443,7 @@
 		gap: 0.5rem;
 		width: 100%;
 		max-width: 57.6rem;
-		border: 1px solid #cecece;
+		border: 1px solid var(--llampart-assistant-message-border-color);
 		border-radius: 0.75rem;
 		padding: 1rem;
 	}
@@ -525,7 +525,7 @@
 
 	.agentic-turn {
 		position: relative;
-		border: 1.5px dashed #cecece;
+		border: 1.5px dashed var(--llampart-agentic-turn-border-color);
 		border-radius: 0.75rem;
 		padding: 1rem;
 		transition: background 0.1s;
@@ -563,262 +563,4 @@
 		padding-top: 0.125rem;
 		border-top: 0;
 	}
-
-	/* Chat answer Frosted Glass layout. Surface values are owned by app.css. */
-	:global(.has-frosted-glass-theme) .agentic-content {
-		position: relative;
-		color: var(--llampart-frosted-surface-text);
-		text-shadow: var(--llampart-frosted-surface-text-shadow);
-	}
-
-	:global(.has-frosted-glass-theme) .agentic-content {
-		padding-bottom: 0.125rem;
-	}
-
-	/* llampart-main-agentic-frame-final-tuning
-	   Frame surface values are owned by the global Frosted Glass surface primitives in app.css. */
-
-	:global(html.has-frosted-glass-theme .agentic-footer-slot) {
-		margin-right: -0.5rem;
-		margin-left: -0.5rem;
-	}
-
-	:global(html.has-frosted-glass-theme .agentic-content.llampart-assistant-message) {
-		padding-bottom: 0.375rem;
-	}
-
-	/* llampart-frosted-glass-expanded-agentic-content */
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .code-preview-wrapper),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .code-block-wrapper),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .table-block),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .overflow-auto.rounded-lg),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .rounded.bg-muted\/30),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .rounded.bg-yellow-500\/10),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .mt-2.rounded-md.border),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .mt-3.rounded-md.border) {
-		background: rgba(255, 255, 255, 0.11) !important;
-		border: 1px solid rgba(255, 255, 255, 0.12) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.1),
-			0 1px 2px rgba(0, 0, 0, 0.03),
-			0 3px 8px rgba(0, 0, 0, 0.025) !important;
-		backdrop-filter: blur(10px) saturate(104%) !important;
-		-webkit-backdrop-filter: blur(10px) saturate(104%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .code-preview-wrapper pre),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .code-preview-wrapper code),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .code-block-wrapper pre),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .code-block-wrapper code) {
-		background: transparent !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .font-mono),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .text-xs),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .text-sm),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .text-muted-foreground) {
-		color: #000000 !important;
-		text-shadow:
-			0 0 1px rgba(255, 255, 255, 0.18),
-			0 0 2px rgba(255, 255, 255, 0.1) !important;
-	}
-	/* llampart-agentic-footer-equal-edge-offset */
-	:global(html.has-frosted-glass-theme .agentic-content.llampart-assistant-message) {
-		padding-bottom: 0.625rem !important;
-	}
-
-	:global(html.has-frosted-glass-theme .agentic-footer-slot) {
-		margin-right: -0.5rem !important;
-		margin-left: -0.5rem !important;
-	}
-
-	/* llampart-footer-lower-insets-and-user-height-restore */
-	:global(html.has-frosted-glass-theme .agentic-content.llampart-assistant-message) {
-		position: relative;
-		padding-bottom: 3.25rem !important;
-	}
-
-	:global(html.has-frosted-glass-theme .agentic-footer-slot) {
-		position: absolute;
-		right: 1rem;
-		bottom: 0.375rem;
-		left: 1rem;
-		margin: 0 !important;
-		padding: 0 !important;
-	}
-
-	/* llampart-frosted-glass-agentic-turns-and-labels */
-	:global(html.has-frosted-glass-theme .agentic-turn) {
-		border: 1.5px dashed rgba(255, 255, 255, 0.28) !important;
-		background: rgba(255, 255, 255, 0.08) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.1),
-			0 1px 2px rgba(0, 0, 0, 0.03),
-			0 3px 8px rgba(0, 0, 0, 0.025) !important;
-		backdrop-filter: blur(10px) saturate(106%) !important;
-		-webkit-backdrop-filter: blur(10px) saturate(106%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .agentic-turn:hover) {
-		background: rgba(255, 255, 255, 0.1) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .agentic-turn-label) {
-		background: rgba(255, 255, 255, 0.72) !important;
-		border: 1px solid rgba(255, 255, 255, 0.42) !important;
-		border-radius: 0.5rem;
-		color: #7a7a7a !important;
-		text-shadow: none !important;
-		box-shadow: none !important;
-		backdrop-filter: blur(8px) saturate(108%) !important;
-		-webkit-backdrop-filter: blur(8px) saturate(108%) !important;
-	}
-
-	/* llampart-frosted-glass-agentic-turn-regular-text */
-	:global(html.has-frosted-glass-theme .agentic-turn),
-	:global(html.has-frosted-glass-theme .agentic-turn *),
-	:global(html.has-frosted-glass-theme .turn-stats),
-	:global(html.has-frosted-glass-theme .turn-stats *) {
-		font-weight: 400 !important;
-		font-variation-settings: 'wght' 400 !important;
-		text-shadow: none !important;
-	}
-
-	:global(html.has-frosted-glass-theme .agentic-turn svg),
-	:global(html.has-frosted-glass-theme .agentic-turn svg *) {
-		stroke-width: 1.65 !important;
-		filter: none !important;
-	}
-	/* llampart-frosted-glass-agentic-turns-footer-glow-final */
-	:global(html.has-frosted-glass-theme .agentic-turn),
-	:global(html.has-frosted-glass-theme .agentic-turn *),
-	:global(html.has-frosted-glass-theme .turn-stats),
-	:global(html.has-frosted-glass-theme .turn-stats *) {
-		color: #000000 !important;
-		font-weight: 400 !important;
-		font-variation-settings: 'wght' 400 !important;
-		text-shadow:
-			0 0 2px rgba(255, 255, 255, 0.62),
-			0 0 7px rgba(255, 255, 255, 0.46),
-			0 0 14px rgba(255, 255, 255, 0.28) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .agentic-turn svg),
-	:global(html.has-frosted-glass-theme .agentic-turn svg *) {
-		stroke-width: 1.65 !important;
-		filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.32)) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .agentic-turn-label) {
-		background: rgba(255, 255, 255, 0.16) !important;
-		border-color: rgba(255, 255, 255, 0.18) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.12),
-			0 1px 2px rgba(0, 0, 0, 0.035) !important;
-		backdrop-filter: blur(10px) saturate(108%) !important;
-		-webkit-backdrop-filter: blur(10px) saturate(108%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .turn-stats) {
-		border-top-color: rgba(255, 255, 255, 0.16) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .overflow-auto.rounded-lg),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .rounded.bg-muted\/30),
-	:global(html.has-frosted-glass-theme .llampart-agentic-panel .rounded.bg-yellow-500\/10) {
-		color: #000000 !important;
-		text-shadow:
-			0 0 2px rgba(255, 255, 255, 0.62),
-			0 0 7px rgba(255, 255, 255, 0.46),
-			0 0 14px rgba(255, 255, 255, 0.28) !important;
-	}
-
-	/* llampart-frosted-glass-agentic-position-only-final */
-	:global(html.has-frosted-glass-theme .agentic-turn) {
-		position: relative !important;
-		padding-bottom: 3rem !important;
-	}
-
-	:global(html.has-frosted-glass-theme .turn-stats) {
-		position: absolute !important;
-		left: 1.25rem !important;
-		right: 1.25rem !important;
-		bottom: 0.78rem !important;
-		display: flex !important;
-		align-items: center !important;
-		margin: 0 !important;
-		padding: 0 !important;
-		border: 0 !important;
-		background: transparent !important;
-		box-shadow: none !important;
-		line-height: 1 !important;
-		transform: none !important;
-	}
-
-	/* llampart-frosted-glass-agentic-label-stronger-blur */
-	:global(html.has-frosted-glass-theme .agentic-turn-label) {
-		background: rgba(255, 255, 255, 0.34) !important;
-		border-color: rgba(255, 255, 255, 0.24) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.2),
-			0 1px 4px rgba(0, 0, 0, 0.04) !important;
-		backdrop-filter: blur(24px) saturate(122%) !important;
-		-webkit-backdrop-filter: blur(24px) saturate(122%) !important;
-	}
-
-	/* llampart-agentic-turn-label-match-system-prompt-and-reasoning */
-	:global(html.has-frosted-glass-theme .agentic-turn) {
-		position: relative !important;
-		padding-top: 3.0625rem !important;
-	}
-
-	:global(html.has-frosted-glass-theme .agentic-turn-label) {
-		position: absolute !important;
-		top: 0.75rem !important;
-		left: 0.875rem !important;
-		display: inline-flex !important;
-		align-items: center !important;
-		gap: 0.25rem !important;
-		padding: 0.125rem 0.5rem !important;
-		border: 1px solid rgba(255, 255, 255, 0.26) !important;
-		border-radius: 0.75rem !important;
-		background: rgba(255, 255, 255, 0.28) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.18),
-			0 1px 2px rgba(0, 0, 0, 0.05),
-			0 4px 10px rgba(0, 0, 0, 0.04) !important;
-		backdrop-filter: blur(14px) saturate(108%) !important;
-		-webkit-backdrop-filter: blur(14px) saturate(108%) !important;
-		font-size: 0.7rem !important;
-		line-height: 1rem !important;
-		font-weight: 400 !important;
-		font-variation-settings: 'wght' 400 !important;
-		color: #000000 !important;
-		text-transform: uppercase !important;
-		letter-spacing: 0.05em !important;
-		white-space: nowrap !important;
-		text-shadow:
-			0 0 2px rgba(255, 255, 255, 0.62),
-			0 0 7px rgba(255, 255, 255, 0.46),
-			0 0 14px rgba(255, 255, 255, 0.28) !important;
-		z-index: 2 !important;
-		pointer-events: none !important;
-	}
-
-	:global(html.has-frosted-glass-theme .agentic-turn-label::before),
-	:global(html.has-frosted-glass-theme .agentic-turn-label::after) {
-		content: none !important;
-		display: none !important;
-	}
-
-	/* llampart-1-0-2-assistant-message-rhythm */
-	:global(html.has-frosted-glass-theme .agentic-content.llampart-assistant-message) {
-		padding: 1.5rem 1.5rem 3.5rem !important;
-	}
-
-	:global(html.has-frosted-glass-theme .agentic-content.llampart-assistant-message .agentic-text) {
-		padding-inline: 0.125rem;
-	}
-
-	/* /llampart-1-0-2-assistant-message-rhythm */
 </style>

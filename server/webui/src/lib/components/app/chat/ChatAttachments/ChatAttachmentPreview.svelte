@@ -377,23 +377,4 @@
 		font: inherit;
 		white-space: inherit;
 	}
-
-	:global(html.has-frosted-glass-theme) .llampart-attachment-markdown-preview,
-	:global(html.has-frosted-glass-theme) .llampart-attachment-text-preview {
-		background: var(
-			--llampart-frosted-preview-inline-background,
-			color-mix(in oklch, var(--muted) 50%, transparent)
-		);
-		color: var(--llampart-frosted-preview-inline-foreground, var(--foreground));
-		text-shadow: var(--llampart-frosted-preview-inline-text-shadow, none) !important;
-		backdrop-filter: var(--llampart-frosted-preview-inline-backdrop-filter, none) !important;
-		-webkit-backdrop-filter: var(
-			--llampart-frosted-preview-inline-backdrop-filter,
-			none
-		) !important;
-	}
-
-	:global(html.has-frosted-glass-theme) .llampart-attachment-markdown-preview :global(*) {
-		text-shadow: var(--llampart-frosted-preview-inline-text-shadow, none) !important;
-	}
 </style>
