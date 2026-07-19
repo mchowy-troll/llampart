@@ -263,4 +263,24 @@
 			font-size: var(--llampart-composer-processing-stats-font-size-sm);
 		}
 	}
+
+	@media (max-width: 480px) {
+		.chat-processing-info-frame {
+			align-items: stretch;
+			flex-direction: column;
+			padding-block: 0.375rem;
+			gap: 0.25rem;
+		}
+
+		.chat-processing-info-item,
+		.chat-processing-info-item-speed {
+			grid-template-columns: auto auto minmax(0, 1fr);
+			white-space: normal;
+		}
+
+		.chat-processing-info-context-value,
+		.chat-processing-info-speed-value {
+			min-inline-size: 0;
+		}
+	}
 </style>

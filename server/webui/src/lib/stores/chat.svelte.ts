@@ -20,11 +20,7 @@ import { config } from '$lib/stores/settings.svelte';
 import { agenticStore } from '$lib/stores/agentic.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { contextSize, isRouterMode } from '$lib/stores/server.svelte';
-import {
-	selectedModelName,
-	modelsStore,
-	selectedModelContextSize
-} from '$lib/stores/models.svelte';
+import { selectedModelName, modelsStore } from '$lib/stores/models.svelte';
 import {
 	normalizeModelName,
 	filterByLeafNodeId,
@@ -683,7 +679,8 @@ class ChatStore {
 						cache_n: timings?.cache_n || 0,
 						prompt_progress: promptProgress
 					},
-					convId
+					convId,
+					this.getContextTotal(effectiveModel)
 				);
 			},
 			onAssistantTurnComplete: async (
@@ -1394,9 +1391,12 @@ class ChatStore {
 		}
 	}
 
-	private getContextTotal(): number | null {
+	private getContextTotal(modelName?: string | null): number | null {
 		if (isRouterMode()) {
-			const modelContextSize = selectedModelContextSize();
+			const effectiveModel = modelName || selectedModelName();
+			const modelContextSize = effectiveModel
+				? modelsStore.getModelContextSize(effectiveModel)
+				: null;
 
 			if (typeof modelContextSize === 'number' && modelContextSize > 0) {
 				return modelContextSize;
@@ -1421,9 +1421,10 @@ class ChatStore {
 			cache_n: number;
 			prompt_progress?: ChatMessagePromptProgress;
 		},
-		conversationId?: string
+		conversationId?: string,
+		contextTotal?: number | null
 	): void {
-		const processingState = this.parseTimingData(timingData);
+		const processingState = this.parseTimingData(timingData, contextTotal);
 
 		if (processingState === null) {
 			console.warn('Failed to parse timing data - skipping update');
@@ -1436,7 +1437,10 @@ class ChatStore {
 		}
 	}
 
-	private parseTimingData(timingData: Record<string, unknown>): ApiProcessingState | null {
+	private parseTimingData(
+		timingData: Record<string, unknown>,
+		contextTotal = this.getContextTotal()
+	): ApiProcessingState | null {
 		const promptTokens = (timingData.prompt_n as number) || 0,
 			promptMs = (timingData.prompt_ms as number) || undefined,
 			predictedTokens = (timingData.predicted_n as number) || 0,
@@ -1445,7 +1449,6 @@ class ChatStore {
 		const promptProgress = timingData.prompt_progress as
 			| { total: number; cache: number; processed: number; time_ms: number }
 			| undefined;
-		const contextTotal = this.getContextTotal();
 		const currentConfig = config();
 		const outputTokensMax = currentConfig.max_tokens || -1;
 		const contextUsed = promptTokens + cacheTokens + predictedTokens,
