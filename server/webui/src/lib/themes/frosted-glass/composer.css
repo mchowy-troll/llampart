@@ -405,34 +405,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	stroke: currentColor !important;
 }
 
-/* llampart-frosted-glass-submit-button-brighter */
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-composer-submit-button,
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-composer-plus-button {
-	border-color: rgba(255, 255, 255, 0.58) !important;
-	background: rgba(255, 255, 255, 0.72) !important;
-	color: #111111 !important;
-	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, 0.34),
-		0 1px 2px rgba(0, 0, 0, 0.035) !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-composer-submit-button:hover,
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-composer-submit-button:focus-visible,
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-composer-plus-button:hover,
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-composer-plus-button:focus-visible {
-	background: rgba(255, 255, 255, 0.84) !important;
-	border-color: rgba(255, 255, 255, 0.68) !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-composer-submit-button:disabled {
-	background: rgba(255, 255, 255, 0.54) !important;
-	border-color: rgba(255, 255, 255, 0.38) !important;
-	color: rgba(17, 17, 17, 0.62) !important;
-	opacity: 1 !important;
-}
-
 /* llampart-frosted-glass-submit-tooltip-wrapper-reset */
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-composer-submit-tooltip-trigger {
 	width: 2rem !important;
@@ -555,6 +527,86 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-composer-acti
 html[data-theme='frosted-glass'].has-frosted-glass-theme .file-upload-button:hover,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-model-selector-trigger:hover {
 	background: rgba(255, 255, 255, 0.66) !important;
+}
+
+/* Round composer actions keep equal surfaces through their independent parameters. */
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	button.llampart-composer-attachment-menu-button,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	button.llampart-composer-attachment-menu-button:is(
+		:hover,
+		:focus-visible,
+		:active,
+		[data-state='open']
+	) {
+	border: 0 !important;
+	border-color: transparent !important;
+	background: var(--llampart-composer-attachment-background) !important;
+	background-color: var(--llampart-composer-attachment-background) !important;
+	opacity: 1 !important;
+	transition: none !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	body
+	.llampart-chat-input-frame
+	button.llampart-composer-action-button.llampart-composer-attachment-menu-button
+	svg {
+	color: var(--llampart-composer-attachment-icon) !important;
+	stroke: currentColor !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	button.llampart-reasoning-trigger,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	button.llampart-reasoning-trigger:is(:hover, :focus-visible, :active, [data-state='open']) {
+	border: 0 !important;
+	border-color: transparent !important;
+	background: var(--llampart-composer-reasoning-background) !important;
+	background-color: var(--llampart-composer-reasoning-background) !important;
+	opacity: 1 !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	button.llampart-composer-send-button,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	button.llampart-composer-send-button:disabled {
+	border: 0 !important;
+	border-color: transparent !important;
+	background: var(--llampart-composer-send-background) !important;
+	background-color: var(--llampart-composer-send-background) !important;
+	color: var(--llampart-composer-send-icon) !important;
+	opacity: 1 !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	body
+	.llampart-chat-input-frame
+	button.llampart-composer-action-button.llampart-composer-send-button
+	svg,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	body
+	.llampart-chat-input-frame
+	button.llampart-composer-action-button.llampart-composer-send-button:disabled
+	svg {
+	color: var(--llampart-composer-send-icon) !important;
+	stroke: currentColor !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	.llampart-composer-send-button:hover:not(:disabled),
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	.llampart-composer-send-button:focus-visible:not(:disabled) {
+	background: var(--llampart-composer-send-background) !important;
+	background-color: var(--llampart-composer-send-background) !important;
 }
 
 /* Composer menu content, search, option and MCP list surfaces are owned globally in src/app.css. */

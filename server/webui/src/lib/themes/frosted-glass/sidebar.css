@@ -176,32 +176,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	background-color: rgb(255 255 255 / 0.24);
 }
 
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-delete-button {
-	border: 0 !important;
-	background: transparent !important;
-	box-shadow: none !important;
-	color: rgb(60 60 60 / 0.72);
-	-webkit-backdrop-filter: none !important;
-	backdrop-filter: none !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-delete-button:is(:hover, :focus-visible) {
-	border: 0 !important;
-	background: transparent !important;
-	box-shadow: none !important;
-	color: #2b2b2b;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-delete-button:disabled,
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-delete-button:disabled:is(:hover, :focus-visible) {
-	border: 0 !important;
-	background: transparent !important;
-	box-shadow: none !important;
-	color: rgb(60 60 60 / 0.44);
-}
-
 html[data-theme='frosted-glass'].has-frosted-glass-theme [data-sidebar='trigger'] {
 	border-color: transparent;
 	background: transparent;
@@ -470,50 +444,33 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-frame
 	backdrop-filter: none;
 }
 
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-delete-button,
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-delete-button:is(:hover, :focus-visible),
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-delete-button:disabled,
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-delete-button:disabled:is(:hover, :focus-visible) {
-	border: 0;
-	background: transparent;
-	box-shadow: none;
-	-webkit-backdrop-filter: none;
-	backdrop-filter: none;
-}
-
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-settings-button,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-delete-button {
-	color: #1a1a1a;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-delete-button {
-	border: 0;
-	background: transparent;
-	box-shadow: none;
-	-webkit-backdrop-filter: none;
-	backdrop-filter: none;
+	border: 0 !important;
+	background: transparent !important;
+	background-color: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	color: #1a1a1a !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-delete-button:hover:not(:disabled),
+	.llampart-sidebar-settings-button:is(:hover, :focus-visible),
 html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-delete-button:focus-visible:not(:disabled) {
-	background: var(--accent);
-	box-shadow: none;
-	color: var(--accent-foreground);
-	-webkit-backdrop-filter: none;
-	backdrop-filter: none;
+	.llampart-sidebar-delete-button:is(:hover, :focus-visible):not(:disabled) {
+	background: transparent !important;
+	background-color: transparent !important;
+	color: #2b2b2b !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-delete-button:disabled,
 html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-delete-button:disabled:hover,
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-delete-button:disabled:focus-visible {
-	background: transparent;
-	box-shadow: none;
-	color: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+	.llampart-sidebar-delete-button:disabled:is(:hover, :focus-visible) {
+	background: transparent !important;
+	background-color: transparent !important;
+	color: rgb(60 60 60 / 0.44) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-v-trigger {

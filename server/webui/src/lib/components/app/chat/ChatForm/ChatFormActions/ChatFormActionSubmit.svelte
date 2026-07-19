@@ -29,7 +29,7 @@
 		type="submit"
 		disabled={isDisabled}
 		class={cn(
-			'llampart-composer-action-button llampart-composer-submit-button h-8 w-8 rounded-full p-0',
+			'llampart-composer-action-button llampart-composer-submit-button llampart-composer-send-button h-8 w-8 rounded-full p-0',
 			showErrorState
 				? 'bg-red-400/10 text-red-400 hover:bg-red-400/20 hover:text-red-400 disabled:opacity-100'
 				: ''
