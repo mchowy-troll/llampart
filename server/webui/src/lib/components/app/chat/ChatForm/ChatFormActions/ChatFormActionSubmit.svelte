@@ -72,41 +72,6 @@
 	}
 
 	/* llampart-composer-neutral-action-button: inactive round composer actions shared by attachments and reasoning. */
-	:global(html:not(.dark):not(.has-frosted-glass-theme) .llampart-composer-neutral-action-button),
-	:global(
-		html:not(.dark):not(.has-frosted-glass-theme) .llampart-composer-neutral-action-button:hover
-	),
-	:global(
-		html:not(.dark):not(.has-frosted-glass-theme)
-			.llampart-composer-neutral-action-button:focus-visible
-	),
-	:global(
-		html:not(.dark):not(.has-frosted-glass-theme)
-			.llampart-composer-neutral-action-button[data-state='open']
-	) {
-		background: #888888 !important;
-		background-color: #888888 !important;
-		border-color: #888888 !important;
-		color: #ffffff !important;
-		opacity: 1 !important;
-	}
-
-	:global(html.dark:not(.has-frosted-glass-theme) .llampart-composer-neutral-action-button),
-	:global(html.dark:not(.has-frosted-glass-theme) .llampart-composer-neutral-action-button:hover),
-	:global(
-		html.dark:not(.has-frosted-glass-theme) .llampart-composer-neutral-action-button:focus-visible
-	),
-	:global(
-		html.dark:not(.has-frosted-glass-theme)
-			.llampart-composer-neutral-action-button[data-state='open']
-	) {
-		background: #828282 !important;
-		background-color: #828282 !important;
-		border-color: #828282 !important;
-		color: #ffffff !important;
-		opacity: 1 !important;
-	}
-
 	:global(html.has-frosted-glass-theme .llampart-composer-neutral-action-button),
 	:global(html.has-frosted-glass-theme .llampart-composer-neutral-action-button:hover),
 	:global(html.has-frosted-glass-theme .llampart-composer-neutral-action-button:focus-visible),
@@ -122,19 +87,6 @@
 	:global(html.has-frosted-glass-theme .llampart-composer-neutral-action-button svg) {
 		color: rgba(17, 17, 17, 0.62) !important;
 		stroke: currentColor !important;
-	}
-
-	/* llampart-standard-composer-plus-button-fill-colors */
-	:global(html:not(.dark):not(.has-frosted-glass-theme) .llampart-composer-plus-button) {
-		background: #888888 !important;
-		background-color: #888888 !important;
-		border-color: #888888 !important;
-	}
-
-	:global(html.dark:not(.has-frosted-glass-theme) .llampart-composer-plus-button) {
-		background: #828282 !important;
-		background-color: #828282 !important;
-		border-color: #828282 !important;
 	}
 
 	/* llampart-frosted-glass-submit-button-brighter */

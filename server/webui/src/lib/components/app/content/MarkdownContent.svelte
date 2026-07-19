@@ -36,8 +36,7 @@
 		BOOL_TRUE_STRING,
 		SETTINGS_KEYS
 	} from '$lib/constants';
-	import { ColorMode, UrlProtocol } from '$lib/enums';
-	import { mode } from 'mode-watcher';
+	import { UrlProtocol } from '$lib/enums';
 	import { ActionIconsCodeBlock, DialogCodePreview } from '$lib/components/app';
 	import { createAutoScrollController } from '$lib/hooks/use-auto-scroll.svelte';
 	import type { DatabaseMessageExtra } from '$lib/types/database';
@@ -154,11 +153,10 @@
 	}
 
 	/**
-	 * Loads the appropriate highlight.js theme based on dark/light mode.
+	 * Loads the highlight.js theme CSS.
 	 * Injects a scoped style element into the document head.
-	 * @param isDark - Whether to load the dark theme (true) or light theme (false)
 	 */
-	async function loadHighlightTheme(isDark: boolean) {
+	async function loadHighlightTheme() {
 		if (!browser) return;
 
 		const existingTheme = document.getElementById(themeStyleId);
@@ -166,7 +164,7 @@
 
 		const style = document.createElement('style');
 		style.id = themeStyleId;
-		style.textContent = await loadHighlightThemeCss(isDark);
+		style.textContent = await loadHighlightThemeCss();
 
 		document.head.appendChild(style);
 	}
@@ -719,10 +717,7 @@
 	}
 
 	$effect(() => {
-		const currentMode = mode.current;
-		const isDark = currentMode === ColorMode.DARK;
-
-		void loadHighlightTheme(isDark);
+		void loadHighlightTheme();
 	});
 
 	$effect(() => {
@@ -1347,10 +1342,6 @@
 		flex-direction: column;
 	}
 
-	:global(.dark) div :global(.code-block-wrapper) {
-		border-color: color-mix(in oklch, var(--border) 20%, transparent);
-	}
-
 	/* Scroll container for code blocks (both streaming and completed) */
 	div :global(.code-block-scroll-container),
 	.streaming-code-scroll-container {
@@ -1569,10 +1560,6 @@
 		border-radius: 0.75rem;
 		background: var(--code-background);
 		box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-	}
-
-	:global(.dark) div :global(.table-block) {
-		border-color: color-mix(in oklch, var(--border) 20%, transparent);
 	}
 
 	div :global(.table-actions) {
@@ -1896,13 +1883,6 @@
 		}
 	}
 
-	/* Dark mode adjustments */
-	@media (prefers-color-scheme: dark) {
-		div :global(blockquote:hover) {
-			background: var(--muted);
-		}
-	}
-
 	/* Image load error fallback */
 	div :global(.image-load-error) {
 		display: flex;
@@ -2040,10 +2020,6 @@
 		height: 1px;
 		background: color-mix(in oklch, var(--border) 48%, transparent);
 		pointer-events: none;
-	}
-
-	:global(.dark) div :global(.code-block-header)::after {
-		background: color-mix(in oklch, var(--border) 34%, transparent);
 	}
 
 	:global(html.has-frosted-glass-theme) div :global(.code-block-header)::after {

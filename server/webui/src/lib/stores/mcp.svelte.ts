@@ -23,7 +23,6 @@ import { browser } from '$app/environment';
 import { MCPService } from '$lib/services/mcp.service';
 import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { mcpResourceStore } from '$lib/stores/mcp-resources.svelte';
-import { mode } from 'mode-watcher';
 import {
 	getProxiedUrlString,
 	parseMcpServerSettings,
@@ -37,7 +36,6 @@ import {
 	MCPLogLevel,
 	HealthCheckStatus,
 	MCPRefType,
-	ColorMode,
 	UrlProtocol,
 	JsonSchemaType,
 	ToolCallType
@@ -434,7 +432,7 @@ class MCPStore {
 	 * 2. Universal icon (no theme specified); if exactly 2, assumes [0]=light, [1]=dark
 	 * 3. First valid icon as last resort
 	 */
-	#getMcpIconUrl(icons: MCPResourceIcon[] | undefined, isDark = false): string | null {
+	#getMcpIconUrl(icons: MCPResourceIcon[] | undefined): string | null {
 		if (!icons?.length) return null;
 
 		const validIcons = icons.filter((icon) => {
@@ -445,7 +443,7 @@ class MCPStore {
 
 		if (validIcons.length === 0) return null;
 
-		const preferredTheme = isDark ? ColorMode.DARK : ColorMode.LIGHT;
+		const preferredTheme = 'light' as const;
 
 		// 1. Prefer icon explicitly matching the current color scheme
 		const themedIcon = validIcons.find((icon) => icon.theme === preferredTheme);
@@ -456,7 +454,7 @@ class MCPStore {
 
 		if (universalIcons.length === EXPECTED_THEMED_ICON_PAIR_COUNT) {
 			// Heuristic: two theme-less icons → assume [0] = light, [1] = dark
-			return this.#proxyIconSrc(universalIcons[isDark ? 1 : 0].src);
+			return this.#proxyIconSrc(universalIcons[0].src);
 		}
 
 		if (universalIcons.length > 0) {
@@ -490,10 +488,9 @@ class MCPStore {
 			return null;
 		}
 
-		const isDark = mode.current === ColorMode.DARK;
 		const healthState = this.getHealthCheckState(serverId);
 		if (healthState.status === HealthCheckStatus.SUCCESS && healthState.serverInfo?.icons) {
-			const mcpIconUrl = this.#getMcpIconUrl(healthState.serverInfo.icons, isDark);
+			const mcpIconUrl = this.#getMcpIconUrl(healthState.serverInfo.icons);
 
 			if (mcpIconUrl) {
 				return mcpIconUrl;

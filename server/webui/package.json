@@ -67,7 +67,6 @@
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.25.1",
 		"highlight.js": "^11.11.1",
-		"mode-watcher": "^1.1.0",
 		"pdfjs-dist": "^5.4.54",
 		"rehype-highlight": "^7.0.2",
 		"rehype-stringify": "^10.0.1",

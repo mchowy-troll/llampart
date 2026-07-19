@@ -398,10 +398,6 @@
 		color: #3c3c3c;
 	}
 
-	:global(.dark) .llampart-assistant-message {
-		color: var(--llampart-assistant-message-foreground, #e8e8e8);
-	}
-
 	.llampart-assistant-model-info-action,
 	.llampart-assistant-model-info-action:is(:hover, :focus, :focus-visible, :active) {
 		border: 0 !important;
@@ -595,70 +591,6 @@
 			0 1px 2px rgba(0, 0, 0, 0.05) !important;
 		backdrop-filter: blur(10px) saturate(115%) !important;
 		-webkit-backdrop-filter: blur(10px) saturate(115%) !important;
-	}
-
-	/* llampart-assistant-message-footer-icon-only-light-dark */
-	:global(html:not(.has-frosted-glass-theme) .assistant-message-footer-right [data-slot='button']),
-	:global(html:not(.has-frosted-glass-theme) .assistant-message-footer-right button),
-	:global(html:not(.has-frosted-glass-theme) .assistant-message-footer-right a),
-	:global(html:not(.has-frosted-glass-theme) .assistant-message-footer-right [role='button']) {
-		background: transparent !important;
-		background-color: transparent !important;
-		background-image: none !important;
-		border: 0 !important;
-		border-color: transparent !important;
-		box-shadow: none !important;
-		outline: none !important;
-		filter: none !important;
-		text-shadow: none !important;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
-		transform: none !important;
-		transition-property: none !important;
-		transition-duration: 0s !important;
-		animation: none !important;
-	}
-
-	:global(
-		html:not(.has-frosted-glass-theme) .assistant-message-footer-right [data-slot='button']:hover
-	),
-	:global(
-		html:not(.has-frosted-glass-theme)
-			.assistant-message-footer-right
-			[data-slot='button']:focus-visible
-	),
-	:global(html:not(.has-frosted-glass-theme) .assistant-message-footer-right button:hover),
-	:global(html:not(.has-frosted-glass-theme) .assistant-message-footer-right button:focus-visible),
-	:global(html:not(.has-frosted-glass-theme) .assistant-message-footer-right a:hover),
-	:global(html:not(.has-frosted-glass-theme) .assistant-message-footer-right a:focus-visible),
-	:global(html:not(.has-frosted-glass-theme) .assistant-message-footer-right [role='button']:hover),
-	:global(
-		html:not(.has-frosted-glass-theme) .assistant-message-footer-right [role='button']:focus-visible
-	) {
-		background: transparent !important;
-		background-color: transparent !important;
-		background-image: none !important;
-		border-color: transparent !important;
-		box-shadow: none !important;
-		outline: none !important;
-		filter: none !important;
-		text-shadow: none !important;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
-		transform: none !important;
-		transition-property: none !important;
-		transition-duration: 0s !important;
-		animation: none !important;
-	}
-
-	:global(html:not(.has-frosted-glass-theme) .assistant-message-footer-right svg) {
-		filter: none !important;
-		text-shadow: none !important;
-		box-shadow: none !important;
-		transform: none !important;
-		transition-property: none !important;
-		transition-duration: 0s !important;
-		animation: none !important;
 	}
 
 	/* llampart-assistant-footer-lower-insets-regular-weight */

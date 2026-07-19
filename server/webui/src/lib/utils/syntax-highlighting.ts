@@ -3,7 +3,7 @@ import { AMPERSAND_REGEX, LT_REGEX, GT_REGEX } from '$lib/constants';
 type HighlightJsApi = typeof import('highlight.js').default;
 
 let highlightJsPromise: Promise<HighlightJsApi> | null = null;
-let highlightThemeCssPromise: Promise<{ dark: string; light: string }> | null = null;
+let highlightThemeCssPromise: Promise<string> | null = null;
 
 function loadHighlightJs(): Promise<HighlightJsApi> {
 	highlightJsPromise ??= import('highlight.js').then((module) => module.default);
@@ -11,14 +11,10 @@ function loadHighlightJs(): Promise<HighlightJsApi> {
 	return highlightJsPromise;
 }
 
-async function loadHighlightThemeCssFiles(): Promise<{ dark: string; light: string }> {
-	highlightThemeCssPromise ??= Promise.all([
-		import('highlight.js/styles/github-dark.css?inline'),
-		import('highlight.js/styles/github.css?inline')
-	]).then(([dark, light]) => ({
-		dark: dark.default,
-		light: light.default
-	}));
+async function loadHighlightThemeCssFile(): Promise<string> {
+	highlightThemeCssPromise ??= import('highlight.js/styles/github.css?inline').then(
+		(module) => module.default
+	);
 
 	return highlightThemeCssPromise;
 }
@@ -45,8 +41,6 @@ export async function highlightCodeAsync(code: string, language: string): Promis
 	}
 }
 
-export async function loadHighlightThemeCss(isDark: boolean): Promise<string> {
-	const { dark, light } = await loadHighlightThemeCssFiles();
-
-	return isDark ? dark : light;
+export async function loadHighlightThemeCss(): Promise<string> {
+	return loadHighlightThemeCssFile();
 }

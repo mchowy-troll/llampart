@@ -385,7 +385,7 @@
 				</p>
 
 				<Button
-					class="w-full justify-start justify-self-start bg-red-600 text-white shadow-none hover:bg-red-600 hover:text-white focus-visible:bg-red-600 focus-visible:ring-0 active:bg-red-600 disabled:bg-red-600 disabled:text-white disabled:opacity-100 disabled:hover:bg-red-600 md:w-auto dark:bg-red-600 dark:text-white dark:hover:bg-red-600"
+					class="w-full justify-start justify-self-start bg-red-600 text-white shadow-none hover:bg-red-600 hover:text-white focus-visible:bg-red-600 focus-visible:ring-0 active:bg-red-600 disabled:bg-red-600 disabled:text-white disabled:opacity-100 disabled:hover:bg-red-600 md:w-auto"
 					onclick={handleDeleteAllClick}
 					variant="destructive"
 				>

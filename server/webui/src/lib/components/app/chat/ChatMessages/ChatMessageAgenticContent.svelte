@@ -247,9 +247,7 @@
 						{t('messages.agenticReceivingArguments')}
 					</div>
 				{:else}
-					<div
-						class="rounded bg-yellow-500/10 p-2 text-xs text-yellow-600 italic dark:text-yellow-400"
-					>
+					<div class="rounded bg-yellow-500/10 p-2 text-xs text-yellow-600 italic">
 						{t('messages.agenticResponseTruncated')}
 					</div>
 				{/if}
@@ -378,7 +376,7 @@
 	{#if !minimalAgenticIndicators && highlightTurns && turnGroups.length > 1}
 		{#each turnGroups as turn, turnIndex (turnIndex)}
 			{@const turnStats = message?.timings?.agentic?.perTurn?.[turnIndex]}
-			<div class="agentic-turn my-2 hover:bg-muted/80 dark:hover:bg-muted/30">
+			<div class="agentic-turn my-2 hover:bg-muted/80">
 				<span class="agentic-turn-label">{t('messages.agenticTurn')} {turnIndex + 1}</span>
 				{#each turn.sections as section, sIdx (turn.flatIndices[sIdx])}
 					{@render renderSection(section, turn.flatIndices[sIdx])}
@@ -438,10 +436,6 @@
 		color: #3c3c3c;
 	}
 
-	:global(.dark) .llampart-assistant-message {
-		color: #e8e8e8;
-	}
-
 	.agentic-content {
 		position: relative;
 		display: flex;
@@ -475,10 +469,6 @@
 
 	.llampart-agentic-inline-status {
 		max-width: 100%;
-	}
-
-	:global(.dark) .agentic-content {
-		border-color: #2d2d2d;
 	}
 
 	.agentic-text {
@@ -539,10 +529,6 @@
 		border-radius: 0.75rem;
 		padding: 1rem;
 		transition: background 0.1s;
-	}
-
-	:global(.dark) .agentic-turn {
-		border-color: #2d2d2d;
 	}
 
 	.agentic-turn-label {
@@ -826,49 +812,13 @@
 	}
 
 	/* llampart-1-0-2-assistant-message-rhythm */
-	:global(html:not(.has-frosted-glass-theme) .agentic-content.llampart-assistant-message),
 	:global(html.has-frosted-glass-theme .agentic-content.llampart-assistant-message) {
 		padding: 1.5rem 1.5rem 3.5rem !important;
 	}
 
-	:global(html:not(.has-frosted-glass-theme) .agentic-footer-slot) {
-		position: absolute;
-		right: 1.5rem;
-		bottom: 0.375rem;
-		left: 1.5rem;
-		margin: 0 !important;
-		padding: 0 !important;
-	}
-
-	:global(html:not(.has-frosted-glass-theme) .agentic-footer-slot .assistant-message-footer) {
-		align-items: center !important;
-		margin: 0 !important;
-		padding: 0 !important;
-	}
-
-	:global(html:not(.has-frosted-glass-theme) .agentic-footer-slot .assistant-message-footer-left),
-	:global(html:not(.has-frosted-glass-theme) .agentic-footer-slot .assistant-message-footer-right),
-	:global(html:not(.has-frosted-glass-theme) .agentic-footer-slot .assistant-message-footer-meta) {
-		display: inline-flex !important;
-		align-items: center !important;
-		min-height: 2rem !important;
-		line-height: 1 !important;
-	}
-	:global(
-		html:not(.has-frosted-glass-theme) .agentic-content.llampart-assistant-message .agentic-text
-	),
 	:global(html.has-frosted-glass-theme .agentic-content.llampart-assistant-message .agentic-text) {
 		padding-inline: 0.125rem;
 	}
 
 	/* /llampart-1-0-2-assistant-message-rhythm */
-
-	/* llampart-agentic-dark-card-surface-owner
-	   Dark-only LLM answer fill. Light theme uses the original component styles. */
-	:global(html.dark:not(.has-frosted-glass-theme)) .agentic-content.llampart-assistant-message {
-		background: #191919 !important;
-		background-color: #191919 !important;
-		background-image: none !important;
-	}
-	/* /llampart-agentic-dark-card-surface-owner */
 </style>

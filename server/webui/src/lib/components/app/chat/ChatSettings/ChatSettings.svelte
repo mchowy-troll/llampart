@@ -38,7 +38,6 @@
 		isApiProviderId,
 		type ApiProviderId
 	} from '$lib/constants/api-providers';
-	import { setMode } from 'mode-watcher';
 	import { ColorMode } from '$lib/enums/ui';
 	import { SettingsFieldType } from '$lib/enums/settings';
 	import type { Component } from 'svelte';
@@ -61,21 +60,9 @@
 	];
 	function getThemeLabel(theme: ColorMode): string {
 		switch (theme) {
-			case ColorMode.SYSTEM:
-				return t('settings.themeSystem');
-			case ColorMode.LIGHT:
-				return t('settings.themeLight');
-			case ColorMode.DARK:
-				return t('settings.themeDark');
 			case ColorMode.FROSTED_GLASS:
 				return t('settings.themeFrostedGlass');
 		}
-	}
-
-	type ModeWatcherColorMode = 'system' | 'light' | 'dark';
-
-	function getModeWatcherColorMode(theme: string): ModeWatcherColorMode {
-		return theme === ColorMode.FROSTED_GLASS ? ColorMode.LIGHT : (theme as ModeWatcherColorMode);
 	}
 
 	const THEME_OPTIONS = SETTINGS_COLOR_MODES_CONFIG.map((option) => ({
@@ -853,8 +840,6 @@
 
 	function handleReset() {
 		localConfig = { ...config() };
-
-		setMode(getModeWatcherColorMode(String(config().theme)));
 	}
 
 	function showSettingsWarning(
@@ -918,7 +903,6 @@
 		}
 
 		settingsStore.updateMultipleConfig(processedConfig);
-		setMode(getModeWatcherColorMode(String(processedConfig.theme)));
 		onSave?.();
 	}
 

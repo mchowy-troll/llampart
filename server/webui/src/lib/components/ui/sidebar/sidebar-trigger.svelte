@@ -65,18 +65,6 @@
 		-webkit-backdrop-filter: none !important;
 	}
 
-	:global(html.dark:not(.has-frosted-glass-theme) .llampart-sidebar-v-trigger) {
-		color: #f5f5f5 !important;
-	}
-
-	:global(html.dark:not(.has-frosted-glass-theme) .llampart-sidebar-v-trigger-closed),
-	:global(html.dark:not(.has-frosted-glass-theme) .llampart-sidebar-v-trigger-closed:hover),
-	:global(
-		html.dark:not(.has-frosted-glass-theme) .llampart-sidebar-v-trigger-closed:focus-visible
-	) {
-		background: #1f1f1f !important;
-	}
-
 	:global(html.has-frosted-glass-theme .llampart-sidebar-v-trigger) {
 		color: #111111 !important;
 	}

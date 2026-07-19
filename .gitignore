@@ -1,2 +1,5 @@
 # Generated frontend bundle copied by server/webui/scripts/post-build.sh
 /server/public/
+
+# Wallpapers — kept on disk but not tracked in git history
+/server/webui/static/wallpapers/

@@ -136,7 +136,7 @@
 		</div>
 	{:else if message.content.trim()}
 		<Card
-			class="llampart-message-shell-card llampart-system-message-card w-full max-w-[80%] overflow-y-auto rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5 dark:bg-primary/15"
+			class="llampart-message-shell-card llampart-system-message-card w-full max-w-[80%] overflow-y-auto rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5"
 			data-multiline={isMultiline ? '' : undefined}
 			style="max-height: var(--max-message-height); overflow-wrap: anywhere; word-break: break-word;"
 		>
@@ -544,12 +544,6 @@
 		pointer-events: none;
 	}
 
-	:global(.dark) .llampart-system-message-label {
-		background-color: color-mix(in oklch, var(--background) 84%, white 8%);
-		border-color: color-mix(in oklch, var(--border) 80%, transparent);
-		color: color-mix(in oklch, var(--muted-foreground) 90%, white 10%);
-	}
-
 	:global(html.has-frosted-glass-theme) .llampart-system-message-label {
 		padding: 0.125rem 0.5rem !important;
 		border: 1px solid rgba(255, 255, 255, 0.26) !important;
@@ -770,49 +764,31 @@
 			0 0 14px rgba(255, 255, 255, 0.28) !important;
 	}
 
-	/* llampart-1-0-2-system-card-standard-theme-rhythm */
-	:global(html:not(.has-frosted-glass-theme) .llampart-system-message-card) {
-		border-radius: 0.75rem !important;
-	}
-
-	:global(html.dark:not(.has-frosted-glass-theme) .llampart-system-message-card) {
-		background: #262626 !important;
-	}
-	/* /llampart-1-0-2-system-card-standard-theme-rhythm */
-
 	/* llampart-1-0-2-system-message-padding-match-assistant */
-	:global(html:not(.has-frosted-glass-theme) .llampart-system-message-card),
 	:global(html.has-frosted-glass-theme .llampart-system-message-card) {
 		padding: 0.625rem 1.5rem 0.5rem !important;
 	}
 
-	:global(html:not(.has-frosted-glass-theme) .llampart-system-message-card[data-multiline]),
 	:global(html.has-frosted-glass-theme .llampart-system-message-card[data-multiline]) {
 		padding-top: 2rem !important;
 		padding-right: 1.5rem !important;
 		padding-left: 1.5rem !important;
 	}
 
-	:global(html:not(.has-frosted-glass-theme) .llampart-system-message-label),
 	:global(html.has-frosted-glass-theme .llampart-system-message-label) {
 		top: 1rem !important;
 		left: 1.5rem !important;
 	}
 
-	:global(html:not(.has-frosted-glass-theme) .llampart-system-message-content),
 	:global(html.has-frosted-glass-theme .llampart-system-message-content) {
 		padding-top: 2.5rem !important;
 		padding-inline: 0.125rem;
 	}
 
-	:global(
-		html:not(.has-frosted-glass-theme) .llampart-system-message-card .markdown-system-content
-	),
 	:global(html.has-frosted-glass-theme .llampart-system-message-card .markdown-system-content) {
 		margin-top: 0 !important;
 	}
 
-	:global(html:not(.has-frosted-glass-theme) .llampart-system-message-footer),
 	:global(html.has-frosted-glass-theme .llampart-system-message-footer) {
 		margin-top: 0.5rem !important;
 		margin-right: -0.25rem !important;
