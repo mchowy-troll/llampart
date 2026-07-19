@@ -12,7 +12,6 @@ import type {
 	Transport
 } from '@modelcontextprotocol/sdk';
 import type { MimeTypeUnion } from './common';
-import type { ColorMode } from '$lib/enums';
 
 export type { Tool, CallToolResult, Prompt, GetPromptResult, PromptMessage };
 export type ClientCapabilities = SDKClientCapabilities;
@@ -285,7 +284,7 @@ export interface MCPResourceIcon {
 	src: string;
 	mimeType?: MimeTypeUnion;
 	sizes?: string[];
-	theme?: ColorMode.LIGHT | ColorMode.DARK;
+	theme?: 'light' | 'dark';
 }
 
 /**

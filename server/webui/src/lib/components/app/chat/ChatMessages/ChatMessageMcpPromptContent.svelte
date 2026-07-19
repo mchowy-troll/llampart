@@ -121,7 +121,7 @@
 						<Tooltip.Trigger>
 							<!-- svelte-ignore a11y_no_static_element_interactions -->
 							<span
-								class="rounded-sm bg-purple-200/60 px-1.5 py-0.5 text-[10px] leading-none text-purple-700 transition-opacity dark:bg-purple-800/40 dark:text-purple-300 {hoveredArgKey &&
+								class="rounded-sm bg-purple-200/60 px-1.5 py-0.5 text-[10px] leading-none text-purple-700 transition-opacity {hoveredArgKey &&
 								hoveredArgKey !== key
 									? 'opacity-30'
 									: ''}"
@@ -154,7 +154,7 @@
 		</Card>
 	{:else if isLoading}
 		<Card
-			class="relative overflow-hidden rounded-[1.125rem] border border-purple-200 bg-purple-500/10 px-1 py-2 backdrop-blur-md dark:border-purple-800 dark:bg-purple-500/20"
+			class="relative overflow-hidden rounded-[1.125rem] border border-purple-200 bg-purple-500/10 px-1 py-2 backdrop-blur-md"
 		>
 			<div
 				class="overflow-y-auto {paddingClass}"
@@ -171,7 +171,7 @@
 		</Card>
 	{:else if hasContent}
 		<Card
-			class="relative overflow-hidden rounded-[1.125rem] border border-purple-200 bg-purple-500/10 py-0 text-foreground backdrop-blur-md dark:border-purple-800 dark:bg-purple-500/20"
+			class="relative overflow-hidden rounded-[1.125rem] border border-purple-200 bg-purple-500/10 py-0 text-foreground backdrop-blur-md"
 		>
 			<div
 				class="overflow-y-auto {paddingClass}"
@@ -181,7 +181,7 @@
 					<!-- This formatting is needed to keep the text in proper shape -->
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					{#each contentParts as part, i (i)}{#if part.argKey}<span
-								class="rounded-sm bg-purple-300/50 px-0.5 text-purple-900 transition-opacity dark:bg-purple-700/50 dark:text-purple-100 {hoveredArgKey &&
+								class="rounded-sm bg-purple-300/50 px-0.5 text-purple-900 transition-opacity {hoveredArgKey &&
 								hoveredArgKey !== part.argKey
 									? 'opacity-30'
 									: ''}"

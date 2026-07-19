@@ -390,7 +390,7 @@
 					data-llampart-sidebar-search-input="llampart-sidebar-search-input-action-row"
 				>
 					<Search
-						class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#333333] dark:text-foreground/80"
+						class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#333333]"
 					/>
 
 					<Input
@@ -398,12 +398,12 @@
 						bind:value={searchQuery}
 						onkeydown={(e) => e.key === 'Escape' && handleSearchModeDeactivate()}
 						placeholder={t('sidebar.searchConversationsPlaceholder')}
-						class="llampart-sidebar-action-search-input h-10 rounded-lg border-border bg-background pr-9 pl-9 text-sm font-medium text-[#333333] shadow-none placeholder:text-[#333333] hover:bg-background focus-visible:border-input focus-visible:ring-0 focus-visible:ring-transparent dark:text-foreground/80 dark:placeholder:text-foreground/80"
+						class="llampart-sidebar-action-search-input h-10 rounded-lg border-border bg-background pr-9 pl-9 text-sm font-medium text-[#333333] shadow-none placeholder:text-[#333333] hover:bg-background focus-visible:border-input focus-visible:ring-0 focus-visible:ring-transparent"
 					/>
 
 					<button
 						aria-label={t('common.close')}
-						class="absolute top-1/2 right-3 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[#333333] transition-colors hover:text-[#333333] focus-visible:outline-none dark:text-foreground/80 dark:hover:text-foreground/80"
+						class="absolute top-1/2 right-3 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[#333333] transition-colors hover:text-[#333333] focus-visible:outline-none"
 						onclick={handleSearchModeDeactivate}
 						type="button"
 					>
@@ -417,7 +417,7 @@
 			>
 				<Button
 					aria-label={t('sidebar.newChat')}
-					class="llampart-sidebar-primary-action llampart-sidebar-new-chat-action -ml-1 h-10 justify-start gap-2 rounded-lg pr-3 pl-0 text-sm font-medium text-[#333333] shadow-none backdrop-blur-none! transition-colors hover:bg-transparent hover:text-[#333333] focus-visible:bg-transparent focus-visible:text-[#333333] active:bg-transparent dark:text-foreground/80 dark:hover:bg-transparent dark:hover:text-foreground/80 dark:focus-visible:bg-transparent dark:focus-visible:text-foreground/80 dark:active:bg-transparent"
+					class="llampart-sidebar-primary-action llampart-sidebar-new-chat-action -ml-1 h-10 justify-start gap-2 rounded-lg pr-3 pl-0 text-sm font-medium text-[#333333] shadow-none backdrop-blur-none! transition-colors hover:bg-transparent hover:text-[#333333] focus-visible:bg-transparent focus-visible:text-[#333333] active:bg-transparent"
 					href="?new_chat=true#/"
 					variant="ghost"
 				>
@@ -428,7 +428,7 @@
 
 				<Button
 					aria-label={t('sidebar.search')}
-					class="llampart-sidebar-primary-action llampart-sidebar-search-action h-10 justify-end gap-2 rounded-lg px-3 text-sm font-medium text-[#333333] shadow-none backdrop-blur-none! transition-colors hover:bg-transparent hover:text-[#333333] focus-visible:bg-transparent focus-visible:text-[#333333] active:bg-transparent dark:text-foreground/80 dark:hover:bg-transparent dark:hover:text-foreground/80 dark:focus-visible:bg-transparent dark:focus-visible:text-foreground/80 dark:active:bg-transparent"
+					class="llampart-sidebar-primary-action llampart-sidebar-search-action h-10 justify-end gap-2 rounded-lg px-3 text-sm font-medium text-[#333333] shadow-none backdrop-blur-none! transition-colors hover:bg-transparent hover:text-[#333333] focus-visible:bg-transparent focus-visible:text-[#333333] active:bg-transparent"
 					onclick={() => {
 						isSearchModeActive = true;
 					}}
@@ -660,13 +660,6 @@
 		margin: 0 0 1rem 0 !important;
 	}
 
-	:global(html.dark .llampart-sidebar-header-separator) {
-		background: var(
-			--llampart-sidebar-header-separator-background,
-			rgba(255, 255, 255, 0.12)
-		) !important;
-	}
-
 	:global(html.has-frosted-glass-theme .llampart-sidebar-header-separator) {
 		background: rgba(0, 0, 0, 0.1) !important;
 	}
@@ -681,12 +674,6 @@
 			0 1px 2px rgba(0, 0, 0, 0.05) !important;
 		backdrop-filter: blur(24px) saturate(135%) !important;
 		-webkit-backdrop-filter: blur(24px) saturate(135%) !important;
-	}
-
-	:global(html.dark.has-frosted-glass-theme .llampart-sidebar-action-search-input) {
-		background: rgba(18, 18, 18, 0.26) !important;
-		background-color: rgba(18, 18, 18, 0.26) !important;
-		border-color: rgba(255, 255, 255, 0.2) !important;
 	}
 
 	/* llampart-sidebar-container-query-columns */
@@ -777,19 +764,8 @@
 		box-shadow: none;
 	}
 
-	:global(.dark .llampart-sidebar-conversations-frame) {
-		border-width: 1px;
-		border-style: solid;
-		border-color: var(--llampart-sidebar-conversations-frame-border, #2d2d2d);
-		box-shadow: var(--llampart-sidebar-conversations-frame-shadow, none);
-	}
-
 	:global(.llampart-sidebar-frame-header button) {
 		color: #1a1a1a;
-	}
-
-	:global(.dark .llampart-sidebar-frame-header button) {
-		color: var(--foreground);
 	}
 
 	:global(.llampart-sidebar-delete-button) {
@@ -800,22 +776,11 @@
 		transition: color 150ms ease-out;
 	}
 
-	:global(.dark .llampart-sidebar-delete-button) {
-		background-color: transparent;
-		color: color-mix(in oklch, var(--foreground) 80%, transparent);
-	}
-
 	:global(.llampart-sidebar-delete-button:hover),
 	:global(.llampart-sidebar-delete-button:focus-visible) {
 		background-color: transparent;
 		box-shadow: none;
 		color: #2b2b2b;
-	}
-
-	:global(.dark .llampart-sidebar-delete-button:hover),
-	:global(.dark .llampart-sidebar-delete-button:focus-visible) {
-		background-color: transparent;
-		color: color-mix(in oklch, var(--foreground) 90%, transparent);
 	}
 
 	:global(.llampart-sidebar-delete-button:active) {
@@ -829,13 +794,6 @@
 		background-color: transparent;
 		box-shadow: none;
 		color: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
-	}
-
-	:global(.dark .llampart-sidebar-delete-button:disabled),
-	:global(.dark .llampart-sidebar-delete-button:disabled:hover),
-	:global(.dark .llampart-sidebar-delete-button:disabled:focus-visible) {
-		background-color: transparent;
-		color: color-mix(in oklch, var(--foreground) 35%, transparent);
 	}
 
 	:global(.llampart-sidebar-delete-icon) {
@@ -868,21 +826,6 @@
 		backdrop-filter: none;
 	}
 
-	:global(.dark .llampart-sidebar-select-checkbox:checked),
-	:global(.dark .llampart-sidebar-select-checkbox:checked:hover),
-	:global(.dark .llampart-sidebar-select-checkbox:checked:focus-visible) {
-		border-color: var(--llampart-sidebar-select-checkbox-checked-border, #e8e8e8);
-		background-color: var(--llampart-sidebar-select-checkbox-checked-background, #e8e8e8);
-		background-image: var(
-			--llampart-sidebar-select-checkbox-checked-image,
-			url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' stroke='%23161616' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
-		);
-	}
-
-	:global(.dark .llampart-sidebar-select-checkbox:checked)::after {
-		border-color: var(--llampart-sidebar-select-checkbox-check-border, #2b2b2b);
-	}
-
 	/* llampart sidebar polish: icon action hover parity */
 	:global(.llampart-sidebar-delete-button) {
 		border: 0;
@@ -892,10 +835,6 @@
 		transition:
 			background-color 150ms ease-out,
 			color 150ms ease-out;
-	}
-
-	:global(.dark .llampart-sidebar-delete-button) {
-		color: var(--foreground);
 	}
 
 	:global(html.has-frosted-glass-theme .llampart-sidebar-delete-button) {
@@ -938,20 +877,4 @@
 		box-shadow: none;
 		color: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
 	}
-
-	/* llampart-sidebar-frame-solid-light-dark-surface */
-	:global(html:not(.dark):not(.has-frosted-glass-theme)) .llampart-sidebar-conversations-frame {
-		background: var(--llampart-sidebar-conversations-frame-background, #fcfcfc) !important;
-		background-color: var(--llampart-sidebar-conversations-frame-background, #fcfcfc) !important;
-		background-image: none !important;
-		border-width: var(--llampart-sidebar-conversations-frame-border-width, 0.5px) !important;
-		box-shadow: var(--llampart-sidebar-conversations-frame-shadow, none) !important;
-	}
-
-	:global(html.dark:not(.has-frosted-glass-theme)) .llampart-sidebar-conversations-frame {
-		background: var(--llampart-sidebar-conversations-frame-background, #141414) !important;
-		background-color: var(--llampart-sidebar-conversations-frame-background, #141414) !important;
-		background-image: none !important;
-	}
-	/* /llampart-sidebar-frame-solid-light-dark-surface */
 </style>

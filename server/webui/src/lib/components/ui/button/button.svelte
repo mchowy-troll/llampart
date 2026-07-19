@@ -4,16 +4,14 @@
 	import { type VariantProps, tv } from 'tailwind-variants';
 
 	export const buttonVariants = tv({
-		base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium outline-none transition-all focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+		base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium outline-none transition-all focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
 		variants: {
 			variant: {
 				default: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
 				destructive:
-					'bg-[#e7000b] text-white shadow-xs hover:bg-[#d6000a] focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40',
-				outline:
-					'bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 border',
-				secondary:
-					'dark:bg-secondary dark:text-secondary-foreground bg-background shadow-sm text-foreground hover:bg-muted-foreground/20',
+					'bg-[#e7000b] text-white shadow-xs hover:bg-[#d6000a] focus-visible:ring-destructive/20',
+				outline: 'bg-background shadow-xs hover:bg-accent hover:text-accent-foreground border',
+				secondary: 'bg-background shadow-sm text-foreground hover:bg-muted-foreground/20',
 				ghost: 'hover:text-accent-foreground hover:bg-muted-foreground/10 backdrop-blur-sm',
 				'bare-icon':
 					'llampart-button-bare-icon border-0 bg-transparent shadow-none outline-none ring-0 transition-none animate-none hover:bg-transparent hover:shadow-none focus:bg-transparent focus:outline-none focus:ring-0 focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 active:bg-transparent active:shadow-none',

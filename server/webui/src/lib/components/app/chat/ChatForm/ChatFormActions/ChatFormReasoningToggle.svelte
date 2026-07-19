@@ -189,14 +189,6 @@
 
 <style>
 	/* llampart-reasoning-off-icon-red */
-	:global(html:not(.has-frosted-glass-theme) .llampart-reasoning-trigger-icon-disabled),
-	:global(html:not(.has-frosted-glass-theme) .llampart-reasoning-trigger-icon-disabled *) {
-		color: #ff4d55 !important;
-		stroke: #ff4d55 !important;
-		stroke-width: 2.35 !important;
-		opacity: 1 !important;
-	}
-
 	:global(html.has-frosted-glass-theme .llampart-reasoning-trigger-icon-disabled),
 	:global(html.has-frosted-glass-theme .llampart-reasoning-trigger-icon-disabled *) {
 		color: #e7000b !important;

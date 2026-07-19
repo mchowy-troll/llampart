@@ -40,6 +40,7 @@ import {
 } from '$lib/constants';
 import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers';
 import type { ApiProviderId } from '$lib/constants/api-providers';
+import { ColorMode } from '$lib/enums/ui';
 import { ParameterSyncService } from '$lib/services/parameter-sync.service';
 import { serverStore } from '$lib/stores/server.svelte';
 import {
@@ -196,12 +197,16 @@ class SettingsStore {
 	}
 
 	/**
-	 * Load theme from localStorage
+	 * Load theme from localStorage, normalizing legacy values to frosted-glass
 	 */
 	private loadTheme() {
 		if (!browser) return;
 
-		this.theme = localStorage.getItem('theme') || 'auto';
+		const stored = localStorage.getItem('theme');
+		if (stored && stored !== ColorMode.FROSTED_GLASS) {
+			localStorage.setItem('theme', ColorMode.FROSTED_GLASS);
+		}
+		this.theme = ColorMode.FROSTED_GLASS;
 	}
 	/**
 	 *
@@ -298,11 +303,10 @@ class SettingsStore {
 	}
 
 	/**
-	 * Update the theme setting
-	 * @param newTheme - The new theme value
+	 * Update the theme setting (currently locked to frosted-glass)
 	 */
-	updateTheme(newTheme: string) {
-		this.theme = newTheme;
+	updateTheme() {
+		this.theme = ColorMode.FROSTED_GLASS;
 		this.saveTheme();
 	}
 
@@ -313,11 +317,7 @@ class SettingsStore {
 		if (!browser) return;
 
 		try {
-			if (this.theme === 'auto') {
-				localStorage.removeItem('theme');
-			} else {
-				localStorage.setItem('theme', this.theme);
-			}
+			localStorage.setItem('theme', ColorMode.FROSTED_GLASS);
 		} catch (error) {
 			console.error('Failed to save theme to localStorage:', error);
 		}
@@ -340,10 +340,10 @@ class SettingsStore {
 	}
 
 	/**
-	 * Reset theme to auto
+	 * Reset theme to frosted-glass
 	 */
 	resetTheme() {
-		this.theme = 'auto';
+		this.theme = ColorMode.FROSTED_GLASS;
 		this.saveTheme();
 	}
 

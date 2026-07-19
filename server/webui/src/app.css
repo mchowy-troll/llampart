@@ -6,8 +6,6 @@
 
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
-
 /* llampart-desktop-fluid-ui-scale
    Punkt odniesienia: 5K z systemowym skalowaniem 200% daje 2560 CSS px.
    1920 CSS px pozostaje bazą 1080p bez zmiany rozmiaru.
@@ -268,11 +266,6 @@ html[data-llampart-ui-scale='110'] {
 	pointer-events: none;
 }
 
-.dark
-	.llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper):not(.is-selected)::after {
-	border-color: #2d2d2d;
-}
-
 .llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper):not(.is-selected):is(
 		:hover,
 		:focus-visible
@@ -458,60 +451,6 @@ html.has-frosted-glass-theme #llampart-frosted-glass-preload-background {
 	display: block;
 }
 
-/* llampart-light-dark-composer-and-toast-surface-owner
-   Theme tokens live in lib/styles/themes.css; app.css owns the shared light/dark surface selectors while surfaces.css is still planned. */
-html:not(.has-frosted-glass-theme) .llampart-chat-input-frame {
-	border-color: var(--llampart-composer-surface-border) !important;
-	border-radius: var(--llampart-composer-surface-radius) !important;
-	background: var(--llampart-composer-surface-background) !important;
-	background-color: var(--llampart-composer-surface-background) !important;
-	box-shadow: var(--llampart-composer-surface-shadow, none) !important;
-	background-image: none !important;
-	-webkit-backdrop-filter: var(--llampart-composer-surface-filter) !important;
-	backdrop-filter: var(--llampart-composer-surface-filter) !important;
-}
-
-html:not(.has-frosted-glass-theme) body [data-sonner-toaster] [data-sonner-toast],
-html:not(.has-frosted-glass-theme)
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast][data-type='success'],
-html:not(.has-frosted-glass-theme)
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast][data-type='error'],
-html:not(.has-frosted-glass-theme)
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast][data-type='warning'],
-html:not(.has-frosted-glass-theme) body [data-sonner-toaster] [data-sonner-toast][data-type='info'],
-html:not(.has-frosted-glass-theme)
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast][data-type='loading'] {
-	border: 1px solid var(--llampart-toast-surface-border) !important;
-	border-radius: 1rem !important;
-	background: var(--llampart-toast-surface-background) !important;
-	background-color: var(--llampart-toast-surface-background) !important;
-	background-image: none !important;
-	color: var(--llampart-toast-surface-foreground) !important;
-	box-shadow: var(--llampart-toast-surface-shadow) !important;
-}
-
-html:not(.has-frosted-glass-theme) body [data-sonner-toaster] [data-sonner-toast] [data-title],
-html:not(.has-frosted-glass-theme) body [data-sonner-toaster] [data-sonner-toast] [data-content] {
-	color: var(--llampart-toast-surface-foreground) !important;
-}
-
-html:not(.has-frosted-glass-theme)
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast]
-	[data-description] {
-	color: var(--llampart-toast-surface-description) !important;
-}
-/* /llampart-light-dark-composer-and-toast-surface-owner */
-
 /* llampart-toast-shadow-reset-owner */
 html body [data-sonner-toaster] [data-sonner-toast],
 html body [data-sonner-toaster] [data-sonner-toast][data-type='success'],
@@ -545,83 +484,6 @@ html body [data-sonner-toaster] [data-sonner-toast]:has([data-button]) [data-but
 	justify-self: center !important;
 	margin: 0 !important;
 }
-
-/* llampart-light-theme-shadow-primitives
-   Theme values live in themes.css. This layer applies light-only surface shadows and keeps shadow bleed visible. */
-html:not(.dark):not(.has-frosted-glass-theme) body .llampart-chat-messages-flow,
-html:not(.dark):not(.has-frosted-glass-theme) body .llampart-chat-message-width {
-	overflow: visible;
-}
-
-html:not(.dark):not(.has-frosted-glass-theme)
-	body
-	:is(
-		.agentic-content.llampart-assistant-message,
-		.llampart-message-shell-card.llampart-user-message-card,
-		.llampart-message-shell-card.llampart-system-message-card
-	) {
-	box-shadow: var(--llampart-message-surface-shadow, none) !important;
-}
-
-html:not(.dark):not(.has-frosted-glass-theme) body .agentic-content.llampart-assistant-message {
-	border-width: var(--llampart-light-assistant-message-border-width, 1px) !important;
-}
-
-@media (min-width: 768px) {
-	html:not(.dark):not(.has-frosted-glass-theme) [data-slot='sidebar-wrapper'],
-	html:not(.dark):not(.has-frosted-glass-theme) [data-slot='sidebar-gap'],
-	html:not(.dark):not(.has-frosted-glass-theme)
-		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell,
-	html:not(.dark):not(.has-frosted-glass-theme) .llampart-sidebar-conversations-frame {
-		overflow: visible;
-	}
-}
-html:not(.dark):not(.has-frosted-glass-theme) body .llampart-chat-input-frame {
-	-webkit-backdrop-filter: var(--llampart-composer-surface-filter) !important;
-	backdrop-filter: var(--llampart-composer-surface-filter) !important;
-}
-
-/* /llampart-light-theme-shadow-primitives */
-
-/* llampart-dark-dialog-and-welcome-surface-primitives
-   Dark theme visual values live in themes.css. This layer applies shared dialog, alert dialog,
-   settings/about overlay, empty-chat welcome surface, and About info-card primitives. */
-html.dark body :is([data-slot='dialog-content'], [data-slot='alert-dialog-content']) {
-	background: var(--llampart-dark-dialog-surface-background, #141414) !important;
-	background-color: var(--llampart-dark-dialog-surface-background, #141414) !important;
-	background-image: none !important;
-}
-
-html.dark body .llampart-empty-chat-form .llampart-chat-input-frame {
-	background: var(--llampart-dark-welcome-surface-background, #141414) !important;
-	background-color: var(--llampart-dark-welcome-surface-background, #141414) !important;
-	background-image: none !important;
-	-webkit-backdrop-filter: var(
-		--llampart-dark-welcome-surface-filter,
-		var(--llampart-composer-surface-filter)
-	) !important;
-	backdrop-filter: var(
-		--llampart-dark-welcome-surface-filter,
-		var(--llampart-composer-surface-filter)
-	) !important;
-}
-
-html.dark body :is([data-slot='dialog-overlay'], [data-slot='alert-dialog-overlay']) {
-	background: var(--llampart-dark-dialog-overlay-background, rgb(84 84 84 / 58%)) !important;
-	background-color: var(--llampart-dark-dialog-overlay-background, rgb(84 84 84 / 58%)) !important;
-	-webkit-backdrop-filter: var(
-		--llampart-dark-dialog-overlay-filter,
-		blur(18px) saturate(112%)
-	) !important;
-	backdrop-filter: var(--llampart-dark-dialog-overlay-filter, blur(18px) saturate(112%)) !important;
-}
-
-html.dark body .llampart-about-info-card {
-	background: var(--llampart-dark-about-info-card-background, #232323) !important;
-	background-color: var(--llampart-dark-about-info-card-background, #232323) !important;
-	background-image: none !important;
-}
-/* /llampart-dark-dialog-and-welcome-surface-primitives */
 
 /* llampart-frosted-glass-surface-primitives
    app.css temporarily owns Frosted Glass surface selectors.
@@ -903,13 +765,6 @@ html.has-frosted-glass-theme
 	background-color: rgba(255, 255, 255, 0.34) !important;
 }
 /* /llampart-frosted-glass-message-edit-primitives */
-
-/* llampart-mcp-prompt-picker-surface-consumer
-   Prompt picker declares a semantic hook; this owner consumes theme tokens without changing the shared picker primitive. */
-html:not(.dark):not(.has-frosted-glass-theme) body .llampart-mcp-prompt-picker-popover {
-	box-shadow: var(--llampart-mcp-prompt-picker-shadow, none) !important;
-}
-/* /llampart-mcp-prompt-picker-surface-consumer */
 
 /* llampart-frosted-glass-composer-menu-surfaces
    app.css owns Frosted Glass composer menu/sheet/popover selectors.
@@ -1272,6 +1127,11 @@ html.has-frosted-glass-theme .conversation-timestamp-badge {
 	text-shadow: 0 1px 0 rgb(255 255 255 / 0.22);
 }
 
+html.has-frosted-glass-theme .conversation-action-button,
+html.has-frosted-glass-theme .conversation-timestamp-badge {
+	text-shadow: 0 1px 0 rgb(255 255 255 / 0.22);
+}
+
 html.has-frosted-glass-theme .llampart-sidebar-select-checkbox:not(:checked) {
 	border-color: rgb(60 60 60 / 0.48);
 	background-color: rgb(255 255 255 / 0.12);
@@ -1515,29 +1375,6 @@ html.has-frosted-glass-theme
 		pointer-events: none;
 	}
 
-	/* Light/dark: no backdrop-filter, so normal opacity fade is safe and keeps children synced. */
-	html:not(.has-frosted-glass-theme)
-		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
-		opacity: 1;
-		transition: opacity 180ms ease !important;
-	}
-
-	html:not(.has-frosted-glass-theme)
-		[data-slot='sidebar']:has(
-			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
-		)[data-state='collapsed']
-		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
-		opacity: 0;
-	}
-
-	html:not(.has-frosted-glass-theme)
-		[data-slot='sidebar']:has(
-			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
-		)[data-state='expanded']
-		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
-		opacity: 1;
-	}
-
 	/* Frosted Glass: avoid opacity on the backdrop-filter path. */
 	html.has-frosted-glass-theme [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell {
 		opacity: 1 !important;
@@ -1651,10 +1488,6 @@ html.has-frosted-glass-theme
 
 [data-sidebar='trigger'].llampart-sidebar-v-trigger {
 	color: #1a1a1a;
-}
-
-.dark [data-sidebar='trigger'].llampart-sidebar-v-trigger {
-	color: var(--foreground);
 }
 
 html.has-frosted-glass-theme [data-sidebar='trigger'].llampart-sidebar-v-trigger,
@@ -1780,6 +1613,25 @@ html.has-frosted-glass-theme
 html.has-frosted-glass-theme
 	.llampart-sidebar-primary-action
 	.llampart-sidebar-primary-action-icon {
+	filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.64))
+		drop-shadow(0 0 8px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.34)) !important;
+}
+
+html.has-frosted-glass-theme
+	.llampart-sidebar-conversations-frame
+	.llampart-sidebar-frame-header
+	h2 {
+	color: #000000 !important;
+	text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.64),
+		0 0 8px rgba(255, 255, 255, 0.5),
+		0 0 16px rgba(255, 255, 255, 0.34) !important;
+}
+
+html.has-frosted-glass-theme
+	.llampart-sidebar-conversations-frame
+	.llampart-sidebar-frame-footer
+	svg {
 	filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.64))
 		drop-shadow(0 0 8px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.34)) !important;
 }

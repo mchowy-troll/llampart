@@ -69,7 +69,7 @@
 				<img
 					src="/llampart.svg"
 					alt="llampart"
-					class="mb-8 h-60 max-h-[34vh] w-60 max-w-[78%] object-contain dark:opacity-80 dark:invert"
+					class="mb-8 h-60 max-h-[34vh] w-60 max-w-[78%] object-contain"
 				/>
 
 				<Dialog.Title class="mb-2 text-2xl font-semibold tracking-tight md:text-3xl">

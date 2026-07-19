@@ -156,11 +156,8 @@ export const fr: TranslationDictionary = {
 		fieldUseLLMToGenerateConversationTitle:
 			'Utiliser le LLM pour générer le titre de la conversation',
 		fieldLLMTitleGenerationPrompt: 'Prompt de génération du titre par LLM',
-		themeSystem: 'Système',
-		themeLight: 'Clair',
 		themeFrostedGlass: 'Frosted Glass',
-		fieldUiScale: 'Échelle de l’interface',
-		themeDark: 'Sombre',
+		fieldUiScale: "Échelle de l'interface",
 		defaultPrefix: 'Par défaut :',
 		resetToDefault: 'Réinitialiser par défaut',
 		selected: 'Sélectionné',

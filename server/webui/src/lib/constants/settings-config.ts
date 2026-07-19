@@ -2,7 +2,7 @@ import { ColorMode } from '$lib/enums/ui';
 import { API_PROVIDER_IDS, DEFAULT_API_PROVIDER_ID } from './api-providers';
 import { DEFAULT_FROSTED_GLASS_WALLPAPER_ID } from './frosted-glass-wallpapers';
 import { TITLE_GENERATION } from './title-generation';
-import { Monitor, Moon, Sparkles, Sun } from '@lucide/svelte';
+import { Sparkles } from '@lucide/svelte';
 
 export const SETTING_CONFIG_DEFAULT: Record<string, string | number | boolean | undefined> = {
 	// Note: in order not to introduce breaking changes, please keep the same data type (number, string, etc) if you want to change the default value.
@@ -169,8 +169,5 @@ export const SETTING_CONFIG_INFO: Record<string, string> = {
 };
 
 export const SETTINGS_COLOR_MODES_CONFIG = [
-	{ value: ColorMode.SYSTEM, label: 'System', icon: Monitor },
-	{ value: ColorMode.LIGHT, label: 'Light', icon: Sun },
-	{ value: ColorMode.DARK, label: 'Dark', icon: Moon },
 	{ value: ColorMode.FROSTED_GLASS, label: 'Frosted Glass', icon: Sparkles }
 ];

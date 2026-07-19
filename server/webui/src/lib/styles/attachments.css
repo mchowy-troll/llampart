@@ -268,20 +268,6 @@ html.has-frosted-glass-theme .llampart-attachments-view-all-panel {
 }
 /* /llampart-attachments-view-all-solid-surface */
 
-/* llampart-attachment-user-message-frame-parity
-   Light and dark attachment cards follow the user-message frame contract:
-   no visible outline and no extra shadow. Frosted Glass keeps its frosted attachment frame. */
-html:not(.has-frosted-glass-theme) .llampart-attachment-thumbnail-file.llampart-attachment-card,
-html:not(.has-frosted-glass-theme) .llampart-attachment-thumbnail-image img {
-	border-color: transparent !important;
-	box-shadow: none !important;
-}
-
-html:not(.has-frosted-glass-theme) .llampart-attachment-thumbnail-file.llampart-attachment-card {
-	background-color: var(--llampart-attachment-card-background, var(--muted)) !important;
-}
-/* /llampart-attachment-user-message-frame-parity */
-
 /* llampart-attachment-file-label-size-polish
    Non-image attachment badges must fit four-letter labels like JSON, YAML, DOCX, XLSX.
    Image thumbnails keep their natural image preview treatment. */

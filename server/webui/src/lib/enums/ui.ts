@@ -1,7 +1,4 @@
 export enum ColorMode {
-	LIGHT = 'light',
-	DARK = 'dark',
-	SYSTEM = 'system',
 	FROSTED_GLASS = 'frosted-glass'
 }
 

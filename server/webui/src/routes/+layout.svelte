@@ -16,7 +16,6 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { isRouterMode, serverStore } from '$lib/stores/server.svelte';
 	import { config, settingsStore } from '$lib/stores/settings.svelte';
-	import { ModeWatcher } from 'mode-watcher';
 	import { Toaster } from 'svelte-sonner';
 	import { goto } from '$app/navigation';
 	import { modelsStore } from '$lib/stores/models.svelte';
@@ -99,19 +98,12 @@
 
 		const root = document.documentElement;
 
-		if (isFrostedGlassTheme) {
-			root.classList.add('has-frosted-glass-theme');
-			root.classList.remove('dark');
-			root.classList.add('light');
-			root.style.setProperty(
-				'--llampart-frosted-glass-wallpaper',
-				`url("${frostedGlassWallpaper.src}")`
-			);
-			return;
-		}
-
-		root.classList.remove('has-frosted-glass-theme');
-		root.style.removeProperty('--llampart-frosted-glass-wallpaper');
+		root.classList.add('has-frosted-glass-theme');
+		root.classList.add('light');
+		root.style.setProperty(
+			'--llampart-frosted-glass-wallpaper',
+			`url("${frostedGlassWallpaper.src}")`
+		);
 	});
 
 	setChatSettingsDialogContext({
@@ -314,8 +306,6 @@
 </script>
 
 <Tooltip.Provider delayDuration={TOOLTIP_DELAY_DURATION}>
-	<ModeWatcher />
-
 	<Toaster richColors />
 
 	<DialogAboutLlampart />

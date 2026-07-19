@@ -86,7 +86,7 @@
 	{#if editCtx.isEditing}
 		{#if isFrostedGlassTheme}
 			<Card
-				class="llampart-message-shell-card llampart-user-message-card llampart-user-message-edit-card w-full llampart-user-message-width overflow-hidden rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-2.5 text-foreground backdrop-blur-md dark:bg-primary/15"
+				class="llampart-message-shell-card llampart-user-message-card llampart-user-message-edit-card w-full llampart-user-message-width overflow-hidden rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-2.5 text-foreground backdrop-blur-md"
 				style="overflow-wrap: anywhere; word-break: break-word;"
 			>
 				<ChatMessageEditForm class="llampart-user-message-edit-form w-full" />
@@ -103,7 +103,7 @@
 
 		{#if message.content.trim()}
 			<Card
-				class="llampart-message-shell-card llampart-user-message-card w-full llampart-user-message-width overflow-hidden rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5 dark:bg-primary/15"
+				class="llampart-message-shell-card llampart-user-message-card w-full llampart-user-message-width overflow-hidden rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5"
 				data-multiline={isMultiline ? '' : undefined}
 				style="max-height: var(--max-message-height); overflow-wrap: anywhere; word-break: break-word;"
 			>
@@ -552,42 +552,27 @@
 	}
 	/* /llampart-frosted-glass-user-footer-action-glow-final */
 
-	/* llampart-1-0-2-user-card-standard-theme-rhythm */
-	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card) {
-		border-radius: 0.75rem !important;
-	}
-
-	:global(html.dark:not(.has-frosted-glass-theme) .llampart-user-message-card) {
-		background: #262626 !important;
-	}
-	/* /llampart-1-0-2-user-card-standard-theme-rhythm */
-
 	/* llampart-1-0-2-user-message-padding-match-assistant */
-	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card),
 	:global(html.has-frosted-glass-theme .llampart-user-message-card) {
 		padding: 0.625rem 1.5rem var(--llampart-message-shell-bottom-action-inset) !important;
 	}
 
-	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card[data-multiline]),
 	:global(html.has-frosted-glass-theme .llampart-user-message-card[data-multiline]) {
 		padding-top: 0.625rem !important;
 		padding-right: 1.5rem !important;
 		padding-left: 1.5rem !important;
 	}
 
-	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-content),
 	:global(html.has-frosted-glass-theme .llampart-user-message-content) {
 		display: block;
 		margin-top: 0 !important;
 		padding-inline: 0.125rem;
 	}
 
-	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card .markdown-user-content),
 	:global(html.has-frosted-glass-theme .llampart-user-message-card .markdown-user-content) {
 		margin-top: 0 !important;
 	}
 
-	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-footer),
 	:global(html.has-frosted-glass-theme .llampart-user-message-footer) {
 		margin-top: 0.5rem !important;
 		margin-right: -0.25rem !important;
@@ -597,22 +582,8 @@
 	/* /llampart-1-0-2-user-message-padding-match-assistant */
 
 	/* llampart-user-message-single-line-top-inset-stability */
-	:global(html:not(.has-frosted-glass-theme) .llampart-user-message-card:not([data-multiline])),
 	:global(html.has-frosted-glass-theme .llampart-user-message-card:not([data-multiline])) {
 		padding-top: 0.9375rem !important;
 	}
 	/* /llampart-user-message-single-line-top-inset-stability */
-
-	/* llampart-light-user-message-surface-shadow-owner
-	   Light theme user messages keep a borderless bubble and consume the shared light message shadow token.
-	   Dark and Frosted Glass retain their own owners. */
-	:global(html:not(.dark):not(.has-frosted-glass-theme) .llampart-user-message-card) {
-		border-color: transparent !important;
-		box-shadow: var(--llampart-message-surface-shadow, none) !important;
-		outline: none !important;
-		filter: none !important;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
-	}
-	/* /llampart-light-user-message-surface-shadow-owner */
 </style>

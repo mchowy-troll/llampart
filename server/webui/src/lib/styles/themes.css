@@ -7,7 +7,7 @@
 /* /llampart-theme-independence-contract */
 
 /* llampart theme semantic tokens
-   Owns light/dark semantic color variables and Frosted Glass theme-level surface tokens.
+   Owns base semantic color variables and per-theme surface tokens.
    Keep component selectors and large surface rules in app.css or focused owner stylesheets. */
 
 :root {
@@ -91,68 +91,8 @@
 	}
 }
 
-.dark {
-	--background: oklch(0.16 0 0);
-	--foreground: oklch(0.985 0 0);
-	--card: oklch(0.205 0 0);
-	--card-foreground: oklch(0.985 0 0);
-	--popover: oklch(0.205 0 0);
-	--popover-foreground: oklch(0.985 0 0);
-	--primary: oklch(0.922 0 0);
-	--primary-foreground: oklch(0.205 0 0);
-	--secondary: oklch(0.29 0 0);
-	--secondary-foreground: oklch(0.985 0 0);
-	--muted: oklch(0.269 0 0);
-	--muted-foreground: oklch(0.708 0 0);
-	--accent: oklch(0.269 0 0);
-	--accent-foreground: oklch(0.985 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
-	--border: oklch(1 0 0 / 30%);
-	--input: oklch(1 0 0 / 30%);
-	--ring: oklch(0.556 0 0);
-	--chart-1: oklch(0.488 0.243 264.376);
-	--chart-2: oklch(0.696 0.17 162.48);
-	--chart-3: oklch(0.769 0.188 70.08);
-	--chart-4: oklch(0.627 0.265 303.9);
-	--chart-5: oklch(0.645 0.246 16.439);
-	--sidebar: oklch(0.19 0 0);
-	--sidebar-foreground: oklch(0.985 0 0);
-	--sidebar-primary: oklch(0.488 0.243 264.376);
-	--sidebar-primary-foreground: oklch(0.985 0 0);
-	--sidebar-accent: oklch(0.269 0 0);
-	--sidebar-accent-foreground: oklch(0.985 0 0);
-	--sidebar-border: oklch(1 0 0 / 10%);
-	--sidebar-ring: oklch(0.556 0 0);
-	--code-background: oklch(0.225 0 0);
-	--code-foreground: oklch(0.875 0 0);
-	--llampart-composer-surface-background: oklch(0.205 0 0 / 72%);
-	--llampart-composer-surface-border: oklch(1 0 0 / 18%);
-	--llampart-composer-surface-filter: blur(18px) saturate(116%);
-	--llampart-composer-surface-shadow: none;
-	--llampart-dark-welcome-surface-filter: blur(27px) saturate(116%);
-	--llampart-dark-dialog-overlay-filter: blur(18px) saturate(112%);
-	--llampart-dark-dialog-overlay-background: rgb(84 84 84 / 58%);
-	--llampart-dark-welcome-surface-background: #141414;
-	--llampart-dark-dialog-surface-background: #141414;
-	--llampart-dark-about-info-card-background: #232323;
-	--llampart-composer-fade-background: var(--background);
-	--llampart-composer-processing-stats-background: var(--llampart-composer-surface-background);
-	--llampart-composer-processing-stats-border: var(--llampart-composer-surface-border);
-	--llampart-composer-processing-stats-foreground: var(--muted-foreground);
-	--llampart-composer-processing-stats-separator: color-mix(
-		in oklch,
-		var(--muted-foreground) 62%,
-		transparent
-	);
-	--llampart-toast-surface-background: oklch(0.205 0 0 / 96%);
-	--llampart-toast-surface-border: oklch(1 0 0 / 12%);
-	--llampart-toast-surface-foreground: var(--foreground);
-	--llampart-toast-surface-description: oklch(0.72 0 0);
-	--llampart-toast-surface-shadow: none;
-}
-
 /* Frosted Glass surface tokens
-   Frosted Glass is intentionally independent from light/dark theme behavior. */
+   Frosted Glass is intentionally independent from base theme behavior. */
 html.has-frosted-glass-theme {
 	--llampart-frosted-surface-border: rgba(255, 255, 255, 0.19);
 	--llampart-frosted-surface-bg: rgba(255, 255, 255, 0.14);
@@ -182,40 +122,17 @@ html.has-frosted-glass-theme {
 	--llampart-composer-processing-stats-font-weight: 400;
 }
 
-/* llampart-agentic-panel-and-dialog-overlay-token-owner
-   Shared visual tokens:
-   - `.llampart-agentic-panel` is the shared Tools/Reasoning panel primitive.
-   - `.llampart-dialog-overlay` is the shared dialog overlay primitive.
-   Component code exposes hooks; this theme layer owns the surfaces. */
-html.dark:not(.has-frosted-glass-theme) {
-	--llampart-agentic-panel-dark-background: #212121;
-	--llampart-dialog-overlay-milk-background: rgba(255, 255, 255, 0.14);
-	--llampart-dialog-overlay-milk-gradient-start: rgba(255, 255, 255, 0.13);
-	--llampart-dialog-overlay-milk-gradient-end: rgba(255, 255, 255, 0.09);
-	--llampart-dialog-overlay-milk-filter: none;
+/* llampart-frosted-glass-sidebar-tokens
+   Theme-owned Frosted Glass sidebar conversation-list values.
+   Sidebar components consume these values while keeping local structure and state selectors. */
+html.has-frosted-glass-theme {
+	--llampart-sidebar-conversation-title-foreground: #444444;
+	--llampart-sidebar-conversation-timestamp-foreground: #444444;
 }
+/* /llampart-frosted-glass-sidebar-tokens */
 
-html.dark:not(.has-frosted-glass-theme) body .llampart-agentic-panel {
-	background: var(--llampart-agentic-panel-dark-background) !important;
-	background-color: var(--llampart-agentic-panel-dark-background) !important;
-	background-image: none !important;
-}
-
-html.dark:not(.has-frosted-glass-theme) body .llampart-dialog-overlay {
-	background: var(--llampart-dialog-overlay-milk-background) !important;
-	background-color: var(--llampart-dialog-overlay-milk-background) !important;
-	background-image: linear-gradient(
-		135deg,
-		var(--llampart-dialog-overlay-milk-gradient-start),
-		var(--llampart-dialog-overlay-milk-gradient-end)
-	) !important;
-	backdrop-filter: var(--llampart-dialog-overlay-milk-filter) !important;
-	-webkit-backdrop-filter: var(--llampart-dialog-overlay-milk-filter) !important;
-}
-/* /llampart-agentic-panel-and-dialog-overlay-token-owner */
-
-/* llampart-light-dark-sidebar-surface-tokens
-   Theme-owned Light/Dark sidebar and conversation-list values.
+/* llampart-sidebar-surface-tokens
+   Theme-owned sidebar and conversation-list values.
    Sidebar components consume these values while keeping local structure and state selectors. */
 :root {
 	--llampart-sidebar-conversations-frame-background: #fcfcfc;
@@ -223,45 +140,20 @@ html.dark:not(.has-frosted-glass-theme) body .llampart-dialog-overlay {
 	--llampart-sidebar-conversations-frame-border-width: 0.5px;
 	--llampart-sidebar-conversation-item-border-color: var(--border);
 	--llampart-sidebar-conversation-item-shadow: none;
+	--llampart-sidebar-conversation-title-foreground: #686868;
+	--llampart-sidebar-conversation-timestamp-foreground: #686868;
 }
+/* /llampart-sidebar-surface-tokens */
 
-html.dark:not(.has-frosted-glass-theme) {
-	--llampart-sidebar-header-separator-background: rgba(255, 255, 255, 0.12);
-	--llampart-sidebar-conversations-frame-border: #2d2d2d;
-	--llampart-sidebar-conversations-frame-shadow: none;
-	--llampart-sidebar-conversations-frame-background: #141414;
-	--llampart-sidebar-select-checkbox-checked-border: #e8e8e8;
-	--llampart-sidebar-select-checkbox-checked-background: #e8e8e8;
-	--llampart-sidebar-select-checkbox-checked-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' stroke='%23161616' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-	--llampart-sidebar-select-checkbox-check-border: #2b2b2b;
-	--llampart-sidebar-conversation-hover-foreground: #e8e8e8;
-	--llampart-sidebar-conversation-hover-checkbox-border: #e8e8e8;
-	--llampart-sidebar-conversation-item-border-color: color-mix(
-		in oklch,
-		var(--border) 20%,
-		transparent
-	);
-	--llampart-sidebar-conversation-item-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-	--llampart-sidebar-conversation-item-background: #262626;
-	--llampart-sidebar-conversation-item-hover-background: #383636;
-}
-/* /llampart-light-dark-sidebar-surface-tokens */
-
-/* llampart-light-dark-attachment-card-tokens
-   Theme-owned Light/Dark chat attachment card values.
+/* llampart-attachment-card-tokens
+   Theme-owned chat attachment card values.
    attachments.css keeps geometry and selectors while consuming these theme contracts. */
 :root {
 	--llampart-attachment-card-border: #cecece;
 	--llampart-attachment-card-shadow: none;
 	--llampart-attachment-card-background: #f5f5f5;
 }
-
-html.dark:not(.has-frosted-glass-theme) {
-	--llampart-attachment-card-border: #2d2d2d;
-	--llampart-attachment-card-shadow: none;
-	--llampart-attachment-card-background: var(--muted);
-}
-/* /llampart-light-dark-attachment-card-tokens */
+/* /llampart-attachment-card-tokens */
 
 /* llampart-dialog-model-surface-tokens
    Theme-owned visual contracts for composer MCP prompt popovers and model-information
@@ -270,11 +162,6 @@ html.dark:not(.has-frosted-glass-theme) {
 	--llampart-mcp-prompt-picker-shadow: none;
 	--llampart-model-info-template-border: hsl(var(--border));
 	--llampart-model-info-template-background: color-mix(in oklch, var(--muted) 45%, transparent);
-}
-
-html.dark:not(.has-frosted-glass-theme) {
-	--llampart-model-info-template-border: hsl(var(--border));
-	--llampart-model-info-template-background: color-mix(in oklch, var(--muted) 62%, transparent);
 }
 
 html.has-frosted-glass-theme {
@@ -294,11 +181,6 @@ html.has-frosted-glass-theme {
 :root {
 	--llampart-message-surface-shadow: var(--llampart-light-shadow-elevation-medium);
 	--llampart-light-assistant-message-border-width: 0.5px;
-}
-
-html.dark:not(.has-frosted-glass-theme) {
-	--llampart-assistant-message-foreground: #e8e8e8;
-	--llampart-message-surface-shadow: none;
 }
 
 html.has-frosted-glass-theme {
@@ -354,7 +236,7 @@ html.has-frosted-glass-theme {
 /* llampart-frosted-glass-preview-parity-tokens
    Theme-owned solid preview values. These currently resolve to the same rendered
    appearance as light preview, but they remain independently changeable for Frosted
-   Glass preview without changing light or dark preview ownership. */
+   Glass preview without changing base theme ownership. */
 html.has-frosted-glass-theme {
 	--llampart-frosted-preview-surface-background: var(--background);
 	--llampart-frosted-preview-surface-background-image: none;

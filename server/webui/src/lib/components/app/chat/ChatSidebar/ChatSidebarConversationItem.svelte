@@ -180,7 +180,7 @@
 		{/if}
 
 		<span
-			class="conversation-title min-w-0 flex-1 text-sm leading-snug font-medium break-words whitespace-normal transition-colors"
+			class="conversation-title min-w-0 flex-1 text-sm leading-snug font-medium break-words whitespace-normal"
 		>
 			{conversation.name}
 		</span>
@@ -290,7 +290,6 @@
 </div>
 
 <style>
-	.conversation-item:is(:hover, :focus-visible) .conversation-title,
 	.conversation-item:is(:hover, :focus-visible) :global(.conversation-action-button),
 	.conversation-item:is(:hover, :focus-visible) .conversation-pin-button,
 	.conversation-item:is(:hover, :focus-visible) .conversation-timestamp-badge,
@@ -302,34 +301,15 @@
 		border-color: #686868;
 	}
 
-	:global(.dark) .conversation-item:is(:hover, :focus-visible) .conversation-title,
-	:global(.dark) .conversation-item:is(:hover, :focus-visible) :global(.conversation-action-button),
-	:global(.dark) .conversation-item:is(:hover, :focus-visible) .conversation-pin-button,
-	:global(.dark) .conversation-item:is(:hover, :focus-visible) .conversation-timestamp-badge,
-	:global(.dark) .conversation-item:is(:hover, :focus-visible) .conversation-parent-link {
-		color: var(--llampart-sidebar-conversation-hover-foreground, #e8e8e8);
-	}
-
-	:global(.dark) .conversation-item:is(:hover, :focus-visible) .conversation-timestamp-badge,
-	:global(.dark)
-		.conversation-item:is(:hover, :focus-visible)
-		.llampart-sidebar-select-checkbox:not(:checked) {
-		border-color: var(--llampart-sidebar-conversation-hover-checkbox-border, #e8e8e8);
-	}
-
 	.conversation-title {
 		display: -webkit-box;
 		max-height: 2.75em;
 		overflow: hidden;
-		color: #686868;
+		color: var(--llampart-sidebar-conversation-title-foreground, #686868);
 		text-overflow: ellipsis;
 		-webkit-box-orient: vertical;
 		-webkit-line-clamp: 2;
 		line-clamp: 2;
-	}
-
-	:global(.dark) .conversation-title {
-		color: color-mix(in oklch, var(--sidebar-foreground) 70%, transparent);
 	}
 
 	.conversation-card-title-row {
@@ -339,11 +319,6 @@
 	.conversation-card-actions :global(.conversation-action-button),
 	.conversation-pin-button {
 		color: #686868;
-	}
-
-	:global(.dark) .conversation-card-actions :global(.conversation-action-button),
-	:global(.dark) .conversation-pin-button {
-		color: var(--muted-foreground);
 	}
 
 	.conversation-item {
@@ -370,13 +345,7 @@
 
 	.conversation-timestamp-badge,
 	.conversation-timestamp-badge :global(svg) {
-		color: #686868;
-		stroke: currentColor;
-	}
-
-	:global(.dark) .conversation-timestamp-badge,
-	:global(.dark) .conversation-timestamp-badge :global(svg) {
-		color: var(--muted-foreground);
+		color: var(--llampart-sidebar-conversation-timestamp-foreground, #686868);
 		stroke: currentColor;
 	}
 
@@ -392,86 +361,7 @@
 		overflow: hidden !important;
 	}
 
-	:global(html:not(.dark):not(.has-frosted-glass-theme) .conversation-item),
-	:global(
-		html:not(.dark):not(.has-frosted-glass-theme) .conversation-item:is(:hover, :focus-visible)
-	),
-	:global(html:not(.dark):not(.has-frosted-glass-theme) .conversation-item[class*='bg-accent']) {
-		border-color: var(--llampart-sidebar-conversation-item-border-color, var(--border)) !important;
-		box-shadow: var(--llampart-sidebar-conversation-item-shadow, none) !important;
-	}
-
-	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item),
-	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item:is(:hover, :focus-visible)),
-	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item[class*='bg-accent']) {
-		border-color: var(
-			--llampart-sidebar-conversation-item-border-color,
-			color-mix(in oklch, var(--border) 20%, transparent)
-		) !important;
-		box-shadow: var(
-			--llampart-sidebar-conversation-item-shadow,
-			0 1px 2px 0 rgb(0 0 0 / 0.05)
-		) !important;
-	}
-
 	:global(.conversation-item button) {
 		border-radius: 0.75rem !important;
 	}
-
-	/* llampart-1-0-2-sidebar-card-dark-fill */
-	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item),
-	:global(html.dark:not(.has-frosted-glass-theme) .conversation-item:is(:hover, :focus-visible)) {
-		background-color: var(--llampart-sidebar-conversation-item-background, #262626) !important;
-	}
-	/* /llampart-1-0-2-sidebar-card-dark-fill */
-
-	/* llampart-sidebar-dark-hover-surface-owner
-	   Dark theme: on hover only the conversation tile fill changes. */
-	:global(html.dark:not(.has-frosted-glass-theme)) .conversation-item:is(:hover, :focus-visible) {
-		background: var(--llampart-sidebar-conversation-item-hover-background, #383636) !important;
-		background-color: var(
-			--llampart-sidebar-conversation-item-hover-background,
-			#383636
-		) !important;
-		background-image: none !important;
-	}
-
-	:global(html.dark:not(.has-frosted-glass-theme))
-		.conversation-item:is(:hover, :focus-visible)
-		.conversation-title {
-		color: var(--foreground) !important;
-		text-shadow: none !important;
-	}
-
-	:global(html.dark:not(.has-frosted-glass-theme))
-		.conversation-item:is(:hover, :focus-visible)
-		.conversation-timestamp-badge,
-	:global(html.dark:not(.has-frosted-glass-theme))
-		.conversation-item:is(:hover, :focus-visible)
-		.conversation-timestamp-badge
-		:global(svg) {
-		color: var(--muted-foreground) !important;
-		text-shadow: none !important;
-	}
-
-	:global(html.dark:not(.has-frosted-glass-theme))
-		.conversation-item:is(:hover, :focus-visible)
-		.conversation-timestamp-badge {
-		border-color: var(--border) !important;
-		background: var(--background) !important;
-		background-color: var(--background) !important;
-		background-image: none !important;
-		box-shadow: none !important;
-	}
-
-	:global(html.dark:not(.has-frosted-glass-theme))
-		.conversation-item:is(:hover, :focus-visible)
-		:is(.conversation-action-button, .conversation-pin-button, .conversation-parent-link) {
-		color: var(--muted-foreground) !important;
-		background-color: transparent !important;
-		background-image: none !important;
-		box-shadow: none !important;
-		text-shadow: none !important;
-	}
-	/* /llampart-sidebar-dark-hover-surface-owner */
 </style>

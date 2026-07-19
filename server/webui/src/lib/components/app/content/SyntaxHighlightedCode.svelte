@@ -1,8 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { mode } from 'mode-watcher';
 
-	import { ColorMode } from '$lib/enums';
 	import {
 		escapeCodeHtml,
 		highlightCodeAsync,
@@ -28,7 +26,7 @@
 	let highlightedHtml = $state('');
 	let highlightRequestId = 0;
 
-	async function loadHighlightTheme(isDark: boolean) {
+	async function loadHighlightTheme() {
 		if (!browser) return;
 
 		const existingThemes = document.querySelectorAll('style[data-highlight-theme-preview]');
@@ -36,7 +34,7 @@
 
 		const style = document.createElement('style');
 		style.setAttribute('data-highlight-theme-preview', 'true');
-		style.textContent = await loadHighlightThemeCss(isDark);
+		style.textContent = await loadHighlightThemeCss();
 
 		document.head.appendChild(style);
 	}
@@ -59,10 +57,7 @@
 	}
 
 	$effect(() => {
-		const currentMode = mode.current;
-		const isDark = currentMode === ColorMode.DARK;
-
-		void loadHighlightTheme(isDark);
+		void loadHighlightTheme();
 	});
 
 	$effect(() => {

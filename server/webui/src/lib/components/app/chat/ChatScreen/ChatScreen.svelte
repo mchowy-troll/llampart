@@ -639,10 +639,6 @@
 		}
 	}
 
-	:global(html:not(.has-frosted-glass-theme)) .conversation-chat-form::after {
-		display: none;
-	}
-
 	.conversation-chat-form.has-frosted-glass-theme::after {
 		background-color: transparent;
 	}
@@ -655,7 +651,7 @@
 
 	:global(html.has-frosted-glass-theme .conversation-chat-form .llampart-chat-input-frame),
 	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .llampart-chat-input-frame) {
-		border: 1px solid rgba(255, 255, 255, 0.34) !important;
+		border: 1px solid var(--llampart-frosted-surface-border) !important;
 		border-radius: var(--llampart-frosted-glass-composer-radius) !important;
 		background: rgba(255, 255, 255, 0.34) !important;
 		box-shadow:
@@ -706,7 +702,7 @@
 		align-items: center !important;
 		justify-content: center !important;
 		overflow: hidden !important;
-		border: 1px solid rgba(255, 255, 255, 0.42) !important;
+		border: 1px solid var(--llampart-frosted-surface-border) !important;
 		background: rgba(255, 255, 255, 0.58) !important;
 		box-shadow:
 			inset 0 1px 0 rgba(255, 255, 255, 0.24),

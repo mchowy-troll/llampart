@@ -11,8 +11,6 @@
 					const rawConfig = localStorage.getItem('LlamaCppWebui.config');
 					const config = rawConfig ? JSON.parse(rawConfig) : {};
 
-					if (config?.theme !== 'frosted-glass') return;
-
 					const knownWallpapers = new Set([
 						'frosted-glass-01',
 						'frosted-glass-02',
@@ -29,7 +27,6 @@
 						: 'frosted-glass-01';
 
 					document.documentElement.classList.add('has-frosted-glass-theme');
-					document.documentElement.classList.remove('dark');
 					document.documentElement.classList.add('light');
 					document.documentElement.style.setProperty(
 						'--llampart-frosted-glass-wallpaper',

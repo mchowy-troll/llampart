@@ -96,9 +96,7 @@
 	}
 </script>
 
-<Card.Root
-	class="!gap-3 rounded-2xl border border-border bg-background p-4 shadow-none dark:border-border"
->
+<Card.Root class="!gap-3 rounded-2xl border border-border bg-background p-4 shadow-none">
 	{#if isEditing}
 		<McpServerCardEditForm
 			bind:this={editFormRef}
