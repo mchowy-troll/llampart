@@ -49,6 +49,7 @@
 	--llampart-composer-surface-shadow: var(--llampart-base-shadow-elevation-medium);
 	--llampart-composer-surface-radius: 0.75rem;
 	--llampart-composer-fade-background: var(--background);
+	--llampart-composer-fade-start-inset: 0rem;
 	--llampart-composer-processing-stats-radius: var(--llampart-composer-surface-radius);
 	--llampart-composer-processing-stats-background: var(--llampart-composer-surface-background);
 	--llampart-composer-processing-stats-border: var(--llampart-composer-surface-border);

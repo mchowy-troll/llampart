@@ -1013,11 +1013,14 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.stats-view-switcher {
 	gap: 0.125rem !important;
 	padding: 0.125rem !important;
-	border: 1px solid rgba(255, 255, 255, 0.16) !important;
-	background: rgba(255, 255, 255, 0.12) !important;
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-	backdrop-filter: blur(8px) saturate(106%) !important;
-	-webkit-backdrop-filter: blur(8px) saturate(106%) !important;
+	border: 0 !important;
+	background: transparent !important;
+	background-color: transparent !important;
+	background-image: none !important;
+	box-shadow: none !important;
+	filter: none !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
