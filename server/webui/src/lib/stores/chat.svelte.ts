@@ -1395,12 +1395,6 @@ class ChatStore {
 	}
 
 	private getContextTotal(): number | null {
-		const activeConvId = this.activeConversationId;
-		const activeState = activeConvId ? this.getProcessingState(activeConvId) : null;
-
-		if (activeState && typeof activeState.contextTotal === 'number' && activeState.contextTotal > 0)
-			return activeState.contextTotal;
-
 		if (isRouterMode()) {
 			const modelContextSize = selectedModelContextSize();
 

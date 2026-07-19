@@ -176,6 +176,7 @@
 
 	.chat-processing-info-container.visible {
 		grid-template-rows: 1fr;
+		overflow: visible;
 		padding-bottom: var(--llampart-composer-processing-stats-bottom-gap);
 		opacity: 1;
 		transform: translateY(0);
@@ -183,7 +184,7 @@
 
 	.chat-processing-info-slot {
 		min-height: 0;
-		overflow: hidden;
+		overflow: visible;
 	}
 
 	.chat-processing-info-frame {

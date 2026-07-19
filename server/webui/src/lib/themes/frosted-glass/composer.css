@@ -868,7 +868,8 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-empty-chat-su
 	width: 100vw !important;
 	height: calc(
 		var(--llampart-composer-fade-height, clamp(4.6rem, 9.1vh, 6.15rem)) +
-			var(--llampart-composer-fade-end-offset, 2.9rem) + 8.5rem
+			var(--llampart-composer-fade-end-offset, 2.9rem) + 8.5rem -
+			var(--llampart-composer-fade-start-inset)
 	);
 	transform: none !important;
 	overflow: hidden;
@@ -881,7 +882,8 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-empty-chat-su
 		black
 			calc(
 				var(--llampart-composer-fade-height, clamp(4.6rem, 9.1vh, 6.15rem)) +
-					var(--llampart-composer-fade-end-offset, 2.9rem)
+					var(--llampart-composer-fade-end-offset, 2.9rem) -
+					var(--llampart-composer-fade-start-inset)
 			),
 		black 100%
 	);
@@ -891,7 +893,8 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-empty-chat-su
 		black
 			calc(
 				var(--llampart-composer-fade-height, clamp(4.6rem, 9.1vh, 6.15rem)) +
-					var(--llampart-composer-fade-end-offset, 2.9rem)
+					var(--llampart-composer-fade-end-offset, 2.9rem) -
+					var(--llampart-composer-fade-start-inset)
 			),
 		black 100%
 	);
