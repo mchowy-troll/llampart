@@ -512,7 +512,7 @@
 				<Tooltip.Trigger>
 					<Button
 						aria-label={t('sidebar.settings')}
-						class="llampart-sidebar-settings-button llampart-sidebar-delete-button flex h-7 w-7 min-w-7 items-center justify-center rounded-md p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+						class="llampart-sidebar-settings-button flex h-7 w-7 min-w-7 items-center justify-center rounded-md p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
 						onclick={handleSettingsClick}
 						variant="ghost"
 					>

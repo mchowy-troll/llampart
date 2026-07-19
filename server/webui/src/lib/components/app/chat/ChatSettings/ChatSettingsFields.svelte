@@ -108,6 +108,12 @@
 			: 'grid gap-x-5 gap-y-4 lg:grid-cols-2';
 	}
 
+	function getMultiColumnRowClass(): string {
+		return isThreeColumnModelGroup
+			? 'grid grid-cols-subgrid gap-y-4 md:col-span-2 xl:col-span-3'
+			: 'grid grid-cols-subgrid gap-y-4 lg:col-span-2';
+	}
+
 	function distributeFieldsIntoColumns(
 		inputFields: SettingsFieldConfig[],
 		columnCount: number
@@ -545,9 +551,9 @@
 		{/each}
 	</div>
 {:else if isMultiColumnGroup}
-	<div class="space-y-4">
+	<div class={getMultiColumnWrapperClass()}>
 		{#each multiColumnRows as rowFields, rowIndex (rowIndex)}
-			<div class={getMultiColumnWrapperClass()}>
+			<div class={getMultiColumnRowClass()}>
 				{#each rowFields as field (field.key)}
 					{@render renderField(field, '', '', false, '', isDependentOrderedField(field))}
 				{/each}
