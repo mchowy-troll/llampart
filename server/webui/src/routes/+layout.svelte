@@ -25,8 +25,8 @@
 	import type { SettingsSectionTitle } from '$lib/constants';
 	import { KeyboardKey } from '$lib/enums';
 	import { setChatSettingsDialogContext } from '$lib/contexts';
-	import { CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT, getFrostedGlassWallpaper } from '$lib/constants';
-	import { ColorMode } from '$lib/enums/ui';
+	import { getThemeDefinition } from '$lib/themes/registry';
+	import { applyTheme } from '$lib/themes/runtime';
 
 	let { children } = $props();
 
@@ -51,12 +51,8 @@
 
 	let chatSettingsDialogOpen = $state(false);
 	let chatSettingsDialogInitialSection = $state<SettingsSectionTitle | undefined>(undefined);
-	let isFrostedGlassTheme = $derived(config().theme === ColorMode.FROSTED_GLASS);
-	let isFrostedGlassWallpaperMilky = $derived(Boolean(config().frostedGlassWallpaperMilky));
-	let customFrostedGlassWallpaperRevision = $state(0);
-	let frostedGlassWallpaper = $derived(
-		getFrostedGlassWallpaper(config().frostedGlassWallpaper, customFrostedGlassWallpaperRevision)
-	);
+	let activeTheme = $derived(getThemeDefinition(config().theme));
+	let themeRuntimeRevision = $state(0);
 	let uiScalePreset = $derived(normalizeUiScalePreset(config().uiScale));
 
 	function normalizeUiScalePreset(value: unknown): '90' | '100' | '110' {
@@ -68,22 +64,21 @@
 	$effect(() => {
 		if (!browser) return;
 
-		const handleCustomFrostedGlassWallpaperChange = () => {
-			customFrostedGlassWallpaperRevision += 1;
+		const handleThemeRuntimeChange = () => {
+			themeRuntimeRevision += 1;
 		};
+		const runtimeEvents = activeTheme.runtimeRefreshEvents ?? [];
 
-		window.addEventListener(
-			CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT,
-			handleCustomFrostedGlassWallpaperChange
-		);
-		window.addEventListener('storage', handleCustomFrostedGlassWallpaperChange);
+		for (const eventName of runtimeEvents) {
+			window.addEventListener(eventName, handleThemeRuntimeChange);
+		}
+		window.addEventListener('storage', handleThemeRuntimeChange);
 
 		return () => {
-			window.removeEventListener(
-				CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT,
-				handleCustomFrostedGlassWallpaperChange
-			);
-			window.removeEventListener('storage', handleCustomFrostedGlassWallpaperChange);
+			for (const eventName of runtimeEvents) {
+				window.removeEventListener(eventName, handleThemeRuntimeChange);
+			}
+			window.removeEventListener('storage', handleThemeRuntimeChange);
 		};
 	});
 
@@ -96,14 +91,7 @@
 	$effect(() => {
 		if (!browser) return;
 
-		const root = document.documentElement;
-
-		root.classList.add('has-frosted-glass-theme');
-		root.classList.add('light');
-		root.style.setProperty(
-			'--llampart-frosted-glass-wallpaper',
-			`url("${frostedGlassWallpaper.src}")`
-		);
+		return applyTheme(document.documentElement, config(), themeRuntimeRevision);
 	});
 
 	setChatSettingsDialogContext({
@@ -289,20 +277,6 @@
 			}
 		);
 	});
-
-	/* llampart-frosted-glass-wallpaper-milk-class-only */
-	$effect(() => {
-		const root = document.documentElement;
-
-		root.classList.toggle(
-			'has-frosted-glass-wallpaper-milk',
-			isFrostedGlassTheme && isFrostedGlassWallpaperMilky
-		);
-
-		return () => {
-			root.classList.remove('has-frosted-glass-wallpaper-milk');
-		};
-	});
 </script>
 
 <Tooltip.Provider delayDuration={TOOLTIP_DELAY_DURATION}>
@@ -324,11 +298,7 @@
 	/>
 
 	<Sidebar.Provider bind:open={sidebarOpen}>
-		<div
-			class="relative z-10 flex h-screen w-full"
-			style:height="{innerHeight}px"
-			class:has-frosted-glass-theme={isFrostedGlassTheme}
-		>
+		<div class="relative z-10 flex h-screen w-full" style:height="{innerHeight}px">
 			<Sidebar.Root class="llampart-redesigned-sidebar-shell h-full">
 				<ChatSidebar bind:this={chatSidebar} />
 			</Sidebar.Root>

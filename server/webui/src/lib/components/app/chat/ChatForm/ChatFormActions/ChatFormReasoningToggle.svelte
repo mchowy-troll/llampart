@@ -188,15 +188,6 @@
 {/if}
 
 <style>
-	/* llampart-reasoning-off-icon-red */
-	:global(html.has-frosted-glass-theme .llampart-reasoning-trigger-icon-disabled),
-	:global(html.has-frosted-glass-theme .llampart-reasoning-trigger-icon-disabled *) {
-		color: #e7000b !important;
-		stroke: #e7000b !important;
-		stroke-width: 2.35 !important;
-		opacity: 1 !important;
-	}
-
 	.llampart-reasoning-effort-option :global(svg),
 	.llampart-reasoning-effort-option :global(svg *) {
 		stroke-width: 1.65;

@@ -94,8 +94,6 @@ export function setCustomFrostedGlassWallpaperSrc(src: string): boolean {
 	try {
 		if (typeof globalThis.localStorage === 'undefined') return false;
 
-		// Keep only one user wallpaper in localStorage. The next uploaded image removes
-		// the previous custom wallpaper and the legacy background-image key before it is saved.
 		clearStoredCustomWallpaperData();
 		globalThis.localStorage.setItem(CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY, normalized);
 
@@ -155,5 +153,9 @@ export function getFrostedGlassWallpaper(
 		if (wallpaper) return wallpaper;
 	}
 
-	return FROSTED_GLASS_WALLPAPERS[0];
+	return (
+		FROSTED_GLASS_WALLPAPERS.find(
+			(wallpaper) => wallpaper.id === DEFAULT_FROSTED_GLASS_WALLPAPER_ID
+		) ?? FROSTED_GLASS_WALLPAPERS[0]
+	);
 }

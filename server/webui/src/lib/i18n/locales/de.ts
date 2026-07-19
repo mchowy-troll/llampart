@@ -155,7 +155,6 @@ export const de: TranslationDictionary = {
 			'Erste nichtleere Zeile als Gesprächstitel verwenden',
 		fieldUseLLMToGenerateConversationTitle: 'LLM zum Generieren des Gesprächstitels verwenden',
 		fieldLLMTitleGenerationPrompt: 'Prompt für LLM-Titelgenerierung',
-		themeFrostedGlass: 'Frosted Glass',
 		fieldUiScale: 'UI-Skalierung',
 		defaultPrefix: 'Standard:',
 		resetToDefault: 'Auf Standard zurücksetzen',
@@ -226,29 +225,6 @@ export const de: TranslationDictionary = {
 		groupOpenAiCompatibleOptions: 'OpenAI-compatible-Optionen',
 		groupSystemMessage: 'Systemnachricht',
 		groupInterface: 'Oberfläche',
-		groupFrostedGlassWallpaper: 'Hintergrundbild',
-		frostedGlassWallpaperDescription:
-			'Wählen Sie eines von 5 integrierten Hintergrundbildern oder ein eigenes Hintergrundbild, das lokal in diesem Browser gespeichert wird.',
-		frostedGlassWallpaperMilk: 'Milchige Tapete',
-		frostedGlassWallpaperSofteningDescription:
-			'Fügt nur dem Hintergrundbild eine dezente Unschärfe und milchige Ebene hinzu. Text und Fade über dem Composer werden nicht verwischt.',
-		frostedGlassWallpaper01: 'Frosted Glass 01',
-		frostedGlassWallpaper02: 'Frosted Glass 02',
-		frostedGlassWallpaper03: 'Frosted Glass 03',
-		frostedGlassWallpaper04: 'Frosted Glass 04',
-		frostedGlassWallpaper05: 'Frosted Glass 05',
-		frostedGlassWallpaperUser: 'Eigenes Hintergrundbild',
-		frostedGlassWallpaperUpload: 'JPG/PNG hochladen',
-		frostedGlassWallpaperAdd: 'Hinzufügen',
-		frostedGlassWallpaperReplace: 'Ersetzen',
-		frostedGlassWallpaperRemove: 'Entfernen',
-		frostedGlassWallpaperUserSaved: 'Eigenes Hintergrundbild gespeichert.',
-		frostedGlassWallpaperUserRemoved: 'Eigenes Hintergrundbild entfernt.',
-		frostedGlassWallpaperUploadInvalidType: 'Wählen Sie eine JPG- oder PNG-Datei.',
-		frostedGlassWallpaperUploadTooLarge: 'Das Hintergrundbild darf höchstens 3 MB groß sein.',
-		frostedGlassWallpaperUploadRequirements: 'Zulässig sind JPG- oder PNG-Dateien bis 3 MB.',
-		frostedGlassWallpaperUploadReadError:
-			'Das Hintergrundbild konnte nicht gespeichert werden. Der localStorage des Browsers ist möglicherweise voll.',
 		groupApplicationBackground: 'App-Hintergrund',
 		backgroundImageDescription:
 			'Wähle ein lokales Bild, das in diesem Browser als App-Hintergrund verwendet wird.',
@@ -374,8 +350,6 @@ export const de: TranslationDictionary = {
 			showSystemMessage: 'Die Systemnachricht am Anfang jeder Unterhaltung anzeigen.',
 			theme:
 				'Wählen Sie den Oberflächenstil. Frosted Glass verwendet eigene integrierte Hintergrundbilder und Glaseffekte.',
-			frostedGlassWallpaper:
-				'Ausgewähltes Frosted-Glass-Hintergrundbild. Integrierte Hintergrundbilder werden mit llampart ausgeliefert; eigene Hintergrunddaten werden nur im localStorage dieses Browsers gespeichert.',
 			interfaceLanguage:
 				'Wählen Sie die Sprache der Oberfläche. Englisch ist beim ersten Start die Standardsprache.',
 			uiScale:

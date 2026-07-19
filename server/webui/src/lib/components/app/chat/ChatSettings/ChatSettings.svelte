@@ -13,7 +13,6 @@
 		ChatSettingsFooter,
 		ChatSettingsImportExportTab,
 		ChatSettingsToolsTab,
-		ChatSettingsFrostedGlassWallpaper,
 		ChatSettingsFields,
 		McpLogo,
 		McpServersSettings
@@ -26,7 +25,6 @@
 		type SettingsSectionTitle,
 		NUMERIC_FIELDS,
 		POSITIVE_INTEGER_FIELDS,
-		SETTINGS_COLOR_MODES_CONFIG,
 		SETTINGS_KEYS,
 		API_PROVIDER_OPTIONS,
 		PROVIDER_CONNECTION_SETTING_KEYS
@@ -38,11 +36,12 @@
 		isApiProviderId,
 		type ApiProviderId
 	} from '$lib/constants/api-providers';
-	import { ColorMode } from '$lib/enums/ui';
 	import { SettingsFieldType } from '$lib/enums/settings';
 	import type { Component } from 'svelte';
 	import type { ProviderCapabilityKey } from '$lib/types/provider';
 	import { t } from '$lib/i18n';
+	import { getThemeOptions } from '$lib/themes/registry';
+	import { getThemeSettingsPanel } from '$lib/themes/ui-registry';
 
 	interface Props {
 		onSave?: () => void;
@@ -58,16 +57,9 @@
 		{ value: 'it', label: 'Italiano' },
 		{ value: 'es', label: 'Español' }
 	];
-	function getThemeLabel(theme: ColorMode): string {
-		switch (theme) {
-			case ColorMode.FROSTED_GLASS:
-				return t('settings.themeFrostedGlass');
-		}
-	}
-
-	const THEME_OPTIONS = SETTINGS_COLOR_MODES_CONFIG.map((option) => ({
+	const THEME_OPTIONS = getThemeOptions().map((option) => ({
 		...option,
-		label: getThemeLabel(option.value)
+		label: t(option.labelKey)
 	}));
 	const API_PROVIDER_SELECT_OPTIONS = API_PROVIDER_OPTIONS.map((option) => ({ ...option }));
 
@@ -720,6 +712,7 @@
 		initialSection ?? SETTINGS_SECTION_TITLES.GENERAL
 	);
 	let localConfig: SettingsConfigType = $state({ ...config() });
+	let ThemeSettingsPanel = $derived(getThemeSettingsPanel(localConfig.theme));
 	let activeConnectionKeys = $derived(getConnectionKeys(localConfig.apiProvider));
 	let providerCapabilities = $derived(
 		getApiProviderCapabilities(String(localConfig.apiProvider ?? ''), localConfig)
@@ -951,51 +944,8 @@
 				{:else}
 					<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 						{#each getCurrentGroups() as group (group.id)}
-							{#if currentSection.title === SETTINGS_SECTION_TITLES.APPEARANCE && group.id === 'message-display' && localConfig.theme === ColorMode.FROSTED_GLASS}
-								<section class="rounded-2xl border border-border bg-background p-4 lg:col-span-2">
-									<div
-										class="mb-5 flex items-start justify-between gap-4 border-b border-border/30 pb-4"
-										data-llampart-wallpaper-softening-header
-									>
-										<div class="min-w-0">
-											<h3 class="text-sm font-semibold">
-												{t('settings.groupFrostedGlassWallpaper')}
-											</h3>
-											<p class="mt-1 text-sm text-muted-foreground">
-												{t('settings.frostedGlassWallpaperDescription')}
-											</p>
-										</div>
-
-										<label
-											class="mt-0.5 inline-flex shrink-0 items-center gap-2 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-										>
-											<input
-												type="checkbox"
-												class="size-4 shrink-0 accent-foreground"
-												checked={Boolean(localConfig.frostedGlassWallpaperMilky)}
-												onchange={(event) => {
-													const input = event.currentTarget;
-
-													if (input instanceof HTMLInputElement) {
-														handleConfigChange(
-															SETTINGS_KEYS.FROSTED_GLASS_WALLPAPER_MILKY,
-															input.checked
-														);
-													}
-												}}
-											/>
-											<span class="font-medium whitespace-nowrap">
-												{t('settings.frostedGlassWallpaperMilk')}
-											</span>
-										</label>
-									</div>
-
-									<ChatSettingsFrostedGlassWallpaper
-										selectedWallpaper={String(localConfig.frostedGlassWallpaper ?? '')}
-										onWallpaperChange={(value) =>
-											handleConfigChange(SETTINGS_KEYS.FROSTED_GLASS_WALLPAPER, value)}
-									/>
-								</section>
+							{#if currentSection.title === SETTINGS_SECTION_TITLES.APPEARANCE && group.id === 'message-display' && ThemeSettingsPanel}
+								<ThemeSettingsPanel config={localConfig} onConfigChange={handleConfigChange} />
 							{/if}
 
 							{@const groupSpanClass = group.halfWidth ? '' : 'lg:col-span-2'}

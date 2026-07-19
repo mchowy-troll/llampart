@@ -1,0 +1,126 @@
+/* Attachment and attachment preview surfaces owned by Frosted Glass. */
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-markdown-preview,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-text-preview {
+	background: var(
+		--llampart-frosted-preview-inline-background,
+		color-mix(in oklch, var(--muted) 50%, transparent)
+	);
+	color: var(--llampart-frosted-preview-inline-foreground, var(--foreground));
+	text-shadow: var(--llampart-frosted-preview-inline-text-shadow, none) !important;
+	backdrop-filter: var(--llampart-frosted-preview-inline-backdrop-filter, none) !important;
+	-webkit-backdrop-filter: var(--llampart-frosted-preview-inline-backdrop-filter, none) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-markdown-preview * {
+	text-shadow: var(--llampart-frosted-preview-inline-text-shadow, none) !important;
+}
+
+/* llampart-block-b-image-thumbnail-polish */
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-attachment-thumbnail-image-readonly {
+	border: 1px solid rgba(255, 255, 255, 0.18) !important;
+	background: rgba(255, 255, 255, 0.12) !important;
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.14),
+		0 1px 2px rgba(0, 0, 0, 0.05),
+		0 4px 10px rgba(0, 0, 0, 0.04) !important;
+	backdrop-filter: blur(14px) saturate(110%) !important;
+	-webkit-backdrop-filter: blur(14px) saturate(110%) !important;
+}
+/* /llampart-block-b-image-thumbnail-polish */
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme {
+	--llampart-attachment-card-border: var(--llampart-frosted-message-surface-border);
+	--llampart-attachment-card-shadow: var(--llampart-frosted-message-surface-shadow);
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-attachment-thumbnail-file.llampart-attachment-card {
+	background: var(--llampart-frosted-surface-bg) !important;
+	color: var(--llampart-frosted-surface-text) !important;
+	text-shadow: var(--llampart-frosted-surface-text-shadow) !important;
+	-webkit-backdrop-filter: var(--llampart-frosted-surface-filter) !important;
+	backdrop-filter: var(--llampart-frosted-surface-filter) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-attachment-thumbnail-file.llampart-attachment-card
+	*,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-attachment-thumbnail-file.llampart-attachment-card-title {
+	color: var(--llampart-frosted-surface-text) !important;
+	text-shadow: var(--llampart-frosted-surface-text-shadow) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-attachment-thumbnail-file
+	.text-muted-foreground {
+	color: rgba(0, 0, 0, 0.68) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-thumbnail-image img {
+	border-color: var(--llampart-frosted-message-surface-border) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	[data-slot='dialog-content']
+	.llampart-attachment-thumbnail-file.llampart-attachment-card {
+	box-shadow: none !important;
+}
+
+/* llampart-attachments-view-all-panel-surface
+   Inner attachment list panel is intentionally lighter than the dialog shell in Frosted Glass. */
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachments-view-all-panel {
+	border: 1px solid rgba(255, 255, 255, 0.18);
+	background: rgba(255, 255, 255, 0.1);
+	background-color: rgba(255, 255, 255, 0.1);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+	backdrop-filter: blur(10px) saturate(108%);
+	-webkit-backdrop-filter: blur(10px) saturate(108%);
+}
+/* /llampart-attachments-view-all-panel-surface */
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-attachment-preview-dialog-content,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-preview-dialog-shell,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-preview-dialog-header,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-preview-dialog-body,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-preview-content,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-pdf-preview-pages,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-pdf-preview-page,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-image-preview-frame {
+	background: var(--llampart-frosted-preview-surface-background, var(--background)) !important;
+	background-color: var(
+		--llampart-frosted-preview-surface-background,
+		var(--background)
+	) !important;
+	color: var(--llampart-frosted-preview-surface-foreground, var(--foreground)) !important;
+	backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
+	-webkit-backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
+	text-shadow: var(--llampart-frosted-preview-surface-text-shadow, none) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-attachment-preview-dialog-content
+	*,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-attachment-preview-dialog-shell
+	* {
+	text-shadow: var(--llampart-frosted-preview-surface-text-shadow, none) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-attachments-view-all-dialog-content,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachments-view-all-panel {
+	background: var(--llampart-frosted-preview-surface-background, var(--background)) !important;
+	background-color: var(
+		--llampart-frosted-preview-surface-background,
+		var(--background)
+	) !important;
+	background-image: var(--llampart-frosted-preview-surface-background-image, none) !important;
+	color: var(--llampart-frosted-preview-surface-foreground, var(--foreground)) !important;
+	backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
+	-webkit-backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
+	text-shadow: var(--llampart-frosted-preview-surface-text-shadow, none) !important;
+}

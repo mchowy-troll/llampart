@@ -647,7 +647,7 @@
 		height: 1px !important;
 		margin: 0 !important;
 		padding: 0 !important;
-		background: rgba(0, 0, 0, 0.11) !important;
+		background: var(--llampart-sidebar-header-separator-background) !important;
 		border: 0 !important;
 		box-shadow: none !important;
 	}
@@ -658,22 +658,6 @@
 
 	:global(.llampart-sidebar-actions-separator) {
 		margin: 0 0 1rem 0 !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-sidebar-header-separator) {
-		background: rgba(0, 0, 0, 0.1) !important;
-	}
-
-	/* llampart-sidebar-action-search-input-frosted-surface */
-	:global(html.has-frosted-glass-theme .llampart-sidebar-action-search-input) {
-		background: rgba(255, 255, 255, 0.2) !important;
-		background-color: rgba(255, 255, 255, 0.2) !important;
-		border-color: rgba(255, 255, 255, 0.34) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.26),
-			0 1px 2px rgba(0, 0, 0, 0.05) !important;
-		backdrop-filter: blur(24px) saturate(135%) !important;
-		-webkit-backdrop-filter: blur(24px) saturate(135%) !important;
 	}
 
 	/* llampart-sidebar-container-query-columns */
@@ -752,27 +736,27 @@
 	:global(.llampart-sidebar-select-checkbox:checked),
 	:global(.llampart-sidebar-select-checkbox:checked:hover),
 	:global(.llampart-sidebar-select-checkbox:checked:focus-visible) {
-		border-color: #3c3c3c;
-		background-color: #3c3c3c;
+		border-color: var(--llampart-sidebar-selection-accent);
+		background-color: var(--llampart-sidebar-selection-accent);
 		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 	}
 
 	:global(.llampart-sidebar-conversations-frame) {
 		border-width: 1px;
 		border-style: solid;
-		border-color: #cecece;
+		border-color: var(--llampart-sidebar-conversations-frame-border-color);
 		box-shadow: none;
 	}
 
 	:global(.llampart-sidebar-frame-header button) {
-		color: #1a1a1a;
+		color: var(--llampart-sidebar-action-foreground);
 	}
 
 	:global(.llampart-sidebar-delete-button) {
 		border: 0;
 		background-color: transparent;
 		box-shadow: none;
-		color: #1a1a1a;
+		color: var(--llampart-sidebar-action-foreground);
 		transition: color 150ms ease-out;
 	}
 
@@ -780,7 +764,7 @@
 	:global(.llampart-sidebar-delete-button:focus-visible) {
 		background-color: transparent;
 		box-shadow: none;
-		color: #2b2b2b;
+		color: var(--llampart-sidebar-action-hover-foreground);
 	}
 
 	:global(.llampart-sidebar-delete-button:active) {
@@ -802,43 +786,15 @@
 		transition: none;
 	}
 
-	/* Frosted Glass sidebar frame surface values are owned by src/app.css shared surface primitives. */
-
-	:global(html.has-frosted-glass-theme .llampart-sidebar-frame-header button),
-	:global(html.has-frosted-glass-theme .llampart-sidebar-frame-header input) {
-		border-color: transparent;
-		background: transparent;
-		box-shadow: none;
-		-webkit-backdrop-filter: none;
-		backdrop-filter: none;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-sidebar-delete-button),
-	:global(html.has-frosted-glass-theme .llampart-sidebar-delete-button:is(:hover, :focus-visible)),
-	:global(html.has-frosted-glass-theme .llampart-sidebar-delete-button:disabled),
-	:global(
-		html.has-frosted-glass-theme .llampart-sidebar-delete-button:disabled:is(:hover, :focus-visible)
-	) {
-		border: 0;
-		background: transparent;
-		box-shadow: none;
-		-webkit-backdrop-filter: none;
-		backdrop-filter: none;
-	}
-
 	/* llampart sidebar polish: icon action hover parity */
 	:global(.llampart-sidebar-delete-button) {
 		border: 0;
 		background-color: transparent;
 		box-shadow: none;
-		color: #686868;
+		color: var(--llampart-sidebar-conversation-control-foreground);
 		transition:
 			background-color 150ms ease-out,
 			color 150ms ease-out;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-sidebar-delete-button) {
-		color: #1a1a1a;
 	}
 
 	:global(.llampart-sidebar-delete-button:hover:not(:disabled)),
@@ -848,31 +804,9 @@
 		color: var(--accent-foreground);
 	}
 
-	:global(html.has-frosted-glass-theme .llampart-sidebar-delete-button) {
-		border: 0;
-		background: transparent;
-		box-shadow: none;
-		-webkit-backdrop-filter: none;
-		backdrop-filter: none;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-sidebar-delete-button:hover:not(:disabled)),
-	:global(
-		html.has-frosted-glass-theme .llampart-sidebar-delete-button:focus-visible:not(:disabled)
-	) {
-		background: var(--accent);
-		box-shadow: none;
-		color: var(--accent-foreground);
-		-webkit-backdrop-filter: none;
-		backdrop-filter: none;
-	}
-
 	:global(.llampart-sidebar-delete-button:disabled),
 	:global(.llampart-sidebar-delete-button:disabled:hover),
-	:global(.llampart-sidebar-delete-button:disabled:focus-visible),
-	:global(html.has-frosted-glass-theme .llampart-sidebar-delete-button:disabled),
-	:global(html.has-frosted-glass-theme .llampart-sidebar-delete-button:disabled:hover),
-	:global(html.has-frosted-glass-theme .llampart-sidebar-delete-button:disabled:focus-visible) {
+	:global(.llampart-sidebar-delete-button:disabled:focus-visible) {
 		background: transparent;
 		box-shadow: none;
 		color: color-mix(in oklch, var(--muted-foreground) 45%, transparent);

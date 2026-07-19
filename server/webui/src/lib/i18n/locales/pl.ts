@@ -155,7 +155,6 @@ export const pl: TranslationDictionary = {
 			'Używaj pierwszej niepustej linii jako tytułu rozmowy',
 		fieldUseLLMToGenerateConversationTitle: 'Używaj LLM do generowania tytułu rozmowy',
 		fieldLLMTitleGenerationPrompt: 'Prompt generowania tytułu rozmowy przez LLM',
-		themeFrostedGlass: 'Frosted Glass',
 		fieldUiScale: 'Skala interfejsu',
 		defaultPrefix: 'Domyślnie:',
 		resetToDefault: 'Przywróć domyślne',
@@ -226,29 +225,6 @@ export const pl: TranslationDictionary = {
 		groupOpenAiCompatibleOptions: 'Opcje OpenAI-compatible',
 		groupSystemMessage: 'Wiadomość systemowa',
 		groupInterface: 'Interfejs',
-		groupFrostedGlassWallpaper: 'Tapeta',
-		frostedGlassWallpaperDescription:
-			'Wybierz jedną z 5 wbudowanych tapet albo własną tapetę zapisaną lokalnie w tej przeglądarce.',
-		frostedGlassWallpaperMilk: 'Mleczna tapeta',
-		frostedGlassWallpaperSofteningDescription:
-			'Dodaje delikatne rozmycie i mleczną warstwę tylko do tła tapety. Nie rozmywa tekstu ani zanikania nad composerem.',
-		frostedGlassWallpaper01: 'Frosted Glass 01',
-		frostedGlassWallpaper02: 'Frosted Glass 02',
-		frostedGlassWallpaper03: 'Frosted Glass 03',
-		frostedGlassWallpaper04: 'Frosted Glass 04',
-		frostedGlassWallpaper05: 'Frosted Glass 05',
-		frostedGlassWallpaperUser: 'Tapeta użytkownika',
-		frostedGlassWallpaperUpload: 'Wczytaj JPG/PNG',
-		frostedGlassWallpaperAdd: 'Dodaj',
-		frostedGlassWallpaperReplace: 'Zmień',
-		frostedGlassWallpaperRemove: 'Usuń',
-		frostedGlassWallpaperUserSaved: 'Tapeta użytkownika została zapisana.',
-		frostedGlassWallpaperUserRemoved: 'Tapeta użytkownika została usunięta.',
-		frostedGlassWallpaperUploadInvalidType: 'Wybierz plik JPG lub PNG.',
-		frostedGlassWallpaperUploadTooLarge: 'Tapeta może mieć maksymalnie 3 MB.',
-		frostedGlassWallpaperUploadRequirements: 'Użyj pliku JPG lub PNG o rozmiarze do 3 MB.',
-		frostedGlassWallpaperUploadReadError:
-			'Nie udało się zapisać tapety. LocalStorage przeglądarki może być pełny.',
 		groupApplicationBackground: 'Tło aplikacji',
 		backgroundImageDescription:
 			'Wybierz lokalny obraz używany jako tło aplikacji w tej przeglądarce.',
@@ -372,8 +348,6 @@ export const pl: TranslationDictionary = {
 			showSystemMessage: 'Pokazuj wiadomość systemową na początku każdej rozmowy.',
 			theme:
 				'Wybierz styl interfejsu. Frosted Glass używa własnych wbudowanych tapet i efektów szkła.',
-			frostedGlassWallpaper:
-				'Wybrana tapeta Frosted Glass. Wbudowane tapety są dostarczane z llampart; własna tapeta jest zapisana tylko w localStorage tej przeglądarki.',
 			interfaceLanguage:
 				'Wybierz język interfejsu. Przy pierwszym uruchomieniu domyślny jest angielski.',
 			uiScale:

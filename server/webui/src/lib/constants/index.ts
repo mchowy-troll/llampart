@@ -15,7 +15,6 @@ export * from './context-keys';
 export * from './css-classes';
 export * from './favicon';
 export * from './floating-ui-constraints';
-export * from './frosted-glass-wallpapers';
 export * from './formatters';
 export * from './key-value-pairs';
 export * from './icons';

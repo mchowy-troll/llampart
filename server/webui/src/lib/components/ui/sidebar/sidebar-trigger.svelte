@@ -44,52 +44,30 @@
 		border-color: transparent !important;
 		box-shadow: none !important;
 		outline: none !important;
-		color: #111111 !important;
+		color: var(--llampart-sidebar-trigger-foreground) !important;
 	}
 
 	:global(.llampart-sidebar-v-trigger-closed),
 	:global(.llampart-sidebar-v-trigger-closed:hover),
 	:global(.llampart-sidebar-v-trigger-closed:focus-visible) {
-		background: #f9f9f9 !important;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
+		background: var(--llampart-sidebar-trigger-closed-background) !important;
+		backdrop-filter: var(--llampart-sidebar-trigger-backdrop-filter) !important;
+		-webkit-backdrop-filter: var(--llampart-sidebar-trigger-backdrop-filter) !important;
 	}
 
 	:global(.llampart-sidebar-v-trigger-open),
 	:global(.llampart-sidebar-v-trigger-open:hover),
 	:global(.llampart-sidebar-v-trigger-open:focus-visible) {
-		background: transparent !important;
-		background-color: transparent !important;
-		background-image: none !important;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-sidebar-v-trigger) {
-		color: #111111 !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-sidebar-v-trigger-closed),
-	:global(html.has-frosted-glass-theme .llampart-sidebar-v-trigger-closed:hover),
-	:global(html.has-frosted-glass-theme .llampart-sidebar-v-trigger-closed:focus-visible) {
-		background: rgba(255, 255, 255, 0.23) !important;
-		backdrop-filter: blur(14px) saturate(128%) !important;
-		-webkit-backdrop-filter: blur(14px) saturate(128%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-sidebar-v-trigger-open),
-	:global(html.has-frosted-glass-theme .llampart-sidebar-v-trigger-open:hover),
-	:global(html.has-frosted-glass-theme .llampart-sidebar-v-trigger-open:focus-visible) {
-		background: transparent !important;
-		background-color: transparent !important;
-		background-image: none !important;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
+		background: var(--llampart-sidebar-trigger-open-background) !important;
+		background-color: var(--llampart-sidebar-trigger-open-background) !important;
+		background-image: var(--llampart-sidebar-trigger-open-background-image) !important;
+		backdrop-filter: var(--llampart-sidebar-trigger-backdrop-filter) !important;
+		-webkit-backdrop-filter: var(--llampart-sidebar-trigger-backdrop-filter) !important;
 	}
 
 	:global(.llampart-sidebar-v-trigger svg),
 	:global(.llampart-sidebar-v-trigger svg *) {
-		filter: none !important;
+		filter: var(--llampart-sidebar-trigger-icon-filter) !important;
 		stroke-width: 2 !important;
 	}
 </style>

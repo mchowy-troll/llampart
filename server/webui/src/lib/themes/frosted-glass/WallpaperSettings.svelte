@@ -12,7 +12,7 @@
 		getCustomFrostedGlassWallpaperSrc,
 		isAcceptedCustomFrostedGlassWallpaperType,
 		setCustomFrostedGlassWallpaperSrc
-	} from '$lib/constants';
+	} from './wallpapers';
 	import { t } from '$lib/i18n';
 
 	interface Props {

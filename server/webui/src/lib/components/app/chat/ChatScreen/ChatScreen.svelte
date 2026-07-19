@@ -29,7 +29,7 @@
 		activeConversation
 	} from '$lib/stores/conversations.svelte';
 	import { config } from '$lib/stores/settings.svelte';
-	import { ColorMode } from '$lib/enums/ui';
+	import { getThemeDefinition } from '$lib/themes/registry';
 	import { serverLoading, serverError, serverStore, isRouterMode } from '$lib/stores/server.svelte';
 	import { modelsStore, modelOptions, selectedModelId } from '$lib/stores/models.svelte';
 	import { isFileTypeSupported, filterFilesByModalities } from '$lib/utils';
@@ -43,10 +43,10 @@
 	let { showCenteredEmpty = false } = $props();
 
 	let disableAutoScroll = $derived(Boolean(config().disableAutoScroll));
-	let isFrostedGlassTheme = $derived(config().theme === ColorMode.FROSTED_GLASS);
-	let frostedGlassSlideDuration = $derived(isFrostedGlassTheme ? 0 : 150);
-	let frostedGlassFlyDuration = $derived(isFrostedGlassTheme ? 0 : 250);
-	let frostedGlassFadeDuration = $derived(isFrostedGlassTheme ? 0 : 300);
+	let activeTheme = $derived(getThemeDefinition(config().theme));
+	let screenSlideDuration = $derived(activeTheme.motion.screenTransitions ? 150 : 0);
+	let screenFlyDuration = $derived(activeTheme.motion.screenTransitions ? 250 : 0);
+	let screenFadeDuration = $derived(activeTheme.motion.screenTransitions ? 300 : 0);
 	let chatScrollContainer: HTMLDivElement | undefined = $state();
 	let dragCounter = $state(0);
 	let isDragOver = $state(false);
@@ -82,7 +82,7 @@
 	let activeErrorDialog = $derived(errorDialog());
 	let isServerLoading = $derived(serverLoading());
 	let hasPropsError = $derived(!!serverError());
-	let frostedGlassDelayedFlyDelay = $derived(isFrostedGlassTheme ? 0 : hasPropsError ? 0 : 300);
+	let delayedFlyDelay = $derived(activeTheme.motion.screenTransitions && !hasPropsError ? 300 : 0);
 
 	let isCurrentConversationLoading = $derived(isLoading() || isChatStreaming());
 
@@ -390,15 +390,13 @@
 
 			<div
 				class="pointer-events-none sticky right-0 bottom-4 left-0 z-20 mt-auto"
-				in:slide={{ duration: frostedGlassSlideDuration, axis: 'y' }}
+				in:slide={{ duration: screenSlideDuration, axis: 'y' }}
 			>
-				{#if isFrostedGlassTheme}
-					<!-- llampart-chat-composer-boundary-fade-owner -->
-					<div
-						class="llampart-composer-fade-curtain llampart-frosted-glass-composer-fade-curtain pointer-events-none fixed inset-x-0 bottom-0 z-10 overflow-hidden"
-						aria-hidden="true"
-					></div>
-				{/if}
+				<!-- llampart-chat-composer-boundary-fade-owner -->
+				<div
+					class="llampart-composer-fade-curtain pointer-events-none fixed inset-x-0 bottom-0 z-10 overflow-hidden"
+					aria-hidden="true"
+				></div>
 
 				<div class="relative z-20">
 					<ChatScreenProcessingInfo />
@@ -407,7 +405,7 @@
 				{#if hasPropsError}
 					<div
 						class="llampart-chat-composer-width pointer-events-auto mx-auto mb-4 px-1"
-						in:fly={{ y: 10, duration: frostedGlassFlyDuration }}
+						in:fly={{ y: 10, duration: screenFlyDuration }}
 					>
 						<Alert.Root variant="destructive">
 							<AlertTriangle class="h-4 w-4" />
@@ -427,10 +425,7 @@
 					</div>
 				{/if}
 
-				<div
-					class="conversation-chat-form pointer-events-auto relative z-20 rounded-t-3xl"
-					class:has-frosted-glass-theme={isFrostedGlassTheme}
-				>
+				<div class="conversation-chat-form pointer-events-auto relative z-20 rounded-t-3xl">
 					<ChatScreenForm
 						disabled={hasPropsError || isEditing()}
 						{initialMessage}
@@ -461,7 +456,7 @@
 		role="main"
 	>
 		<div class="llampart-empty-chat-form llampart-chat-composer-width w-full px-4">
-			<div class="mb-10 text-center" in:fade={{ duration: frostedGlassFadeDuration }}>
+			<div class="mb-10 text-center" in:fade={{ duration: screenFadeDuration }}>
 				<h1
 					class="llampart-empty-chat-title mb-2 text-2xl font-semibold tracking-tight md:text-3xl"
 				>
@@ -476,7 +471,7 @@
 			</div>
 
 			{#if hasPropsError}
-				<div class="mb-4" in:fly={{ y: 10, duration: frostedGlassFlyDuration }}>
+				<div class="mb-4" in:fly={{ y: 10, duration: screenFlyDuration }}>
 					<Alert.Root variant="destructive">
 						<AlertTriangle class="h-4 w-4" />
 
@@ -498,9 +493,7 @@
 				</div>
 			{/if}
 
-			<div
-				in:fly={{ y: 10, duration: frostedGlassFlyDuration, delay: frostedGlassDelayedFlyDelay }}
-			>
+			<div in:fly={{ y: 10, duration: screenFlyDuration, delay: delayedFlyDelay }}>
 				<ChatScreenForm
 					disabled={hasPropsError}
 					{initialMessage}
@@ -637,368 +630,5 @@
 			height: 2.375rem;
 			background-color: var(--background);
 		}
-	}
-
-	.conversation-chat-form.has-frosted-glass-theme::after {
-		background-color: transparent;
-	}
-
-	:global(.has-frosted-glass-theme) .conversation-chat-form::after {
-		background-color: transparent;
-	}
-
-	/* llampart-frosted-glass-composer-menu-surfaces: global owner is src/app.css. */
-
-	:global(html.has-frosted-glass-theme .conversation-chat-form .llampart-chat-input-frame),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .llampart-chat-input-frame) {
-		border: 1px solid var(--llampart-frosted-surface-border) !important;
-		border-radius: var(--llampart-frosted-glass-composer-radius) !important;
-		background: rgba(255, 255, 255, 0.34) !important;
-		box-shadow:
-			0 1px 2px rgba(0, 0, 0, 0.04),
-			0 8px 26px rgba(0, 0, 0, 0.036),
-			0 20px 48px rgba(0, 0, 0, 0.028) !important;
-		backdrop-filter: blur(28px) saturate(132%) !important;
-		-webkit-backdrop-filter: blur(28px) saturate(132%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-composer-plus-trigger),
-	:global(html.has-frosted-glass-theme .llampart-composer-plus-trigger *) {
-		background: transparent !important;
-		box-shadow: none !important;
-		outline: none !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-composer-plus-trigger),
-	:global(html.has-frosted-glass-theme .llampart-composer-attachments-trigger),
-	:global(html.has-frosted-glass-theme .llampart-composer-attachments-trigger > *),
-	:global(
-		html.has-frosted-glass-theme
-			.llampart-composer-attachments-trigger
-			[data-slot='dropdown-menu-trigger']
-	),
-	:global(
-		html.has-frosted-glass-theme
-			.llampart-composer-attachments-trigger
-			[data-slot='tooltip-trigger']
-	) {
-		display: inline-flex !important;
-		width: auto !important;
-		height: auto !important;
-		padding: 0 !important;
-		border: none !important;
-		border-radius: 9999px !important;
-		background: transparent !important;
-		box-shadow: none !important;
-	}
-
-	:global(html.has-frosted-glass-theme .conversation-chat-form .llampart-composer-action-button),
-	:global(html.has-frosted-glass-theme .conversation-chat-form .file-upload-button),
-	:global(html.has-frosted-glass-theme .conversation-chat-form .llampart-model-selector-trigger),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .llampart-composer-action-button),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .file-upload-button),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .llampart-model-selector-trigger) {
-		display: inline-flex !important;
-		align-items: center !important;
-		justify-content: center !important;
-		overflow: hidden !important;
-		border: 1px solid var(--llampart-frosted-surface-border) !important;
-		background: rgba(255, 255, 255, 0.58) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.24),
-			0 1px 2px rgba(0, 0, 0, 0.028) !important;
-		color: #111111 !important;
-		backdrop-filter: blur(14px) saturate(124%) !important;
-		-webkit-backdrop-filter: blur(14px) saturate(124%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-composer-action-button:hover),
-	:global(html.has-frosted-glass-theme .file-upload-button:hover),
-	:global(html.has-frosted-glass-theme .llampart-model-selector-trigger:hover) {
-		background: rgba(255, 255, 255, 0.66) !important;
-	}
-
-	/* Composer menu content, search, option and MCP list surfaces are owned globally in src/app.css. */
-
-	:global(html.has-frosted-glass-theme .llampart-frosted-glass-switch),
-	:global(html.has-frosted-glass-theme .llampart-frosted-glass-switch[data-slot='switch']) {
-		border: 1px solid rgba(255, 255, 255, 0.34) !important;
-		background: rgba(255, 255, 255, 0.18) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.2),
-			0 1px 2px rgba(0, 0, 0, 0.024) !important;
-		backdrop-filter: blur(16px) saturate(126%) !important;
-		-webkit-backdrop-filter: blur(16px) saturate(126%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-frosted-glass-switch[data-state='checked']),
-	:global(
-		html.has-frosted-glass-theme
-			.llampart-frosted-glass-switch[data-slot='switch'][data-state='checked']
-	) {
-		background: rgba(63, 66, 72, 0.82) !important;
-		border-color: rgba(255, 255, 255, 0.26) !important;
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.08),
-			0 0 0 1px rgba(255, 255, 255, 0.04),
-			0 6px 18px rgba(0, 0, 0, 0.12) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .llampart-frosted-glass-switch [data-slot='switch-thumb']),
-	:global(html.has-frosted-glass-theme .llampart-frosted-glass-switch .thumb) {
-		background: rgba(255, 255, 255, 0.92) !important;
-		border: 1px solid rgba(255, 255, 255, 0.55) !important;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
-	}
-
-	/* llampart-frosted-glass-mcp-submenu-switch-off-visible */
-	:global(html.has-frosted-glass-theme .llampart-frosted-glass-switch[data-state='unchecked']),
-	:global(
-		html.has-frosted-glass-theme
-			.llampart-frosted-glass-switch[data-slot='switch'][data-state='unchecked']
-	) {
-		background: rgba(17, 24, 39, 0.16) !important;
-		border-color: rgba(17, 24, 39, 0.18) !important;
-		box-shadow:
-			inset 0 1px 1px rgba(17, 24, 39, 0.08),
-			0 1px 2px rgba(0, 0, 0, 0.035) !important;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
-	}
-
-	:global(
-		html.has-frosted-glass-theme
-			.llampart-frosted-glass-switch[data-state='unchecked']
-			[data-slot='switch-thumb']
-	),
-	:global(
-		html.has-frosted-glass-theme
-			.llampart-frosted-glass-switch[data-slot='switch'][data-state='unchecked']
-			[data-slot='switch-thumb']
-	) {
-		background: rgba(255, 255, 255, 0.96) !important;
-		border-color: rgba(17, 24, 39, 0.2) !important;
-		box-shadow:
-			0 1px 2px rgba(17, 24, 39, 0.16),
-			0 0 0 1px rgba(17, 24, 39, 0.04) !important;
-	}
-
-	/* llampart-frosted-glass-mcp-submenu-white-fallback */
-	:global(
-		html.has-frosted-glass-theme
-			[data-slot='dropdown-menu-sub-content'].llampart-composer-mcp-submenu
-	),
-	:global(
-		html.has-frosted-glass-theme
-			[data-slot='dropdown-menu-sub-content'].llampart-composer-menu-content.llampart-composer-mcp-submenu
-	) {
-		border: 1px solid rgba(0, 0, 0, 0.08) !important;
-		border-radius: var(--llampart-frosted-glass-composer-radius) !important;
-		background: #ffffff !important;
-		background-color: #ffffff !important;
-		background-image: none !important;
-		box-shadow:
-			0 14px 36px rgba(15, 23, 42, 0.14),
-			0 2px 8px rgba(15, 23, 42, 0.08) !important;
-		backdrop-filter: none !important;
-		-webkit-backdrop-filter: none !important;
-		overflow: hidden !important;
-		color: #111111 !important;
-	}
-
-	/* llampart-frosted-glass-plus-half-milk-final */
-	:global(html.has-frosted-glass-theme .conversation-chat-form .file-upload-button),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .file-upload-button),
-	:global(html.has-frosted-glass-theme .llampart-chat-input-frame .file-upload-button),
-	:global(html.has-frosted-glass-theme .file-upload-button.llampart-composer-action-button) {
-		box-sizing: border-box !important;
-		width: 2rem !important;
-		height: 2rem !important;
-		min-width: 2rem !important;
-		min-height: 2rem !important;
-		max-width: 2rem !important;
-		max-height: 2rem !important;
-		padding: 0 !important;
-		border: 0 !important;
-		outline: 0 !important;
-		border-radius: 9999px !important;
-		background: rgba(137, 148, 146, 0.29) !important;
-		background-color: rgba(137, 148, 146, 0.29) !important;
-		background-image: none !important;
-		color: #111111 !important;
-		opacity: 1 !important;
-		box-shadow: none !important;
-		filter: none !important;
-		transform: none !important;
-		transition:
-			background-color 160ms ease,
-			opacity 160ms ease !important;
-		--tw-ring-offset-shadow: 0 0 #0000 !important;
-		--tw-ring-shadow: 0 0 #0000 !important;
-		--tw-shadow: 0 0 #0000 !important;
-		--tw-shadow-colored: 0 0 #0000 !important;
-		backdrop-filter: blur(8px) saturate(104%) !important;
-		-webkit-backdrop-filter: blur(8px) saturate(104%) !important;
-	}
-
-	:global(html.has-frosted-glass-theme .conversation-chat-form .file-upload-button:hover),
-	:global(html.has-frosted-glass-theme .conversation-chat-form .file-upload-button:focus),
-	:global(html.has-frosted-glass-theme .conversation-chat-form .file-upload-button:focus-visible),
-	:global(html.has-frosted-glass-theme .conversation-chat-form .file-upload-button:active),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .file-upload-button:hover),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .file-upload-button:focus),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .file-upload-button:focus-visible),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .file-upload-button:active),
-	:global(html.has-frosted-glass-theme .llampart-chat-input-frame .file-upload-button:hover),
-	:global(html.has-frosted-glass-theme .llampart-chat-input-frame .file-upload-button:focus),
-	:global(
-		html.has-frosted-glass-theme .llampart-chat-input-frame .file-upload-button:focus-visible
-	),
-	:global(html.has-frosted-glass-theme .llampart-chat-input-frame .file-upload-button:active),
-	:global(html.has-frosted-glass-theme .file-upload-button.llampart-composer-action-button:hover),
-	:global(html.has-frosted-glass-theme .file-upload-button.llampart-composer-action-button:focus),
-	:global(
-		html.has-frosted-glass-theme .file-upload-button.llampart-composer-action-button:focus-visible
-	),
-	:global(html.has-frosted-glass-theme .file-upload-button.llampart-composer-action-button:active) {
-		border: 0 !important;
-		outline: 0 !important;
-		background: rgba(137, 148, 146, 0.34) !important;
-		background-color: rgba(137, 148, 146, 0.34) !important;
-		background-image: none !important;
-		box-shadow: none !important;
-		filter: none !important;
-		transform: none !important;
-		--tw-ring-offset-shadow: 0 0 #0000 !important;
-		--tw-ring-shadow: 0 0 #0000 !important;
-		--tw-shadow: 0 0 #0000 !important;
-		--tw-shadow-colored: 0 0 #0000 !important;
-	}
-
-	:global(html.has-frosted-glass-theme .conversation-chat-form .file-upload-button::before),
-	:global(html.has-frosted-glass-theme .conversation-chat-form .file-upload-button::after),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .file-upload-button::before),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .file-upload-button::after),
-	:global(html.has-frosted-glass-theme .llampart-chat-input-frame .file-upload-button::before),
-	:global(html.has-frosted-glass-theme .llampart-chat-input-frame .file-upload-button::after),
-	:global(html.has-frosted-glass-theme .file-upload-button.llampart-composer-action-button::before),
-	:global(html.has-frosted-glass-theme .file-upload-button.llampart-composer-action-button::after) {
-		content: none !important;
-		display: none !important;
-		background: transparent !important;
-		box-shadow: none !important;
-		opacity: 0 !important;
-	}
-
-	:global(html.has-frosted-glass-theme .conversation-chat-form .file-upload-button svg),
-	:global(html.has-frosted-glass-theme .llampart-empty-chat-form .file-upload-button svg),
-	:global(html.has-frosted-glass-theme .llampart-chat-input-frame .file-upload-button svg),
-	:global(html.has-frosted-glass-theme .file-upload-button.llampart-composer-action-button svg) {
-		width: 1.125rem !important;
-		height: 1.125rem !important;
-		color: #111111 !important;
-		stroke: currentColor !important;
-		stroke-width: 1.85 !important;
-		filter: none !important;
-	}
-
-	/* llampart-frosted-glass-welcome-text-polish */
-	:global(html.has-frosted-glass-theme) .llampart-empty-chat-title {
-		color: #050505 !important;
-		text-shadow:
-			0 0 2px rgba(255, 255, 255, 0.64),
-			0 0 8px rgba(255, 255, 255, 0.5),
-			0 0 16px rgba(255, 255, 255, 0.34) !important;
-	}
-
-	:global(html.has-frosted-glass-theme) .llampart-empty-chat-subtitle {
-		color: rgba(5, 5, 5, 0.72) !important;
-		text-shadow:
-			0 0 2px rgba(255, 255, 255, 0.58),
-			0 0 8px rgba(255, 255, 255, 0.42),
-			0 0 16px rgba(255, 255, 255, 0.24) !important;
-	}
-
-	/* llampart-chat-composer-boundary-fade-owner */
-	.llampart-composer-fade-curtain {
-		position: fixed !important;
-		inset-inline: 0 !important;
-		top: auto !important;
-		bottom: 0 !important;
-		width: 100vw !important;
-		height: calc(
-			var(--llampart-composer-fade-height, clamp(4.6rem, 9.1vh, 6.15rem)) +
-				var(--llampart-composer-fade-end-offset, 2.9rem) + 8.5rem
-		);
-		transform: none !important;
-		overflow: hidden;
-		contain: paint;
-		background-color: var(--llampart-composer-fade-background, var(--background));
-		background-image: none;
-		-webkit-mask-image: linear-gradient(
-			to bottom,
-			transparent 0,
-			black
-				calc(
-					var(--llampart-composer-fade-height, clamp(4.6rem, 9.1vh, 6.15rem)) +
-						var(--llampart-composer-fade-end-offset, 2.9rem)
-				),
-			black 100%
-		);
-		mask-image: linear-gradient(
-			to bottom,
-			transparent 0,
-			black
-				calc(
-					var(--llampart-composer-fade-height, clamp(4.6rem, 9.1vh, 6.15rem)) +
-						var(--llampart-composer-fade-end-offset, 2.9rem)
-				),
-			black 100%
-		);
-	}
-
-	:global(html.has-frosted-glass-theme) .llampart-frosted-glass-composer-fade-curtain {
-		background-color: var(--background);
-		background-image: var(--llampart-frosted-glass-wallpaper);
-		background-position: center;
-		background-size: cover;
-		background-repeat: no-repeat;
-		background-attachment: fixed;
-	}
-
-	:global(html.has-frosted-glass-theme.has-frosted-glass-wallpaper-milk)
-		.llampart-frosted-glass-composer-fade-curtain {
-		background-color: transparent !important;
-		background-image: none !important;
-		isolation: isolate;
-	}
-
-	:global(html.has-frosted-glass-theme.has-frosted-glass-wallpaper-milk)
-		.llampart-frosted-glass-composer-fade-curtain::before {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		height: 100vh;
-		z-index: 0;
-		pointer-events: none;
-		background-image: var(--llampart-frosted-glass-wallpaper);
-		background-position: center;
-		background-size: cover;
-		background-repeat: no-repeat;
-		transform-origin: center bottom;
-	}
-
-	:global(html.has-frosted-glass-theme.has-frosted-glass-wallpaper-milk)
-		.llampart-frosted-glass-composer-fade-curtain::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		z-index: 1;
-		pointer-events: none;
-		background:
-			linear-gradient(180deg, rgb(255 255 255 / 0.19), rgb(255 255 255 / 0.12)),
-			linear-gradient(0deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.12));
 	}
 </style>
