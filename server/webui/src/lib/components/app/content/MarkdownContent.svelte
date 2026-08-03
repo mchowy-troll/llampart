@@ -1578,8 +1578,8 @@
 		padding: 3rem 1rem 1rem;
 		border: none;
 		border-radius: 0;
-		scrollbar-width: auto;
-		scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent) transparent;
+		scrollbar-width: thin;
+		scrollbar-color: transparent transparent;
 		-webkit-overflow-scrolling: touch;
 	}
 
@@ -1606,12 +1606,18 @@
 	}
 
 	div :global(.table-wrapper::-webkit-scrollbar-thumb) {
-		background: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+		background: transparent;
 		border-radius: 9999px;
 	}
 
-	div :global(.table-wrapper::-webkit-scrollbar-thumb:hover) {
-		background: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+	div :global(.table-wrapper:hover),
+	div :global(.table-wrapper:focus-within) {
+		scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent) transparent;
+	}
+
+	div :global(.table-wrapper:hover::-webkit-scrollbar-thumb),
+	div :global(.table-wrapper:focus-within::-webkit-scrollbar-thumb) {
+		background: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
 	}
 
 	div :global(.table-wrapper th),
@@ -1644,8 +1650,8 @@
 		border-radius: 0;
 		background: transparent;
 		box-shadow: none;
-		scrollbar-width: auto;
-		scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent) transparent;
+		scrollbar-width: thin;
+		scrollbar-color: transparent transparent;
 		-webkit-overflow-scrolling: touch;
 	}
 
@@ -1716,12 +1722,18 @@
 	}
 
 	:global(.table-preview-body .table-preview-wrapper::-webkit-scrollbar-thumb) {
-		background: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+		background: transparent;
 		border-radius: 9999px;
 	}
 
-	:global(.table-preview-body .table-preview-wrapper::-webkit-scrollbar-thumb:hover) {
-		background: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
+	:global(.table-preview-body .table-preview-wrapper:hover),
+	:global(.table-preview-body .table-preview-wrapper:focus-within) {
+		scrollbar-color: color-mix(in oklch, var(--muted-foreground) 45%, transparent) transparent;
+	}
+
+	:global(.table-preview-body .table-preview-wrapper:hover::-webkit-scrollbar-thumb),
+	:global(.table-preview-body .table-preview-wrapper:focus-within::-webkit-scrollbar-thumb) {
+		background: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
 	}
 
 	/* Responsive adjustments */
@@ -2064,6 +2076,18 @@
 	div.markdown-inherit-typography :global(.markdown-block:last-child blockquote:last-child),
 	div.markdown-inherit-typography :global(.markdown-block:last-child pre:last-child),
 	div.markdown-inherit-typography :global(.markdown-block:last-child table:last-child) {
+		margin-bottom: 0 !important;
+	}
+
+	div:is(.markdown-user-content, .markdown-system-content) :global(> :first-child),
+	div:is(.markdown-user-content, .markdown-system-content)
+		:global(.markdown-block:first-child > :first-child) {
+		margin-top: 0 !important;
+	}
+
+	div:is(.markdown-user-content, .markdown-system-content) :global(> :last-child),
+	div:is(.markdown-user-content, .markdown-system-content)
+		:global(.markdown-block:last-child > :last-child) {
 		margin-bottom: 0 !important;
 	}
 </style>

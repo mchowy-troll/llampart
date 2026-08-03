@@ -105,7 +105,7 @@
 				<div class="llampart-user-message-scroll-area">
 					{#if currentConfig.renderUserContentAsMarkdown}
 						<div bind:this={messageElement} class="llampart-user-message-content">
-							<MarkdownContent class="markdown-user-content -my-4" content={message.content} />
+							<MarkdownContent class="markdown-user-content" content={message.content} />
 						</div>
 					{:else}
 						<span
@@ -241,14 +241,7 @@
 	}
 	/* /llampart-user-message-scroll-area-stable-actions */
 
-	/* llampart-user-message-top-inset-equals-side-inset */
-	.llampart-user-message-card {
-		padding-top: 0.9375rem !important;
-	}
-
-	/* llampart-user-message-content-top-inset-match-left-inset */
 	.llampart-user-message-content {
 		display: block;
-		margin-top: 0.5625rem;
 	}
 </style>

@@ -95,15 +95,16 @@
 		<div
 			class="llampart-message-actions-icons pointer-events-auto inset-0 flex items-center gap-1 opacity-100 transition-all duration-150"
 		>
-			<ActionIcon icon={Copy} tooltip={t('common.copy')} onclick={onCopy} />
+			<ActionIcon icon={Copy} iconSize="size-3.5" tooltip={t('common.copy')} onclick={onCopy} />
 
 			{#if onEdit}
-				<ActionIcon icon={Edit} tooltip={t('common.edit')} onclick={onEdit} />
+				<ActionIcon icon={Edit} iconSize="size-3.5" tooltip={t('common.edit')} onclick={onEdit} />
 			{/if}
 
 			{#if role === MessageRole.ASSISTANT && onRegenerate}
 				<ActionIcon
 					icon={RefreshCw}
+					iconSize="size-3.5"
 					tooltip={t('messages.regenerate')}
 					onclick={() => onRegenerate()}
 				/>
@@ -112,12 +113,18 @@
 			{#if onForkConversation}
 				<ActionIcon
 					icon={GitBranch}
+					iconSize="size-3.5"
 					tooltip={t('messages.forkConversation')}
 					onclick={handleOpenForkDialog}
 				/>
 			{/if}
 
-			<ActionIcon icon={Trash2} tooltip={t('common.delete')} onclick={onDelete} />
+			<ActionIcon
+				icon={Trash2}
+				iconSize="size-3.5"
+				tooltip={t('common.delete')}
+				onclick={onDelete}
+			/>
 		</div>
 	</div>
 </div>

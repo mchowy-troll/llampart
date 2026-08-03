@@ -373,6 +373,18 @@
 	class="agentic-content llampart-assistant-message"
 	class:minimal-agentic-mode={minimalAgenticIndicators}
 >
+	{#if showMinimalInlineStatuses}
+		<div class="minimal-agentic-inline-statuses" aria-live="polite">
+			{#if showMinimalReasoningStatus}
+				{@render renderMinimalInlineStatus(t('messages.minimalReasoningStatus'))}
+			{/if}
+
+			{#if showMinimalToolsStatus}
+				{@render renderMinimalInlineStatus(t('messages.minimalToolsStatus'))}
+			{/if}
+		</div>
+	{/if}
+
 	{#if !minimalAgenticIndicators && highlightTurns && turnGroups.length > 1}
 		{#each turnGroups as turn, turnIndex (turnIndex)}
 			{@const turnStats = message?.timings?.agentic?.perTurn?.[turnIndex]}
@@ -402,18 +414,6 @@
 		{#each sectionsParsed as section, index (index)}
 			{@render renderSection(section, index)}
 		{/each}
-	{/if}
-
-	{#if showMinimalInlineStatuses}
-		<div class="minimal-agentic-inline-statuses" aria-live="polite">
-			{#if showMinimalReasoningStatus}
-				{@render renderMinimalInlineStatus(t('messages.minimalReasoningStatus'))}
-			{/if}
-
-			{#if showMinimalToolsStatus}
-				{@render renderMinimalInlineStatus(t('messages.minimalToolsStatus'))}
-			{/if}
-		</div>
 	{/if}
 
 	{#if pendingPermission && !permissionDismissed}
@@ -448,22 +448,13 @@
 		padding: 1rem;
 	}
 
-	.minimal-agentic-mode {
-		position: relative;
-		min-height: 5.75rem;
-		padding-top: 0.9375rem;
-	}
-
 	.minimal-agentic-inline-statuses {
-		position: absolute;
-		top: 0.9375rem;
-		left: 1.25rem;
-		right: 1.25rem;
 		display: flex;
 		flex-direction: column;
 		align-items: flex-start;
+		width: 100%;
 		gap: 0.25rem;
-		margin-top: 0;
+		margin: 0 0 0.5rem;
 		pointer-events: none;
 	}
 
