@@ -57,22 +57,18 @@ A dependency license review was performed from the lockfile and local installed
 package metadata during public-release preparation. At that checkpoint:
 
 - `server/webui/package.json` declared the Web UI package as MIT-licensed.
-- The lockfile contained 751 `node_modules` package entries.
-- The manifest declared 14 direct runtime dependency names and 53 direct
+- The lockfile contained 544 `node_modules` package entries.
+- The manifest declared 13 direct runtime dependency names and 39 direct
   development dependency names.
-- The lockfile audit found 684 transitive package entries.
+- The lockfile audit found 492 transitive package entries.
 - No package entry was marked as `unknown` or `unlicensed`.
 - The most common license fields were MIT, ISC, Apache-2.0, MPL-2.0,
   BSD-3-Clause, and BSD-2-Clause.
 
-Five transitive package entries had no `license` field in their package metadata,
-but the installed package files contained local MIT license/readme evidence:
+One transitive package entry had no `license` field in its package metadata,
+but its tagged upstream source contained MIT license evidence:
 
-- `runed@0.23.4`
-- `runed@0.25.0`
 - `svelte-toolbelt@0.10.6`
-- `svelte-toolbelt@0.7.1`
-- `union@0.5.0`
 
 If `server/webui/package-lock.json` changes before release, repeat the dependency
 license review using the final lockfile.
@@ -92,4 +88,3 @@ The following framework packages are MIT-licensed open-source projects and are i
 | `@sveltejs/vite-plugin-svelte` | MIT     | `https://github.com/sveltejs/vite-plugin-svelte` |
 
 Their license notices are preserved through npm package metadata and installed package license files. The full npm dependency tree is recorded in `server/webui/package-lock.json`.
-
