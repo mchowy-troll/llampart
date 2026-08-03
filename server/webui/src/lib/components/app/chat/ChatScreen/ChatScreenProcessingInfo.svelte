@@ -201,7 +201,7 @@
 		border-radius: var(--llampart-composer-processing-stats-radius);
 		background: var(--llampart-composer-processing-stats-background);
 		background-color: var(--llampart-composer-processing-stats-background);
-		background-image: none;
+		background-image: var(--llampart-composer-processing-stats-background-image, none);
 		box-shadow: var(--llampart-composer-processing-stats-shadow);
 		-webkit-backdrop-filter: var(--llampart-composer-processing-stats-filter);
 		backdrop-filter: var(--llampart-composer-processing-stats-filter);

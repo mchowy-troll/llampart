@@ -19,11 +19,14 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme {
 		1.5rem
 	);
 	--llampart-composer-processing-stats-background: rgba(255, 255, 255, 0.14);
+	--llampart-composer-processing-stats-background-image: linear-gradient(
+		0deg,
+		rgb(255 255 255 / 0.13),
+		rgb(255 255 255 / 0.13)
+	);
 	--llampart-composer-processing-stats-border: rgba(255, 255, 255, 0.19);
 	--llampart-composer-processing-stats-shadow:
-		0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.055), 0 4px 8px rgba(0, 0, 0, 0.05),
-		0 8px 16px rgba(0, 0, 0, 0.045), 0 16px 32px rgba(0, 0, 0, 0.04),
-		0 32px 64px rgba(0, 0, 0, 0.035);
+		0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 26px rgba(0, 0, 0, 0.036), 0 20px 48px rgba(0, 0, 0, 0.028);
 	--llampart-composer-processing-stats-filter: blur(18px) saturate(116%);
 	--llampart-composer-processing-stats-foreground: #000000;
 	--llampart-composer-processing-stats-separator: #000000;
@@ -42,6 +45,11 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme {
 	);
 	--llampart-frosted-user-message-surface-border: rgba(255, 255, 255, 0.19);
 	--llampart-frosted-user-message-surface-background: rgba(255, 255, 255, 0.14);
+	--llampart-frosted-user-message-surface-background-image: linear-gradient(
+		0deg,
+		rgb(255 255 255 / 0.13),
+		rgb(255 255 255 / 0.13)
+	);
 	--llampart-frosted-user-message-surface-shadow:
 		0 1px 2px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.055), 0 4px 8px rgba(0, 0, 0, 0.05),
 		0 8px 16px rgba(0, 0, 0, 0.045), 0 16px 32px rgba(0, 0, 0, 0.04),
