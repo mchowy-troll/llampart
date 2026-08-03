@@ -123,6 +123,26 @@ describe('provider-owned chat completions', () => {
 		expect(body.reasoning_control).toBe(true);
 	});
 
+	it('adds stream identity only to llama-server requests', () => {
+		const llamaRequest = getApiProvider(API_PROVIDER_IDS.LLAMA_SERVER).buildChatCompletionRequest({
+			...baseInput,
+			serverBaseUrl: 'http://localhost:8080',
+			streamIdentity: 'conversation=chat%2Fone&model=org%2Frepo%2Fmodel&request=one'
+		});
+		const openAiRequest = getApiProvider(
+			API_PROVIDER_IDS.OPENAI_COMPATIBLE
+		).buildChatCompletionRequest({
+			...baseInput,
+			serverBaseUrl: 'http://localhost:11434/v1',
+			streamIdentity: 'must-not-be-used'
+		});
+
+		expect(llamaRequest.init.headers).toMatchObject({
+			'X-Conversation-Id': 'conversation=chat%2Fone&model=org%2Frepo%2Fmodel&request=one'
+		});
+		expect(openAiRequest.init.headers).not.toHaveProperty('X-Conversation-Id');
+	});
+
 	it('parses provider stream chunks through provider adapters', () => {
 		const provider = getApiProvider(API_PROVIDER_IDS.OPENAI_COMPATIBLE);
 		const event = provider.parseChatCompletionStreamData(

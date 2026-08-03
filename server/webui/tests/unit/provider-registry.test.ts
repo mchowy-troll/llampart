@@ -31,6 +31,9 @@ describe('api provider registry', () => {
 		expect(PROVIDER_CAPABILITIES[API_PROVIDER_IDS.LLAMA_SERVER].supportsServerProps).toBe(true);
 		expect(PROVIDER_CAPABILITIES[API_PROVIDER_IDS.LLAMA_SERVER].supportsTopK).toBe(true);
 		expect(PROVIDER_CAPABILITIES[API_PROVIDER_IDS.LLAMA_SERVER].supportsPreEncode).toBe(true);
+		expect(PROVIDER_CAPABILITIES[API_PROVIDER_IDS.LLAMA_SERVER].supportsResumableStreams).toBe(
+			true
+		);
 
 		const openAiCapabilities = getApiProviderCapabilities(API_PROVIDER_IDS.OPENAI_COMPATIBLE);
 		expect(openAiCapabilities.supportsServerProps).toBe(false);
@@ -53,6 +56,7 @@ describe('api provider registry', () => {
 		expect(openAiCapabilities.supportsCustomJsonPayload).toBe(false);
 		expect(openAiCapabilities.supportsStreamUsage).toBe(true);
 		expect(openAiCapabilities.requiresModelInChatRequest).toBe(true);
+		expect(openAiCapabilities.supportsResumableStreams).toBe(false);
 	});
 
 	it('validates provider ids without component-local string checks', () => {

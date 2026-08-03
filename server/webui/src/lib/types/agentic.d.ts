@@ -7,6 +7,7 @@ import type {
 	ApiChatMessageData
 } from './api';
 import type { ChatMessageTimings, ChatMessagePromptProgress } from './chat';
+import type { ChatStreamCheckpoint } from './settings';
 import type { DatabaseMessage, DatabaseMessageExtra, McpServerOverride } from './database';
 
 /**
@@ -115,6 +116,8 @@ export interface AgenticFlowCallbacks {
 	onTimings?: (timings?: ChatMessageTimings, promptProgress?: ChatMessagePromptProgress) => void;
 	/** An agentic turn (LLM + tool execution) completed - intermediate timing update */
 	onTurnComplete?: (intermediateTimings: ChatMessageTimings) => void;
+	/** Persist the current assistant turn before its replay offset advances. */
+	onStreamCheckpoint?: (checkpoint: ChatStreamCheckpoint) => void | Promise<void>;
 }
 
 /**
@@ -125,6 +128,7 @@ export interface AgenticFlowOptions {
 	model?: string;
 	temperature?: number;
 	max_tokens?: number;
+	onStreamCheckpoint?: (checkpoint: ChatStreamCheckpoint) => void | Promise<void>;
 	[key: string]: unknown;
 }
 

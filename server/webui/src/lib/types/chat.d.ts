@@ -1,6 +1,7 @@
 import type { AttachmentSource, ErrorDialogType } from '$lib/enums';
 import type { ApiChatCompletionToolCall } from './api';
 import type { DatabaseMessage, DatabaseMessageExtra } from './database';
+import type { ChatStreamCheckpoint } from './settings';
 
 export interface ChatUploadedFile {
 	id: string;
@@ -62,6 +63,7 @@ export interface ChatMessagePromptProgress {
 
 export interface ChatMessageTimings {
 	cache_n?: number;
+	context_total?: number;
 	predicted_ms?: number;
 	predicted_n?: number;
 	prompt_ms?: number;
@@ -127,6 +129,7 @@ export interface ChatStreamCallbacks {
 	onFlowComplete?: (timings?: ChatMessageTimings) => void;
 	onError?: (error: Error) => void;
 	onTurnComplete?: (intermediateTimings: ChatMessageTimings) => void;
+	onStreamCheckpoint?: (checkpoint: ChatStreamCheckpoint) => void | Promise<void>;
 }
 
 /**

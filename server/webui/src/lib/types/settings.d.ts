@@ -11,6 +11,22 @@ import type {
 import type { Icon } from '@lucide/svelte';
 import type { ProviderCapabilityKey } from '$lib/types/provider';
 import type { ApiProviderId } from '$lib/constants/api-providers';
+import type { ApiChatCompletionToolCall } from './api';
+
+export interface ChatStreamCheckpoint {
+	content: string;
+	reasoningContent: string;
+	toolCalls: ApiChatCompletionToolCall[];
+	timings?: ChatMessageTimings;
+	bytesReceived: number;
+}
+
+export interface ChatStreamResumeSeed {
+	content: string;
+	reasoningContent: string;
+	toolCalls: ApiChatCompletionToolCall[];
+	timings?: ChatMessageTimings;
+}
 
 export type SettingsConfigValue = string | number | boolean | undefined;
 
@@ -125,6 +141,8 @@ export interface SettingsChatServiceOptions {
 	onModel?: (model: string) => void;
 	onCompletionId?: (id: string) => void;
 	onTimings?: (timings?: ChatMessageTimings, promptProgress?: ChatMessagePromptProgress) => void;
+	onStreamCheckpoint?: (checkpoint: ChatStreamCheckpoint) => void | Promise<void>;
+	resumeSeed?: ChatStreamResumeSeed;
 	onComplete?: (
 		response: string,
 		reasoningContent?: string,

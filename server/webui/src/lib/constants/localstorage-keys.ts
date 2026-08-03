@@ -8,3 +8,4 @@ export const LLAMPART_ABOUT_DISMISSED_VERSION_KEY = 'Llampart.aboutDismissedVers
 export const DISABLED_TOOLS_LOCALSTORAGE_KEY = 'LlamaCppWebui.disabledTools';
 export const DISABLED_TOOL_KEYS_LOCALSTORAGE_KEY = 'LlamaCppWebui.disabledToolKeys';
 export const ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY = 'LlamaCppWebui.alwaysAllowedTools';
+export const RESUMABLE_STREAMS_LOCALSTORAGE_KEY = 'LlamaCppWebui.resumableStreams';

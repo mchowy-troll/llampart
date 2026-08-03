@@ -215,6 +215,7 @@ export {
 // Cryptography utilities
 
 export { uuid } from './uuid';
+export { createStreamIdentity, buildStreamRequestUrl } from './stream-identity';
 export * from './chat-template-thinking-detector';
 export * from './document-title';
 export { isVideoFile } from './attachment-type';
