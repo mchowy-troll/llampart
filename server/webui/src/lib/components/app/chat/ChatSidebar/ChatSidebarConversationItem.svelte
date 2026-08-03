@@ -26,8 +26,9 @@
 		onSelect?: (id: string) => void;
 		onStop?: (id: string) => void;
 		selectionChecked?: boolean;
+		selectionMode?: boolean;
 		selectionAriaLabel?: string;
-		onSelectionChange?: (id: string, checked: boolean) => void;
+		onSelectionChange?: (id: string, checked: boolean, extendRange: boolean) => void;
 		onPinnedChange?: (id: string, pinned: boolean) => void;
 	}
 
@@ -37,6 +38,7 @@
 		onSelect,
 		onStop,
 		selectionChecked = false,
+		selectionMode = false,
 		selectionAriaLabel,
 		onSelectionChange,
 		onPinnedChange,
@@ -85,17 +87,18 @@
 		}
 	}
 
-	function handleSelect() {
-		onSelect?.(conversation.id);
-	}
+	function handleSelect(event: MouseEvent | KeyboardEvent) {
+		if (selectionMode) {
+			onSelectionChange?.(conversation.id, !selectionChecked, event.shiftKey);
+			return;
+		}
 
-	function handleSelectionChange(event: Event) {
-		event.stopPropagation();
-		onSelectionChange?.(conversation.id, (event.currentTarget as HTMLInputElement).checked);
+		onSelect?.(conversation.id);
 	}
 
 	function handleSelectionClick(event: MouseEvent) {
 		event.stopPropagation();
+		onSelectionChange?.(conversation.id, !selectionChecked, event.shiftKey);
 	}
 
 	function handlePinnedClick(event: MouseEvent) {
@@ -113,7 +116,7 @@
 
 		if (event.key === 'Enter' || event.key === ' ') {
 			event.preventDefault();
-			handleSelect();
+			handleSelect(event);
 		}
 	}
 
@@ -132,10 +135,12 @@
 <div
 	class="conversation-item group flex h-36 w-full cursor-pointer flex-col rounded-2xl border border-border bg-background p-3 text-left transition-colors hover:bg-accent/35 focus-visible:bg-accent/35 {isActive
 		? 'border-border bg-accent/45 text-accent-foreground'
-		: ''}"
+		: ''} {selectionMode && selectionChecked ? 'conversation-item-selected' : ''}"
+	data-conversation-selection-id={conversation.id}
 	role="button"
 	tabindex="0"
-	onclick={handleSelect}
+	aria-pressed={selectionMode ? selectionChecked : undefined}
+	onclick={(event) => handleSelect(event)}
 	onkeydown={handleConversationKeydown}
 >
 	{#if hasConversationTimestamp}
@@ -168,6 +173,9 @@
 					<a
 						href="#/chat/{conversation.forkedFromConversationId}"
 						class="conversation-parent-link mt-0.5 flex shrink-0 items-center text-muted-foreground transition-colors hover:text-foreground"
+						onclick={(event) => {
+							if (selectionMode) event.preventDefault();
+						}}
 					>
 						<GitBranch class="h-3.5 w-3.5" />
 					</a>
@@ -188,86 +196,58 @@
 
 	<div class="conversation-card-footer mt-auto flex min-h-6 items-center justify-between gap-3">
 		<div class="conversation-card-status flex min-w-0 items-center gap-2">
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<button
-						aria-label={conversation.pinned
-							? t('sidebar.unpinConversation')
-							: t('sidebar.pinConversation')}
-						class="conversation-pin-button flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
-						type="button"
-						onclick={handlePinnedClick}
-					>
-						<Pin class="h-3.5 w-3.5 {conversation.pinned ? 'fill-current' : 'fill-none'}" />
-					</button>
-				</Tooltip.Trigger>
-
-				<Tooltip.Content>
-					<p>
-						{conversation.pinned ? t('sidebar.unpinConversation') : t('sidebar.pinConversation')}
-					</p>
-				</Tooltip.Content>
-			</Tooltip.Root>
-			{#if isLoading}
+			{#if selectionMode}
+				{#if conversation.pinned}
+					<Pin class="h-3.5 w-3.5 fill-current text-muted-foreground" />
+				{/if}
+			{:else}
 				<Tooltip.Root>
 					<Tooltip.Trigger>
-						<div
-							class="stop-button flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
-							onclick={handleStop}
-							onkeydown={(e) => e.key === 'Enter' && handleStop(e)}
-							role="button"
-							tabindex="0"
-							aria-label={t('sidebar.stopGeneration')}
+						<button
+							aria-label={conversation.pinned
+								? t('sidebar.unpinConversation')
+								: t('sidebar.pinConversation')}
+							class="conversation-pin-button flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+							type="button"
+							onclick={handlePinnedClick}
 						>
-							<Loader2 class="loading-icon h-3.5 w-3.5 animate-spin" />
-
-							<Square class="stop-icon hidden h-3 w-3 fill-current text-destructive" />
-						</div>
+							<Pin class="h-3.5 w-3.5 {conversation.pinned ? 'fill-current' : 'fill-none'}" />
+						</button>
 					</Tooltip.Trigger>
 
 					<Tooltip.Content>
-						<p>{t('sidebar.stopGeneration')}</p>
+						<p>
+							{conversation.pinned ? t('sidebar.unpinConversation') : t('sidebar.pinConversation')}
+						</p>
 					</Tooltip.Content>
 				</Tooltip.Root>
+				{#if isLoading}
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							<div
+								class="stop-button flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+								onclick={handleStop}
+								onkeydown={(e) => e.key === 'Enter' && handleStop(e)}
+								role="button"
+								tabindex="0"
+								aria-label={t('sidebar.stopGeneration')}
+							>
+								<Loader2 class="loading-icon h-3.5 w-3.5 animate-spin" />
+
+								<Square class="stop-icon hidden h-3 w-3 fill-current text-destructive" />
+							</div>
+						</Tooltip.Trigger>
+
+						<Tooltip.Content>
+							<p>{t('sidebar.stopGeneration')}</p>
+						</Tooltip.Content>
+					</Tooltip.Root>
+				{/if}
 			{/if}
 		</div>
 
 		<div class="conversation-card-actions flex shrink-0 items-center gap-2">
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<button
-						aria-label={t('common.edit')}
-						class="conversation-action-button flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
-						type="button"
-						onclick={handleEdit}
-					>
-						<Pencil class="h-3.5 w-3.5" />
-					</button>
-				</Tooltip.Trigger>
-
-				<Tooltip.Content>
-					<p>{t('common.edit')}</p>
-				</Tooltip.Content>
-			</Tooltip.Root>
-
-			<Tooltip.Root>
-				<Tooltip.Trigger>
-					<button
-						aria-label={t('common.export')}
-						class="conversation-action-button flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
-						type="button"
-						onclick={handleExport}
-					>
-						<Download class="h-3.5 w-3.5" />
-					</button>
-				</Tooltip.Trigger>
-
-				<Tooltip.Content>
-					<p>{t('common.export')}</p>
-				</Tooltip.Content>
-			</Tooltip.Root>
-
-			{#if !conversation.pinned}
+			{#if selectionMode}
 				<Tooltip.Root>
 					<Tooltip.Trigger class="flex h-6 w-6 items-center justify-center">
 						<input
@@ -276,12 +256,45 @@
 							class="llampart-sidebar-select-checkbox size-4 shrink-0 cursor-pointer transition-colors"
 							checked={selectionChecked}
 							type="checkbox"
-							onchange={handleSelectionChange}
 							onclick={handleSelectionClick}
 						/>
 					</Tooltip.Trigger>
 					<Tooltip.Content>
-						<p>{t('sidebar.selectForDeletion')}</p>
+						<p>{t('sidebar.selectConversationShort')}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+			{:else}
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						<button
+							aria-label={t('common.edit')}
+							class="conversation-action-button flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+							type="button"
+							onclick={handleEdit}
+						>
+							<Pencil class="h-3.5 w-3.5" />
+						</button>
+					</Tooltip.Trigger>
+
+					<Tooltip.Content>
+						<p>{t('common.edit')}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+
+				<Tooltip.Root>
+					<Tooltip.Trigger>
+						<button
+							aria-label={t('common.export')}
+							class="conversation-action-button flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+							type="button"
+							onclick={handleExport}
+						>
+							<Download class="h-3.5 w-3.5" />
+						</button>
+					</Tooltip.Trigger>
+
+					<Tooltip.Content>
+						<p>{t('common.export')}</p>
 					</Tooltip.Content>
 				</Tooltip.Root>
 			{/if}
@@ -299,6 +312,15 @@
 
 	.conversation-item:is(:hover, :focus-visible) .llampart-sidebar-select-checkbox:not(:checked) {
 		border-color: var(--llampart-sidebar-conversation-control-foreground);
+	}
+
+	.conversation-item-selected {
+		border-color: var(--llampart-sidebar-selection-accent) !important;
+		background: color-mix(
+			in oklch,
+			var(--llampart-sidebar-selection-accent) 10%,
+			var(--background)
+		) !important;
 	}
 
 	.conversation-title {

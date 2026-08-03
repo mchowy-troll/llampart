@@ -1,7 +1,18 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { Trash2, Pencil, Plus, Search, Settings, X } from '@lucide/svelte';
+	import {
+		Download,
+		ListChecks,
+		Pencil,
+		Pin,
+		PinOff,
+		Plus,
+		Search,
+		Settings,
+		Trash2,
+		X
+	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
 	import { ChatSidebarConversationItem, DialogConfirmation } from '$lib/components/app';
 	import { Checkbox } from '$lib/components/ui/checkbox';
@@ -21,6 +32,11 @@
 	import { getPreviewText } from '$lib/utils';
 	import { getChatSettingsDialogContext } from '$lib/contexts';
 	import { getInterfaceLanguage, t } from '$lib/i18n';
+	import { marqueeSelection } from '$lib/actions/marquee-selection';
+	import {
+		selectAllVisibleConversations,
+		updateConversationSelection
+	} from '$lib/utils/conversation-selection';
 
 	const chatSettingsDialog = getChatSettingsDialogContext();
 
@@ -57,13 +73,14 @@
 
 	let currentChatId = $derived(page.params.id);
 	let isSearchModeActive = $state(false);
+	let isSelectionModeActive = $state(false);
 	let searchQuery = $state('');
 	let showDeleteDialog = $state(false);
 	let showBulkDeleteDialog = $state(false);
 	let deleteWithForks = $state(false);
 	let selectedConversationIds = $state<string[]>([]);
+	let selectionAnchorId = $state<string | null>(null);
 	let bulkDeleteTargetIds = $state<string[]>([]);
-	let bulkDeleteMode = $state<'selected' | 'all'>('all');
 	let showEditDialog = $state(false);
 	let selectedConversation = $state<DatabaseConversation | null>(null);
 	let editedName = $state('');
@@ -84,35 +101,21 @@
 		selectedConversation ? getPreviewText(selectedConversation.name) : ''
 	);
 
-	let deletableConversationIds = $derived.by(() =>
-		conversations()
-			.filter((conversation) => !conversation.pinned)
-			.map((conversation) => conversation.id)
-	);
-	let hasDeletableConversations = $derived(deletableConversationIds.length > 0);
 	let hasSelectedConversations = $derived(selectedConversationIds.length > 0);
 	let bulkDeleteTargetCount = $derived(bulkDeleteTargetIds.length);
-	let bulkDeleteDeletesAll = $derived(bulkDeleteMode === 'all');
-	let bulkDeleteDialogTitle = $derived.by(() => {
-		if (bulkDeleteDeletesAll) return t('sidebar.deleteAllConversationsTitle');
-
-		return bulkDeleteTargetCount === 1
-			? t('sidebar.deleteSelectedConversationTitle')
-			: t('sidebar.deleteSelectedConversationsTitle');
+	let bulkDeletePinnedCount = $derived.by(() => {
+		const targetIds = new Set(bulkDeleteTargetIds);
+		return conversations().filter(
+			(conversation) => targetIds.has(conversation.id) && conversation.pinned
+		).length;
 	});
+	let bulkDeleteDialogTitle = $derived.by(() =>
+		bulkDeleteTargetCount === 1
+			? t('sidebar.deleteSelectedConversationTitle')
+			: t('sidebar.deleteSelectedConversationsTitle')
+	);
 	let bulkDeleteDialogDescription = $derived.by(() => {
-		if (bulkDeleteDeletesAll) {
-			return formatCountTranslation(
-				{
-					one: 'sidebar.deleteAllConversationsDescriptionOne',
-					few: 'sidebar.deleteAllConversationsDescriptionFew',
-					many: 'sidebar.deleteAllConversationsDescriptionMany'
-				},
-				bulkDeleteTargetCount
-			);
-		}
-
-		return formatCountTranslation(
+		const description = formatCountTranslation(
 			{
 				one: 'sidebar.deleteSelectedConversationDescriptionOne',
 				few: 'sidebar.deleteSelectedConversationsDescriptionFew',
@@ -120,12 +123,14 @@
 			},
 			bulkDeleteTargetCount
 		);
+
+		return bulkDeletePinnedCount > 0
+			? `${description} ${t('sidebar.pinnedConversationsWillBeSkipped').replace(
+					'{count}',
+					String(bulkDeletePinnedCount)
+				)}`
+			: description;
 	});
-	let bulkDeleteConfirmText = $derived.by(() =>
-		bulkDeleteDeletesAll
-			? t('sidebar.deleteAllConversationsConfirmText')
-			: t('sidebar.deleteSelectedConversationsConfirmText')
-	);
 
 	let filteredConversations = $derived.by(() => {
 		if (searchQuery.trim().length > 0) {
@@ -138,15 +143,16 @@
 	});
 
 	let conversationTree = $derived(buildConversationTree(filteredConversations));
+	let visibleConversationIds = $derived(
+		conversationTree.map(({ conversation }) => conversation.id)
+	);
 
 	$effect(() => {
-		const deletableConversationIdsSet = new Set(deletableConversationIds);
+		const existingConversationIds = new Set(conversations().map((conversation) => conversation.id));
 		const availableSelectedIds = selectedConversationIds.filter((id) =>
-			deletableConversationIdsSet.has(id)
+			existingConversationIds.has(id)
 		);
-		const availableTargetIds = bulkDeleteTargetIds.filter((id) =>
-			deletableConversationIdsSet.has(id)
-		);
+		const availableTargetIds = bulkDeleteTargetIds.filter((id) => existingConversationIds.has(id));
 
 		if (availableSelectedIds.length !== selectedConversationIds.length) {
 			selectedConversationIds = availableSelectedIds;
@@ -183,22 +189,23 @@
 		}
 	}
 
-	function setSelectedConversationChecked(id: string, checked: boolean) {
-		if (checked && !deletableConversationIds.includes(id)) return;
+	function setSelectedConversationChecked(id: string, checked: boolean, extendRange: boolean) {
+		const result = updateConversationSelection(
+			selectedConversationIds,
+			visibleConversationIds,
+			id,
+			selectionAnchorId,
+			checked,
+			extendRange
+		);
 
-		selectedConversationIds = checked
-			? [...new Set([...selectedConversationIds, id])]
-			: selectedConversationIds.filter((selectedId) => selectedId !== id);
+		selectedConversationIds = result.selectedIds;
+		selectionAnchorId = result.anchorId;
 	}
 
 	async function handleConversationPinnedChange(id: string, pinned: boolean) {
 		try {
 			await conversationsStore.setConversationPinned(id, pinned);
-
-			if (pinned) {
-				selectedConversationIds = selectedConversationIds.filter((selectedId) => selectedId !== id);
-				bulkDeleteTargetIds = bulkDeleteTargetIds.filter((targetId) => targetId !== id);
-			}
 		} catch (error) {
 			console.error('Failed to update pinned conversation:', error);
 			toast.error(t('common.unknownError'));
@@ -208,6 +215,60 @@
 	function handleSearchModeDeactivate() {
 		isSearchModeActive = false;
 		searchQuery = '';
+	}
+
+	function activateSelectionMode() {
+		isSelectionModeActive = true;
+	}
+
+	function deactivateSelectionMode() {
+		isSelectionModeActive = false;
+		selectedConversationIds = [];
+		selectionAnchorId = null;
+		bulkDeleteTargetIds = [];
+	}
+
+	function handleSelectAllVisible() {
+		selectedConversationIds = selectAllVisibleConversations(
+			selectedConversationIds,
+			visibleConversationIds
+		);
+		selectionAnchorId = visibleConversationIds.at(-1) ?? null;
+	}
+
+	function handleClearSelection() {
+		selectedConversationIds = [];
+		selectionAnchorId = null;
+	}
+
+	async function handleBulkPinnedChange(pinned: boolean) {
+		if (!hasSelectedConversations) return;
+
+		try {
+			await conversationsStore.setConversationsPinned(selectedConversationIds, pinned);
+			toast.success(
+				t('sidebar.bulkPinUpdated')
+					.replace('{count}', String(selectedConversationIds.length))
+					.replace('{action}', pinned ? t('sidebar.pinned') : t('sidebar.unpinned'))
+			);
+		} catch (error) {
+			console.error('Failed to update selected conversation pins:', error);
+			toast.error(t('common.unknownError'));
+		}
+	}
+
+	async function handleBulkExport() {
+		if (!hasSelectedConversations) return;
+
+		try {
+			const exportedCount = await conversationsStore.downloadConversations(selectedConversationIds);
+			toast.success(
+				t('sidebar.exportedSelectedConversations').replace('{count}', String(exportedCount))
+			);
+		} catch (error) {
+			console.error('Failed to export selected conversations:', error);
+			toast.error(t('sidebar.failedToExportConversations'));
+		}
 	}
 
 	$effect(() => {
@@ -239,20 +300,14 @@
 	});
 
 	function handleBulkDeleteClick() {
-		const availableConversationIds = deletableConversationIds;
-		if (availableConversationIds.length === 0) return;
+		if (!hasSelectedConversations) return;
 
-		const availableConversationIdsSet = new Set(availableConversationIds);
-		const selectedIds = selectedConversationIds.filter((id) => availableConversationIdsSet.has(id));
-
-		bulkDeleteMode = selectedIds.length > 0 ? 'selected' : 'all';
-		bulkDeleteTargetIds = selectedIds.length > 0 ? selectedIds : availableConversationIds;
+		bulkDeleteTargetIds = [...selectedConversationIds];
 		showBulkDeleteDialog = true;
 	}
 
 	async function handleConfirmBulkDelete() {
 		const targetIds = [...bulkDeleteTargetIds];
-		const mode = bulkDeleteMode;
 		showBulkDeleteDialog = false;
 
 		if (targetIds.length === 0) {
@@ -260,37 +315,31 @@
 		}
 
 		try {
-			if (mode === 'selected') {
-				const deletedCount = await conversationsStore.deleteConversations(targetIds);
-				selectedConversationIds = selectedConversationIds.filter((id) => !targetIds.includes(id));
-				bulkDeleteTargetIds = [];
-
-				toast.success(
-					formatCountTranslation(
-						{
-							one: 'sidebar.deletedSelectedConversation',
-							few: 'sidebar.deletedSelectedConversationsFew',
-							many: 'sidebar.deletedSelectedConversations'
-						},
-						deletedCount
-					)
-				);
-				return;
-			}
-
-			const deletedCount = await conversationsStore.deleteConversations(targetIds);
-			selectedConversationIds = [];
+			const result = await conversationsStore.deleteConversations(targetIds);
+			const remainingIds = new Set(conversations().map((conversation) => conversation.id));
+			selectedConversationIds = selectedConversationIds.filter((id) => remainingIds.has(id));
+			selectionAnchorId = null;
 			bulkDeleteTargetIds = [];
-			toast.success(
-				formatCountTranslation(
-					{
-						one: 'sidebar.deletedAllConversation',
-						few: 'sidebar.deletedAllConversationsFew',
-						many: 'sidebar.deletedAllConversations'
-					},
-					deletedCount
-				)
+			const message = formatCountTranslation(
+				{
+					one: 'sidebar.deletedSelectedConversation',
+					few: 'sidebar.deletedSelectedConversationsFew',
+					many: 'sidebar.deletedSelectedConversations'
+				},
+				result.deletedCount
 			);
+
+			if (result.skippedPinnedCount > 0) {
+				toast.info(message, {
+					description: t('sidebar.skippedPinnedConversations').replace(
+						'{count}',
+						String(result.skippedPinnedCount)
+					)
+				});
+			} else {
+				toast.success(message);
+				deactivateSelectionMode();
+			}
 		} catch (error) {
 			console.error('Failed to delete conversations:', error);
 			toast.error(t('sidebar.failedToDeleteConversations'), {
@@ -381,7 +430,24 @@
 
 		<div class="llampart-sidebar-header-separator llampart-sidebar-title-separator"></div>
 
-		{#if isSearchModeActive}
+		{#if isSelectionModeActive}
+			<div
+				class="llampart-sidebar-header-actions llampart-sidebar-action-band flex h-[3.25rem] items-center justify-between gap-3"
+			>
+				<span class="text-sm font-medium text-foreground">
+					{t('sidebar.selectedCount').replace('{count}', String(selectedConversationIds.length))}
+				</span>
+
+				<Button
+					aria-label={t('sidebar.exitSelectionMode')}
+					class="h-8 w-8 p-0"
+					onclick={deactivateSelectionMode}
+					variant="ghost"
+				>
+					<X class="h-4 w-4" />
+				</Button>
+			</div>
+		{:else if isSearchModeActive}
 			<div
 				class="llampart-sidebar-header-actions llampart-sidebar-action-band flex h-[3.25rem] items-center"
 			>
@@ -443,6 +509,116 @@
 
 		<div class="llampart-sidebar-header-separator llampart-sidebar-actions-separator"></div>
 
+		{#if isSelectionModeActive}
+			<div class="mb-3 grid grid-cols-6 gap-1" aria-label={t('sidebar.bulkActions')}>
+				<Tooltip.Root>
+					<Tooltip.Trigger class="min-w-0">
+						<button
+							class="llampart-sidebar-bulk-action w-full"
+							type="button"
+							aria-label={t('sidebar.selectAllVisible')}
+							onclick={handleSelectAllVisible}
+						>
+							<ListChecks class="h-4 w-4" />
+						</button>
+					</Tooltip.Trigger>
+
+					<Tooltip.Content>
+						<p>{t('sidebar.selectAllVisible')}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+
+				<Tooltip.Root>
+					<Tooltip.Trigger class="min-w-0">
+						<button
+							class="llampart-sidebar-bulk-action w-full"
+							type="button"
+							aria-label={t('sidebar.clearSelection')}
+							onclick={handleClearSelection}
+						>
+							<X class="h-4 w-4" />
+						</button>
+					</Tooltip.Trigger>
+
+					<Tooltip.Content>
+						<p>{t('sidebar.clearSelection')}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+
+				<Tooltip.Root>
+					<Tooltip.Trigger class="min-w-0">
+						<button
+							class="llampart-sidebar-bulk-action w-full"
+							type="button"
+							aria-label={t('sidebar.pinSelected')}
+							disabled={!hasSelectedConversations}
+							onclick={() => handleBulkPinnedChange(true)}
+						>
+							<Pin class="h-4 w-4" />
+						</button>
+					</Tooltip.Trigger>
+
+					<Tooltip.Content>
+						<p>{t('sidebar.pinSelected')}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+
+				<Tooltip.Root>
+					<Tooltip.Trigger class="min-w-0">
+						<button
+							class="llampart-sidebar-bulk-action w-full"
+							type="button"
+							aria-label={t('sidebar.unpinSelected')}
+							disabled={!hasSelectedConversations}
+							onclick={() => handleBulkPinnedChange(false)}
+						>
+							<PinOff class="h-4 w-4" />
+						</button>
+					</Tooltip.Trigger>
+
+					<Tooltip.Content>
+						<p>{t('sidebar.unpinSelected')}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+
+				<Tooltip.Root>
+					<Tooltip.Trigger class="min-w-0">
+						<button
+							class="llampart-sidebar-bulk-action w-full"
+							type="button"
+							aria-label={t('sidebar.exportSelected')}
+							disabled={!hasSelectedConversations}
+							onclick={handleBulkExport}
+						>
+							<Download class="h-4 w-4" />
+						</button>
+					</Tooltip.Trigger>
+
+					<Tooltip.Content>
+						<p>{t('sidebar.exportSelected')}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+
+				<Tooltip.Root>
+					<Tooltip.Trigger class="min-w-0">
+						<button
+							class="llampart-sidebar-bulk-action w-full"
+							type="button"
+							aria-label={t('sidebar.deleteSelectedConversationsButton')}
+							disabled={!hasSelectedConversations}
+							onclick={handleBulkDeleteClick}
+						>
+							<Trash2 class="h-4 w-4" />
+						</button>
+					</Tooltip.Trigger>
+
+					<Tooltip.Content>
+						<p>{t('sidebar.deleteSelectedConversationsButton')}</p>
+					</Tooltip.Content>
+				</Tooltip.Root>
+			</div>
+		{/if}
+
 		<ScrollArea class="min-h-0 flex-1">
 			<Sidebar.Group class="m-0 space-y-2 p-0">
 				{#if filteredConversations.length > 0 && isSearchModeActive}
@@ -452,57 +628,69 @@
 				{/if}
 
 				<Sidebar.GroupContent>
-					<Sidebar.Menu
-						class={[
-							'llampart-conversation-grid-menu',
-							hasMeasuredConversationGridViewport
-								? isConversationGridSingleColumn
-									? 'llampart-conversation-grid-menu-single-column'
-									: 'llampart-conversation-grid-menu-two-column'
-								: ''
-						]
-							.filter(Boolean)
-							.join(' ')}
+					<div
+						use:marqueeSelection={{
+							enabled: isSelectionModeActive,
+							selectedIds: selectedConversationIds,
+							onSelectionChange: (ids) => {
+								selectedConversationIds = ids;
+								selectionAnchorId = null;
+							}
+						}}
 					>
-						{#each conversationTree as { conversation, depth } (conversation.id)}
-							<Sidebar.MenuItem class="llampart-conversation-grid-item p-0">
-								<ChatSidebarConversationItem
-									conversation={{
-										id: conversation.id,
-										name: conversation.name,
-										lastModified: conversation.lastModified,
-										currNode: conversation.currNode,
-										forkedFromConversationId: conversation.forkedFromConversationId,
-										pinned: conversation.pinned
-									}}
-									{depth}
-									isActive={currentChatId === conversation.id}
-									selectionChecked={selectedConversationIds.includes(conversation.id)}
-									selectionAriaLabel={t('sidebar.selectConversation').replace(
-										'{name}',
-										getPreviewText(conversation.name)
-									)}
-									onSelectionChange={setSelectedConversationChecked}
-									onPinnedChange={handleConversationPinnedChange}
-									onSelect={selectConversation}
-									onEdit={handleEditConversation}
-									onStop={handleStopGeneration}
-								/>
-							</Sidebar.MenuItem>
-						{/each}
+						<Sidebar.Menu
+							class={[
+								'llampart-conversation-grid-menu',
+								hasMeasuredConversationGridViewport
+									? isConversationGridSingleColumn
+										? 'llampart-conversation-grid-menu-single-column'
+										: 'llampart-conversation-grid-menu-two-column'
+									: ''
+							]
+								.filter(Boolean)
+								.join(' ')}
+						>
+							{#each conversationTree as { conversation, depth } (conversation.id)}
+								<Sidebar.MenuItem class="llampart-conversation-grid-item p-0">
+									<ChatSidebarConversationItem
+										conversation={{
+											id: conversation.id,
+											name: conversation.name,
+											lastModified: conversation.lastModified,
+											currNode: conversation.currNode,
+											forkedFromConversationId: conversation.forkedFromConversationId,
+											pinned: conversation.pinned
+										}}
+										{depth}
+										isActive={currentChatId === conversation.id}
+										selectionMode={isSelectionModeActive}
+										selectionChecked={selectedConversationIds.includes(conversation.id)}
+										selectionAriaLabel={t('sidebar.selectConversation').replace(
+											'{name}',
+											getPreviewText(conversation.name)
+										)}
+										onSelectionChange={setSelectedConversationChecked}
+										onPinnedChange={handleConversationPinnedChange}
+										onSelect={selectConversation}
+										onEdit={handleEditConversation}
+										onStop={handleStopGeneration}
+									/>
+								</Sidebar.MenuItem>
+							{/each}
 
-						{#if conversationTree.length === 0}
-							<div class="llampart-sidebar-empty-state px-2 py-4 text-center">
-								<p class="mb-4 p-4 text-sm text-muted-foreground">
-									{searchQuery.length > 0
-										? t('sidebar.noResultsFound')
-										: isSearchModeActive
-											? t('sidebar.startTypingToSeeResults')
-											: t('sidebar.noConversationsYet')}
-								</p>
-							</div>
-						{/if}
-					</Sidebar.Menu>
+							{#if conversationTree.length === 0}
+								<div class="llampart-sidebar-empty-state px-2 py-4 text-center">
+									<p class="mb-4 p-4 text-sm text-muted-foreground">
+										{searchQuery.length > 0
+											? t('sidebar.noResultsFound')
+											: isSearchModeActive
+												? t('sidebar.startTypingToSeeResults')
+												: t('sidebar.noConversationsYet')}
+									</p>
+								</div>
+							{/if}
+						</Sidebar.Menu>
+					</div>
 				</Sidebar.GroupContent>
 			</Sidebar.Group>
 		</ScrollArea>
@@ -532,27 +720,32 @@
 			<Tooltip.Root>
 				<Tooltip.Trigger>
 					<Button
-						aria-label={hasSelectedConversations
-							? t('sidebar.deleteSelectedConversationsButton')
-							: t('sidebar.deleteAllConversationsButton')}
+						aria-label={isSelectionModeActive
+							? t('sidebar.exitSelectionMode')
+							: t('sidebar.enterSelectionMode')}
 						class="llampart-sidebar-delete-button flex h-7 w-7 min-w-7 items-center justify-center rounded-md p-0 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none disabled:opacity-100"
-						disabled={!hasDeletableConversations}
-						onclick={handleBulkDeleteClick}
+						disabled={conversations().length === 0}
+						onclick={() =>
+							isSelectionModeActive ? deactivateSelectionMode() : activateSelectionMode()}
 						variant="ghost"
 					>
 						<span
 							class="llampart-sidebar-delete-icon pointer-events-none flex items-center justify-center"
 						>
-							<Trash2 class="h-[18px] w-[18px]" />
+							{#if isSelectionModeActive}
+								<X class="h-[18px] w-[18px]" />
+							{:else}
+								<ListChecks class="h-[18px] w-[18px]" />
+							{/if}
 						</span>
 					</Button>
 				</Tooltip.Trigger>
 
 				<Tooltip.Content>
 					<p>
-						{hasSelectedConversations
-							? t('sidebar.deleteSelectedConversationsButton')
-							: t('sidebar.deleteAllConversationsButton')}
+						{isSelectionModeActive
+							? t('sidebar.exitSelectionMode')
+							: t('sidebar.enterSelectionMode')}
 					</p>
 				</Tooltip.Content>
 			</Tooltip.Root>
@@ -564,7 +757,7 @@
 	bind:open={showBulkDeleteDialog}
 	title={bulkDeleteDialogTitle}
 	description={bulkDeleteDialogDescription}
-	confirmText={bulkDeleteConfirmText}
+	confirmText={t('sidebar.deleteSelectedConversationsConfirmText')}
 	cancelText={t('common.cancel')}
 	variant="destructive"
 	icon={Trash2}
@@ -674,6 +867,30 @@
 
 	:global(.llampart-conversation-grid-item) {
 		min-width: 0;
+	}
+
+	.llampart-sidebar-bulk-action {
+		display: flex;
+		height: 2rem;
+		align-items: center;
+		justify-content: center;
+		border-radius: 0.375rem;
+		color: var(--llampart-sidebar-action-foreground);
+		transition:
+			background-color 150ms ease-out,
+			color 150ms ease-out;
+	}
+
+	.llampart-sidebar-bulk-action:hover:not(:disabled),
+	.llampart-sidebar-bulk-action:focus-visible:not(:disabled) {
+		background: var(--accent);
+		color: var(--accent-foreground);
+		outline: none;
+	}
+
+	.llampart-sidebar-bulk-action:disabled {
+		cursor: not-allowed;
+		opacity: 1;
 	}
 
 	/* llampart-sidebar-empty-state-centered */
