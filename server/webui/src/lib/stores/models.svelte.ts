@@ -10,6 +10,7 @@ import { config } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { detectThinkingSupport, detectThinkingSupportWithReason, TTLCache } from '$lib/utils';
 import { t } from '$lib/i18n';
+import type { ModelReferenceResolution } from '$lib/types/models';
 import {
 	MODEL_PROPS_CACHE_TTL_MS,
 	MODEL_PROPS_CACHE_MAX_ENTRIES,
@@ -308,13 +309,12 @@ class ModelsStore {
 	 * Whether the selected model's chat template supports thinking/reasoning controls.
 	 */
 	get supportsThinking(): boolean {
-		const modelId = this.selectedModelName;
-		if (!modelId) {
-			if (!serverStore.isRouterMode) {
-				return detectThinkingSupport(serverStore.props?.chat_template ?? '');
-			}
-			return false;
+		if (!serverStore.isRouterMode) {
+			return detectThinkingSupport(serverStore.props?.chat_template ?? '');
 		}
+
+		const modelId = this.selectedModelName;
+		if (!modelId) return false;
 
 		if (this.supportsModelProps && serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
 			this.fetchModelProps(modelId);
@@ -328,6 +328,10 @@ class ModelsStore {
 	 * Checks whether a specific model supports thinking/reasoning controls.
 	 */
 	checkModelSupportsThinking(modelId: string): boolean {
+		if (!serverStore.isRouterMode) {
+			return detectThinkingSupport(serverStore.props?.chat_template ?? '');
+		}
+
 		if (!modelId) return false;
 
 		if (this.supportsModelProps && serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
@@ -342,13 +346,12 @@ class ModelsStore {
 	 * Detailed thinking support detection result for debugging/UI.
 	 */
 	get thinkingSupportDetails(): { supported: boolean; reason: string } {
-		const modelId = this.selectedModelName;
-		if (!modelId) {
-			if (!serverStore.isRouterMode) {
-				return detectThinkingSupportWithReason(serverStore.props?.chat_template ?? '');
-			}
-			return { supported: false, reason: 'No model selected' };
+		if (!serverStore.isRouterMode) {
+			return detectThinkingSupportWithReason(serverStore.props?.chat_template ?? '');
 		}
+
+		const modelId = this.selectedModelName;
+		if (!modelId) return { supported: false, reason: 'No model selected' };
 
 		if (serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
 			this.fetchModelProps(modelId);
@@ -685,6 +688,20 @@ class ModelsStore {
 
 	findModelByName(modelName: string): ModelOption | null {
 		return this.models.find((model) => model.model === modelName) ?? null;
+	}
+
+	resolveModelReference(reference: string): ModelReferenceResolution {
+		const modelMatch = this.models.find((model) => model.model === reference);
+		if (modelMatch) return { status: 'resolved', model: modelMatch };
+
+		const idMatch = this.models.find((model) => model.id === reference);
+		if (idMatch) return { status: 'resolved', model: idMatch };
+
+		const aliasMatches = this.models.filter((model) => model.aliases?.includes(reference));
+		if (aliasMatches.length === 1) return { status: 'resolved', model: aliasMatches[0] };
+		if (aliasMatches.length > 1) return { status: 'ambiguous', model: null };
+
+		return { status: 'not-found', model: null };
 	}
 
 	findModelById(modelId: string): ModelOption | null {
