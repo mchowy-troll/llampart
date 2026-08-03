@@ -11,13 +11,33 @@ import {
 	ATTACHMENT_LABEL_MCP_RESOURCE,
 	LEGACY_AGENTIC_REGEX
 } from '$lib/constants';
-import { AttachmentType, ContentPartType, MessageRole, UrlProtocol } from '$lib/enums';
+import { AttachmentType, ContentPartType, MessageRole } from '$lib/enums';
 import type { ApiChatMessageContentPart, ApiChatCompletionToolCall } from '$lib/types/api';
 import type { DatabaseMessageExtraMcpPrompt, DatabaseMessageExtraMcpResource } from '$lib/types';
 import { modelsStore } from '$lib/stores/models.svelte';
 import { config } from '$lib/stores/settings.svelte';
+import { API_STREAM } from '$lib/constants/api-endpoints';
+import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
+import { buildProviderEndpointUrl } from '$lib/services/providers/provider-url';
+import { createStreamIdentity, buildStreamRequestUrl } from '$lib/utils/stream-identity';
+import { SseByteParser } from '$lib/utils/sse-byte-parser';
+import {
+	getResumableStreamState,
+	removeResumableStreamState,
+	saveResumableStreamState,
+	type ResumableStreamState
+} from '$lib/utils/resumable-stream-state';
+import type { ChatStreamResumeSeed, SettingsChatServiceOptions } from '$lib/types/settings';
+
+interface FrozenStreamRequest {
+	provider: ApiProviderAdapter;
+	serverBaseUrl: string;
+	apiKey: string;
+}
 
 export class ChatService {
+	private static frozenStreamRequests = new Map<string, FrozenStreamRequest>();
+	private static readonly optionalStreamEndpointStatuses = new Set([404, 405, 501]);
 	/**
 	 * Generates a short conversation title with a small auxiliary LLM request.
 	 * This does not use the conversation system prompt and keeps thinking disabled when supported.
@@ -141,11 +161,34 @@ export class ChatService {
 			});
 		}
 
+		const frozenServerBaseUrl = String(currentConfig.serverBaseUrl ?? '');
+		const frozenApiKey = String(currentConfig.apiKey ?? '');
+		const resumableState =
+			stream && conversationId && provider.capabilities.supportsResumableStreams
+				? ({
+						conversationId,
+						streamIdentity: createStreamIdentity(conversationId, effectiveOptions.model ?? null),
+						model: effectiveOptions.model ?? null,
+						bytesReceived: 0,
+						updatedAt: Date.now()
+					} satisfies ResumableStreamState)
+				: null;
+
+		if (resumableState) {
+			saveResumableStreamState(resumableState);
+			ChatService.frozenStreamRequests.set(resumableState.streamIdentity, {
+				provider,
+				serverBaseUrl: frozenServerBaseUrl,
+				apiKey: frozenApiKey
+			});
+		}
+
 		const providerRequest = provider.buildChatCompletionRequest({
-			serverBaseUrl: String(currentConfig.serverBaseUrl ?? ''),
-			apiKey: String(currentConfig.apiKey ?? ''),
+			serverBaseUrl: frozenServerBaseUrl,
+			apiKey: frozenApiKey,
 			messages: normalizedMessages,
-			options: effectiveOptions
+			options: effectiveOptions,
+			streamIdentity: resumableState?.streamIdentity
 		});
 
 		const requestStartedAt = ChatService.getMonotonicNow();
@@ -157,6 +200,7 @@ export class ChatService {
 			});
 
 			if (!response.ok) {
+				if (resumableState) ChatService.clearResumableState(resumableState);
 				const error = await ChatService.parseErrorResponse(response);
 
 				if (onError) {
@@ -179,7 +223,10 @@ export class ChatService {
 					onCompletionId,
 					onTimings,
 					conversationId,
-					signal
+					signal,
+					resumableState,
+					effectiveOptions.onStreamCheckpoint,
+					effectiveOptions.resumeSeed
 				);
 
 				return;
@@ -198,6 +245,7 @@ export class ChatService {
 			if (isAbortError(error)) {
 				return;
 			}
+			if (resumableState) ChatService.clearResumableState(resumableState);
 
 			let userFriendlyError: Error;
 
@@ -370,6 +418,149 @@ export class ChatService {
 		};
 	}
 
+	static getResumableState(conversationId: string): ResumableStreamState | null {
+		return getResumableStreamState(conversationId);
+	}
+
+	static async stopResumableStream(conversationId: string): Promise<void> {
+		const state = getResumableStreamState(conversationId);
+		if (!state) return;
+
+		const currentConfig = config();
+		const frozen = ChatService.frozenStreamRequests.get(state.streamIdentity);
+		const serverBaseUrl = frozen?.serverBaseUrl ?? String(currentConfig.serverBaseUrl ?? '');
+		const apiKey = frozen?.apiKey ?? String(currentConfig.apiKey ?? '');
+		const url = buildStreamRequestUrl(
+			buildProviderEndpointUrl(serverBaseUrl, API_STREAM.BASE),
+			state.streamIdentity
+		);
+
+		try {
+			await fetch(url, {
+				method: 'DELETE',
+				headers: ChatService.buildStreamHeaders(apiKey, false)
+			});
+		} catch (error) {
+			console.warn('[ChatService] Failed to stop resumable stream:', error);
+		} finally {
+			ChatService.clearResumableState(state);
+		}
+	}
+
+	static async resumeStream(
+		state: ResumableStreamState,
+		options: SettingsChatServiceOptions,
+		signal?: AbortSignal
+	): Promise<boolean> {
+		const currentConfig = config();
+		const provider = getApiProvider(API_PROVIDER_IDS.LLAMA_SERVER);
+		const serverBaseUrl = String(currentConfig.serverBaseUrl ?? '');
+		const apiKey = String(currentConfig.apiKey ?? '');
+		let lookupResponse: Response;
+		do {
+			lookupResponse = await fetch(buildProviderEndpointUrl(serverBaseUrl, API_STREAM.LOOKUP), {
+				method: 'POST',
+				headers: ChatService.buildStreamHeaders(apiKey, true),
+				body: JSON.stringify({ conversation_ids: [state.streamIdentity] }),
+				signal
+			});
+
+			if (lookupResponse.status === 503) await ChatService.waitForReconnect(signal);
+		} while (lookupResponse.status === 503 && !signal?.aborted);
+		if (signal?.aborted) return false;
+
+		if (ChatService.optionalStreamEndpointStatuses.has(lookupResponse.status)) {
+			ChatService.clearResumableState(state);
+			return false;
+		}
+		if (!lookupResponse.ok) throw await ChatService.parseErrorResponse(lookupResponse);
+
+		const response = await ChatService.fetchResumedStream(state, serverBaseUrl, apiKey, signal);
+		if (ChatService.optionalStreamEndpointStatuses.has(response.status)) {
+			ChatService.clearResumableState(state);
+			return false;
+		}
+		if (!response.ok) throw await ChatService.parseErrorResponse(response);
+
+		ChatService.frozenStreamRequests.set(state.streamIdentity, {
+			provider,
+			serverBaseUrl,
+			apiKey
+		});
+		if (state.model) options.onModel?.(state.model);
+
+		await ChatService.handleStreamResponse(
+			provider,
+			response,
+			options.onChunk,
+			options.onComplete,
+			options.onError,
+			options.onReasoningChunk,
+			options.onToolCallChunk,
+			options.onModel,
+			options.onCompletionId,
+			options.onTimings,
+			state.conversationId,
+			signal,
+			state,
+			options.onStreamCheckpoint,
+			options.resumeSeed
+		);
+
+		return true;
+	}
+
+	private static buildStreamHeaders(apiKey: string, json: boolean): Record<string, string> {
+		return {
+			Accept: json ? 'application/json' : 'text/event-stream',
+			...(json ? { 'Content-Type': 'application/json' } : {}),
+			...(apiKey.trim() ? { Authorization: `Bearer ${apiKey.trim()}` } : {})
+		};
+	}
+
+	private static fetchResumedStream(
+		state: ResumableStreamState,
+		serverBaseUrl: string,
+		apiKey: string,
+		signal?: AbortSignal
+	): Promise<Response> {
+		return fetch(
+			buildStreamRequestUrl(
+				buildProviderEndpointUrl(serverBaseUrl, API_STREAM.BASE),
+				state.streamIdentity,
+				state.bytesReceived
+			),
+			{
+				method: 'GET',
+				headers: ChatService.buildStreamHeaders(apiKey, false),
+				signal
+			}
+		);
+	}
+
+	private static clearResumableState(state: ResumableStreamState): void {
+		removeResumableStreamState(state.conversationId);
+		ChatService.frozenStreamRequests.delete(state.streamIdentity);
+	}
+
+	private static waitForReconnect(signal?: AbortSignal): Promise<void> {
+		return new Promise((resolve) => {
+			if (signal?.aborted) {
+				resolve();
+				return;
+			}
+			const timeout = setTimeout(resolve, 250);
+			signal?.addEventListener(
+				'abort',
+				() => {
+					clearTimeout(timeout);
+					resolve();
+				},
+				{ once: true }
+			);
+		});
+	}
+
 	/**
 	 * Handles streaming response from the chat completion API
 	 * @param response - The Response object from the fetch request
@@ -390,7 +581,7 @@ export class ChatService {
 			reasoningContent?: string,
 			timings?: ChatMessageTimings,
 			toolCalls?: string
-		) => void,
+		) => void | Promise<void>,
 		onError?: (error: Error) => void,
 		onReasoningChunk?: (chunk: string) => void,
 		onToolCallChunk?: (chunk: string) => void,
@@ -398,19 +589,17 @@ export class ChatService {
 		onCompletionId?: (id: string) => void,
 		onTimings?: (timings?: ChatMessageTimings, promptProgress?: ChatMessagePromptProgress) => void,
 		conversationId?: string,
-		abortSignal?: AbortSignal
+		abortSignal?: AbortSignal,
+		resumableState?: ResumableStreamState | null,
+		onStreamCheckpoint?: SettingsChatServiceOptions['onStreamCheckpoint'],
+		resumeSeed?: ChatStreamResumeSeed
 	): Promise<void> {
-		const reader = response.body?.getReader();
-
-		if (!reader) {
-			throw new Error('No response body');
-		}
-
-		const decoder = new TextDecoder();
-		let aggregatedContent = '';
-		let fullReasoningContent = '';
-		let aggregatedToolCalls: ApiChatCompletionToolCall[] = [];
-		let lastTimings: ChatMessageTimings | undefined;
+		let aggregatedContent = resumeSeed?.content ?? '';
+		let fullReasoningContent = resumeSeed?.reasoningContent ?? '';
+		let aggregatedToolCalls: ApiChatCompletionToolCall[] = (resumeSeed?.toolCalls ?? []).map(
+			(call) => ({ ...call, function: call.function ? { ...call.function } : undefined })
+		);
+		let lastTimings: ChatMessageTimings | undefined = resumeSeed?.timings;
 		const streamStartedAt = ChatService.getMonotonicNow();
 		let streamFinished = false;
 		let modelEmitted = false;
@@ -455,114 +644,147 @@ export class ChatService {
 			}
 		};
 
-		try {
-			let chunk = '';
-			while (true) {
-				if (abortSignal?.aborted) break;
+		let activeResponse = response;
 
-				const { done, value } = await reader.read();
-				if (done) break;
+		while (!abortSignal?.aborted) {
+			const reader = activeResponse.body?.getReader();
+			if (!reader) throw new Error('No response body');
+			const parser = new SseByteParser();
+			const baseOffset = resumableState?.bytesReceived ?? 0;
+			const processRecords = async (records: ReturnType<SseByteParser['push']>) => {
+				for (const record of records) {
+					if (abortSignal?.aborted) return;
 
-				if (abortSignal?.aborted) break;
-
-				chunk += decoder.decode(value, { stream: true });
-				const lines = chunk.split('\n');
-				chunk = lines.pop() || '';
-
-				for (const line of lines) {
-					if (abortSignal?.aborted) break;
-
-					if (line.startsWith(UrlProtocol.DATA)) {
-						const data = line.slice(6);
-
+					if (record.data !== null) {
 						try {
-							const event = provider.parseChatCompletionStreamData(data);
-							if (!event) continue;
-
-							if (event.done) {
-								streamFinished = true;
-								continue;
-							}
-
-							if (event.model && !modelEmitted) {
-								modelEmitted = true;
-								onModel?.(event.model);
-							}
-
-							if (event.completionId && !idEmitted) {
-								idEmitted = true;
-								onCompletionId?.(event.completionId);
-							}
-
-							if (event.promptProgress) {
-								ChatService.notifyTimings(undefined, event.promptProgress, onTimings);
-							}
-
-							if (event.timings) {
-								ChatService.notifyTimings(event.timings, event.promptProgress, onTimings);
-								lastTimings = event.timings;
-							} else if (event.usage) {
-								const usageTimings = ChatService.buildProviderUsageTimings(
-									event.usage,
-									streamStartedAt,
-									ChatService.getMonotonicNow()
-								);
-
-								if (usageTimings) {
-									ChatService.notifyTimings(usageTimings, event.promptProgress, onTimings);
-									lastTimings = usageTimings;
+							const event = provider.parseChatCompletionStreamData(record.data);
+							if (event?.done) streamFinished = true;
+							else if (event) {
+								if (event.model && !modelEmitted) {
+									modelEmitted = true;
+									onModel?.(event.model);
 								}
-							}
-
-							if (event.content) {
-								finalizeOpenToolCallBatch();
-								aggregatedContent += event.content;
-								if (!abortSignal?.aborted) {
+								if (event.completionId && !idEmitted) {
+									idEmitted = true;
+									onCompletionId?.(event.completionId);
+								}
+								if (event.promptProgress) {
+									ChatService.notifyTimings(undefined, event.promptProgress, onTimings);
+								}
+								if (event.timings) {
+									ChatService.notifyTimings(event.timings, event.promptProgress, onTimings);
+									lastTimings = event.timings;
+								} else if (event.usage) {
+									const usageTimings = ChatService.buildProviderUsageTimings(
+										event.usage,
+										streamStartedAt,
+										ChatService.getMonotonicNow()
+									);
+									if (usageTimings) {
+										ChatService.notifyTimings(usageTimings, event.promptProgress, onTimings);
+										lastTimings = usageTimings;
+									}
+								}
+								if (event.content) {
+									finalizeOpenToolCallBatch();
+									aggregatedContent += event.content;
 									onChunk?.(event.content);
 								}
-							}
-
-							if (event.reasoningContent) {
-								finalizeOpenToolCallBatch();
-								fullReasoningContent += event.reasoningContent;
-								if (!abortSignal?.aborted) {
+								if (event.reasoningContent) {
+									finalizeOpenToolCallBatch();
+									fullReasoningContent += event.reasoningContent;
 									onReasoningChunk?.(event.reasoningContent);
 								}
+								processToolCallDelta(event.toolCalls);
 							}
-
-							processToolCallDelta(event.toolCalls);
-						} catch (e) {
-							console.error('Error parsing provider stream chunk:', e);
+						} catch (error) {
+							console.error('Error parsing provider stream chunk:', error);
 						}
 					}
-				}
 
-				if (abortSignal?.aborted) break;
+					const bytesReceived = baseOffset + record.bytesParsed;
+					await onStreamCheckpoint?.({
+						content: aggregatedContent,
+						reasoningContent: fullReasoningContent,
+						toolCalls: aggregatedToolCalls,
+						timings: lastTimings,
+						bytesReceived
+					});
+					if (resumableState) {
+						resumableState = {
+							...resumableState,
+							bytesReceived,
+							updatedAt: Date.now()
+						};
+						saveResumableStreamState(resumableState);
+					}
+				}
+			};
+
+			try {
+				while (!abortSignal?.aborted) {
+					const { done, value } = await reader.read();
+					if (done) {
+						await processRecords(parser.finish());
+						break;
+					}
+
+					await processRecords(parser.push(value));
+				}
+			} catch (error) {
+				if (abortSignal?.aborted) return;
+				console.warn('[ChatService] Stream disconnected; attempting resume:', error);
+			} finally {
+				reader.releaseLock();
 			}
 
 			if (abortSignal?.aborted) return;
-
 			if (streamFinished) {
 				finalizeOpenToolCallBatch();
-
 				const finalToolCalls =
 					aggregatedToolCalls.length > 0 ? JSON.stringify(aggregatedToolCalls) : undefined;
-
-				onComplete?.(
+				if (resumableState) ChatService.clearResumableState(resumableState);
+				await onComplete?.(
 					aggregatedContent,
 					fullReasoningContent || undefined,
 					lastTimings,
 					finalToolCalls
 				);
+				return;
 			}
-		} catch (error) {
-			const err = error instanceof Error ? error : new Error('Stream error');
+			if (!resumableState) return;
 
-			onError?.(err);
+			const frozen = ChatService.frozenStreamRequests.get(resumableState.streamIdentity);
+			if (!frozen) throw new Error('Missing frozen stream request');
+			await ChatService.waitForReconnect(abortSignal);
+			if (abortSignal?.aborted) return;
 
-			throw err;
-		} finally {
-			reader.releaseLock();
+			try {
+				activeResponse = await ChatService.fetchResumedStream(
+					resumableState,
+					frozen.serverBaseUrl,
+					frozen.apiKey,
+					abortSignal
+				);
+			} catch (error) {
+				if (abortSignal?.aborted) return;
+				console.warn('[ChatService] Resume request failed; retrying:', error);
+				continue;
+			}
+
+			if (ChatService.optionalStreamEndpointStatuses.has(activeResponse.status)) {
+				ChatService.clearResumableState(resumableState);
+				const finalToolCalls =
+					aggregatedToolCalls.length > 0 ? JSON.stringify(aggregatedToolCalls) : undefined;
+				await onComplete?.(
+					aggregatedContent,
+					fullReasoningContent || undefined,
+					lastTimings,
+					finalToolCalls
+				);
+				return;
+			}
+			if (!activeResponse.ok) throw await ChatService.parseErrorResponse(activeResponse);
 		}
 	}
 

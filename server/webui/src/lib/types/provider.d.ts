@@ -23,6 +23,7 @@ export interface ProviderCapabilities {
 	supportsPromptProgress: boolean;
 	supportsLlamaTimings: boolean;
 	supportsStreamUsage: boolean;
+	supportsResumableStreams: boolean;
 	requiresModelInChatRequest: boolean;
 	supportsTemperature: boolean;
 	supportsTopP: boolean;
@@ -80,6 +81,7 @@ export interface ProviderChatCompletionInput {
 	apiKey: string;
 	messages: ApiChatMessageData[];
 	options: SettingsChatServiceOptions;
+	streamIdentity?: string;
 }
 
 export interface ProviderChatCompletionFetchRequest {

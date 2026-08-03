@@ -406,7 +406,8 @@ class AgenticStore {
 			createAssistantMessage,
 			onFlowComplete,
 			onTimings,
-			onTurnComplete
+			onTurnComplete,
+			onStreamCheckpoint
 		} = callbacks;
 
 		const sessionMessages: AgenticMessage[] = toAgenticMessages(messages);
@@ -500,6 +501,7 @@ class AgenticStore {
 								turnTimings = timings;
 							}
 						},
+						onStreamCheckpoint,
 						onComplete: () => {
 							/* Completion handled after sendMessage resolves */
 						},
@@ -507,7 +509,7 @@ class AgenticStore {
 							throw error;
 						}
 					},
-					undefined,
+					conversationId,
 					signal
 				);
 

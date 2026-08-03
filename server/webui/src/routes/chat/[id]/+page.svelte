@@ -5,7 +5,7 @@
 	import { page } from '$app/state';
 	import { afterNavigate } from '$app/navigation';
 	import { ChatScreen, DialogModelNotAvailable } from '$lib/components/app';
-	import { chatStore, isLoading } from '$lib/stores/chat.svelte';
+	import { chatStore } from '$lib/stores/chat.svelte';
 	import {
 		conversationsStore,
 		activeConversation,
@@ -44,10 +44,10 @@
 
 		// Handle model parameter - select model if provided
 		if (modelParam) {
-			const model = modelsStore.findModelByName(modelParam);
-			if (model) {
+			const resolution = modelsStore.resolveModelReference(modelParam);
+			if (resolution.status === 'resolved') {
 				try {
-					await modelsStore.selectModelById(model.id);
+					await modelsStore.selectModelById(resolution.model.id);
 				} catch (error) {
 					console.error('Failed to select model:', error);
 					requestedModelName = modelParam;
@@ -123,6 +123,7 @@
 
 			// Skip loading if this conversation is already active (e.g., just created)
 			if (activeConversation()?.id === chatId) {
+				void chatStore.resumeStreamForChat(chatId);
 				// Still handle URL params even if conversation is active
 				if ((qParam !== null || modelParam !== null) && !urlParamsProcessed) {
 					handleUrlParams();
@@ -134,6 +135,7 @@
 				const success = await conversationsStore.loadConversation(chatId);
 				if (success) {
 					chatStore.syncLoadingStateForChat(chatId);
+					void chatStore.resumeStreamForChat(chatId);
 
 					// Handle URL params after conversation is loaded
 					if ((qParam !== null || modelParam !== null) && !urlParamsProcessed) {
@@ -143,22 +145,6 @@
 					await goto('#/');
 				}
 			})();
-		}
-	});
-
-	$effect(() => {
-		if (typeof window !== 'undefined') {
-			const handleBeforeUnload = () => {
-				if (isLoading()) {
-					chatStore.stopGeneration();
-				}
-			};
-
-			window.addEventListener('beforeunload', handleBeforeUnload);
-
-			return () => {
-				window.removeEventListener('beforeunload', handleBeforeUnload);
-			};
 		}
 	});
 </script>

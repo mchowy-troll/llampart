@@ -254,7 +254,10 @@ function buildLlamaServerChatCompletionRequest(
 		url: buildProviderEndpointUrl(normalizedServerBaseUrl, API_CHAT.COMPLETIONS),
 		init: {
 			method: 'POST',
-			headers: buildJsonHeaders(input.apiKey),
+			headers: {
+				...buildJsonHeaders(input.apiKey),
+				...(input.streamIdentity ? { 'X-Conversation-Id': input.streamIdentity } : {})
+			},
 			body: JSON.stringify(buildLlamaServerChatBody(input))
 		}
 	};

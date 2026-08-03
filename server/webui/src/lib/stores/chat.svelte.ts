@@ -44,10 +44,26 @@ import type {
 	ErrorDialogState
 } from '$lib/types/chat';
 import type { ApiProcessingState, DatabaseMessage, DatabaseMessageExtra } from '$lib/types';
+import type { ChatStreamCheckpoint } from '$lib/types/settings';
 import { ErrorDialogType, MessageRole, MessageType } from '$lib/enums';
 
 interface ConversationStateEntry {
 	lastAccessed: number;
+}
+
+export function resolveHistoricalContextTotal(
+	message: Pick<DatabaseMessage, 'model' | 'timings'>,
+	getModelContextSize: (model: string) => number | null
+): number | null {
+	const storedContextTotal = message.timings?.context_total;
+	if (typeof storedContextTotal === 'number' && storedContextTotal > 0) {
+		return storedContextTotal;
+	}
+
+	if (!message.model) return null;
+	const modelContextTotal = getModelContextSize(message.model);
+
+	return typeof modelContextTotal === 'number' && modelContextTotal > 0 ? modelContextTotal : null;
 }
 
 class ChatStore {
@@ -63,6 +79,7 @@ class ChatStore {
 	private preEncodeAbortController: AbortController | null = null;
 	private processingStates = new SvelteMap<string, ApiProcessingState | null>();
 	private conversationStateTimestamps = new SvelteMap<string, ConversationStateEntry>();
+	private resumingStreams = new Set<string>();
 	private activeConversationId = $state<string | null>(null);
 	private isStreamingActive = $state(false);
 	private isEditModeActive = $state(false);
@@ -574,6 +591,16 @@ class ChatStore {
 				await modelsStore.fetchModelProps(effectiveModel);
 		}
 
+		const frozenModel = effectiveModel ? normalizeModelName(effectiveModel) : null;
+		const resolvedContextTotal = this.getContextTotal(frozenModel);
+		const withContextTotal = (
+			timings: ChatMessageTimings | undefined
+		): ChatMessageTimings | undefined => {
+			if (!timings || resolvedContextTotal === null) return timings;
+
+			return { ...timings, context_total: resolvedContextTotal };
+		};
+
 		// Mutable state for the current message being streamed
 		let currentMessageId = assistantMessage.id;
 		let streamedContent = '';
@@ -581,6 +608,18 @@ class ChatStore {
 		let resolvedModel: string | null = null;
 		let modelPersisted = false;
 		const convId = assistantMessage.convId;
+		const updateActiveMessage = (messageId: string, update: Partial<DatabaseMessage>): void => {
+			if (conversationsStore.activeConversation?.id !== convId) return;
+			const index = conversationsStore.findMessageIndex(messageId);
+			if (index !== -1) conversationsStore.updateMessageAtIndex(index, update);
+		};
+		const updateConversationCurrentNode = async (messageId: string): Promise<void> => {
+			if (conversationsStore.activeConversation?.id === convId) {
+				await conversationsStore.updateCurrentNode(messageId);
+			} else {
+				await DatabaseService.updateCurrentNode(convId, messageId);
+			}
+		};
 
 		const recordCompletionId = (() => {
 			let completionIdRecorded = false;
@@ -588,8 +627,7 @@ class ChatStore {
 			return (id: string): void => {
 				if (!id || completionIdRecorded) return;
 				completionIdRecorded = true;
-				const idx = conversationsStore.findMessageIndex(currentMessageId);
-				conversationsStore.updateMessageAtIndex(idx, { completionId: id });
+				updateActiveMessage(currentMessageId, { completionId: id });
 				DatabaseService.updateMessage(currentMessageId, { completionId: id }).catch(() => {
 					completionIdRecorded = false;
 				});
@@ -601,8 +639,7 @@ class ChatStore {
 			const n = normalizeModelName(modelName);
 			if (!n || n === resolvedModel) return;
 			resolvedModel = n;
-			const idx = conversationsStore.findMessageIndex(currentMessageId);
-			conversationsStore.updateMessageAtIndex(idx, { model: n });
+			updateActiveMessage(currentMessageId, { model: n });
 			if (persistImmediately && !modelPersisted) {
 				modelPersisted = true;
 				DatabaseService.updateMessage(currentMessageId, { model: n }).catch(() => {
@@ -612,10 +649,11 @@ class ChatStore {
 			}
 		};
 
+		if (frozenModel) recordModel(frozenModel);
+
 		const updateStreamingUI = () => {
 			this.setChatStreaming(convId, streamedContent, currentMessageId);
-			const idx = conversationsStore.findMessageIndex(currentMessageId);
-			conversationsStore.updateMessageAtIndex(idx, { content: streamedContent });
+			updateActiveMessage(currentMessageId, { content: streamedContent });
 		};
 
 		const cleanupStreamingState = () => {
@@ -639,18 +677,35 @@ class ChatStore {
 			onReasoningChunk: (chunk: string) => {
 				streamedReasoningContent += chunk;
 				this.setChatStreaming(convId, streamedContent, currentMessageId);
-				const idx = conversationsStore.findMessageIndex(currentMessageId);
-				conversationsStore.updateMessageAtIndex(idx, {
+				updateActiveMessage(currentMessageId, {
 					reasoningContent: streamedReasoningContent
 				});
 				this.setChatReasoning(convId, true);
 			},
 			onToolCallsStreaming: (toolCalls) => {
-				const idx = conversationsStore.findMessageIndex(currentMessageId);
-				conversationsStore.updateMessageAtIndex(idx, { toolCalls: JSON.stringify(toolCalls) });
+				updateActiveMessage(currentMessageId, { toolCalls: JSON.stringify(toolCalls) });
+			},
+			onStreamCheckpoint: async (checkpoint: ChatStreamCheckpoint) => {
+				streamedContent = checkpoint.content;
+				streamedReasoningContent = checkpoint.reasoningContent;
+				const persistedTimings = withContextTotal(checkpoint.timings);
+				const toolCalls =
+					checkpoint.toolCalls.length > 0 ? JSON.stringify(checkpoint.toolCalls) : '';
+				const update: Partial<DatabaseMessage> = {
+					content: checkpoint.content,
+					reasoningContent: checkpoint.reasoningContent || undefined,
+					toolCalls
+				};
+				if (persistedTimings) update.timings = persistedTimings;
+				if (resolvedModel) update.model = resolvedModel;
+
+				await DatabaseService.updateMessage(currentMessageId, update);
+				updateActiveMessage(currentMessageId, update);
+				this.setChatStreaming(convId, checkpoint.content, currentMessageId);
 			},
 			onAttachments: (messageId: string, extras: DatabaseMessageExtra[]) => {
 				if (!extras.length) return;
+				if (conversationsStore.activeConversation?.id !== convId) return;
 				const idx = conversationsStore.findMessageIndex(messageId);
 				if (idx === -1) return;
 				const msg = conversationsStore.activeMessages[idx];
@@ -661,9 +716,9 @@ class ChatStore {
 			onModel: (modelName: string) => recordModel(modelName),
 			onCompletionId: (id: string) => recordCompletionId(id),
 			onTurnComplete: (intermediateTimings: ChatMessageTimings) => {
+				const persistedTimings = withContextTotal(intermediateTimings);
 				// Update the first assistant message with cumulative agentic timings
-				const idx = conversationsStore.findMessageIndex(assistantMessage.id);
-				conversationsStore.updateMessageAtIndex(idx, { timings: intermediateTimings });
+				updateActiveMessage(assistantMessage.id, { timings: persistedTimings });
 			},
 			onTimings: (timings?: ChatMessageTimings, promptProgress?: ChatMessagePromptProgress) => {
 				const tokensPerSecond =
@@ -680,7 +735,7 @@ class ChatStore {
 						prompt_progress: promptProgress
 					},
 					convId,
-					this.getContextTotal(effectiveModel)
+					resolvedContextTotal
 				);
 			},
 			onAssistantTurnComplete: async (
@@ -689,24 +744,24 @@ class ChatStore {
 				timings: ChatMessageTimings | undefined,
 				toolCalls: import('$lib/types/api').ApiChatCompletionToolCall[] | undefined
 			) => {
+				const persistedTimings = withContextTotal(timings);
 				const updateData: Record<string, unknown> = {
 					content,
 					reasoningContent: reasoningContent || undefined,
 					toolCalls: toolCalls ? JSON.stringify(toolCalls) : '',
-					timings
+					timings: persistedTimings
 				};
 				if (resolvedModel && !modelPersisted) updateData.model = resolvedModel;
 				await DatabaseService.updateMessage(currentMessageId, updateData);
-				const idx = conversationsStore.findMessageIndex(currentMessageId);
 				const uiUpdate: Partial<DatabaseMessage> = {
 					content,
 					reasoningContent: reasoningContent || undefined,
 					toolCalls: toolCalls ? JSON.stringify(toolCalls) : ''
 				};
-				if (timings) uiUpdate.timings = timings;
+				if (persistedTimings) uiUpdate.timings = persistedTimings;
 				if (resolvedModel) uiUpdate.model = resolvedModel;
-				conversationsStore.updateMessageAtIndex(idx, uiUpdate);
-				await conversationsStore.updateCurrentNode(currentMessageId);
+				updateActiveMessage(currentMessageId, uiUpdate);
+				await updateConversationCurrentNode(currentMessageId);
 			},
 			createToolResultMessage: async (
 				toolCallId: string,
@@ -727,8 +782,11 @@ class ChatStore {
 					},
 					currentMessageId
 				);
-				conversationsStore.addMessageToActive(msg);
-				await conversationsStore.updateCurrentNode(msg.id);
+				if (conversationsStore.activeConversation?.id === convId) {
+					conversationsStore.addMessageToActive(msg);
+				}
+				currentMessageId = msg.id;
+				await updateConversationCurrentNode(msg.id);
 				return msg;
 			},
 			createAssistantMessage: async () => {
@@ -736,8 +794,6 @@ class ChatStore {
 				streamedContent = '';
 				streamedReasoningContent = '';
 
-				const lastMsg =
-					conversationsStore.activeMessages[conversationsStore.activeMessages.length - 1];
 				const msg = await DatabaseService.createMessageBranch(
 					{
 						convId,
@@ -749,18 +805,19 @@ class ChatStore {
 						children: [],
 						model: resolvedModel
 					},
-					lastMsg.id
+					currentMessageId
 				);
-				conversationsStore.addMessageToActive(msg);
+				if (conversationsStore.activeConversation?.id === convId) {
+					conversationsStore.addMessageToActive(msg);
+				}
 				currentMessageId = msg.id;
 				return msg;
 			},
 			onFlowComplete: (finalTimings?: ChatMessageTimings) => {
-				if (finalTimings) {
-					const idx = conversationsStore.findMessageIndex(assistantMessage.id);
-
-					conversationsStore.updateMessageAtIndex(idx, { timings: finalTimings });
-					DatabaseService.updateMessage(assistantMessage.id, { timings: finalTimings }).catch(
+				const persistedTimings = withContextTotal(finalTimings);
+				if (persistedTimings) {
+					updateActiveMessage(assistantMessage.id, { timings: persistedTimings });
+					DatabaseService.updateMessage(assistantMessage.id, { timings: persistedTimings }).catch(
 						console.error
 					);
 				}
@@ -778,7 +835,7 @@ class ChatStore {
 						allMessages,
 						assistantMessage,
 						streamedContent,
-						effectiveModel,
+						frozenModel,
 						!!config().excludeReasoningFromContext
 					);
 				}
@@ -815,7 +872,7 @@ class ChatStore {
 			const agenticResult = await agenticStore.runAgenticFlow({
 				conversationId: convId,
 				messages: allMessages,
-				options: { ...this.getApiOptions(), ...(effectiveModel ? { model: effectiveModel } : {}) },
+				options: { ...this.getApiOptions(), ...(frozenModel ? { model: frozenModel } : {}) },
 				callbacks: streamCallbacks,
 				signal: abortController.signal,
 				perChatOverrides
@@ -834,39 +891,40 @@ class ChatStore {
 			allMessages,
 			{
 				...this.getApiOptions(),
-				...(effectiveModel ? { model: effectiveModel } : {}),
+				...(frozenModel ? { model: frozenModel } : {}),
 				stream: true,
 				onChunk: streamCallbacks.onChunk,
 				onReasoningChunk: streamCallbacks.onReasoningChunk,
 				onModel: streamCallbacks.onModel,
 				onCompletionId: streamCallbacks.onCompletionId,
 				onTimings: streamCallbacks.onTimings,
+				onStreamCheckpoint: streamCallbacks.onStreamCheckpoint,
 				onComplete: async (
 					finalContent?: string,
 					reasoningContent?: string,
 					timings?: ChatMessageTimings,
 					toolCalls?: string
 				) => {
+					const persistedTimings = withContextTotal(timings);
 					const content = streamedContent || finalContent || '';
 					const reasoning = streamedReasoningContent || reasoningContent;
 					const updateData: Record<string, unknown> = {
 						content,
 						reasoningContent: reasoning || undefined,
 						toolCalls: toolCalls || '',
-						timings
+						timings: persistedTimings
 					};
 					if (resolvedModel && !modelPersisted) updateData.model = resolvedModel;
 					await DatabaseService.updateMessage(currentMessageId, updateData);
-					const idx = conversationsStore.findMessageIndex(currentMessageId);
 					const uiUpdate: Partial<DatabaseMessage> = {
 						content,
 						reasoningContent: reasoning || undefined,
 						toolCalls: toolCalls || ''
 					};
-					if (timings) uiUpdate.timings = timings;
+					if (persistedTimings) uiUpdate.timings = persistedTimings;
 					if (resolvedModel) uiUpdate.model = resolvedModel;
-					conversationsStore.updateMessageAtIndex(idx, uiUpdate);
-					await conversationsStore.updateCurrentNode(currentMessageId);
+					updateActiveMessage(currentMessageId, uiUpdate);
+					await updateConversationCurrentNode(currentMessageId);
 					cleanupStreamingState();
 					if (onComplete) await onComplete(content);
 					if (isRouterMode()) modelsStore.fetchRouterModels().catch(console.error);
@@ -940,11 +998,139 @@ class ChatStore {
 	}
 	async stopGenerationForChat(convId: string): Promise<void> {
 		await this.savePartialResponseIfNeeded(convId);
+		await ChatService.stopResumableStream(convId);
 		this.setStreamingActive(false);
 		this.abortRequest(convId);
 		this.setChatLoading(convId, false);
 		this.clearChatStreaming(convId);
 		this.setProcessingState(convId, null);
+	}
+
+	async resumeStreamForChat(convId: string): Promise<void> {
+		if (this.resumingStreams.has(convId) || this.isChatLoadingInternal(convId)) return;
+		const state = ChatService.getResumableState(convId);
+		if (!state) return;
+
+		const messages = await conversationsStore.getConversationMessages(convId);
+		const assistantMessage = messages
+			.filter((message) => message.role === MessageRole.ASSISTANT)
+			.sort((left, right) => right.timestamp - left.timestamp)[0];
+		if (!assistantMessage) return;
+
+		let toolCalls: import('$lib/types/api').ApiChatCompletionToolCall[] = [];
+		try {
+			toolCalls = assistantMessage.toolCalls ? JSON.parse(assistantMessage.toolCalls) : [];
+		} catch {
+			toolCalls = [];
+		}
+
+		this.resumingStreams.add(convId);
+		this.setChatLoading(convId, true);
+		this.setChatStreaming(convId, assistantMessage.content, assistantMessage.id);
+		this.setStreamingActive(true);
+		this.setActiveProcessingConversation(convId);
+		const abortController = this.getOrCreateAbortController(convId);
+		const resolvedContextTotal = this.getContextTotal(state.model);
+		const withContextTotal = (timings?: ChatMessageTimings): ChatMessageTimings | undefined =>
+			timings && resolvedContextTotal !== null
+				? { ...timings, context_total: resolvedContextTotal }
+				: timings;
+		const cleanup = () => {
+			this.resumingStreams.delete(convId);
+			this.setStreamingActive(false);
+			this.setChatReasoning(convId, false);
+			this.setChatLoading(convId, false);
+			this.clearChatStreaming(convId);
+			this.setProcessingState(convId, null);
+		};
+
+		try {
+			const resumed = await ChatService.resumeStream(
+				state,
+				{
+					resumeSeed: {
+						content: assistantMessage.content,
+						reasoningContent: assistantMessage.reasoningContent ?? '',
+						toolCalls,
+						timings: assistantMessage.timings
+					},
+					onChunk: (chunk) => {
+						assistantMessage.content += chunk;
+						this.setChatReasoning(convId, false);
+					},
+					onReasoningChunk: (chunk) => {
+						assistantMessage.reasoningContent = (assistantMessage.reasoningContent ?? '') + chunk;
+						this.setChatReasoning(convId, true);
+					},
+					onToolCallChunk: (serialized) => {
+						assistantMessage.toolCalls = serialized;
+					},
+					onModel: (model) => {
+						assistantMessage.model = normalizeModelName(model);
+					},
+					onTimings: (timings, promptProgress) => {
+						const tokensPerSecond =
+							timings?.predicted_ms && timings.predicted_n
+								? (timings.predicted_n / timings.predicted_ms) * 1000
+								: 0;
+						this.updateProcessingStateFromTimings(
+							{
+								prompt_n: timings?.prompt_n || 0,
+								prompt_ms: timings?.prompt_ms,
+								predicted_n: timings?.predicted_n || 0,
+								predicted_per_second: tokensPerSecond,
+								cache_n: timings?.cache_n || 0,
+								prompt_progress: promptProgress
+							},
+							convId,
+							resolvedContextTotal
+						);
+					},
+					onStreamCheckpoint: async (checkpoint) => {
+						const update: Partial<DatabaseMessage> = {
+							content: checkpoint.content,
+							reasoningContent: checkpoint.reasoningContent || undefined,
+							toolCalls:
+								checkpoint.toolCalls.length > 0 ? JSON.stringify(checkpoint.toolCalls) : '',
+							...(state.model ? { model: state.model } : {})
+						};
+						const timings = withContextTotal(checkpoint.timings);
+						if (timings) update.timings = timings;
+						await DatabaseService.updateMessage(assistantMessage.id, update);
+						Object.assign(assistantMessage, update);
+						const idx = conversationsStore.findMessageIndex(assistantMessage.id);
+						if (idx === -1 && conversationsStore.activeConversation?.id === convId) {
+							conversationsStore.addMessageToActive(assistantMessage);
+						} else if (idx !== -1) {
+							conversationsStore.updateMessageAtIndex(idx, update);
+						}
+						this.setChatStreaming(convId, checkpoint.content, assistantMessage.id);
+					},
+					onComplete: async (content, reasoningContent, timings, serializedToolCalls) => {
+						const update: Partial<DatabaseMessage> = {
+							content,
+							reasoningContent,
+							toolCalls: serializedToolCalls ?? '',
+							...(state.model ? { model: state.model } : {}),
+							timings: withContextTotal(timings)
+						};
+						await DatabaseService.updateMessage(assistantMessage.id, update);
+						await conversationsStore.updateCurrentNode(assistantMessage.id);
+						const idx = conversationsStore.findMessageIndex(assistantMessage.id);
+						if (idx !== -1) conversationsStore.updateMessageAtIndex(idx, update);
+						cleanup();
+					},
+					onError: () => {
+						cleanup();
+					}
+				},
+				abortController.signal
+			);
+			if (!resumed) cleanup();
+		} catch (error) {
+			cleanup();
+			if (!isAbortError(error)) console.warn('Failed to resume chat stream:', error);
+		}
 	}
 	private async savePartialResponseIfNeeded(convId?: string): Promise<void> {
 		const conversationId = convId || conversationsStore.activeConversation?.id;
@@ -956,8 +1142,8 @@ class ChatStore {
 				? conversationsStore.activeMessages
 				: await conversationsStore.getConversationMessages(conversationId);
 		if (!messages.length) return;
-		const lastMessage = messages[messages.length - 1];
-		if (lastMessage?.role === MessageRole.ASSISTANT) {
+		const streamingMessage = messages.find((message) => message.id === streamingState.messageId);
+		if (streamingMessage?.role === MessageRole.ASSISTANT) {
 			try {
 				const updateData: { content: string; timings?: ChatMessageTimings } = {
 					content: streamingState.response
@@ -972,14 +1158,18 @@ class ChatStore {
 						predicted_ms:
 							lastKnownState.tokensPerSecond && lastKnownState.tokensDecoded
 								? (lastKnownState.tokensDecoded / lastKnownState.tokensPerSecond) * 1000
+								: undefined,
+						context_total:
+							typeof lastKnownState.contextTotal === 'number' && lastKnownState.contextTotal > 0
+								? lastKnownState.contextTotal
 								: undefined
 					};
 				}
-				await DatabaseService.updateMessage(lastMessage.id, updateData);
-				lastMessage.content = streamingState.response;
-				if (updateData.timings) lastMessage.timings = updateData.timings;
+				await DatabaseService.updateMessage(streamingMessage.id, updateData);
+				streamingMessage.content = streamingState.response;
+				if (updateData.timings) streamingMessage.timings = updateData.timings;
 			} catch (error) {
-				lastMessage.content = streamingState.response;
+				streamingMessage.content = streamingState.response;
 				console.error('Failed to save partial response:', error);
 			}
 		}
@@ -1393,10 +1583,7 @@ class ChatStore {
 
 	private getContextTotal(modelName?: string | null): number | null {
 		if (isRouterMode()) {
-			const effectiveModel = modelName || selectedModelName();
-			const modelContextSize = effectiveModel
-				? modelsStore.getModelContextSize(effectiveModel)
-				: null;
+			const modelContextSize = modelName ? modelsStore.getModelContextSize(modelName) : null;
 
 			if (typeof modelContextSize === 'number' && modelContextSize > 0) {
 				return modelContextSize;
@@ -1439,7 +1626,7 @@ class ChatStore {
 
 	private parseTimingData(
 		timingData: Record<string, unknown>,
-		contextTotal = this.getContextTotal()
+		contextTotal: number | null = null
 	): ApiProcessingState | null {
 		const promptTokens = (timingData.prompt_n as number) || 0,
 			promptMs = (timingData.prompt_ms as number) || undefined,
@@ -1484,16 +1671,22 @@ class ChatStore {
 		for (let i = messages.length - 1; i >= 0; i--) {
 			const message = messages[i];
 			if (message.role === MessageRole.ASSISTANT && message.timings) {
-				const restoredState = this.parseTimingData({
-					prompt_n: message.timings.prompt_n || 0,
-					prompt_ms: message.timings.prompt_ms,
-					predicted_n: message.timings.predicted_n || 0,
-					predicted_per_second:
-						message.timings.predicted_n && message.timings.predicted_ms
-							? (message.timings.predicted_n / message.timings.predicted_ms) * 1000
-							: 0,
-					cache_n: message.timings.cache_n || 0
-				});
+				const contextTotal = resolveHistoricalContextTotal(message, (model) =>
+					modelsStore.getModelContextSize(model)
+				);
+				const restoredState = this.parseTimingData(
+					{
+						prompt_n: message.timings.prompt_n || 0,
+						prompt_ms: message.timings.prompt_ms,
+						predicted_n: message.timings.predicted_n || 0,
+						predicted_per_second:
+							message.timings.predicted_n && message.timings.predicted_ms
+								? (message.timings.predicted_n / message.timings.predicted_ms) * 1000
+								: 0,
+						cache_n: message.timings.cache_n || 0
+					},
+					contextTotal
+				);
 				if (restoredState) {
 					this.setProcessingState(conversationId, restoredState);
 					return;
