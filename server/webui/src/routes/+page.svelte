@@ -34,11 +34,11 @@
 		await modelsStore.fetch();
 
 		if (modelParam) {
-			const model = modelsStore.findModelByName(modelParam);
+			const resolution = modelsStore.resolveModelReference(modelParam);
 
-			if (model) {
+			if (resolution.status === 'resolved') {
 				try {
-					await modelsStore.selectModelById(model.id);
+					await modelsStore.selectModelById(resolution.model.id);
 				} catch (error) {
 					console.error('Failed to select model:', error);
 					requestedModelName = modelParam;

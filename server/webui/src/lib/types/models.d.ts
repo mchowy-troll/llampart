@@ -20,6 +20,11 @@ export interface ModelOption {
 	tags?: string[];
 }
 
+export type ModelReferenceResolution =
+	| { status: 'resolved'; model: ModelOption }
+	| { status: 'ambiguous'; model: null }
+	| { status: 'not-found'; model: null };
+
 export interface ParsedModelId {
 	raw: string;
 	orgName: string | null;
