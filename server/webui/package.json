@@ -30,7 +30,7 @@
 		"@internationalized/date": "^3.10.1",
 		"@lucide/svelte": "^0.515.0",
 		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.65.1",
+		"@sveltejs/kit": "^2.69.1",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/typography": "^0.5.15",
@@ -82,11 +82,21 @@
 	},
 	"overrides": {
 		"cookie": "^0.7.2",
-		"postcss": "^8.5.10",
+		"postcss": "8.5.18",
 		"uuid": "^14.0.0",
 		"qs": "6.15.2",
 		"ws": "8.20.1",
-		"hono": "4.12.25"
+		"hono": "4.12.27",
+		"fast-uri": "3.1.4",
+		"body-parser": "2.3.0",
+		"minimatch@^3": {
+			"brace-expansion": "1.1.17"
+		},
+		"minimatch@^10": {
+			"brace-expansion": "5.0.8"
+		},
+		"immutable": "5.1.8",
+		"js-yaml": "4.3.0"
 	},
 	"allowScripts": {
 		"esbuild@0.27.7": true,
