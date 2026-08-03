@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from 'dexie';
 import { findDescendantMessages, uuid, filterByLeafNodeId } from '$lib/utils';
+import { planConversationDeletion } from '$lib/utils/conversation-selection';
 import type { McpServerOverride } from '$lib/types/database';
 
 class LlamacppDatabase extends Dexie {
@@ -221,6 +222,36 @@ export class DatabaseService {
 	}
 
 	/**
+	 * Deletes unpinned conversations and their messages in one transaction.
+	 * Surviving forks are attached to their nearest surviving ancestor.
+	 */
+	static async deleteConversations(ids: string[]): Promise<{
+		deletedIds: string[];
+		skippedPinnedIds: string[];
+	}> {
+		return await db.transaction('rw', [db.conversations, db.messages], async () => {
+			const conversations = await db.conversations.toArray();
+			const plan = planConversationDeletion(conversations, ids);
+
+			for (const update of plan.parentUpdates) {
+				await db.conversations.update(update.id, {
+					forkedFromConversationId: update.forkedFromConversationId
+				});
+			}
+
+			if (plan.deletedIds.length > 0) {
+				await db.conversations.bulkDelete(plan.deletedIds);
+				await db.messages.where('convId').anyOf(plan.deletedIds).delete();
+			}
+
+			return {
+				deletedIds: plan.deletedIds,
+				skippedPinnedIds: plan.skippedPinnedIds
+			};
+		});
+	}
+
+	/**
 	 * Deletes a message and removes it from its parent's children array.
 	 *
 	 * @param messageId - ID of the message to delete
@@ -337,6 +368,20 @@ export class DatabaseService {
 	static async updateConversationPinned(id: string, pinned: boolean): Promise<void> {
 		await db.conversations.update(id, {
 			pinned: pinned ? true : undefined
+		});
+	}
+
+	/** Updates the pinned state of multiple conversations atomically. */
+	static async updateConversationsPinned(ids: string[], pinned: boolean): Promise<void> {
+		const uniqueIds = [...new Set(ids)];
+		if (uniqueIds.length === 0) return;
+
+		await db.transaction('rw', db.conversations, async () => {
+			for (const id of uniqueIds) {
+				await db.conversations.update(id, {
+					pinned: pinned ? true : undefined
+				});
+			}
 		});
 	}
 

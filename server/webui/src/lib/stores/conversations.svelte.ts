@@ -67,6 +67,11 @@ export interface ConversationTreeItem {
 	depth: number;
 }
 
+export interface BulkConversationDeleteResult {
+	deletedCount: number;
+	skippedPinnedCount: number;
+}
+
 class ConversationsStore {
 	/**
 	 *
@@ -433,34 +438,31 @@ class ConversationsStore {
 	/**
 	 * Deletes selected conversations and their messages.
 	 * @param convIds - Conversation IDs to delete
-	 * @returns Number of deleted conversations
+	 * @returns Counts for deleted conversations and pinned conversations that were skipped
 	 */
-	async deleteConversations(convIds: string[]): Promise<number> {
-		const pinnedIds = new SvelteSet(
-			this.conversations
-				.filter((conversation) => Boolean(conversation.pinned))
-				.map((conversation) => conversation.id)
-		);
-		const uniqueIds = [...new Set(convIds)].filter((id) => !pinnedIds.has(id));
-		if (uniqueIds.length === 0) return 0;
-
-		const activeConversationWasDeleted = Boolean(
-			this.activeConversation && uniqueIds.includes(this.activeConversation.id)
-		);
-
+	async deleteConversations(convIds: string[]): Promise<BulkConversationDeleteResult> {
 		try {
-			for (const convId of uniqueIds) {
-				await DatabaseService.deleteConversation(convId);
-			}
+			const result = await DatabaseService.deleteConversations(convIds);
+			const activeConversationWasDeleted = Boolean(
+				this.activeConversation && result.deletedIds.includes(this.activeConversation.id)
+			);
 
 			await this.loadConversations();
 
 			if (activeConversationWasDeleted) {
 				this.clearActiveConversation();
 				await goto(`?new_chat=true#/`);
+			} else if (this.activeConversation) {
+				const refreshedActiveConversation = this.conversations.find(
+					(conversation) => conversation.id === this.activeConversation?.id
+				);
+				if (refreshedActiveConversation) this.activeConversation = refreshedActiveConversation;
 			}
 
-			return uniqueIds.length;
+			return {
+				deletedCount: result.deletedIds.length,
+				skippedPinnedCount: result.skippedPinnedIds.length
+			};
 		} catch (error) {
 			console.error('Failed to delete selected conversations:', error);
 			throw error;
@@ -475,31 +477,19 @@ class ConversationsStore {
 
 		try {
 			const allConversations = await DatabaseService.getAllConversations();
-
-			for (const conv of allConversations) {
-				await DatabaseService.deleteConversation(conv.id);
-			}
-
-			this.clearActiveConversation();
-			this.conversations = [];
+			const result = await this.deleteConversations(
+				allConversations.map((conversation) => conversation.id)
+			);
 
 			if (showToast) {
 				toast.success(
-					allConversations.length === 1
-						? t('sidebar.deletedAllConversation').replace(
-								'{count}',
-								String(allConversations.length)
-							)
-						: t('sidebar.deletedAllConversations').replace(
-								'{count}',
-								String(allConversations.length)
-							)
+					result.deletedCount === 1
+						? t('sidebar.deletedAllConversation').replace('{count}', String(result.deletedCount))
+						: t('sidebar.deletedAllConversations').replace('{count}', String(result.deletedCount))
 				);
 			}
 
-			await goto(`?new_chat=true#/`);
-
-			return allConversations.length;
+			return result.deletedCount;
 		} catch (error) {
 			console.error('Failed to delete all conversations:', error);
 			if (showToast) {
@@ -607,6 +597,33 @@ class ConversationsStore {
 			}
 		} catch (error) {
 			console.error('Failed to update conversation pin:', error);
+			throw error;
+		}
+	}
+
+	/** Updates multiple conversations' pinned state without changing lastModified. */
+	async setConversationsPinned(convIds: string[], pinned: boolean): Promise<void> {
+		const idSet = new SvelteSet(convIds);
+		if (idSet.size === 0) return;
+
+		try {
+			await DatabaseService.updateConversationsPinned([...idSet], pinned);
+			this.conversations = sortConversationsForSidebar(
+				this.conversations.map((conversation) =>
+					idSet.has(conversation.id)
+						? { ...conversation, pinned: pinned ? true : undefined }
+						: conversation
+				)
+			);
+
+			if (this.activeConversation && idSet.has(this.activeConversation.id)) {
+				this.activeConversation = {
+					...this.activeConversation,
+					pinned: pinned ? true : undefined
+				};
+			}
+		} catch (error) {
+			console.error('Failed to update conversation pins:', error);
 			throw error;
 		}
 	}
@@ -1058,6 +1075,32 @@ class ConversationsStore {
 		}
 
 		this.downloadConversationFile({ conv: conversation, messages });
+	}
+
+	/** Downloads selected conversations in one aggregate JSON file. */
+	async downloadConversations(convIds: string[]): Promise<number> {
+		const uniqueIds = [...new Set(convIds)];
+		const exportedConversations = (
+			await Promise.all(
+				uniqueIds.map(async (id) => {
+					const conversation = await DatabaseService.getConversation(id);
+					if (!conversation) return null;
+
+					return {
+						conv: conversation,
+						messages: await DatabaseService.getConversationMessages(id)
+					};
+				})
+			)
+		).filter((item): item is ExportedConversation => item !== null);
+
+		if (exportedConversations.length === 0) return 0;
+
+		this.downloadConversationFile(
+			exportedConversations,
+			`${new Date().toISOString().split(ISO_DATE_TIME_SEPARATOR)[0]}_conversations.json`
+		);
+		return exportedConversations.length;
 	}
 
 	/**
