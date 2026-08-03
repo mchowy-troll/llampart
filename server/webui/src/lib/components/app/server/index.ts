@@ -78,3 +78,4 @@ export { default as ServerErrorSplash } from './ServerErrorSplash.svelte';
  * ```
  */
 export { default as ServerLoadingSplash } from './ServerLoadingSplash.svelte';
+export { default as ProviderConnectionNotice } from './ProviderConnectionNotice.svelte';
