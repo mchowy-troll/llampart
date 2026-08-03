@@ -136,75 +136,79 @@
 		</div>
 	{:else if message.content.trim()}
 		<Card
-			class="llampart-message-shell-card llampart-system-message-card w-full max-w-[80%] overflow-y-auto rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5"
+			class="llampart-message-shell-card llampart-system-message-card w-full max-w-[80%] overflow-hidden rounded-[1.125rem] border-none bg-primary/5 px-3.75 py-1.5 text-foreground backdrop-blur-md data-[multiline]:py-2.5"
 			data-multiline={isMultiline ? '' : undefined}
 			style="max-height: var(--max-message-height); overflow-wrap: anywhere; word-break: break-word;"
 		>
-			<span class="llampart-system-message-label">
-				{t('messages.systemPromptLabel')}
-			</span>
-			<button
-				class="group/expand llampart-system-message-expand-trigger w-full text-left {!isExpanded &&
-				showExpandButton
-					? 'cursor-pointer'
-					: 'cursor-auto'}"
-				onclick={showExpandButton && !isExpanded ? toggleExpand : undefined}
-				type="button"
-			>
-				<div
-					class="llampart-system-message-content relative transition-all duration-300 {isExpanded
-						? 'cursor-text select-text'
-						: 'select-none'}"
-					style={!isExpanded && showExpandButton
-						? `max-height: ${MAX_HEIGHT}px;`
-						: 'max-height: none;'}
-				>
-					{#if currentConfig.renderUserContentAsMarkdown}
-						<div bind:this={messageElement} class={isExpanded ? 'cursor-text' : ''}>
-							<MarkdownContent class="markdown-system-content -my-4" content={message.content} />
-						</div>
-					{:else}
-						<span
-							bind:this={messageElement}
-							class="text-md whitespace-pre-wrap {isExpanded ? 'cursor-text' : ''}"
-						>
-							{message.content}
-						</span>
-					{/if}
-
-					{#if !isExpanded && showExpandButton}
-						<div
-							class="llampart-system-message-fade pointer-events-none absolute right-0 bottom-0 left-0 h-48"
-						></div>
-
-						<div
-							class="pointer-events-none absolute right-0 bottom-4 left-0 flex justify-center opacity-0 transition-opacity group-hover/expand:opacity-100"
-						>
-							<span
-								class="llampart-system-message-expand-label rounded-full px-4 py-1.5 text-xs shadow-md"
-							>
-								Show full system message
-							</span>
-						</div>
-					{/if}
-				</div>
-			</button>
-
-			{#if isExpanded && showExpandButton}
-				<div class="mb-2 flex justify-center">
-					<Button
-						class="llampart-system-message-collapse-button rounded-full px-4 py-1.5 text-xs"
-						onclick={(e) => {
-							e.stopPropagation();
-							toggleExpand();
-						}}
-						size="sm"
-						variant="outline"
+			<div class="llampart-system-message-flow">
+				<span class="llampart-system-message-label">
+					{t('messages.systemPromptLabel')}
+				</span>
+				<div class="llampart-system-message-scroll-area">
+					<button
+						class="group/expand llampart-system-message-expand-trigger w-full text-left {!isExpanded &&
+						showExpandButton
+							? 'cursor-pointer'
+							: 'cursor-auto'}"
+						onclick={showExpandButton && !isExpanded ? toggleExpand : undefined}
+						type="button"
 					>
-						Collapse System Message
-					</Button>
+						<div
+							class="llampart-system-message-content relative transition-all duration-300 {isExpanded
+								? 'cursor-text select-text'
+								: 'select-none'}"
+							style={!isExpanded && showExpandButton
+								? `max-height: ${MAX_HEIGHT}px;`
+								: 'max-height: none;'}
+						>
+							{#if currentConfig.renderUserContentAsMarkdown}
+								<div bind:this={messageElement} class={isExpanded ? 'cursor-text' : ''}>
+									<MarkdownContent class="markdown-system-content" content={message.content} />
+								</div>
+							{:else}
+								<span
+									bind:this={messageElement}
+									class="text-md whitespace-pre-wrap {isExpanded ? 'cursor-text' : ''}"
+								>
+									{message.content}
+								</span>
+							{/if}
+
+							{#if !isExpanded && showExpandButton}
+								<div
+									class="llampart-system-message-fade pointer-events-none absolute right-0 bottom-0 left-0 h-48"
+								></div>
+
+								<div
+									class="pointer-events-none absolute right-0 bottom-4 left-0 flex justify-center opacity-0 transition-opacity group-hover/expand:opacity-100"
+								>
+									<span
+										class="llampart-system-message-expand-label rounded-full px-4 py-1.5 text-xs shadow-md"
+									>
+										Show full system message
+									</span>
+								</div>
+							{/if}
+						</div>
+					</button>
+
+					{#if isExpanded && showExpandButton}
+						<div class="mb-2 flex justify-center">
+							<Button
+								class="llampart-system-message-collapse-button rounded-full px-4 py-1.5 text-xs"
+								onclick={(e) => {
+									e.stopPropagation();
+									toggleExpand();
+								}}
+								size="sm"
+								variant="outline"
+							>
+								Collapse System Message
+							</Button>
+						</div>
+					{/if}
 				</div>
-			{/if}
+			</div>
 
 			{#if message.timestamp}
 				<div class="llampart-message-shell-footer llampart-system-message-footer">
@@ -232,6 +236,25 @@
 	/* System-message surface geometry */
 	.llampart-system-message-card {
 		border-radius: 0.75rem;
+	}
+
+	.llampart-system-message-flow {
+		display: flex;
+		min-height: 0;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 1rem;
+	}
+
+	.llampart-system-message-scroll-area {
+		width: 100%;
+		max-height: calc(
+			var(--max-message-height) - var(--llampart-message-shell-top-inset) -
+				var(--llampart-message-shell-bottom-action-inset) - 2.375rem
+		);
+		min-height: 0;
+		overflow-x: hidden;
+		overflow-y: auto;
 	}
 
 	.llampart-system-message-expand-trigger {
@@ -266,17 +289,12 @@
 		position: relative;
 	}
 
-	.llampart-system-message-content {
-		padding-top: 1.625rem;
-	}
-
 	.llampart-system-message-label {
-		position: absolute;
-		top: 0.75rem;
-		left: 0.875rem;
+		position: static;
 		display: inline-flex;
 		align-items: center;
 		gap: 0.25rem;
+		margin-inline: 0.125rem;
 		padding: 0.125rem 0.5rem;
 		background-color: color-mix(in oklch, var(--background) 90%, white 10%);
 		border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
@@ -291,37 +309,6 @@
 		white-space: nowrap;
 		z-index: 2;
 		pointer-events: none;
-	}
-
-	/* llampart-system-message-match-user-card-and-system-label */
-	.llampart-system-message-card {
-		position: relative;
-		padding-top: 0.9375rem !important;
-	}
-
-	.llampart-system-message-content {
-		padding-top: 3.0625rem !important;
-	}
-
-	.llampart-system-message-label {
-		position: absolute;
-		top: 0.9375rem;
-		left: 0.9375rem;
-		display: inline-flex;
-		align-items: center;
-		padding: 0.125rem 0.5rem;
-		background: color-mix(in oklch, var(--background) 92%, white 8%);
-		border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
-		border-radius: 0.5rem;
-		box-shadow: none;
-		font-size: 0.7rem;
-		line-height: 1rem;
-		font-weight: 500;
-		color: var(--muted-foreground);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		white-space: nowrap;
-		z-index: 1;
 	}
 
 	.llampart-system-message-footer {

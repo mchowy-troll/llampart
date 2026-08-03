@@ -1502,7 +1502,13 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-messag
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-card {
 	border: 1px solid rgba(255, 255, 255, 0.19) !important;
-	background: rgba(255, 255, 255, 0.14) !important;
+	background-color: rgba(255, 255, 255, 0.14) !important;
+	background-image: linear-gradient(
+		0deg,
+		rgb(255 255 255 / 0.13),
+		rgb(255 255 255 / 0.13)
+	) !important;
+	background-clip: border-box;
 	box-shadow:
 		0 1px 2px rgba(0, 0, 0, 0.06),
 		0 2px 4px rgba(0, 0, 0, 0.055),
@@ -1598,35 +1604,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-messag
 		0 0 14px rgba(255, 255, 255, 0.28) !important;
 }
 
-/* llampart-1-0-2-system-message-padding-match-assistant */
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-card {
-	padding: 0.625rem 1.5rem 0.5rem !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-system-message-card[data-multiline] {
-	padding-top: 2rem !important;
-	padding-right: 1.5rem !important;
-	padding-left: 1.5rem !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-label {
-	top: 1rem !important;
-	left: 1.5rem !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-content {
-	padding-top: 2.5rem !important;
-	padding-inline: 0.125rem;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-system-message-card
-	.markdown-system-content {
-	margin-top: 0 !important;
-}
-
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-footer {
 	margin-top: 0.5rem !important;
 	margin-right: -0.25rem !important;
@@ -1634,14 +1611,14 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-messag
 	padding: 0 !important;
 }
 
-/* /llampart-1-0-2-system-message-padding-match-assistant */
-
 /* ChatMessageUser */
 /* llampart-frosted-glass-user-message */
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-user-message-card {
 	border: 1px solid var(--llampart-frosted-user-message-surface-border) !important;
-	background: var(--llampart-frosted-user-message-surface-background) !important;
+	background-color: var(--llampart-frosted-user-message-surface-background) !important;
+	background-image: var(--llampart-frosted-user-message-surface-background-image) !important;
+	background-clip: border-box;
 	box-shadow: var(--llampart-frosted-user-message-surface-shadow) !important;
 	backdrop-filter: var(--llampart-frosted-user-message-surface-filter) !important;
 	-webkit-backdrop-filter: var(--llampart-frosted-user-message-surface-filter) !important;
@@ -1970,28 +1947,39 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 
 /* /llampart-frosted-glass-user-footer-action-glow-final */
 
-/* llampart-1-0-2-user-message-padding-match-assistant */
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-user-message-card {
-	padding: 0.625rem 1.5rem var(--llampart-message-shell-bottom-action-inset) !important;
+/* System actions intentionally mirror the effective user-action appearance. */
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-system-message-footer
+	.llampart-message-actions-icons
+	:is(button, a, [role='button']) {
+	color: var(--llampart-frosted-user-message-foreground, #000000) !important;
+	font-weight: 400 !important;
+	font-variation-settings: normal !important;
+	text-shadow:
+		0 0 2px rgba(255, 255, 255, 0.62),
+		0 0 7px rgba(255, 255, 255, 0.46),
+		0 0 14px rgba(255, 255, 255, 0.28) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-user-message-card[data-multiline] {
-	padding-top: 0.625rem !important;
-	padding-right: 1.5rem !important;
-	padding-left: 1.5rem !important;
+	.llampart-system-message-footer
+	.llampart-message-actions-icons
+	svg,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-system-message-footer
+	.llampart-message-actions-icons
+	svg
+	* {
+	color: var(--llampart-frosted-user-message-foreground, #000000) !important;
+	stroke: currentColor !important;
+	stroke-width: 1.65 !important;
+	filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.32)) !important;
+	text-shadow: none !important;
+	box-shadow: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-user-message-content {
 	display: block;
-	margin-top: 0 !important;
-	padding-inline: 0.125rem;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-user-message-card
-	.markdown-user-content {
 	margin-top: 0 !important;
 }
 
@@ -2001,17 +1989,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-user-message-
 	margin-bottom: 0 !important;
 	padding: 0 !important;
 }
-
-/* /llampart-1-0-2-user-message-padding-match-assistant */
-
-/* llampart-user-message-single-line-top-inset-stability */
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-user-message-card:not([data-multiline]) {
-	padding-top: 0.9375rem !important;
-}
-
-/* /llampart-user-message-single-line-top-inset-stability */
 
 /* ChatMessageActionCardPermissionRequest */
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-tool-permission-card {
