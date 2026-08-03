@@ -1,6 +1,5 @@
 <script lang="ts">
 	import '../app.css';
-	import { validateApiKey } from '$lib/utils';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
@@ -27,6 +26,10 @@
 	import { setChatSettingsDialogContext } from '$lib/contexts';
 	import { getThemeDefinition } from '$lib/themes/registry';
 	import { applyTheme } from '$lib/themes/runtime';
+	import {
+		providerConnectionStatus,
+		providerConnectionStore
+	} from '$lib/stores/provider-connection.svelte';
 
 	let { children } = $props();
 
@@ -37,6 +40,7 @@
 	let alwaysShowSidebarOnDesktop = $derived(config().alwaysShowSidebarOnDesktop);
 	let autoShowSidebarOnNewChat = $derived(config().autoShowSidebarOnNewChat);
 	let currentApiProvider = $derived(getApiProvider(String(config().apiProvider ?? '')));
+	let currentProviderConnectionStatus = $derived(providerConnectionStatus());
 	let sidebarOpen = $state(false);
 	let innerHeight = $state<number | undefined>();
 	let chatSidebar:
@@ -178,7 +182,7 @@
 		}
 
 		// Only fetch if we don't already have props
-		if (!serverStore.props) {
+		if (currentProviderConnectionStatus === 'connected' && !serverStore.props) {
 			untrack(() => {
 				serverStore.fetch();
 			});
@@ -236,32 +240,30 @@
 		}
 	});
 
-	// Monitor provider connection changes and redirect to error page on auth failure.
+	// Validate provider changes through one provider-neutral state owner.
+	let previousConnectionSource = '';
+
 	$effect(() => {
-		const apiProvider = config().apiProvider;
-		const serverBaseUrl = config().serverBaseUrl;
-		const apiKey = config().apiKey;
+		if (!browser || (page.route.id !== '/' && page.route.id !== '/chat/[id]')) return;
 
-		const shouldValidateConnection =
-			(page.route.id === '/' || page.route.id === '/chat/[id]') &&
-			page.status !== 401 &&
-			page.status !== 403 &&
-			(apiProvider !== undefined || serverBaseUrl !== undefined || apiKey !== undefined);
+		const source = {
+			providerId: String(config().apiProvider ?? ''),
+			serverBaseUrl: String(config().serverBaseUrl ?? ''),
+			apiKey: String(config().apiKey ?? '')
+		};
+		const nextSource = JSON.stringify([source.providerId, source.serverBaseUrl, source.apiKey]);
 
-		if (shouldValidateConnection) {
-			validateApiKey(fetch).catch((err) => {
-				if (err && typeof err === 'object' && 'status' in err) {
-					const status = Number((err as { status?: unknown }).status);
-
-					if (status === 401 || status === 403) {
-						window.location.reload();
-						return;
-					}
-				}
-
-				console.error('Error checking provider connection:', err);
-			});
+		if (previousConnectionSource && previousConnectionSource !== nextSource) {
+			serverStore.clear();
+			modelsStore.clear();
 		}
+		previousConnectionSource = nextSource;
+
+		untrack(() => {
+			providerConnectionStore.check(source).catch((error) => {
+				console.error('Error checking provider connection:', error);
+			});
+		});
 	});
 
 	// Set up title update confirmation callback

@@ -9,9 +9,9 @@
 		DialogEmptyFileAlert,
 		DialogChatError,
 		ServerLoadingSplash,
-		DialogConfirmation
+		DialogConfirmation,
+		ProviderConnectionNotice
 	} from '$lib/components/app';
-	import * as Alert from '$lib/components/ui/alert';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { KeyboardKey } from '$lib/enums';
 	import { createAutoScrollController } from '$lib/hooks/use-auto-scroll.svelte';
@@ -30,14 +30,15 @@
 	} from '$lib/stores/conversations.svelte';
 	import { config } from '$lib/stores/settings.svelte';
 	import { getThemeDefinition } from '$lib/themes/registry';
-	import { serverLoading, serverError, serverStore, isRouterMode } from '$lib/stores/server.svelte';
+	import { serverLoading, serverStore, isRouterMode } from '$lib/stores/server.svelte';
+	import { providerConnectionDisconnected } from '$lib/stores/provider-connection.svelte';
 	import { modelsStore, modelOptions, selectedModelId } from '$lib/stores/models.svelte';
 	import { isFileTypeSupported, filterFilesByModalities } from '$lib/utils';
 	import { parseFilesToMessageExtras, processFilesToChatUploaded } from '$lib/utils/browser-only';
 	import { ErrorDialogType } from '$lib/enums';
 	import { onMount } from 'svelte';
 	import { fade, fly, slide } from 'svelte/transition';
-	import { Trash2, AlertTriangle, RefreshCw } from '@lucide/svelte';
+	import { Trash2 } from '@lucide/svelte';
 	import ChatScreenDragOverlay from './ChatScreenDragOverlay.svelte';
 
 	let { showCenteredEmpty = false } = $props();
@@ -81,7 +82,7 @@
 
 	let activeErrorDialog = $derived(errorDialog());
 	let isServerLoading = $derived(serverLoading());
-	let hasPropsError = $derived(!!serverError());
+	let hasPropsError = $derived(providerConnectionDisconnected());
 	let delayedFlyDelay = $derived(activeTheme.motion.screenTransitions && !hasPropsError ? 300 : 0);
 
 	let isCurrentConversationLoading = $derived(isLoading() || isChatStreaming());
@@ -403,25 +404,8 @@
 				</div>
 
 				{#if hasPropsError}
-					<div
-						class="llampart-chat-composer-width pointer-events-auto mx-auto mb-4 px-1"
-						in:fly={{ y: 10, duration: screenFlyDuration }}
-					>
-						<Alert.Root variant="destructive">
-							<AlertTriangle class="h-4 w-4" />
-							<Alert.Title class="flex items-center justify-between">
-								<span>{t('server.serverUnavailable')}</span>
-								<button
-									onclick={() => serverStore.fetch()}
-									disabled={isServerLoading}
-									class="flex items-center gap-1.5 rounded-lg bg-destructive/20 px-2 py-1 text-xs font-medium hover:bg-destructive/30 disabled:opacity-50"
-								>
-									<RefreshCw class="h-3 w-3 {isServerLoading ? 'animate-spin' : ''}" />
-									{isServerLoading ? t('server.retrying') : t('common.retry')}
-								</button>
-							</Alert.Title>
-							<Alert.Description>{serverError()}</Alert.Description>
-						</Alert.Root>
+					<div class="llampart-chat-composer-width pointer-events-auto mx-auto mb-4 px-1">
+						<ProviderConnectionNotice />
 					</div>
 				{/if}
 
@@ -455,7 +439,7 @@
 		ondrop={handleDrop}
 		role="main"
 	>
-		<div class="llampart-empty-chat-form llampart-chat-composer-width w-full px-4">
+		<div class="llampart-welcome-frame llampart-empty-chat-form llampart-chat-composer-width px-4">
 			<div class="mb-10 text-center" in:fade={{ duration: screenFadeDuration }}>
 				<h1
 					class="llampart-empty-chat-title mb-2 text-2xl font-semibold tracking-tight md:text-3xl"
@@ -471,25 +455,8 @@
 			</div>
 
 			{#if hasPropsError}
-				<div class="mb-4" in:fly={{ y: 10, duration: screenFlyDuration }}>
-					<Alert.Root variant="destructive">
-						<AlertTriangle class="h-4 w-4" />
-
-						<Alert.Title class="flex items-center justify-between">
-							<span>{t('server.serverUnavailable')}</span>
-
-							<button
-								onclick={() => serverStore.fetch()}
-								disabled={isServerLoading}
-								class="flex items-center gap-1.5 rounded-lg bg-destructive/20 px-2 py-1 text-xs font-medium hover:bg-destructive/30 disabled:opacity-50"
-							>
-								<RefreshCw class="h-3 w-3 {isServerLoading ? 'animate-spin' : ''}" />
-								{isServerLoading ? t('server.retrying') : t('common.retry')}
-							</button>
-						</Alert.Title>
-
-						<Alert.Description>{serverError()}</Alert.Description>
-					</Alert.Root>
+				<div class="mb-4">
+					<ProviderConnectionNotice />
 				</div>
 			{/if}
 
