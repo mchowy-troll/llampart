@@ -111,6 +111,31 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	background: rgba(255, 255, 255, 0.035) !important;
 }
 
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-markdown-content .table-actions,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.table-actions
+	* {
+	color: #000000 !important;
+	font-weight: 400 !important;
+	font-variation-settings: 'wght' 400 !important;
+	text-shadow: none !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.table-actions
+	svg,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.table-actions
+	svg
+	* {
+	stroke-width: 1.65 !important;
+	filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.32))
+		drop-shadow(0 0 4px rgba(255, 255, 255, 0.24)) !important;
+}
+
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-markdown-content blockquote {
 	border: 1px solid rgba(255, 255, 255, 0.14) !important;
 	border-left: 4px solid rgba(255, 255, 255, 0.28) !important;

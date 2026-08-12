@@ -3,15 +3,17 @@
 	import { fadeInView } from '$lib/actions/fade-in-view.svelte';
 	import { ChatMessage } from '$lib/components/app';
 	import { setChatActionsContext } from '$lib/contexts';
-	import { AgenticSectionType, MessageRole } from '$lib/enums';
+	import { MessageRole, MimeTypeText } from '$lib/enums';
 	import { chatStore } from '$lib/stores/chat.svelte';
 	import { conversationsStore, activeConversation } from '$lib/stores/conversations.svelte';
 	import { config } from '$lib/stores/settings.svelte';
 	import { getThemeDefinition } from '$lib/themes/registry';
 	import {
 		copyToClipboard,
-		deriveAgenticSections,
+		downloadTextFile,
 		formatMessageForClipboard,
+		generateAssistantResponseFilename,
+		getMessageResponseContent,
 		getMessageSiblings,
 		hasAgenticContent
 	} from '$lib/utils';
@@ -29,83 +31,32 @@
 	let allConversationMessages = $state<DatabaseMessage[]>([]);
 	const currentConfig = config();
 
-	type ClipboardAgenticSection = ReturnType<typeof deriveAgenticSections>[number];
-
-	function getSectionText(section: ClipboardAgenticSection): string {
-		return section.content?.trim() ?? '';
-	}
-
-	function formatFallbackAgenticSection(section: ClipboardAgenticSection): string | null {
-		const content = getSectionText(section);
-
-		switch (section.type) {
-			case AgenticSectionType.REASONING:
-			case AgenticSectionType.REASONING_PENDING:
-				return content ? `${t('messages.agenticReasoning')}:\n${content}` : null;
-
-			case AgenticSectionType.TOOL_CALL:
-			case AgenticSectionType.TOOL_CALL_PENDING:
-			case AgenticSectionType.TOOL_CALL_STREAMING: {
-				const parts = [
-					section.toolName
-						? `${t('messages.agenticToolCall')}: ${section.toolName}`
-						: t('messages.agenticToolCall')
-				];
-
-				const toolArgs = section.toolArgs?.trim();
-				if (toolArgs) {
-					parts.push(`${t('messages.agenticArguments')}:\n${toolArgs}`);
-				}
-
-				const toolResult = section.toolResult?.trim() || content;
-				if (toolResult) {
-					parts.push(`${t('messages.agenticResult')}:\n${toolResult}`);
-				}
-
-				return parts.join('\n\n');
-			}
-
-			case AgenticSectionType.TEXT:
-				return content || null;
-		}
-	}
-
-	function getMessageContentForClipboard(
-		message: DatabaseMessage,
-		toolMessages: DatabaseMessage[] = []
-	): string {
-		const hasStructuredAssistantContent =
-			message.role === MessageRole.ASSISTANT &&
-			(Boolean(message.reasoningContent) || hasAgenticContent(message, toolMessages));
-
-		if (!hasStructuredAssistantContent) {
-			return message.content ?? '';
-		}
-
-		const sections = deriveAgenticSections(message, toolMessages, [], false);
-		const textParts = sections
-			.filter((section) => section.type === AgenticSectionType.TEXT)
-			.map((section) => getSectionText(section))
-			.filter(Boolean);
-
-		if (textParts.length > 0) {
-			return textParts.join('\n\n');
-		}
-
-		const fallbackParts = sections.map(formatFallbackAgenticSection).filter(Boolean);
-
-		return fallbackParts.join('\n\n') || message.content || '';
+	function getMessageResponseLabels() {
+		return {
+			reasoning: t('messages.agenticReasoning'),
+			toolCall: t('messages.agenticToolCall'),
+			arguments: t('messages.agenticArguments'),
+			result: t('messages.agenticResult')
+		};
 	}
 
 	setChatActionsContext({
 		copy: async (message: DatabaseMessage, toolMessages: DatabaseMessage[] = []) => {
 			const asPlainText = Boolean(currentConfig.copyTextAttachmentsAsPlainText);
 			const clipboardContent = formatMessageForClipboard(
-				getMessageContentForClipboard(message, toolMessages),
+				getMessageResponseContent(message, toolMessages, getMessageResponseLabels()),
 				message.extra,
 				asPlainText
 			);
 			await copyToClipboard(clipboardContent, t('messages.messageCopiedToClipboard'));
+		},
+
+		download: (message: DatabaseMessage, toolMessages: DatabaseMessage[] = []) => {
+			downloadTextFile(
+				getMessageResponseContent(message, toolMessages, getMessageResponseLabels()),
+				MimeTypeText.MARKDOWN,
+				generateAssistantResponseFilename(message.timestamp)
+			);
 		},
 
 		delete: async (message: DatabaseMessage) => {

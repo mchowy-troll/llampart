@@ -73,6 +73,8 @@ export {
 export {
 	copyToClipboard,
 	copyCodeToClipboard,
+	copyTableToClipboard,
+	formatTableRowsAsTsv,
 	formatMessageForClipboard,
 	parseClipboardContent,
 	hasClipboardAttachments
@@ -81,6 +83,9 @@ export {
 // File preview utilities
 export { getFileTypeLabel } from './file-preview';
 export { getPreviewText, generateConversationTitle } from './text';
+
+// File download utilities
+export { downloadTextFile } from './download';
 
 // File type utilities
 export {
@@ -182,6 +187,9 @@ export {
 	type AgenticSection,
 	type ToolResultLine
 } from './agentic';
+
+// Message content utilities
+export { generateAssistantResponseFilename, getMessageResponseContent } from './message-content';
 
 // Legacy migration utilities
 export { runLegacyMigration, isMigrationNeeded } from './legacy-migration';

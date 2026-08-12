@@ -2,9 +2,25 @@ import { describe, it, expect } from 'vitest';
 import { AttachmentType } from '$lib/enums';
 import {
 	formatMessageForClipboard,
+	formatTableRowsAsTsv,
 	parseClipboardContent,
 	hasClipboardAttachments
 } from '$lib/utils/clipboard';
+
+describe('formatTableRowsAsTsv', () => {
+	it('formats table rows for spreadsheet columns and rows', () => {
+		expect(
+			formatTableRowsAsTsv([
+				['Stage', 'Form', 'Score'],
+				['First', 'Formal review', '9']
+			])
+		).toBe('Stage\tForm\tScore\nFirst\tFormal review\t9');
+	});
+
+	it('keeps tabs and line breaks inside cells from changing the table shape', () => {
+		expect(formatTableRowsAsTsv([['  Multi\nline  ', 'Tab\tvalue']])).toBe('Multi line\tTab value');
+	});
+});
 
 describe('formatMessageForClipboard', () => {
 	it('returns plain content when no extras', () => {

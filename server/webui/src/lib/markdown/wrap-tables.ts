@@ -3,6 +3,7 @@ import {
 	TABLE_ACTIONS_CLASS,
 	TABLE_BLOCK_CLASS,
 	TABLE_CELL_CONTENT_CLASS,
+	TABLE_COPY_BUTTON_CLASS,
 	TABLE_PREVIEW_BUTTON_CLASS,
 	TABLE_WRAPPER_CLASS
 } from '$lib/markdown/markdown-presentation';
@@ -82,6 +83,54 @@ function createPreviewIcon(): Element {
 	};
 }
 
+function createCopyIcon(): Element {
+	return {
+		type: 'element',
+		tagName: 'svg',
+		properties: {
+			xmlns: 'http://www.w3.org/2000/svg',
+			width: '16',
+			height: '16',
+			viewBox: '0 0 24 24',
+			fill: 'none',
+			stroke: 'currentColor',
+			strokeWidth: '2',
+			strokeLinecap: 'round',
+			strokeLinejoin: 'round',
+			className: ['lucide', 'lucide-copy-icon', 'lucide-copy'],
+			ariaHidden: 'true'
+		},
+		children: [
+			{
+				type: 'element',
+				tagName: 'rect',
+				properties: { width: '14', height: '14', x: '8', y: '8', rx: '2', ry: '2' },
+				children: []
+			},
+			{
+				type: 'element',
+				tagName: 'path',
+				properties: { d: 'M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2' },
+				children: []
+			}
+		]
+	};
+}
+
+function createTableCopyButton(): Element {
+	return {
+		type: 'element',
+		tagName: 'button',
+		properties: {
+			type: 'button',
+			className: [TABLE_COPY_BUTTON_CLASS],
+			title: '',
+			ariaLabel: ''
+		},
+		children: [createCopyIcon()]
+	};
+}
+
 function createTablePreviewButton(): Element {
 	return {
 		type: 'element',
@@ -107,7 +156,7 @@ function createTableBlock(table: Element): Element {
 				type: 'element',
 				tagName: 'div',
 				properties: { className: [TABLE_ACTIONS_CLASS] },
-				children: [createTablePreviewButton()]
+				children: [createTableCopyButton(), createTablePreviewButton()]
 			},
 			{
 				type: 'element',
@@ -159,7 +208,7 @@ function wrapTablesInChildren(parent: Root | Element, insideTableWrapper = false
 /**
  * Wraps markdown tables in a scroll container without modifying the table itself.
  *
- * The plugin adds a small table preview button and wraps cell content in a span
+ * The plugin adds table copy and preview buttons and wraps cell content in a span
  * so CSS can cap readable cell content width reliably without relying on
  * max-width behavior of table cells. It is intentionally idempotent for tables
  * and cells that are already wrapped.

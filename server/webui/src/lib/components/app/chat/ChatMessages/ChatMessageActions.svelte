@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Edit, Copy, RefreshCw, Trash2, GitBranch } from '@lucide/svelte';
+	import { Edit, Copy, Download, RefreshCw, Trash2, GitBranch } from '@lucide/svelte';
 	import {
 		ActionIcon,
 		ChatMessageBranchingControls,
@@ -25,6 +25,7 @@
 			messageTypes: string[];
 		} | null;
 		onCopy: () => void;
+		onDownload?: () => void;
 		onEdit?: () => void;
 		onRegenerate?: () => void;
 		onForkConversation?: (options: { name: string; includeAttachments: boolean }) => void;
@@ -39,6 +40,7 @@
 		deletionInfo,
 		justify,
 		onCopy,
+		onDownload,
 		onEdit,
 		onConfirmDelete,
 		onDelete,
@@ -95,6 +97,15 @@
 		<div
 			class="llampart-message-actions-icons pointer-events-auto inset-0 flex items-center gap-1 opacity-100 transition-all duration-150"
 		>
+			{#if role === MessageRole.ASSISTANT && onDownload}
+				<ActionIcon
+					icon={Download}
+					iconSize="size-3.5"
+					tooltip={t('messages.downloadResponseAsMarkdown')}
+					onclick={onDownload}
+				/>
+			{/if}
+
 			<ActionIcon icon={Copy} iconSize="size-3.5" tooltip={t('common.copy')} onclick={onCopy} />
 
 			{#if onEdit}

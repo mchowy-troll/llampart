@@ -3,6 +3,7 @@ import { CONTEXT_KEY_CHAT_ACTIONS } from '$lib/constants';
 
 export interface ChatActionsContext {
 	copy: (message: DatabaseMessage, toolMessages?: DatabaseMessage[]) => void;
+	download: (message: DatabaseMessage, toolMessages?: DatabaseMessage[]) => void;
 	delete: (message: DatabaseMessage) => void;
 	navigateToSibling: (siblingId: string) => void;
 	editWithBranching: (

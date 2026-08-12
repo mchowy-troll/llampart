@@ -40,6 +40,7 @@
 		toolMessages?: DatabaseMessage[];
 		messageContent: string | undefined;
 		onCopy: () => void;
+		onDownload: () => void;
 		onConfirmDelete: () => void;
 		onDelete: () => void;
 		onEdit?: () => void;
@@ -61,6 +62,7 @@
 		messageContent,
 		onConfirmDelete,
 		onCopy,
+		onDownload,
 		onDelete,
 		onEdit,
 		onForkConversation,
@@ -363,6 +365,7 @@
 									{showDeleteDialog}
 									{deletionInfo}
 									{onCopy}
+									{onDownload}
 									{onEdit}
 									{onRegenerate}
 									{onForkConversation}
