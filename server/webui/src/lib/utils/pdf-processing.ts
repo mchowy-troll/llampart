@@ -85,7 +85,7 @@ export async function convertPDFToText(file: File): Promise<string> {
 	try {
 		const pdfjs = await loadPdfJs();
 		const buffer = await getFileAsBuffer(file);
-		const pdf = await pdfjs.getDocument(buffer).promise;
+		const pdf = await pdfjs.getDocument({ data: buffer }).promise;
 		const numPages = pdf.numPages;
 
 		const textContentPromises: Promise<TextContent>[] = [];
@@ -123,7 +123,7 @@ export async function convertPDFToImage(file: File, scale: number = 1.5): Promis
 	try {
 		const pdfjs = await loadPdfJs();
 		const buffer = await getFileAsBuffer(file);
-		const doc = await pdfjs.getDocument(buffer).promise;
+		const doc = await pdfjs.getDocument({ data: buffer }).promise;
 		const pages: Promise<string>[] = [];
 
 		for (let i = 1; i <= doc.numPages; i++) {

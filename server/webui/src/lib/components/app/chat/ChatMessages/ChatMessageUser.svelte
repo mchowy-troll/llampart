@@ -229,6 +229,7 @@
 	/* llampart-user-message-scroll-area-stable-actions
 	   Only message text scrolls; the message-shell footer stays owned by the shared action layout primitive. */
 	.llampart-user-message-scroll-area {
+		margin-inline: calc(-1 * var(--llampart-message-shell-inline-inset));
 		max-height: calc(
 			var(--max-message-height) - var(--llampart-message-shell-top-inset) -
 				var(--llampart-message-shell-bottom-action-inset)
@@ -236,6 +237,7 @@
 		min-height: 0;
 		overflow-x: hidden;
 		overflow-y: auto;
+		padding-inline: var(--llampart-message-shell-inline-inset);
 		overflow-wrap: anywhere;
 		word-break: break-word;
 	}
