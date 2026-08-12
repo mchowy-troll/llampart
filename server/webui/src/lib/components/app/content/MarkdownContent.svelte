@@ -5,12 +5,13 @@
 	import { onDestroy, tick } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import * as Dialog from '$lib/components/ui/dialog';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import {
 		escapeCodeHtml,
 		highlightCodeAsync,
 		loadHighlightThemeCss
 	} from '$lib/utils/syntax-highlighting';
-	import { copyCodeToClipboard } from '$lib/utils/clipboard';
+	import { copyCodeToClipboard, copyTableToClipboard } from '$lib/utils/clipboard';
 	import { hasRenderableMath, preprocessLaTeX } from '$lib/utils/latex-protection';
 	import { getImageErrorFallbackHtml } from '$lib/utils/image-error-fallback';
 	import { detectIncompleteCodeBlock, type IncompleteCodeBlock } from '$lib/utils/code';
@@ -43,6 +44,7 @@
 	import { config } from '$lib/stores/settings.svelte';
 	import { fadeInView } from '$lib/actions/fade-in-view.svelte';
 	import { t } from '$lib/i18n';
+	import { portalToBody } from '$lib/utils/portal-to-body';
 
 	interface Props {
 		attachments?: DatabaseMessageExtra[];
@@ -80,7 +82,12 @@
 	let tablePreviewHtml = $state('');
 	let markdownRenderedPreviewDialogOpen = $state(false);
 	let markdownRenderedPreviewHtml = $state('');
+	let tableTooltipOpen = $state(false);
+	let tableTooltipLabel = $state('');
+	let tableTooltipAnchorStyle = $state('');
 	let streamingCodeScrollContainer = $state<HTMLDivElement>();
+	let activeTableTooltipButton: HTMLButtonElement | null = null;
+	let tableTooltipTimer: ReturnType<typeof setTimeout> | undefined;
 
 	// Auto-scroll controller for streaming code block content
 	const streamingAutoScroll = createAutoScrollController();
@@ -127,6 +134,9 @@
 		const tablePreviewButtons = containerRef.querySelectorAll<HTMLButtonElement>(
 			MARKDOWN_PRESENTATION_SELECTORS.tablePreviewButton
 		);
+		const tableCopyButtons = containerRef.querySelectorAll<HTMLButtonElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.tableCopyButton
+		);
 
 		for (const button of copyButtons) {
 			button.removeEventListener('click', handleCopyClick);
@@ -138,7 +148,21 @@
 
 		for (const button of tablePreviewButtons) {
 			button.removeEventListener('click', handleTablePreviewClick);
+			button.removeEventListener('pointerenter', handleTableTooltipEnter);
+			button.removeEventListener('pointerleave', handleTableTooltipLeave);
+			button.removeEventListener('focus', handleTableTooltipFocus);
+			button.removeEventListener('blur', handleTableTooltipBlur);
 		}
+
+		for (const button of tableCopyButtons) {
+			button.removeEventListener('click', handleTableCopyClick);
+			button.removeEventListener('pointerenter', handleTableTooltipEnter);
+			button.removeEventListener('pointerleave', handleTableTooltipLeave);
+			button.removeEventListener('focus', handleTableTooltipFocus);
+			button.removeEventListener('blur', handleTableTooltipBlur);
+		}
+
+		closeTableTooltip();
 	}
 
 	/**
@@ -443,6 +467,7 @@
 	function handleTablePreviewClick(event: Event) {
 		event.preventDefault();
 		event.stopPropagation();
+		closeTableTooltip();
 
 		const target = event.currentTarget as HTMLButtonElement | null;
 		const tableBlock = target?.closest(MARKDOWN_PRESENTATION_SELECTORS.tableBlock);
@@ -456,6 +481,100 @@
 
 		tablePreviewHtml = table.outerHTML;
 		tablePreviewDialogOpen = true;
+	}
+
+	/** Copies only the selected table in spreadsheet-compatible formats. */
+	async function handleTableCopyClick(event: Event) {
+		event.preventDefault();
+		event.stopPropagation();
+		closeTableTooltip();
+
+		const target = event.currentTarget as HTMLButtonElement | null;
+		const tableBlock = target?.closest(MARKDOWN_PRESENTATION_SELECTORS.tableBlock);
+		const table = tableBlock?.querySelector<HTMLTableElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.tableWrapperTable
+		);
+
+		if (!table) {
+			return;
+		}
+
+		const rows = Array.from(table.rows, (row) =>
+			Array.from(row.cells, (cell) => cell.innerText || cell.textContent || '')
+		);
+
+		await copyTableToClipboard(
+			rows,
+			table.outerHTML,
+			t('common.tableCopiedToClipboard'),
+			t('common.failedToCopyTable')
+		);
+	}
+
+	function positionTableTooltip(button: HTMLButtonElement) {
+		const rect = button.getBoundingClientRect();
+		tableTooltipAnchorStyle = `left: ${rect.left}px; top: ${rect.top}px; width: ${rect.width}px; height: ${rect.height}px;`;
+	}
+
+	function closeTableTooltip() {
+		if (tableTooltipTimer) {
+			clearTimeout(tableTooltipTimer);
+			tableTooltipTimer = undefined;
+		}
+
+		tableTooltipOpen = false;
+		activeTableTooltipButton = null;
+	}
+
+	function handleTableTooltipViewportChange() {
+		closeTableTooltip();
+	}
+
+	function scheduleTableTooltip(button: HTMLButtonElement) {
+		if (activeTableTooltipButton === button && (tableTooltipOpen || tableTooltipTimer)) {
+			return;
+		}
+
+		closeTableTooltip();
+		activeTableTooltipButton = button;
+		tableTooltipLabel = button.dataset.tableTooltip ?? '';
+		positionTableTooltip(button);
+
+		tableTooltipTimer = setTimeout(async () => {
+			tableTooltipTimer = undefined;
+
+			if (activeTableTooltipButton !== button || !button.isConnected) {
+				return;
+			}
+
+			positionTableTooltip(button);
+			await tick();
+			tableTooltipOpen = true;
+		}, 700);
+	}
+
+	function handleTableTooltipEnter(event: Event) {
+		scheduleTableTooltip(event.currentTarget as HTMLButtonElement);
+	}
+
+	function handleTableTooltipLeave(event: Event) {
+		const button = event.currentTarget as HTMLButtonElement;
+
+		if (document.activeElement !== button) {
+			closeTableTooltip();
+		}
+	}
+
+	function handleTableTooltipFocus(event: Event) {
+		scheduleTableTooltip(event.currentTarget as HTMLButtonElement);
+	}
+
+	function handleTableTooltipBlur(event: Event) {
+		const button = event.currentTarget as HTMLButtonElement;
+
+		if (!button.matches(':hover')) {
+			closeTableTooltip();
+		}
 	}
 
 	/**
@@ -617,23 +736,51 @@
 	}
 
 	/**
-	 * Attaches click event listeners to markdown table preview buttons.
+	 * Attaches click event listeners to markdown table action buttons.
 	 * Uses data-listener-bound attribute to prevent duplicate bindings.
 	 */
-	function setupTablePreviewActions() {
+	function setupTableActions() {
 		if (!containerRef) return;
+		if (activeTableTooltipButton && !activeTableTooltipButton.isConnected) {
+			closeTableTooltip();
+		}
 
-		const buttons = containerRef.querySelectorAll<HTMLButtonElement>(
+		const previewButtons = containerRef.querySelectorAll<HTMLButtonElement>(
 			MARKDOWN_PRESENTATION_SELECTORS.tablePreviewButton
 		);
+		const copyButtons = containerRef.querySelectorAll<HTMLButtonElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.tableCopyButton
+		);
 
-		for (const button of buttons) {
-			button.title = t('common.tablePreview');
-			button.setAttribute('aria-label', t('common.tablePreview'));
+		for (const button of previewButtons) {
+			const label = t('common.tablePreview');
+			button.removeAttribute('title');
+			button.setAttribute('aria-label', label);
+			button.dataset.tableTooltip = label;
 
 			if (button.dataset.listenerBound !== 'true') {
 				button.dataset.listenerBound = 'true';
 				button.addEventListener('click', handleTablePreviewClick);
+				button.addEventListener('pointerenter', handleTableTooltipEnter);
+				button.addEventListener('pointerleave', handleTableTooltipLeave);
+				button.addEventListener('focus', handleTableTooltipFocus);
+				button.addEventListener('blur', handleTableTooltipBlur);
+			}
+		}
+
+		for (const button of copyButtons) {
+			const label = t('common.copyTable');
+			button.removeAttribute('title');
+			button.setAttribute('aria-label', label);
+			button.dataset.tableTooltip = label;
+
+			if (button.dataset.listenerBound !== 'true') {
+				button.dataset.listenerBound = 'true';
+				button.addEventListener('click', handleTableCopyClick);
+				button.addEventListener('pointerenter', handleTableTooltipEnter);
+				button.addEventListener('pointerleave', handleTableTooltipLeave);
+				button.addEventListener('focus', handleTableTooltipFocus);
+				button.addEventListener('blur', handleTableTooltipBlur);
 			}
 		}
 	}
@@ -730,9 +877,23 @@
 
 		if ((hasRenderedBlocks || hasUnstableBlock) && containerRef) {
 			setupCodeBlockActions();
-			setupTablePreviewActions();
+			setupTableActions();
 			setupImageErrorHandlers();
+		} else {
+			closeTableTooltip();
 		}
+	});
+
+	$effect(() => {
+		if (!browser) return;
+
+		window.addEventListener('resize', handleTableTooltipViewportChange);
+		window.addEventListener('scroll', handleTableTooltipViewportChange, true);
+
+		return () => {
+			window.removeEventListener('resize', handleTableTooltipViewportChange);
+			window.removeEventListener('scroll', handleTableTooltipViewportChange, true);
+		};
 	});
 
 	// Auto-scroll for streaming code block
@@ -814,6 +975,21 @@
 			</div>
 		</div>
 	{/if}
+</div>
+
+<div class="contents" use:portalToBody>
+	<Tooltip.Root bind:open={tableTooltipOpen} delayDuration={0}>
+		<Tooltip.Trigger
+			aria-hidden="true"
+			class="pointer-events-none fixed z-[-1] block border-0 bg-transparent p-0 opacity-0"
+			style={tableTooltipAnchorStyle}
+			tabindex={-1}
+		/>
+
+		<Tooltip.Content>
+			<p>{tableTooltipLabel}</p>
+		</Tooltip.Content>
+	</Tooltip.Root>
 </div>
 
 <DialogCodePreview
@@ -964,28 +1140,32 @@
 		display: none !important;
 	}
 
-	div :global(.table-preview-button svg) {
-		width: 1rem !important;
-		height: 1rem !important;
+	div :global(.table-preview-button svg),
+	div :global(.table-copy-button svg) {
+		width: 0.875rem !important;
+		height: 0.875rem !important;
 		stroke-width: 2 !important;
 	}
 
 	div :global(.table-actions) {
 		right: 1rem !important;
+		gap: 0.25rem;
 	}
 
-	div :global(.table-preview-button) {
-		width: 1rem !important;
-		height: 1rem !important;
-		min-width: 1rem !important;
-		min-height: 1rem !important;
+	div :global(.table-preview-button),
+	div :global(.table-copy-button) {
+		width: 1.5rem !important;
+		height: 1.5rem !important;
+		min-width: 1.5rem !important;
+		min-height: 1.5rem !important;
 		padding: 0 !important;
 		line-height: 1 !important;
 	}
 
-	div :global(.table-preview-button svg) {
-		width: 1rem !important;
-		height: 1rem !important;
+	div :global(.table-preview-button svg),
+	div :global(.table-copy-button svg) {
+		width: 0.875rem !important;
+		height: 0.875rem !important;
 		stroke-width: 2 !important;
 	}
 
@@ -1534,39 +1714,46 @@
 		justify-content: flex-end;
 	}
 
-	div :global(.table-preview-button) {
+	div :global(.table-preview-button),
+	div :global(.table-copy-button) {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 2.5rem;
-		height: 2.5rem;
+		width: 1.5rem;
+		height: 1.5rem;
 		border: none;
 		border-radius: 0.375rem;
 		background: transparent;
-		color: var(--code-foreground);
-		font-size: 1.125rem;
+		color: inherit;
 		line-height: 1;
 		cursor: pointer;
-		transition:
-			color 0.2s ease,
-			transform 0.2s ease;
+		transition: none;
 	}
 
 	div :global(.table-preview-button:hover),
-	div :global(.table-preview-button:focus-visible) {
+	div :global(.table-preview-button:focus-visible),
+	div :global(.table-copy-button:hover),
+	div :global(.table-copy-button:focus-visible) {
 		background: transparent;
-		color: var(--foreground);
-		outline: none;
-		transform: scale(1.05);
+		color: inherit;
+		transform: none;
 	}
 
-	div :global(.table-preview-button:active) {
-		transform: scale(0.95);
+	div :global(.table-preview-button:focus-visible),
+	div :global(.table-copy-button:focus-visible) {
+		outline: 2px solid currentColor;
+		outline-offset: 1px;
 	}
 
-	div :global(.table-preview-button svg) {
-		width: 1.45rem;
-		height: 1.45rem;
+	div :global(.table-preview-button:active),
+	div :global(.table-copy-button:active) {
+		transform: none;
+	}
+
+	div :global(.table-preview-button svg),
+	div :global(.table-copy-button svg) {
+		width: 0.875rem;
+		height: 0.875rem;
 		stroke-width: 2;
 	}
 
@@ -1636,7 +1823,9 @@
 	}
 
 	div :global(blockquote .table-preview-button),
-	div :global(blockquote .table-preview-button *) {
+	div :global(blockquote .table-preview-button *),
+	div :global(blockquote .table-copy-button),
+	div :global(blockquote .table-copy-button *) {
 		font-style: normal !important;
 	}
 
@@ -1819,7 +2008,9 @@
 	}
 
 	div :global(.table-block .table-preview-button),
-	div :global(.table-block .table-preview-button svg) {
+	div :global(.table-block .table-preview-button svg),
+	div :global(.table-block .table-copy-button),
+	div :global(.table-block .table-copy-button svg) {
 		line-height: 1 !important;
 		vertical-align: top !important;
 	}

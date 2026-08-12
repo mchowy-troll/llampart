@@ -25,6 +25,8 @@ export async function copyToClipboard(
 	successMessage = 'Copied to clipboard',
 	errorMessage = 'Failed to copy to clipboard'
 ): Promise<boolean> {
+	let textArea: HTMLTextAreaElement | null = null;
+
 	try {
 		// Try modern clipboard API first (secure contexts only)
 		if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -34,7 +36,7 @@ export async function copyToClipboard(
 		}
 
 		// Fallback for non-secure contexts
-		const textArea = document.createElement('textarea');
+		textArea = document.createElement('textarea');
 		textArea.value = text;
 		textArea.style.position = 'fixed';
 		textArea.style.left = '-999999px';
@@ -44,8 +46,6 @@ export async function copyToClipboard(
 		textArea.select();
 
 		const successful = document.execCommand('copy');
-		document.body.removeChild(textArea);
-
 		if (successful) {
 			toast.success(successMessage);
 			return true;
@@ -56,7 +56,57 @@ export async function copyToClipboard(
 		console.error('Failed to copy to clipboard:', error);
 		toast.error(errorMessage);
 		return false;
+	} finally {
+		if (textArea?.parentNode === document.body) {
+			document.body.removeChild(textArea);
+		}
 	}
+}
+
+export function formatTableRowsAsTsv(rows: readonly (readonly string[])[]): string {
+	return rows
+		.map((row) =>
+			row
+				.map((cell) =>
+					cell
+						.trim()
+						.replace(/\s*[\r\n]+\s*/g, ' ')
+						.replaceAll('\t', ' ')
+				)
+				.join('\t')
+		)
+		.join('\n');
+}
+
+/** Copy tabular content as HTML with a TSV fallback for spreadsheet applications. */
+export async function copyTableToClipboard(
+	rows: readonly (readonly string[])[],
+	html: string,
+	successMessage: string,
+	errorMessage: string
+): Promise<boolean> {
+	const plainText = formatTableRowsAsTsv(rows);
+
+	if (
+		typeof ClipboardItem !== 'undefined' &&
+		typeof navigator !== 'undefined' &&
+		navigator.clipboard?.write
+	) {
+		try {
+			await navigator.clipboard.write([
+				new ClipboardItem({
+					'text/plain': new Blob([plainText], { type: 'text/plain' }),
+					'text/html': new Blob([html], { type: 'text/html' })
+				})
+			]);
+			toast.success(successMessage);
+			return true;
+		} catch {
+			// Fall through to TSV when rich clipboard content is unsupported.
+		}
+	}
+
+	return copyToClipboard(plainText, successMessage, errorMessage);
 }
 
 /**

@@ -21,6 +21,7 @@ import {
 	RESOURCE_TEXT_CONTENT_SEPARATOR,
 	DEFAULT_RESOURCE_FILENAME
 } from '$lib/constants';
+import { downloadTextFile } from './download';
 import {
 	Database,
 	File,
@@ -292,13 +293,5 @@ export function downloadResourceContent(
 	mimeType: MimeTypeUnion = MimeTypeText.PLAIN,
 	filename: string = DEFAULT_RESOURCE_FILENAME
 ): void {
-	const blob = new Blob([text], { type: mimeType });
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement('a');
-	a.href = url;
-	a.download = filename;
-	document.body.appendChild(a);
-	a.click();
-	document.body.removeChild(a);
-	URL.revokeObjectURL(url);
+	downloadTextFile(text, mimeType, filename);
 }

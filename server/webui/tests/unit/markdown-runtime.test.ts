@@ -47,4 +47,13 @@ $$`);
 		expect(katexHtml).toContain('<mtable');
 		expect(katexHtml).not.toContain('dir="auto"');
 	});
+
+	it('adds copy and preview actions to tables', async () => {
+		const markdown = '| Name | Value |\n| :--- | ---: |\n| A | 1 |';
+		const html = await renderMarkdown(markdown, true);
+
+		expect(html).toContain('class="table-copy-button"');
+		expect(html).toContain('class="table-preview-button"');
+		expect(html.indexOf('table-copy-button')).toBeLessThan(html.indexOf('table-preview-button'));
+	});
 });

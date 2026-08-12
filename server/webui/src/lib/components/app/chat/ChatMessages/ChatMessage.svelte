@@ -133,6 +133,10 @@
 		chatActions.copy(message, toolMessages);
 	}
 
+	function handleDownload() {
+		chatActions.download(message, toolMessages);
+	}
+
 	async function handleConfirmDelete() {
 		if (message.role === MessageRole.SYSTEM) {
 			const conversationDeleted = await chatStore.removeSystemPromptPlaceholder(message.id);
@@ -303,6 +307,7 @@
 		messageContent={message.content}
 		onConfirmDelete={handleConfirmDelete}
 		onCopy={handleCopy}
+		onDownload={handleDownload}
 		onDelete={handleDelete}
 		onEdit={handleEdit}
 		onForkConversation={handleForkConversation}

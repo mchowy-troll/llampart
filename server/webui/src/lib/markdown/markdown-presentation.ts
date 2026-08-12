@@ -45,6 +45,7 @@ export const TABLE_BLOCK_CLASS = 'table-block';
 export const TABLE_ACTIONS_CLASS = 'table-actions';
 export const TABLE_WRAPPER_CLASS = 'table-wrapper';
 export const TABLE_CELL_CONTENT_CLASS = 'table-cell-content';
+export const TABLE_COPY_BUTTON_CLASS = 'table-copy-button';
 export const TABLE_PREVIEW_BUTTON_CLASS = 'table-preview-button';
 
 export const MARKDOWN_PRESENTATION_SELECTORS = {
@@ -54,6 +55,7 @@ export const MARKDOWN_PRESENTATION_SELECTORS = {
 	codeLanguage: `.${CODE_LANGUAGE_CLASS}`,
 	markdownRenderedCodeContent: `.${MARKDOWN_RENDERED_CODE_CONTENT_CLASS}`,
 	tableBlock: `.${TABLE_BLOCK_CLASS}`,
+	tableCopyButton: `.${TABLE_COPY_BUTTON_CLASS}`,
 	tablePreviewButton: `.${TABLE_PREVIEW_BUTTON_CLASS}`,
 	tableActions: `.${TABLE_ACTIONS_CLASS}`,
 	tableWrapperTable: `.${TABLE_WRAPPER_CLASS} table`,
