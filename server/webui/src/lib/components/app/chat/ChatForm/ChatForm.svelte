@@ -618,7 +618,7 @@
 			onpaste={handlePaste}
 		>
 			<ChatFormTextarea
-				class="px-5 py-1.5 md:pt-0"
+				class="py-1.5 md:pt-0"
 				bind:this={textareaRef}
 				bind:value
 				onKeydown={handleKeydown}

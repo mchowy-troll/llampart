@@ -126,7 +126,7 @@ html[data-llampart-ui-scale='110'] {
 	max-height: calc(100dvh - 2rem);
 	flex-direction: column;
 	justify-content: center;
-	overflow-y: auto;
+	overflow-y: visible;
 	aspect-ratio: 16 / 10;
 }
 

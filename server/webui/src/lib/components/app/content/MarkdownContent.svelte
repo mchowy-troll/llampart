@@ -1572,10 +1572,10 @@
 
 	div :global(.table-wrapper) {
 		max-width: 100%;
-		max-height: var(--max-message-height);
+		max-height: calc(var(--max-message-height) - 3rem);
 		overflow: auto;
-		margin: 0;
-		padding: 3rem 1rem 1rem;
+		margin: 3rem 0 0;
+		padding: 0 1rem 1rem;
 		border: none;
 		border-radius: 0;
 		scrollbar-width: thin;
