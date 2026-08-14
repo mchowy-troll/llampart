@@ -5,7 +5,9 @@
 	import { uuid } from '$lib/utils';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
 	import { conversationsStore } from '$lib/stores/conversations.svelte';
-	import { McpServerCard, McpServerCardSkeleton, McpServerForm } from '$lib/components/app/mcp';
+	import McpServerCard from '$lib/components/app/mcp/McpServerCard/McpServerCard.svelte';
+	import McpServerCardSkeleton from '$lib/components/app/mcp/McpServerCardSkeleton.svelte';
+	import McpServerForm from '$lib/components/app/mcp/McpServerForm.svelte';
 	import { MCP_SERVER_ID_PREFIX } from '$lib/constants';
 	import { HealthCheckStatus } from '$lib/enums';
 	import { t } from '$lib/i18n';

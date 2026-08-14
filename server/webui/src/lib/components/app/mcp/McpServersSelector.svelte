@@ -2,7 +2,8 @@
 	import { Settings } from '@lucide/svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Switch } from '$lib/components/ui/switch';
-	import { DropdownMenuSearchable, McpActiveServersAvatars } from '$lib/components/app';
+	import DropdownMenuSearchable from '$lib/components/app/navigation/DropdownMenuSearchable.svelte';
+	import McpActiveServersAvatars from '$lib/components/app/mcp/McpActiveServersAvatars.svelte';
 	import { conversationsStore } from '$lib/stores/conversations.svelte';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
 	import { HealthCheckStatus } from '$lib/enums';

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { ChatMessageMcpPromptContent, ActionIconRemove } from '$lib/components/app';
+	import ChatMessageMcpPromptContent from '$lib/components/app/chat/ChatMessages/ChatMessageMcpPromptContent.svelte';
+	import ActionIconRemove from '$lib/components/app/actions/ActionIconRemove.svelte';
 	import type { DatabaseMessageExtraMcpPrompt } from '$lib/types';
 	import { McpPromptVariant } from '$lib/enums';
 

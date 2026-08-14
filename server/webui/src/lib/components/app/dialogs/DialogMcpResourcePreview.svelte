@@ -4,7 +4,8 @@
 	import { Download } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
-	import { SyntaxHighlightedCode, ActionIconCopyToClipboard } from '$lib/components/app';
+	import SyntaxHighlightedCode from '$lib/components/app/content/SyntaxHighlightedCode.svelte';
+	import ActionIconCopyToClipboard from '$lib/components/app/actions/ActionIconCopyToClipboard.svelte';
 	import {
 		getLanguageFromFilename,
 		isCodeResource,

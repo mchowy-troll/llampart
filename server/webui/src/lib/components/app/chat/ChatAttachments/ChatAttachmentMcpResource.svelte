@@ -4,7 +4,7 @@
 	import { mcpStore } from '$lib/stores/mcp.svelte';
 	import type { MCPResourceAttachment } from '$lib/types';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { ActionIconRemove } from '$lib/components/app';
+	import ActionIconRemove from '$lib/components/app/actions/ActionIconRemove.svelte';
 	import { getResourceIcon, getResourceDisplayName } from '$lib/utils';
 
 	interface Props {

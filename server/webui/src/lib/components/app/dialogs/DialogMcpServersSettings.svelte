@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { McpLogo, McpServersSettings } from '$lib/components/app';
+	import McpLogo from '$lib/components/app/mcp/McpLogo.svelte';
+	import McpServersSettings from '$lib/components/app/mcp/McpServersSettings.svelte';
 
 	interface Props {
 		onOpenChange?: (open: boolean) => void;

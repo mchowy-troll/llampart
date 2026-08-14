@@ -3,7 +3,7 @@
 	import { Cable, ExternalLink } from '@lucide/svelte';
 	import { Switch } from '$lib/components/ui/switch';
 	import { Badge } from '$lib/components/ui/badge';
-	import { McpCapabilitiesBadges } from '$lib/components/app/mcp';
+	import McpCapabilitiesBadges from '$lib/components/app/mcp/McpCapabilitiesBadges.svelte';
 	import { MCP_TRANSPORT_LABELS, MCP_TRANSPORT_ICONS } from '$lib/constants';
 	import { MCPTransportType } from '$lib/enums';
 	import type { MCPServerInfo, MCPCapabilitiesInfo } from '$lib/types';

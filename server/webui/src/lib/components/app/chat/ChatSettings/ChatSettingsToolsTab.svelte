@@ -2,7 +2,7 @@
 	import { ChevronDown, ChevronRight } from '@lucide/svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import * as Collapsible from '$lib/components/ui/collapsible';
-	import { TruncatedText } from '$lib/components/app/misc';
+	import TruncatedText from '$lib/components/app/misc/TruncatedText.svelte';
 	import { toolsStore } from '$lib/stores/tools.svelte';
 	import { permissionsStore } from '$lib/stores/permissions.svelte';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
@@ -13,8 +13,7 @@
 	const TOOL_COLUMNS_COUNT = 1;
 	const TOOL_GROUP_SOURCE_ORDER: Record<ToolSource, number> = {
 		[ToolSource.BUILTIN]: 0,
-		[ToolSource.MCP]: 1,
-		[ToolSource.CUSTOM]: 2
+		[ToolSource.MCP]: 1
 	};
 
 	let expandedGroups = $state<string[]>([]);

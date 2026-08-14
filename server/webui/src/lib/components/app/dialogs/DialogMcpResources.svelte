@@ -10,11 +10,9 @@
 		mcpTotalResourceCount,
 		mcpResourceStore
 	} from '$lib/stores/mcp-resources.svelte';
-	import {
-		McpResourceBrowser,
-		McpResourcePreview,
-		McpResourceTemplateForm
-	} from '$lib/components/app';
+	import McpResourceBrowser from '$lib/components/app/mcp/McpResourceBrowser/McpResourceBrowser.svelte';
+	import McpResourcePreview from '$lib/components/app/mcp/McpResourcePreview.svelte';
+	import McpResourceTemplateForm from '$lib/components/app/mcp/McpResourceTemplateForm.svelte';
 	import { getResourceDisplayName } from '$lib/utils';
 	import type { MCPResourceInfo, MCPResourceContent, MCPResourceTemplateInfo } from '$lib/types';
 	import { SvelteSet } from 'svelte/reactivity';

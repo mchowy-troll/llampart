@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Input } from '$lib/components/ui/input';
 	import { Switch } from '$lib/components/ui/switch';
-	import { KeyValuePairs } from '$lib/components/app';
+	import KeyValuePairs from '$lib/components/app/forms/KeyValuePairs.svelte';
 	import type { KeyValuePair } from '$lib/types';
 	import { parseHeadersToArray, serializeHeaders } from '$lib/utils';
 	import { UrlProtocol } from '$lib/enums';

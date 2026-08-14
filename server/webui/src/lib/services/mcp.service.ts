@@ -491,6 +491,7 @@ export class MCPService {
 	 * @param capabilities - Optional client capability declaration
 	 * @param onPhase - Optional callback for connection phase progress updates
 	 * @param listChangedHandlers - Optional handlers for server-initiated list change notifications
+	 * @param signal - Optional signal that cancels the handshake and cleans up the client/transport
 	 * @returns Full connection object with client, transport, tools, server info, and timing
 	 * @throws {Error} If transport creation or connection fails
 	 */
@@ -500,8 +501,10 @@ export class MCPService {
 		clientInfo?: Implementation,
 		capabilities?: ClientCapabilities,
 		onPhase?: MCPPhaseCallback,
-		listChangedHandlers?: ListChangedHandlers
+		listChangedHandlers?: ListChangedHandlers,
+		signal?: AbortSignal
 	): Promise<MCPConnection> {
+		throwIfAborted(signal);
 		const startTime = performance.now();
 		const effectiveClientInfo = clientInfo ?? DEFAULT_MCP_CONFIG.clientInfo;
 		const effectiveCapabilities = capabilities ?? DEFAULT_MCP_CONFIG.capabilities;
@@ -580,12 +583,22 @@ export class MCPService {
 
 		console.log(`[MCPService][${serverName}] Connecting to server...`);
 		try {
-			await client.connect(transport);
+			await client.connect(transport, { signal });
+			throwIfAborted(signal);
 			// Transport diagnostics are only for the initial handshake, not long-lived traffic.
 			stopPhaseLogging();
 			client.onerror = runtimeErrorHandler;
 		} catch (error) {
+			stopPhaseLogging();
 			client.onerror = runtimeErrorHandler;
+			transport.onclose = undefined;
+			await client.close().catch(() => undefined);
+			await transport.close().catch(() => undefined);
+
+			if (isAbortError(error) || signal?.aborted) {
+				throw error;
+			}
+
 			const url =
 				(serverConfig.useProxy ?? false)
 					? buildProxiedUrl(serverConfig.url)
@@ -655,14 +668,26 @@ export class MCPService {
 		);
 
 		console.log(`[MCPService][${serverName}] Connected, listing tools...`);
-		const tools = await this.listTools({
-			client,
-			transport,
-			tools: [],
-			serverName,
-			transportType,
-			connectionTimeMs: 0
-		});
+		let tools: Tool[];
+		try {
+			tools = await this.listTools(
+				{
+					client,
+					transport,
+					tools: [],
+					serverName,
+					transportType,
+					connectionTimeMs: 0
+				},
+				signal
+			);
+			throwIfAborted(signal);
+		} catch (error) {
+			transport.onclose = undefined;
+			await client.close().catch(() => undefined);
+			await transport.close().catch(() => undefined);
+			throw error;
+		}
 
 		const connectionTimeMs = Math.round(performance.now() - startTime);
 
@@ -702,15 +727,15 @@ export class MCPService {
 	 */
 	static async disconnect(connection: MCPConnection): Promise<void> {
 		console.log(`[MCPService][${connection.serverName}] Disconnecting...`);
+		if (connection.transport.onclose) {
+			connection.transport.onclose = undefined;
+		}
 		try {
-			// Prevent reconnection on voluntary disconnect
-			if (connection.transport.onclose) {
-				connection.transport.onclose = undefined;
-			}
-
 			await connection.client.close();
 		} catch (error) {
 			console.warn(`[MCPService][${connection.serverName}] Error during disconnect:`, error);
+		} finally {
+			await connection.transport.close().catch(() => undefined);
 		}
 	}
 
@@ -721,12 +746,17 @@ export class MCPService {
 	 * @param connection - The MCP connection to query
 	 * @returns Array of available tools, or empty array on error
 	 */
-	static async listTools(connection: MCPConnection): Promise<Tool[]> {
+	static async listTools(connection: MCPConnection, signal?: AbortSignal): Promise<Tool[]> {
+		throwIfAborted(signal);
 		try {
-			const result = await connection.client.listTools();
+			const result = await connection.client.listTools(undefined, { signal });
 
 			return result.tools ?? [];
 		} catch (error) {
+			if (isAbortError(error) || signal?.aborted) {
+				throw error;
+			}
+
 			// Let session-expired errors propagate for reconnection handling
 			if (this.isSessionExpiredError(error)) {
 				throw error;

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { RefreshCw, Loader2 } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { SearchInput } from '$lib/components/app/forms';
+	import SearchInput from '$lib/components/app/forms/SearchInput.svelte';
 	import { t } from '$lib/i18n';
 
 	interface Props {
