@@ -1,11 +1,9 @@
 <script lang="ts">
-	import {
-		ChatMessageStatistics,
-		CollapsibleContentBlock,
-		MarkdownContent,
-		SyntaxHighlightedCode,
-		ChatMessageActionCardPermissionRequest
-	} from '$lib/components/app';
+	import ChatMessageStatistics from '$lib/components/app/chat/ChatMessages/ChatMessageStatistics.svelte';
+	import CollapsibleContentBlock from '$lib/components/app/content/CollapsibleContentBlock.svelte';
+	import MarkdownContent from '$lib/components/app/content/MarkdownContent.svelte';
+	import SyntaxHighlightedCode from '$lib/components/app/content/SyntaxHighlightedCode.svelte';
+	import ChatMessageActionCardPermissionRequest from '$lib/components/app/chat/ChatMessages/ChatMessageActions/ChatMessageActionCard/ChatMessageActionCardPermissionRequest.svelte';
 	import { config } from '$lib/stores/settings.svelte';
 	import { Wrench, Loader2, Brain } from '@lucide/svelte';
 	import { AgenticSectionType, FileTypeText, ToolPermissionDecision } from '$lib/enums';
@@ -442,6 +440,7 @@
 		flex-direction: column;
 		gap: 0.5rem;
 		width: 100%;
+		min-width: 0;
 		max-width: 57.6rem;
 		border: 1px solid var(--llampart-assistant-message-border-color);
 		border-radius: 0.75rem;
@@ -464,6 +463,7 @@
 
 	.agentic-text {
 		width: 100%;
+		min-width: 0;
 	}
 
 	.llampart-reasoning-content {

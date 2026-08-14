@@ -3,7 +3,8 @@
 	import { X, AlertTriangle } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Switch } from '$lib/components/ui/switch';
-	import { ChatForm, DialogConfirmation } from '$lib/components/app';
+	import ChatForm from '$lib/components/app/chat/ChatForm/ChatForm.svelte';
+	import DialogConfirmation from '$lib/components/app/dialogs/DialogConfirmation.svelte';
 	import { getMessageEditContext } from '$lib/contexts';
 	import { KeyboardKey } from '$lib/enums';
 	import { chatStore } from '$lib/stores/chat.svelte';
@@ -162,3 +163,10 @@
 	onConfirm={editCtx.cancel}
 	onCancel={() => (showDiscardDialog = false)}
 />
+
+<style>
+	:global(.llampart-user-message-edit-card .llampart-message-edit-chat-form) {
+		width: calc(100% + 2 * var(--llampart-message-shell-inline-inset));
+		margin-inline: calc(-1 * var(--llampart-message-shell-inline-inset));
+	}
+</style>
