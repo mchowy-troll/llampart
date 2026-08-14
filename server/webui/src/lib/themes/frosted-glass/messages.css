@@ -32,6 +32,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-user-message-edit-card.llampart-user-message-edit-card {
 	/* Radius is intentionally owned by the normal llampart-user-message-card class
 	   so edit mode keeps exact parity with the displayed user message bubble. */
+	--llampart-message-shell-inline-inset: 0.875rem;
 	padding: 0.875rem 0.875rem 0.75rem !important;
 }
 

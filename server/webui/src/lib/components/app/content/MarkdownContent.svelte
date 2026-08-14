@@ -13,7 +13,10 @@
 	} from '$lib/utils/syntax-highlighting';
 	import { copyCodeToClipboard, copyTableToClipboard } from '$lib/utils/clipboard';
 	import { hasRenderableMath, preprocessLaTeX } from '$lib/utils/latex-protection';
-	import { getImageErrorFallbackHtml } from '$lib/utils/image-error-fallback';
+	import {
+		getMarkdownFallbackText,
+		getSafeImageFallbackLinkUrl
+	} from '$lib/utils/content-fallback';
 	import { detectIncompleteCodeBlock, type IncompleteCodeBlock } from '$lib/utils/code';
 	import type { MarkdownProcessor } from '$lib/markdown/markdown-runtime';
 	import {
@@ -38,7 +41,8 @@
 		SETTINGS_KEYS
 	} from '$lib/constants';
 	import { UrlProtocol } from '$lib/enums';
-	import { ActionIconsCodeBlock, DialogCodePreview } from '$lib/components/app';
+	import ActionIconsCodeBlock from '$lib/components/app/actions/ActionIconsCodeBlock.svelte';
+	import DialogCodePreview from '$lib/components/app/dialogs/DialogCodePreview.svelte';
 	import { createAutoScrollController } from '$lib/hooks/use-auto-scroll.svelte';
 	import type { DatabaseMessageExtra } from '$lib/types/database';
 	import { config } from '$lib/stores/settings.svelte';
@@ -71,6 +75,7 @@
 	let containerRef = $state<HTMLDivElement>();
 	let renderedBlocks = $state<MarkdownBlock[]>([]);
 	let unstableBlockHtml = $state('');
+	let markdownFallbackText = $state('');
 	let incompleteCodeBlock = $state<IncompleteCodeBlock | null>(null);
 	let incompleteMathBlock = $state<IncompleteMathBlock | null>(null);
 	let streamingHighlightedHtml = $state('');
@@ -592,6 +597,7 @@
 		if (!markdown) {
 			renderedBlocks = [];
 			unstableBlockHtml = '';
+			markdownFallbackText = '';
 			incompleteCodeBlock = null;
 			incompleteMathBlock = null;
 			streamingHighlightedHtml = '';
@@ -817,10 +823,24 @@
 		img.dataset[DATA_ERROR_HANDLED_ATTR] = BOOL_TRUE_STRING;
 
 		const src = img.src;
-		// Create fallback element
 		const fallback = document.createElement('div');
 		fallback.className = 'image-load-error';
-		fallback.innerHTML = getImageErrorFallbackHtml(src);
+		const content = document.createElement('div');
+		content.className = 'image-error-content';
+		const message = document.createElement('span');
+		message.textContent = 'Image cannot be displayed';
+		content.append(message);
+
+		const safeUrl = getSafeImageFallbackLinkUrl(src, document.baseURI);
+		if (safeUrl) {
+			const link = document.createElement('a');
+			link.href = safeUrl;
+			link.target = '_blank';
+			link.rel = 'noopener noreferrer';
+			link.textContent = '(open link)';
+			content.append(link);
+		}
+		fallback.append(content);
 
 		// Replace image with fallback
 		img.parentNode?.replaceChild(fallback, img);
@@ -840,11 +860,14 @@
 		}
 
 		isProcessing = true;
+		let processingMarkdown = markdown;
 
 		try {
 			while (pendingMarkdown !== null) {
 				const nextMarkdown = pendingMarkdown;
 				pendingMarkdown = null;
+				processingMarkdown = nextMarkdown;
+				markdownFallbackText = '';
 
 				await processMarkdown(nextMarkdown);
 
@@ -857,7 +880,8 @@
 		} catch (error) {
 			console.error('Failed to process markdown:', error);
 			renderedBlocks = [];
-			unstableBlockHtml = markdown.replace(/\n/g, '<br>');
+			unstableBlockHtml = '';
+			markdownFallbackText = getMarkdownFallbackText(processingMarkdown);
 		} finally {
 			isProcessing = false;
 		}
@@ -873,7 +897,7 @@
 
 	$effect(() => {
 		const hasRenderedBlocks = renderedBlocks.length > 0;
-		const hasUnstableBlock = Boolean(unstableBlockHtml);
+		const hasUnstableBlock = Boolean(unstableBlockHtml || markdownFallbackText);
 
 		if ((hasRenderedBlocks || hasUnstableBlock) && containerRef) {
 			setupCodeBlockActions();
@@ -929,6 +953,12 @@
 		<div class="markdown-block markdown-block--unstable" data-block-id="unstable">
 			<!-- eslint-disable-next-line no-at-html-tags -->
 			{@html unstableBlockHtml}
+		</div>
+	{/if}
+
+	{#if markdownFallbackText}
+		<div class="markdown-block markdown-block--fallback" data-block-id="fallback">
+			{markdownFallbackText}
 		</div>
 	{/if}
 
@@ -1074,6 +1104,18 @@
 
 	.markdown-block--unstable {
 		display: contents;
+	}
+
+	.markdown-block--fallback {
+		display: contents;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+
+	.llampart-markdown-content {
+		max-width: 100%;
+		min-width: 0;
+		overflow-wrap: anywhere;
 	}
 
 	.markdown-math-pending {
@@ -1539,24 +1581,39 @@
 
 	div :global(.copy-code-btn),
 	div :global(.preview-code-btn) {
-		display: flex;
+		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+		width: 1.5rem;
+		height: 1.5rem;
+		min-width: 1.5rem;
+		min-height: 1.5rem;
 		padding: 0;
+		border: none;
+		border-radius: 0.375rem;
 		background: transparent;
-		color: var(--code-foreground);
+		color: inherit;
+		line-height: 1;
 		cursor: pointer;
-		transition: all 0.2s ease;
+		transition: none;
 	}
 
 	div :global(.copy-code-btn:hover),
-	div :global(.preview-code-btn:hover) {
-		transform: scale(1.05);
+	div :global(.copy-code-btn:focus-visible),
+	div :global(.copy-code-btn:active),
+	div :global(.preview-code-btn:hover),
+	div :global(.preview-code-btn:focus-visible),
+	div :global(.preview-code-btn:active) {
+		background: transparent;
+		color: inherit;
+		transform: none;
 	}
 
-	div :global(.copy-code-btn:active),
-	div :global(.preview-code-btn:active) {
-		transform: scale(0.95);
+	div :global(.copy-code-btn svg),
+	div :global(.preview-code-btn svg) {
+		width: 0.875rem !important;
+		height: 0.875rem !important;
+		stroke-width: 2 !important;
 	}
 
 	div :global(.code-block-wrapper pre) {
@@ -1834,7 +1891,7 @@
 		max-height: calc(80dvh - 5rem) !important;
 		overflow: auto !important;
 		margin: 0;
-		padding: 3rem 1rem 1rem;
+		padding: 0;
 		border: none;
 		border-radius: 0;
 		background: transparent;
@@ -2017,15 +2074,16 @@
 	/* Code/text/Markdown action icon sizing and Markdown rendered-frame scroll layout. */
 	div :global(.code-block-actions) {
 		flex: 0 0 auto;
+		gap: 0.25rem;
 		line-height: 1;
 	}
 
 	div :global(.copy-code-btn),
 	div :global(.preview-code-btn) {
-		width: 1rem;
-		height: 1rem;
-		min-width: 1rem;
-		min-height: 1rem;
+		width: 1.5rem;
+		height: 1.5rem;
+		min-width: 1.5rem;
+		min-height: 1.5rem;
 		flex: 0 0 auto;
 		line-height: 1;
 	}
@@ -2043,9 +2101,10 @@
 	div :global(.copy-code-btn svg),
 	div :global(.preview-code-btn svg) {
 		display: block;
-		width: 100%;
-		height: 100%;
+		width: 0.875rem !important;
+		height: 0.875rem !important;
 		flex: 0 0 auto;
+		stroke-width: 2 !important;
 	}
 
 	div :global(.markdown-rendered-code-block) {
