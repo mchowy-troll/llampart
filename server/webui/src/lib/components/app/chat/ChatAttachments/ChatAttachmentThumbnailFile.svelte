@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import { ActionIconRemove } from '$lib/components/app';
+	import ActionIconRemove from '$lib/components/app/actions/ActionIconRemove.svelte';
 	import { formatFileSize, getFileTypeLabel } from '$lib/utils';
 	import { AttachmentType } from '$lib/enums';
 

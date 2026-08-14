@@ -1,13 +1,11 @@
 <script lang="ts">
-	import {
-		ChatAttachmentMcpPrompt,
-		ChatAttachmentMcpResource,
-		ChatAttachmentThumbnailImage,
-		ChatAttachmentThumbnailFile,
-		DialogChatAttachmentPreview,
-		DialogChatAttachmentsViewAll,
-		DialogMcpResourcePreview
-	} from '$lib/components/app';
+	import ChatAttachmentMcpPrompt from '$lib/components/app/chat/ChatAttachments/ChatAttachmentMcpPrompt.svelte';
+	import ChatAttachmentMcpResource from '$lib/components/app/chat/ChatAttachments/ChatAttachmentMcpResource.svelte';
+	import ChatAttachmentThumbnailImage from '$lib/components/app/chat/ChatAttachments/ChatAttachmentThumbnailImage.svelte';
+	import ChatAttachmentThumbnailFile from '$lib/components/app/chat/ChatAttachments/ChatAttachmentThumbnailFile.svelte';
+	import DialogChatAttachmentPreview from '$lib/components/app/dialogs/DialogChatAttachmentPreview.svelte';
+	import DialogChatAttachmentsViewAll from '$lib/components/app/dialogs/DialogChatAttachmentsViewAll.svelte';
+	import DialogMcpResourcePreview from '$lib/components/app/dialogs/DialogMcpResourcePreview.svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { AttachmentType } from '$lib/enums';
 	import { t } from '$lib/i18n';

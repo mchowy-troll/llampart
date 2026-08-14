@@ -11,7 +11,7 @@
 	import { serverStore } from '$lib/stores/server.svelte';
 	import { modelsStore, selectedModelName } from '$lib/stores/models.svelte';
 	import { normalizeFloatingPoint } from '$lib/utils/precision';
-	import { ChatSettingsParameterSourceIndicator } from '$lib/components/app';
+	import ChatSettingsParameterSourceIndicator from '$lib/components/app/chat/ChatSettings/ChatSettingsParameterSourceIndicator.svelte';
 	import type { Component } from 'svelte';
 	import type { SettingsFieldGroupFillMode } from '$lib/types';
 	import { t } from '$lib/i18n';

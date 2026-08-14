@@ -16,7 +16,6 @@ export {
 	getApiBaseUrl,
 	type ApiFetchOptions
 } from './api-fetch';
-export { validateApiKey } from './api-key-validation';
 export {
 	validateConnectionSettings,
 	normalizeServerBaseUrl,
@@ -140,13 +139,8 @@ export { debounce } from './debounce';
 // Sanitization utilities
 export { sanitizeKeyValuePairKey, sanitizeKeyValuePairValue } from './sanitize';
 
-// Image error fallback utilities
-export { getImageErrorFallbackHtml } from './image-error-fallback';
-
 // MCP utilities
 export {
-	detectMcpTransportFromUrl,
-	parseMcpServerSettings,
 	getMcpLogLevelIcon,
 	getMcpLogLevelClass,
 	isImageMimeType,
@@ -160,6 +154,13 @@ export {
 	getResourceBlobContent,
 	downloadResourceContent
 } from './mcp';
+export {
+	detectMcpTransportFromUrl,
+	parseMcpHeaders,
+	parseMcpServerSettings,
+	buildMcpServerConfig,
+	buildMcpClientConfig
+} from './mcp-config';
 
 // URI Template utilities
 export {
@@ -219,6 +220,7 @@ export {
 	createTimeoutSignal,
 	withAbortSignal
 } from './abort';
+export { getReconnectDelay, sleepWithAbort, type SleepTimer } from './retry';
 
 // Cryptography utilities
 

@@ -14,7 +14,8 @@
 		X
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
-	import { ChatSidebarConversationItem, DialogConfirmation } from '$lib/components/app';
+	import ChatSidebarConversationItem from '$lib/components/app/chat/ChatSidebar/ChatSidebarConversationItem.svelte';
+	import DialogConfirmation from '$lib/components/app/dialogs/DialogConfirmation.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { Button } from '$lib/components/ui/button';
 	import Label from '$lib/components/ui/label/label.svelte';

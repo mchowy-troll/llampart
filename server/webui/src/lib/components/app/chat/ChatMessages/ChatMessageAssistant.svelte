@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import {
-		ActionIcon,
-		ChatMessageAgenticContent,
-		ChatMessageActions,
-		ChatMessageStatistics,
-		DialogModelInformation,
-		ModelBadge,
-		ModelsSelector
-	} from '$lib/components/app';
+	import ActionIcon from '$lib/components/app/actions/ActionIcon.svelte';
+	import ChatMessageAgenticContent from '$lib/components/app/chat/ChatMessages/ChatMessageAgenticContent.svelte';
+	import ChatMessageActions from '$lib/components/app/chat/ChatMessages/ChatMessageActions.svelte';
+	import ChatMessageStatistics from '$lib/components/app/chat/ChatMessages/ChatMessageStatistics.svelte';
+	import DialogModelInformation from '$lib/components/app/dialogs/DialogModelInformation.svelte';
+	import ModelBadge from '$lib/components/app/models/ModelBadge.svelte';
+	import ModelsSelector from '$lib/components/app/models/ModelsSelector.svelte';
 	import { getMessageEditContext } from '$lib/contexts';
 	import { useProcessingState } from '$lib/hooks/use-processing-state.svelte';
 	import { isLoading, isChatStreaming } from '$lib/stores/chat.svelte';

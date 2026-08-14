@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { modelsStore } from '$lib/stores/models.svelte';
-	import { ModelsSelectorOption } from '$lib/components/app';
+	import ModelsSelectorOption from '$lib/components/app/models/ModelsSelectorOption.svelte';
 	import type { GroupedModelOptions, ModelItem } from './utils';
 	import { t } from '$lib/i18n';
 

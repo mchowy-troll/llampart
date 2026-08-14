@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { Card } from '$lib/components/ui/card';
-	import { ChatAttachmentsList, MarkdownContent } from '$lib/components/app';
+	import ChatAttachmentsList from '$lib/components/app/chat/ChatAttachments/ChatAttachmentsList.svelte';
+	import MarkdownContent from '$lib/components/app/content/MarkdownContent.svelte';
 	import { getMessageEditContext } from '$lib/contexts';
 	import { config } from '$lib/stores/settings.svelte';
 	import ChatMessageActions from './ChatMessageActions.svelte';

@@ -1,4 +1,5 @@
 import { DEFAULT_CACHE_TTL_MS, DEFAULT_CACHE_MAX_ENTRIES } from '$lib/constants';
+import { SvelteMap } from 'svelte/reactivity';
 
 /**
  * TTL Cache - Time-To-Live cache implementation for memory optimization
@@ -199,7 +200,7 @@ export class TTLCache<K extends string, V> {
  * Wraps SvelteMap with TTL functionality
  */
 export class ReactiveTTLMap<K extends string, V> {
-	private entries = $state<Map<K, CacheEntry<V>>>(new Map());
+	private entries = new SvelteMap<K, CacheEntry<V>>();
 	private readonly ttlMs: number;
 	private readonly maxEntries: number;
 

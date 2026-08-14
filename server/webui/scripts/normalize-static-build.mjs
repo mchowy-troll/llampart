@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { calculateArtifactDigest } from './static-artifact-digest.mjs';
 
 const GUIDE_FOR_FRONTEND = `
 <!--
@@ -14,6 +16,9 @@ const GUIDE_FOR_FRONTEND = `
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const webuiRoot = resolve(scriptDir, '..');
+const repoRoot = resolve(webuiRoot, '../..');
+const normalizerVersion = 1;
+const buildStartedAt = new Date().toISOString();
 
 const publicCandidates = [resolve(webuiRoot, '../public'), resolve(webuiRoot, 'public')];
 const clientManifestPath = resolve(webuiRoot, '.svelte-kit/output/client/.vite/manifest.json');
@@ -163,6 +168,47 @@ function removeStandaloneFavicon(publicDir) {
 	rmSync(resolve(publicDir, 'favicon.svg'), { force: true });
 }
 
+function gitOutput(args) {
+	return execFileSync('git', ['-C', repoRoot, ...args], { encoding: 'utf-8' }).trim();
+}
+
+function sourceWorktreeIsDirty() {
+	const status = gitOutput(['status', '--porcelain', '--untracked-files=all']);
+	return status
+		.split('\n')
+		.filter(Boolean)
+		.some(
+			(line) =>
+				!line
+					.slice(3)
+					.replace(/.* -> /, '')
+					.startsWith('server/public/')
+		);
+}
+
+function writeBuildProvenance(publicDir) {
+	const packageJson = readJsonFile(resolve(webuiRoot, 'package.json'), 'package.json');
+	const gitCommit = gitOutput(['rev-parse', 'HEAD']);
+	const dirty = sourceWorktreeIsDirty();
+	const artifactDigest = calculateArtifactDigest(publicDir);
+	const provenance = {
+		appVersion: packageJson.version,
+		gitCommit,
+		dirty,
+		builtAt: buildStartedAt,
+		normalizerVersion,
+		artifactDigest
+	};
+
+	writeFileSync(
+		resolve(publicDir, '.llampart-build.json'),
+		`${JSON.stringify(provenance, null, 2)}\n`
+	);
+	console.log(
+		`✓ Wrote build provenance (${gitCommit.slice(0, 12)}, dirty=${dirty}, artifacts=${artifactDigest.slice(0, 12)})`
+	);
+}
+
 function normalizeSingleBundleBuild(publicDir, indexPath, singleBundle) {
 	let indexHtml = readFileSync(indexPath, 'utf-8');
 	indexHtml = inlineFavicon(indexHtml);
@@ -232,6 +278,7 @@ function normalizeStaticBuild() {
 	}
 
 	mkdirSync(publicDir, { recursive: true });
+	writeBuildProvenance(publicDir);
 }
 
 try {

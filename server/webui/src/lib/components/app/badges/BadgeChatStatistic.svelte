@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { BadgeInfo } from '$lib/components/app';
+	import BadgeInfo from '$lib/components/app/badges/BadgeInfo.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { copyToClipboard } from '$lib/utils';
 	import type { Component } from 'svelte';

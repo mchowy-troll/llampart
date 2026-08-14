@@ -3,7 +3,7 @@
  * Ensures only compatible file types are processed based on model capabilities
  */
 
-import { getFileTypeCategory, getFileTypeCategoryByExtension } from '$lib/utils';
+import { getFileTypeCategory, getFileTypeCategoryByExtension } from './file-type';
 import { FileTypeCategory } from '$lib/enums';
 import type { ModalityCapabilities } from '$lib/types';
 

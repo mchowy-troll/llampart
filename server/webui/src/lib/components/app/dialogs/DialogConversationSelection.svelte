@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { ConversationSelection } from '$lib/components/app';
+	import ConversationSelection from '$lib/components/app/misc/ConversationSelection.svelte';
 	import { t } from '$lib/i18n';
 
 	interface Props {

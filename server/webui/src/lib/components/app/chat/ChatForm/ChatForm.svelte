@@ -1,14 +1,12 @@
 <script lang="ts">
-	import {
-		ChatAttachmentsList,
-		ChatAttachmentMcpResources,
-		ChatFormActions,
-		ChatFormFileInputInvisible,
-		ChatFormPromptPicker,
-		ChatFormResourcePicker,
-		ChatFormTextarea
-	} from '$lib/components/app';
-	import { DialogMcpResources } from '$lib/components/app/dialogs';
+	import ChatAttachmentsList from '$lib/components/app/chat/ChatAttachments/ChatAttachmentsList.svelte';
+	import ChatAttachmentMcpResources from '$lib/components/app/chat/ChatAttachments/ChatAttachmentMcpResources.svelte';
+	import ChatFormActions from '$lib/components/app/chat/ChatForm/ChatFormActions/ChatFormActions.svelte';
+	import ChatFormFileInputInvisible from '$lib/components/app/chat/ChatForm/ChatFormFileInputInvisible.svelte';
+	import ChatFormPromptPicker from '$lib/components/app/chat/ChatForm/ChatFormPromptPicker/ChatFormPromptPicker.svelte';
+	import ChatFormResourcePicker from '$lib/components/app/chat/ChatForm/ChatFormResourcePicker/ChatFormResourcePicker.svelte';
+	import ChatFormTextarea from '$lib/components/app/chat/ChatForm/ChatFormTextarea.svelte';
+	import DialogMcpResources from '$lib/components/app/dialogs/DialogMcpResources.svelte';
 	import {
 		CLIPBOARD_CONTENT_QUOTE_PREFIX,
 		INPUT_CLASSES,

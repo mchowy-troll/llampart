@@ -2,7 +2,7 @@
 	import { t } from '$lib/i18n';
 	import type { Snippet } from 'svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
-	import { SearchInput } from '$lib/components/app';
+	import SearchInput from '$lib/components/app/forms/SearchInput.svelte';
 
 	interface Props {
 		placeholder?: string;

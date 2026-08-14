@@ -1,10 +1,8 @@
 <script lang="ts">
 	import { Edit, Copy, Download, RefreshCw, Trash2, GitBranch } from '@lucide/svelte';
-	import {
-		ActionIcon,
-		ChatMessageBranchingControls,
-		DialogConfirmation
-	} from '$lib/components/app';
+	import ActionIcon from '$lib/components/app/actions/ActionIcon.svelte';
+	import ChatMessageBranchingControls from '$lib/components/app/chat/ChatMessages/ChatMessageBranchingControls.svelte';
+	import DialogConfirmation from '$lib/components/app/dialogs/DialogConfirmation.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
 	import Input from '$lib/components/ui/input/input.svelte';
 	import Label from '$lib/components/ui/label/label.svelte';

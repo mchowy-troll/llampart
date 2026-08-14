@@ -1,7 +1,7 @@
 <script lang="ts" generics="T">
 	import { t } from '$lib/i18n';
 	import type { Snippet } from 'svelte';
-	import { SearchInput } from '$lib/components/app';
+	import SearchInput from '$lib/components/app/forms/SearchInput.svelte';
 	import ScrollArea from '$lib/components/ui/scroll-area/scroll-area.svelte';
 	import { CHAT_FORM_POPOVER_MAX_HEIGHT } from '$lib/constants';
 

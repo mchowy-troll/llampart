@@ -1,5 +1,5 @@
 import { AttachmentSource, AttachmentType, FileTypeCategory } from '$lib/enums';
-import { getFileTypeCategory, getFileTypeCategoryByExtension } from '$lib/utils';
+import { getFileTypeCategory, getFileTypeCategoryByExtension } from './file-type';
 
 /**
  * Gets the file type category from an uploaded file, checking both MIME type and extension

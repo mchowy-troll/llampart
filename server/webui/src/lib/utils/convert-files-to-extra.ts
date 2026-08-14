@@ -4,7 +4,7 @@ import { isWebpMimeType, webpBase64UrlToPngDataURL } from './webp-to-png';
 import { FileTypeCategory, AttachmentType, SpecialFileType, MimeTypeVideo } from '$lib/enums';
 import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { modelsStore } from '$lib/stores/models.svelte';
-import { getFileTypeCategory, getFileTypeCategoryByExtension } from '$lib/utils';
+import { getFileTypeCategory, getFileTypeCategoryByExtension } from './file-type';
 import { readFileAsText, isLikelyTextFile } from './text-files';
 import { toast } from 'svelte-sonner';
 import { t } from '$lib/i18n';

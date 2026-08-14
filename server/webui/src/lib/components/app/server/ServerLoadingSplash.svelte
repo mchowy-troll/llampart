@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Server } from '@lucide/svelte';
-	import { ServerStatus } from '$lib/components/app';
+	import ServerStatus from '$lib/components/app/server/ServerStatus.svelte';
 	import { t } from '$lib/i18n';
 	import { fade } from 'svelte/transition';
 
