@@ -9,9 +9,12 @@ import type {
 	SettingsFieldType
 } from '$lib/enums';
 import type { Icon } from '@lucide/svelte';
-import type { ProviderCapabilityKey } from '$lib/types/provider';
+import type { ProviderCapabilityKey, ProviderRequestContext } from '$lib/types/provider';
 import type { ApiProviderId } from '$lib/constants/api-providers';
 import type { ApiChatCompletionToolCall } from './api';
+import type { InterfaceLanguage } from '$lib/i18n/types';
+import type { ConversationTimestampFormat } from '$lib/utils/conversation-timestamp';
+import type { ColorMode } from '$lib/enums/ui';
 
 export interface ChatStreamCheckpoint {
 	content: string;
@@ -94,6 +97,8 @@ export interface SettingsFieldGroup {
 
 export interface SettingsChatServiceOptions {
 	stream?: boolean;
+	assistantMessageId?: string;
+	providerRequestContext?: ProviderRequestContext;
 	// Model (required in ROUTER mode, optional in MODEL mode)
 	model?: string;
 	// System message to inject
@@ -149,10 +154,35 @@ export interface SettingsChatServiceOptions {
 		timings?: ChatMessageTimings,
 		toolCalls?: string
 	) => void;
-	onError?: (error: Error) => void;
+	onError?: (error: Error) => void | Promise<void>;
 }
 
-export type SettingsConfigType = typeof SETTING_CONFIG_DEFAULT & {
+type WidenSettingValue<T> = T extends boolean
+	? boolean
+	: T extends number
+		? number
+		: T extends string
+			? string
+			: T extends undefined
+				? number | '' | undefined
+				: never;
+
+type DefaultSettingsConfig = {
+	[K in keyof typeof SETTING_CONFIG_DEFAULT]: WidenSettingValue<(typeof SETTING_CONFIG_DEFAULT)[K]>;
+};
+
+export type KnownSettingsConfig = Omit<
+	DefaultSettingsConfig,
+	'apiProvider' | 'theme' | 'interfaceLanguage' | 'uiScale' | 'conversationTimestampFormat'
+> & {
+	apiProvider: ApiProviderId;
+	theme: ColorMode;
+	interfaceLanguage: InterfaceLanguage;
+	uiScale: '90' | '100' | '110';
+	conversationTimestampFormat: ConversationTimestampFormat;
+};
+
+export type SettingsConfigType = KnownSettingsConfig & {
 	[key: string]: SettingsConfigValue;
 };
 

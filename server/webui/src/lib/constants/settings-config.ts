@@ -2,7 +2,7 @@ import { API_PROVIDER_IDS, DEFAULT_API_PROVIDER_ID } from './api-providers';
 import { DEFAULT_THEME_ID, THEME_CONFIG_DEFAULTS, THEME_CONFIG_INFO } from '$lib/themes/registry';
 import { TITLE_GENERATION } from './title-generation';
 
-export const SETTING_CONFIG_DEFAULT: Record<string, string | number | boolean | undefined> = {
+export const SETTING_CONFIG_DEFAULT = {
 	// Note: in order not to introduce breaking changes, please keep the same data type (number, string, etc) if you want to change the default value.
 	// Do not use nested objects, keep it single level. Prefix the key if you need to group them.
 	apiProvider: DEFAULT_API_PROVIDER_ID,
@@ -79,7 +79,7 @@ export const SETTING_CONFIG_DEFAULT: Record<string, string | number | boolean | 
 	preEncodeConversation: false,
 	// experimental features
 	pyInterpreterEnabled: false
-};
+} satisfies Record<string, string | number | boolean | undefined>;
 
 export const PROVIDER_CONNECTION_SETTING_KEYS = {
 	[API_PROVIDER_IDS.LLAMA_SERVER]: {

@@ -15,9 +15,9 @@
  *   - ...
  */
 
-import { LEGACY_AGENTIC_REGEX, LEGACY_REASONING_TAGS } from '$lib/constants';
+import { LEGACY_AGENTIC_REGEX, LEGACY_REASONING_TAGS } from '$lib/constants/agentic';
 import { DatabaseService } from '$lib/services/database.service';
-import { MessageRole, MessageType } from '$lib/enums';
+import { MessageRole, MessageType } from '$lib/enums/chat';
 import type { DatabaseMessage } from '$lib/types/database';
 
 const MIGRATION_DONE_KEY = 'llama-webui-migration-v2-done';
@@ -321,13 +321,11 @@ export async function runLegacyMigration(): Promise<void> {
 		const conversations = await DatabaseService.getAllConversations();
 
 		for (const conv of conversations) {
-			await migrateConversation(conv.id);
+			await DatabaseService.runConversationGraphTransaction(() => migrateConversation(conv.id));
 		}
 
 		markMigrationDone();
 	} catch (error) {
 		console.error('[Migration] Failed to migrate legacy messages:', error);
-		// Still mark as done to avoid infinite retry loops
-		markMigrationDone();
 	}
 }

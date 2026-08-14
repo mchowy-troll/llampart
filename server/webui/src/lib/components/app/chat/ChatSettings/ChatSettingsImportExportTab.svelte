@@ -1,16 +1,19 @@
 <script lang="ts">
 	import { Download, Upload, Trash2 } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
-	import { DialogConversationSelection, DialogConfirmation } from '$lib/components/app';
+	import DialogConversationSelection from '$lib/components/app/dialogs/DialogConversationSelection.svelte';
+	import DialogConfirmation from '$lib/components/app/dialogs/DialogConfirmation.svelte';
 	import { createMessageCountMap } from '$lib/utils';
 	import {
 		exportApplicationSettings,
 		importApplicationSettings
 	} from '$lib/utils/settings-import-export';
 	import { ISO_DATE_TIME_SEPARATOR } from '$lib/constants';
+	import { parseConversationImport } from '$lib/utils/conversation-import-export';
 	import { conversationsStore, conversations } from '$lib/stores/conversations.svelte';
 	import { toast } from 'svelte-sonner';
 	import { t } from '$lib/i18n';
+	import { SvelteMap } from 'svelte/reactivity';
 
 	let exportedConversations = $state<DatabaseConversation[]>([]);
 	let importedConversations = $state<DatabaseConversation[]>([]);
@@ -20,7 +23,7 @@
 	let showExportDialog = $state(false);
 	let showImportDialog = $state(false);
 	let availableConversations = $state<DatabaseConversation[]>([]);
-	let messageCountMap = $state<Map<string, number>>(new Map());
+	let messageCountMap = new SvelteMap<string, number>();
 	let fullImportData = $state<Array<{ conv: DatabaseConversation; messages: DatabaseMessage[] }>>(
 		[]
 	);
@@ -45,7 +48,10 @@
 				})
 			);
 
-			messageCountMap = createMessageCountMap(conversationsWithMessages);
+			messageCountMap.clear();
+			for (const [id, count] of createMessageCountMap(conversationsWithMessages)) {
+				messageCountMap.set(id, count);
+			}
 			availableConversations = allConversations;
 			showExportDialog = true;
 		} catch (err) {
@@ -91,28 +97,16 @@
 
 				try {
 					const text = await file.text();
-					const parsedData = JSON.parse(text);
-					let importedData: ExportedConversations;
-
-					if (Array.isArray(parsedData)) {
-						importedData = parsedData;
-					} else if (
-						parsedData &&
-						typeof parsedData === 'object' &&
-						'conv' in parsedData &&
-						'messages' in parsedData
-					) {
-						// Single conversation object
-						importedData = [parsedData];
-					} else {
-						throw new Error(t('settings.importExport.invalidFileFormat'));
-					}
+					const importedData = parseConversationImport(JSON.parse(text));
 
 					fullImportData = importedData;
 					availableConversations = importedData.map(
 						(item: { conv: DatabaseConversation; messages: DatabaseMessage[] }) => item.conv
 					);
-					messageCountMap = createMessageCountMap(importedData);
+					messageCountMap.clear();
+					for (const [id, count] of createMessageCountMap(importedData)) {
+						messageCountMap.set(id, count);
+					}
 					showImportDialog = true;
 				} catch (err: unknown) {
 					const message = err instanceof Error ? err.message : t('common.unknownError');

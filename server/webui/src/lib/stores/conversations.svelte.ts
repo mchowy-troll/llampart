@@ -24,13 +24,10 @@ import { toast } from 'svelte-sonner';
 import { t } from '$lib/i18n';
 import { DatabaseService } from '$lib/services/database.service';
 import { config } from '$lib/stores/settings.svelte';
-import {
-	filterByLeafNodeId,
-	findLeafNode,
-	runLegacyMigration,
-	generateConversationTitle
-} from '$lib/utils';
-import type { McpServerOverride } from '$lib/types/database';
+import { filterByLeafNodeId, findLeafNode } from '$lib/utils/branching';
+import { runLegacyMigration } from '$lib/utils/legacy-migration';
+import { generateConversationTitle } from '$lib/utils/text';
+import type { ConversationExportEnvelope, McpServerOverride } from '$lib/types/database';
 import { MessageRole, ReasoningEffort } from '$lib/enums';
 import {
 	ISO_DATE_TIME_SEPARATOR,
@@ -48,6 +45,11 @@ import {
 	REASONING_EFFORT_DEFAULT_LOCALSTORAGE_KEY
 } from '$lib/constants';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+import packageJson from '../../../package.json';
+import {
+	createConversationExportEnvelope,
+	parseConversationImport
+} from '$lib/utils/conversation-import-export';
 
 function compareConversationsForSidebar(a: DatabaseConversation, b: DatabaseConversation): number {
 	const pinnedDelta = Number(Boolean(b.pinned)) - Number(Boolean(a.pinned));
@@ -73,6 +75,7 @@ export interface BulkConversationDeleteResult {
 }
 
 class ConversationsStore {
+	private loadGeneration = 0;
 	/**
 	 *
 	 *
@@ -306,6 +309,7 @@ class ConversationsStore {
 	 * @returns The ID of the created conversation
 	 */
 	async createConversation(name?: string): Promise<string> {
+		this.loadGeneration += 1;
 		const conversationName = name || `Chat ${new Date().toLocaleString()}`;
 		const conversation = await DatabaseService.createConversation(conversationName);
 
@@ -344,28 +348,23 @@ class ConversationsStore {
 	 * @returns True if conversation was loaded successfully
 	 */
 	async loadConversation(convId: string): Promise<boolean> {
+		const generation = ++this.loadGeneration;
 		try {
 			const conversation = await DatabaseService.getConversation(convId);
 
-			if (!conversation) {
+			if (!conversation || generation !== this.loadGeneration) {
 				return false;
 			}
 
+			const allMessages = await DatabaseService.getConversationMessages(convId);
+			const visibleMessages = conversation.currNode
+				? (filterByLeafNodeId(allMessages, conversation.currNode, false) as DatabaseMessage[])
+				: allMessages;
+
+			if (generation !== this.loadGeneration) return false;
 			this.pendingMcpServerOverrides = [];
 			this.activeConversation = conversation;
-
-			if (conversation.currNode) {
-				const allMessages = await DatabaseService.getConversationMessages(convId);
-				const filteredMessages = filterByLeafNodeId(
-					allMessages,
-					conversation.currNode,
-					false
-				) as DatabaseMessage[];
-				this.activeMessages = filteredMessages;
-			} else {
-				const messages = await DatabaseService.getConversationMessages(convId);
-				this.activeMessages = messages;
-			}
+			this.activeMessages = visibleMessages;
 
 			return true;
 		} catch (error) {
@@ -378,6 +377,7 @@ class ConversationsStore {
 	 * Clears the active conversation and messages.
 	 */
 	clearActiveConversation(): void {
+		this.loadGeneration += 1;
 		this.activeConversation = null;
 		this.activeMessages = [];
 		// reload defaults so new chats inherit persisted state
@@ -663,15 +663,28 @@ class ConversationsStore {
 	/**
 	 * Updates conversation lastModified timestamp and moves it to top of list
 	 */
-	updateConversationTimestamp(): void {
+	async updateConversationTimestamp(): Promise<void> {
 		if (!this.activeConversation) return;
+		const activeId = this.activeConversation.id;
+		await DatabaseService.updateConversation(activeId, {});
+		await this.refreshConversationTimestamp();
+	}
 
-		const chatIndex = this.conversations.findIndex((c) => c.id === this.activeConversation!.id);
+	/** Refreshes the in-memory timestamp after a DatabaseService domain mutation. */
+	async refreshConversationTimestamp(): Promise<void> {
+		if (!this.activeConversation) return;
+		const activeId = this.activeConversation.id;
+		const persisted = await DatabaseService.getConversation(activeId);
+		if (!persisted || this.activeConversation?.id !== activeId) return;
+
+		const chatIndex = this.conversations.findIndex((c) => c.id === activeId);
 
 		if (chatIndex !== -1) {
-			const lastModified = Date.now();
-			this.conversations[chatIndex].lastModified = lastModified;
-			this.activeConversation = { ...this.activeConversation, lastModified };
+			this.conversations[chatIndex].lastModified = persisted.lastModified;
+			this.activeConversation = {
+				...this.activeConversation,
+				lastModified: persisted.lastModified
+			};
 			this.conversations = sortConversationsForSidebar(this.conversations);
 		}
 	}
@@ -1033,6 +1046,7 @@ class ConversationsStore {
 	 * @param filename - Filename; if omitted, a deterministic name is generated
 	 */
 	downloadConversationFile(data: ExportedConversations, filename?: string): void {
+		const conversations = Array.isArray(data) ? data : [data];
 		// Choose the first conversation or message
 		const conversation =
 			'conv' in data ? data.conv : Array.isArray(data) ? data[0]?.conv : undefined;
@@ -1046,7 +1060,16 @@ class ConversationsStore {
 
 		const downloadFilename = filename ?? this.generateConversationFilename(conversation, msgs);
 
-		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+		const blob = new Blob(
+			[
+				JSON.stringify(
+					createConversationExportEnvelope(conversations, packageJson.version),
+					null,
+					2
+				)
+			],
+			{ type: 'application/json' }
+		);
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;
@@ -1062,17 +1085,9 @@ class ConversationsStore {
 	 * @param convId - The conversation ID to download
 	 */
 	async downloadConversation(convId: string): Promise<void> {
-		let conversation: DatabaseConversation | null;
-		let messages: DatabaseMessage[];
-
-		if (this.activeConversation?.id === convId) {
-			conversation = this.activeConversation;
-			messages = this.activeMessages;
-		} else {
-			conversation = await DatabaseService.getConversation(convId);
-			if (!conversation) return;
-			messages = await DatabaseService.getConversationMessages(convId);
-		}
+		const conversation = await DatabaseService.getConversation(convId);
+		if (!conversation) return;
+		const messages = await DatabaseService.getConversationMessages(convId);
 
 		this.downloadConversationFile({ conv: conversation, messages });
 	}
@@ -1124,21 +1139,7 @@ class ConversationsStore {
 
 				try {
 					const text = await file.text();
-					const parsedData = JSON.parse(text);
-					let importedData: ExportedConversations;
-
-					if (Array.isArray(parsedData)) {
-						importedData = parsedData;
-					} else if (
-						parsedData &&
-						typeof parsedData === 'object' &&
-						'conv' in parsedData &&
-						'messages' in parsedData
-					) {
-						importedData = [parsedData];
-					} else {
-						throw new Error('Invalid file format');
-					}
+					const importedData = parseConversationImport(JSON.parse(text));
 
 					const result = await DatabaseService.importConversations(importedData);
 					toast.success(`Imported ${result.imported} conversation(s), skipped ${result.skipped}`);
@@ -1168,9 +1169,9 @@ class ConversationsStore {
 	 * @returns Import result with counts
 	 */
 	async importConversationsData(
-		data: ExportedConversations
+		data: ExportedConversations | ConversationExportEnvelope
 	): Promise<{ imported: number; skipped: number }> {
-		const result = await DatabaseService.importConversations(data);
+		const result = await DatabaseService.importConversations(parseConversationImport(data));
 		await this.loadConversations();
 		return result;
 	}
