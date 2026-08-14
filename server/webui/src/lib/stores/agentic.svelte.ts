@@ -20,14 +20,14 @@
  * @see mcpStore in stores/mcp.svelte.ts for MCP operations
  */
 
-import { ChatService, ToolsService } from '$lib/services';
+import { ChatService } from '$lib/services/chat.service';
 import { getApiProviderCapabilities } from '$lib/services/providers';
 import { config } from '$lib/stores/settings.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
 import { permissionsStore } from '$lib/stores/permissions.svelte';
 import { modelsStore } from '$lib/stores/models.svelte';
-import { isAbortError } from '$lib/utils';
+import { isAbortError } from '$lib/utils/abort';
 import {
 	DEFAULT_AGENTIC_CONFIG,
 	NEWLINE_SEPARATOR,
@@ -57,8 +57,9 @@ import type {
 	AgenticConfig,
 	SettingsConfigType,
 	McpServerOverride,
-	MCPToolCall
+	ToolEntry
 } from '$lib/types';
+import { SvelteMap } from 'svelte/reactivity';
 import type {
 	AgenticMessage,
 	AgenticToolCallList,
@@ -125,11 +126,12 @@ function toAgenticMessages(messages: ApiChatMessageData[]): AgenticMessage[] {
 }
 
 class AgenticStore {
-	private _sessions = $state<Map<string, AgenticSession>>(new Map());
+	private _sessions = new SvelteMap<string, AgenticSession>();
 	private _pendingPermissions = $state<
 		Record<string, { toolName: string; serverLabel: string } | null>
 	>({});
 	private _permissionResolvers = new Map<string, (decision: ToolPermissionDecision) => void>();
+	private flowControllers = new Map<string, AbortController>();
 
 	get isReady(): boolean {
 		return true;
@@ -156,8 +158,19 @@ class AgenticStore {
 	}
 
 	clearSession(conversationId: string): void {
+		this.flowControllers.get(conversationId)?.abort();
+		this.flowControllers.delete(conversationId);
 		this._sessions.delete(conversationId);
 		this.setPendingPermission(conversationId, null);
+	}
+
+	abortActiveSourceOperations(): void {
+		for (const controller of this.flowControllers.values()) controller.abort();
+		this.flowControllers.clear();
+		for (const [conversationId, resolver] of this._permissionResolvers) {
+			this._permissionResolvers.delete(conversationId);
+			resolver(ToolPermissionDecision.DENY);
+		}
 	}
 
 	getActiveSessions(): Array<{ conversationId: string; session: AgenticSession }> {
@@ -215,18 +228,15 @@ class AgenticStore {
 	}
 
 	getConfig(settings: SettingsConfigType, perChatOverrides?: McpServerOverride[]): AgenticConfig {
-		const supportsToolCalling = getApiProviderCapabilities(
-			String(settings.apiProvider ?? ''),
-			settings
-		).supportsOpenAiToolCalls;
+		const supportsToolCalling = getApiProviderCapabilities(String(settings.apiProvider ?? ''), {
+			disableOpenAiCompatibleTools: settings.disableOpenAiCompatibleTools
+		}).supportsOpenAiToolCalls;
 		const maxTurns = Number(settings.agenticMaxTurns) || DEFAULT_AGENTIC_CONFIG.maxTurns;
 		const maxToolPreviewLines =
 			Number(settings.agenticMaxToolPreviewLines) || DEFAULT_AGENTIC_CONFIG.maxToolPreviewLines;
 		const hasTools =
 			supportsToolCalling &&
-			(mcpStore.hasEnabledServers(perChatOverrides) ||
-				toolsStore.builtinTools.length > 0 ||
-				toolsStore.customTools.length > 0);
+			(mcpStore.hasEnabledServers(perChatOverrides) || toolsStore.builtinTools.length > 0);
 		return {
 			enabled: supportsToolCalling && hasTools && DEFAULT_AGENTIC_CONFIG.enabled,
 			maxTurns,
@@ -243,11 +253,14 @@ class AgenticStore {
 
 	private async requestPermission(
 		conversationId: string,
-		toolName: string,
-		serverLabel: string,
+		entry: ToolEntry,
 		signal?: AbortSignal
 	): Promise<ToolPermissionDecision> {
-		const permissionKey = toolsStore.getPermissionKey(toolName);
+		const permissionKey = entry.key;
+		const toolName = entry.apiName;
+		const serverLabel =
+			entry.serverName ??
+			(entry.source === ToolSource.BUILTIN ? toolsStore.getToolServerLabel(toolName) : '');
 
 		if (permissionKey && permissionsStore.hasTool(permissionKey)) {
 			return ToolPermissionDecision.ONCE;
@@ -262,17 +275,7 @@ class AgenticStore {
 				if (decision === ToolPermissionDecision.ALWAYS && permissionKey) {
 					permissionsStore.allowTool(permissionKey);
 				} else if (decision === ToolPermissionDecision.ALWAYS_SERVER) {
-					const serverToolKeys = toolsStore.allTools
-						.filter((tool) => {
-							const name = tool.definition.function.name;
-							const label = tool.serverName ?? toolsStore.getToolServerLabel(name);
-
-							return label === serverLabel;
-						})
-						.map((tool) => toolsStore.getPermissionKey(tool.definition.function.name))
-						.filter((key): key is string => key !== null);
-
-					permissionsStore.allowTools(serverToolKeys);
+					permissionsStore.allowTools(toolsStore.getServerPermissionKeys(entry));
 				}
 
 				resolve(decision);
@@ -302,35 +305,56 @@ class AgenticStore {
 
 	async runAgenticFlow(params: AgenticFlowParams): Promise<AgenticFlowResult> {
 		const { conversationId, messages, options = {}, callbacks, signal, perChatOverrides } = params;
+		const requestContext =
+			options.providerRequestContext ?? ChatService.createProviderRequestContext();
+		const flowController = new AbortController();
+		this.flowControllers.get(conversationId)?.abort();
+		this.flowControllers.set(conversationId, flowController);
+		const flowSignal = signal
+			? AbortSignal.any([signal, flowController.signal])
+			: flowController.signal;
+		const notHandled = (): AgenticFlowResult => {
+			if (this.flowControllers.get(conversationId) === flowController) {
+				this.flowControllers.delete(conversationId);
+			}
+			return { handled: false };
+		};
 
 		this.setPendingPermission(conversationId, null);
 		this._permissionResolvers.delete(conversationId);
 
 		if (
-			toolsStore.supportsProviderTools &&
-			toolsStore.builtinTools.length === 0 &&
+			getApiProviderCapabilities(requestContext.providerId).supportsBuiltinToolsEndpoint &&
+			!toolsStore.hasBuiltinToolsForContext(requestContext) &&
 			!toolsStore.loading
 		) {
-			await toolsStore.fetchBuiltinTools();
+			await toolsStore.fetchBuiltinTools(requestContext);
+		}
+		if (flowSignal.aborted || !ChatService.isProviderRequestContextCurrent(requestContext)) {
+			return notHandled();
 		}
 
 		const agenticConfig = this.getConfig(config(), perChatOverrides);
-		if (!agenticConfig.enabled) return { handled: false };
+		if (!agenticConfig.enabled) return notHandled();
 
 		const hasMcpServers = mcpStore.hasEnabledServers(perChatOverrides);
 		let hasMcpConnection = false;
 		if (hasMcpServers) {
 			hasMcpConnection = await mcpStore.ensureInitialized(perChatOverrides);
+			if (flowSignal.aborted || !ChatService.isProviderRequestContextCurrent(requestContext)) {
+				return notHandled();
+			}
 			if (!hasMcpConnection) {
 				console.log('[AgenticStore] MCP not initialized');
 			}
 		}
 
-		const tools = toolsStore.getEnabledToolsForLLM();
-		if (tools.length === 0) {
+		const toolEntries = toolsStore.getEnabledToolEntriesForLLM(requestContext);
+		if (toolEntries.length === 0) {
 			console.log('[AgenticStore] No tools available, falling back to standard chat');
-			return { handled: false };
+			return notHandled();
 		}
+		const tools = toolEntries.map((entry) => entry.definition);
 
 		console.log(`[AgenticStore] Starting agentic flow with ${tools.length} tools`);
 
@@ -364,17 +388,22 @@ class AgenticStore {
 				messages: normalizedMessages,
 				options,
 				tools,
+				toolEntries,
+				requestContext,
 				agenticConfig,
 				callbacks,
-				signal
+				signal: flowSignal
 			});
 			return { handled: true };
 		} catch (error) {
 			const normalizedError = error instanceof Error ? error : new Error(String(error));
 			this.updateSession(conversationId, { lastError: normalizedError });
-			callbacks.onError?.(normalizedError);
+			await callbacks.onError?.(normalizedError);
 			return { handled: true, error: normalizedError };
 		} finally {
+			if (this.flowControllers.get(conversationId) === flowController) {
+				this.flowControllers.delete(conversationId);
+			}
 			this.updateSession(conversationId, { isRunning: false });
 			if (hasMcpConnection)
 				await mcpStore
@@ -390,11 +419,24 @@ class AgenticStore {
 		messages: ApiChatMessageData[];
 		options: AgenticFlowOptions;
 		tools: ReturnType<typeof mcpStore.getToolDefinitionsForLLM>;
+		toolEntries: ToolEntry[];
+		requestContext: NonNullable<AgenticFlowOptions['providerRequestContext']>;
 		agenticConfig: AgenticConfig;
 		callbacks: AgenticFlowCallbacks;
 		signal?: AbortSignal;
 	}): Promise<void> {
-		const { conversationId, messages, options, tools, agenticConfig, callbacks, signal } = params;
+		const {
+			conversationId,
+			messages,
+			options,
+			tools,
+			toolEntries,
+			requestContext,
+			agenticConfig,
+			callbacks,
+			signal
+		} = params;
+		const entriesByApiName = new Map(toolEntries.map((entry) => [entry.apiName, entry]));
 		const {
 			onChunk,
 			onReasoningChunk,
@@ -425,6 +467,7 @@ class AgenticStore {
 		const maxTurns = agenticConfig.maxTurns;
 
 		const effectiveModel = options.model || modelsStore.models[0]?.model || '';
+		let assistantMessageId = options.assistantMessageId;
 
 		for (let turn = 0; turn < maxTurns; turn++) {
 			this.updateSession(conversationId, { currentTurn: turn + 1 });
@@ -437,7 +480,7 @@ class AgenticStore {
 
 			// For turns > 0, create a new assistant message via callback
 			if (turn > 0 && createAssistantMessage) {
-				await createAssistantMessage();
+				assistantMessageId = (await createAssistantMessage()).id;
 			}
 
 			let turnContent = '';
@@ -459,6 +502,8 @@ class AgenticStore {
 					sessionMessages as ApiChatMessageData[],
 					{
 						...options,
+						providerRequestContext: requestContext,
+						assistantMessageId,
 						stream: true,
 						tools: tools.length > 0 ? tools : undefined,
 						onChunk: (chunk: string) => {
@@ -512,6 +557,7 @@ class AgenticStore {
 					conversationId,
 					signal
 				);
+				if (signal?.aborted) return;
 
 				this.updateSession(conversationId, { streamingToolCall: null });
 
@@ -611,14 +657,9 @@ class AgenticStore {
 
 				const toolStartTime = performance.now();
 				const toolName = toolCall.function.name;
-				const toolSource = toolsStore.getToolSource(toolName);
-				const serverLabel = toolsStore.getToolServerLabel(toolName);
-				const permission = await this.requestPermission(
-					conversationId,
-					toolName,
-					serverLabel,
-					signal
-				);
+				const toolEntry = entriesByApiName.get(toolName);
+				if (!toolEntry) throw new Error(`Tool unavailable: ${toolName}`);
+				const permission = await this.requestPermission(conversationId, toolEntry, signal);
 
 				await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -635,19 +676,15 @@ class AgenticStore {
 					toolSuccess = false;
 				} else {
 					try {
-						if (toolSource === ToolSource.BUILTIN) {
-							const args = this.parseToolArguments(toolCall.function.arguments);
-							const executionResult = await ToolsService.executeTool(toolName, args, signal);
-							result = executionResult.content;
-							if (executionResult.isError) toolSuccess = false;
-						} else {
-							const mcpCall: MCPToolCall = {
-								id: toolCall.id,
-								function: { name: toolName, arguments: toolCall.function.arguments }
-							};
-							const executionResult = await mcpStore.executeTool(mcpCall, signal);
-							result = executionResult.content;
-						}
+						const args = this.parseToolArguments(toolCall.function.arguments);
+						const executionResult = await toolsStore.executeTool(
+							toolEntry,
+							args,
+							requestContext,
+							signal
+						);
+						result = executionResult.content;
+						if (executionResult.isError) toolSuccess = false;
 					} catch (error) {
 						if (isAbortError(error)) {
 							onFlowComplete?.(this.buildFinalTimings(capturedTimings, agenticTimings));
@@ -743,11 +780,7 @@ class AgenticStore {
 	): ChatMessageTimings | undefined {
 		if (agenticTimings.toolCallsCount === 0) return capturedTimings;
 		return {
-			predicted_n: capturedTimings?.predicted_n,
-			predicted_ms: capturedTimings?.predicted_ms,
-			prompt_n: capturedTimings?.prompt_n,
-			prompt_ms: capturedTimings?.prompt_ms,
-			cache_n: capturedTimings?.cache_n,
+			...capturedTimings,
 			agentic: agenticTimings
 		};
 	}

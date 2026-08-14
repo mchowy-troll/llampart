@@ -18,6 +18,10 @@ export interface ApiFetchOptions extends Omit<RequestInit, 'headers'> {
 	 */
 	authOnly?: boolean;
 	/**
+	 * Explicit credential snapshot. When omitted, the current config is used.
+	 */
+	apiKey?: string;
+	/**
 	 * Additional headers to merge with default headers.
 	 */
 	headers?: Record<string, string>;
@@ -54,9 +58,9 @@ export function getApiBaseUrl(): string {
 }
 
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
-	const { authOnly = false, headers: customHeaders, ...fetchOptions } = options;
+	const { authOnly = false, apiKey, headers: customHeaders, ...fetchOptions } = options;
 
-	const baseHeaders = authOnly ? getAuthHeaders() : getJsonHeaders();
+	const baseHeaders = authOnly ? getAuthHeaders(apiKey) : getJsonHeaders(apiKey);
 	const headers = { ...baseHeaders, ...customHeaders };
 
 	const url =
@@ -111,9 +115,9 @@ export async function apiFetchWithParams<T>(
 		}
 	}
 
-	const { authOnly = false, headers: customHeaders, ...fetchOptions } = options;
+	const { authOnly = false, apiKey, headers: customHeaders, ...fetchOptions } = options;
 
-	const baseHeaders = authOnly ? getAuthHeaders() : getJsonHeaders();
+	const baseHeaders = authOnly ? getAuthHeaders(apiKey) : getJsonHeaders(apiKey);
 	const headers = { ...baseHeaders, ...customHeaders };
 
 	const response = await fetch(url.toString(), {

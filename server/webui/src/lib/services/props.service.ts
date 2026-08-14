@@ -1,4 +1,6 @@
-import { apiFetchWithParams } from '$lib/utils';
+import { apiFetchWithParams } from '$lib/utils/api-fetch';
+import { buildProviderEndpointUrl } from '$lib/services/providers';
+import type { ProviderConnectionContext } from '$lib/types/provider';
 
 export class PropsService {
 	/**
@@ -18,13 +20,20 @@ export class PropsService {
 	 * @returns Server properties including default generation settings and capabilities
 	 * @throws {Error} If the request fails or returns invalid data
 	 */
-	static async fetch(autoload = false): Promise<ApiLlamaCppServerProps> {
+	static async fetch(
+		context: ProviderConnectionContext,
+		autoload = false
+	): Promise<ApiLlamaCppServerProps> {
 		const params: Record<string, string> = {};
 		if (!autoload) {
 			params.autoload = 'false';
 		}
 
-		return apiFetchWithParams<ApiLlamaCppServerProps>('./props', params, { authOnly: true });
+		return apiFetchWithParams<ApiLlamaCppServerProps>(
+			buildProviderEndpointUrl(context.serverBaseUrl, '/props'),
+			params,
+			{ authOnly: true, apiKey: context.apiKey }
+		);
 	}
 
 	/**
@@ -36,12 +45,21 @@ export class PropsService {
 	 * @returns Server properties specific to the requested model
 	 * @throws {Error} If the request fails, model not found, or model not loaded
 	 */
-	static async fetchForModel(modelId: string, autoload = false): Promise<ApiLlamaCppServerProps> {
+	static async fetchForModel(
+		context: ProviderConnectionContext,
+		modelId: string,
+		autoload = false,
+		signal?: AbortSignal
+	): Promise<ApiLlamaCppServerProps> {
 		const params: Record<string, string> = { model: modelId };
 		if (!autoload) {
 			params.autoload = 'false';
 		}
 
-		return apiFetchWithParams<ApiLlamaCppServerProps>('./props', params, { authOnly: true });
+		return apiFetchWithParams<ApiLlamaCppServerProps>(
+			buildProviderEndpointUrl(context.serverBaseUrl, '/props'),
+			params,
+			{ authOnly: true, apiKey: context.apiKey, signal }
+		);
 	}
 }

@@ -123,6 +123,21 @@ describe('provider-owned chat completions', () => {
 		expect(body.reasoning_control).toBe(true);
 	});
 
+	it('rejects protected custom request keys before merging custom parameters', () => {
+		const provider = getApiProvider(API_PROVIDER_IDS.LLAMA_SERVER);
+
+		expect(() =>
+			provider.buildChatCompletionRequest({
+				...baseInput,
+				serverBaseUrl: 'http://localhost:8080',
+				options: {
+					...baseInput.options,
+					custom: JSON.stringify({ stream: false, tools: [{ type: 'function' }] })
+				}
+			})
+		).toThrow(/Custom parameters cannot override protected chat request keys: stream, tools/);
+	});
+
 	it('adds stream identity only to llama-server requests', () => {
 		const llamaRequest = getApiProvider(API_PROVIDER_IDS.LLAMA_SERVER).buildChatCompletionRequest({
 			...baseInput,

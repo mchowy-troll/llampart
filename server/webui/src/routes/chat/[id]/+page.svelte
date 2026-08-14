@@ -12,9 +12,11 @@
 		activeMessages
 	} from '$lib/stores/conversations.svelte';
 	import { modelsStore, modelOptions, selectedModelId } from '$lib/stores/models.svelte';
+	import { runChatRouteTask } from '$lib/utils/chat-route-task';
 
 	let chatId = $derived(page.params.id);
 	let currentChatId: string | undefined = undefined;
+	let navigationGeneration = 0;
 
 	// URL parameters for prompt and model selection
 	let qParam = $derived(page.url.searchParams.get('q'));
@@ -38,9 +40,10 @@
 		replaceState(url.toString(), {});
 	}
 
-	async function handleUrlParams() {
+	async function handleUrlParams(isCurrent: () => boolean) {
 		// Ensure models are loaded first
 		await modelsStore.fetch();
+		if (!isCurrent()) return;
 
 		// Handle model parameter - select model if provided
 		if (modelParam) {
@@ -48,7 +51,9 @@
 			if (resolution.status === 'resolved') {
 				try {
 					await modelsStore.selectModelById(resolution.model.id);
+					if (!isCurrent()) return;
 				} catch (error) {
+					if (!isCurrent()) return;
 					console.error('Failed to select model:', error);
 					requestedModelName = modelParam;
 					showModelNotAvailable = true;
@@ -64,7 +69,9 @@
 
 		// Handle ?q= parameter - send message in current conversation
 		if (qParam !== null) {
+			if (!isCurrent()) return;
 			await chatStore.sendMessage(qParam);
+			if (!isCurrent()) return;
 			// Clear URL params after message is sent
 			clearUrlParams();
 		} else if (modelParam) {
@@ -112,39 +119,37 @@
 
 	afterNavigate(() => {
 		setTimeout(() => {
-			selectModelFromLastAssistantResponse();
+			void selectModelFromLastAssistantResponse().catch((error) => {
+				console.error('Failed to synchronize the conversation model:', error);
+			});
 		}, 100);
 	});
 
 	$effect(() => {
 		if (chatId && chatId !== currentChatId) {
 			currentChatId = chatId;
+			const generation = ++navigationGeneration;
+			const isCurrent = () => generation === navigationGeneration && currentChatId === chatId;
 			urlParamsProcessed = false; // Reset for new chat
 
-			// Skip loading if this conversation is already active (e.g., just created)
-			if (activeConversation()?.id === chatId) {
-				void chatStore.resumeStreamForChat(chatId);
-				// Still handle URL params even if conversation is active
-				if ((qParam !== null || modelParam !== null) && !urlParamsProcessed) {
-					handleUrlParams();
-				}
-				return;
-			}
-
-			(async () => {
-				const success = await conversationsStore.loadConversation(chatId);
-				if (success) {
-					chatStore.syncLoadingStateForChat(chatId);
-					void chatStore.resumeStreamForChat(chatId);
-
-					// Handle URL params after conversation is loaded
-					if ((qParam !== null || modelParam !== null) && !urlParamsProcessed) {
-						await handleUrlParams();
-					}
-				} else {
-					await goto('#/');
-				}
-			})();
+			void runChatRouteTask({
+				isCurrent,
+				isAlreadyActive: activeConversation()?.id === chatId,
+				loadConversation: () => conversationsStore.loadConversation(chatId),
+				syncLoadingState: () => chatStore.syncLoadingStateForChat(chatId),
+				resumeStream: () => chatStore.resumeStreamForChat(chatId),
+				handleUrlParams: () =>
+					qParam !== null || (modelParam !== null && !urlParamsProcessed)
+						? handleUrlParams(isCurrent)
+						: Promise.resolve(),
+				gotoFallback: () => goto('#/')
+			}).catch((error) => {
+				if (!isCurrent()) return;
+				console.error('Failed to load chat route:', error);
+				void goto('#/').catch((navigationError) => {
+					if (isCurrent()) console.error('Failed to navigate to chat fallback:', navigationError);
+				});
+			});
 		}
 	});
 </script>

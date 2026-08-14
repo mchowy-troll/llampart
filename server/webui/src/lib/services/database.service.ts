@@ -1,6 +1,8 @@
 import Dexie, { type EntityTable } from 'dexie';
-import { findDescendantMessages, uuid, filterByLeafNodeId } from '$lib/utils';
+import { filterByLeafNodeId, findDescendantMessages } from '$lib/utils/branching';
+import { uuid } from '$lib/utils/uuid';
 import { planConversationDeletion } from '$lib/utils/conversation-selection';
+import { validateConversationImportRecords } from '$lib/utils/conversation-import-export';
 import type { McpServerOverride } from '$lib/types/database';
 
 class LlamacppDatabase extends Dexie {
@@ -18,7 +20,163 @@ class LlamacppDatabase extends Dexie {
 }
 
 const db = new LlamacppDatabase();
-import { MessageRole } from '$lib/enums';
+import { MessageRole } from '$lib/enums/chat';
+
+type ConversationImport = { conv: DatabaseConversation; messages: DatabaseMessage[] };
+
+function nextLastModified(conversation: DatabaseConversation): number {
+	return Math.max(Date.now(), conversation.lastModified + 1);
+}
+
+async function requireConversation(convId: string): Promise<DatabaseConversation> {
+	const conversation = await db.conversations.get(convId);
+	if (!conversation) throw new Error(`Conversation ${convId} not found`);
+	return conversation;
+}
+
+async function requireOwnedMessage(convId: string, messageId: string): Promise<DatabaseMessage> {
+	const message = await db.messages.get(messageId);
+	if (!message) throw new Error(`Message ${messageId} not found`);
+	if (message.convId !== convId) {
+		throw new Error(`Message ${messageId} does not belong to conversation ${convId}`);
+	}
+	return message;
+}
+
+async function requireUpdated(changed: number, label: string): Promise<void> {
+	if (changed !== 1) throw new Error(`${label} not found`);
+}
+
+function assertNonEmptyId(value: unknown, label: string): asserts value is string {
+	if (typeof value !== 'string' || value.trim() === '') {
+		throw new Error(`${label} must be a non-empty string`);
+	}
+}
+
+function validateConversationImports(data: unknown): ConversationImport[] {
+	const validatedData = validateConversationImportRecords(data);
+
+	const conversationIds = new Set<string>();
+	const messageIds = new Set<string>();
+	const imports: ConversationImport[] = [];
+
+	for (const [itemIndex, value] of validatedData.entries()) {
+		if (!value || typeof value !== 'object') {
+			throw new Error(`Import item ${itemIndex} must be an object`);
+		}
+
+		const item = value as Partial<ConversationImport>;
+		if (!item.conv || typeof item.conv !== 'object') {
+			throw new Error(`Import item ${itemIndex} must contain a conversation`);
+		}
+		if (!Array.isArray(item.messages)) {
+			throw new Error(`Import item ${itemIndex} messages must be an array`);
+		}
+
+		const conv = item.conv;
+		assertNonEmptyId(conv.id, `Conversation ID at item ${itemIndex}`);
+		if (conversationIds.has(conv.id)) {
+			throw new Error(`Duplicate conversation ID in import: ${conv.id}`);
+		}
+		conversationIds.add(conv.id);
+
+		if (conv.currNode !== null && typeof conv.currNode !== 'string') {
+			throw new Error(`Conversation ${conv.id} currNode must be a string or null`);
+		}
+
+		const messages = item.messages as DatabaseMessage[];
+		const graph = new Map<string, DatabaseMessage>();
+		for (const [messageIndex, messageValue] of messages.entries()) {
+			if (!messageValue || typeof messageValue !== 'object') {
+				throw new Error(`Message ${messageIndex} in conversation ${conv.id} must be an object`);
+			}
+
+			const message = messageValue as DatabaseMessage;
+			assertNonEmptyId(message.id, `Message ID at item ${itemIndex}:${messageIndex}`);
+			if (messageIds.has(message.id)) {
+				throw new Error(`Duplicate message ID in import: ${message.id}`);
+			}
+			messageIds.add(message.id);
+			graph.set(message.id, message);
+
+			if (message.convId !== conv.id) {
+				throw new Error(`Message ${message.id} does not belong to conversation ${conv.id}`);
+			}
+			if (message.parent !== null) {
+				assertNonEmptyId(message.parent, `Parent of message ${message.id}`);
+			}
+			if (!Array.isArray(message.children)) {
+				throw new Error(`Children of message ${message.id} must be an array`);
+			}
+			const uniqueChildren = new Set<string>();
+			for (const childId of message.children) {
+				assertNonEmptyId(childId, `Child of message ${message.id}`);
+				if (uniqueChildren.has(childId)) {
+					throw new Error(`Message ${message.id} contains duplicate child ${childId}`);
+				}
+				uniqueChildren.add(childId);
+			}
+		}
+
+		if (messages.length === 0) {
+			if (conv.currNode !== null && conv.currNode !== '') {
+				throw new Error(`Conversation ${conv.id} currNode does not exist in its graph`);
+			}
+			imports.push({ conv, messages });
+			continue;
+		}
+
+		assertNonEmptyId(conv.currNode, `Conversation ${conv.id} currNode`);
+		if (!graph.has(conv.currNode)) {
+			throw new Error(`Conversation ${conv.id} currNode does not exist in its graph`);
+		}
+
+		const roots = messages.filter((message) => message.parent === null);
+		if (roots.length !== 1 || roots[0].type !== 'root') {
+			throw new Error(`Conversation ${conv.id} must contain exactly one root message`);
+		}
+		for (const message of messages) {
+			if (message.type === 'root' && message !== roots[0]) {
+				throw new Error(`Root message ${message.id} must have a null parent`);
+			}
+
+			if (message.parent !== null) {
+				const parent = graph.get(message.parent);
+				if (!parent) throw new Error(`Message ${message.id} has a dangling parent`);
+				if (!parent.children.includes(message.id)) {
+					throw new Error(`Parent/children relationship is not reciprocal for ${message.id}`);
+				}
+			}
+
+			for (const childId of message.children) {
+				const child = graph.get(childId);
+				if (!child) throw new Error(`Message ${message.id} has a dangling child`);
+				if (child.parent !== message.id) {
+					throw new Error(`Parent/children relationship is not reciprocal for ${childId}`);
+				}
+			}
+		}
+
+		const visiting = new Set<string>();
+		const visited = new Set<string>();
+		const visit = (messageId: string): void => {
+			if (visiting.has(messageId)) throw new Error(`Conversation ${conv.id} contains a cycle`);
+			if (visited.has(messageId)) return;
+			visiting.add(messageId);
+			for (const childId of graph.get(messageId)!.children) visit(childId);
+			visiting.delete(messageId);
+			visited.add(messageId);
+		};
+		visit(roots[0].id);
+		if (visited.size !== messages.length) {
+			throw new Error(`Conversation ${conv.id} contains messages disconnected from its root`);
+		}
+
+		imports.push({ conv, messages });
+	}
+
+	return imports;
+}
 
 export class DatabaseService {
 	/**
@@ -67,14 +225,10 @@ export class DatabaseService {
 		message: Omit<DatabaseMessage, 'id'>,
 		parentId: string | null
 	): Promise<DatabaseMessage> {
-		return await db.transaction('rw', [db.conversations, db.messages], async () => {
-			// Handle null parent (root message case)
-			if (parentId !== null) {
-				const parentMessage = await db.messages.get(parentId);
-				if (!parentMessage) {
-					throw new Error(`Parent message ${parentId} not found`);
-				}
-			}
+		const operation = async (): Promise<DatabaseMessage> => {
+			const conversation = await requireConversation(message.convId);
+			const parentMessage =
+				parentId === null ? null : await requireOwnedMessage(message.convId, parentId);
 
 			const newMessage: DatabaseMessage = {
 				...message,
@@ -87,21 +241,28 @@ export class DatabaseService {
 			await db.messages.add(newMessage);
 
 			// Update parent's children array if parent exists
-			if (parentId !== null) {
-				const parentMessage = await db.messages.get(parentId);
-				if (parentMessage) {
-					await db.messages.update(parentId, {
+			if (parentMessage) {
+				await requireUpdated(
+					await db.messages.update(parentMessage.id, {
 						children: [...parentMessage.children, newMessage.id]
-					});
-				}
+					}),
+					`Parent message ${parentMessage.id}`
+				);
 			}
 
-			await this.updateConversation(message.convId, {
-				currNode: newMessage.id
-			});
+			await requireUpdated(
+				await db.conversations.update(message.convId, {
+					currNode: newMessage.id,
+					lastModified: nextLastModified(conversation)
+				}),
+				`Conversation ${message.convId}`
+			);
 
 			return newMessage;
-		});
+		};
+
+		if (Dexie.currentTransaction) return await operation();
+		return await db.transaction('rw', [db.conversations, db.messages], operation);
 	}
 
 	/**
@@ -147,27 +308,226 @@ export class DatabaseService {
 			throw new Error('Cannot create system message with empty content');
 		}
 
-		const systemMessage: DatabaseMessage = {
-			id: uuid(),
-			convId,
-			type: MessageRole.SYSTEM,
-			timestamp: Date.now(),
-			role: MessageRole.SYSTEM,
-			content: trimmedPrompt,
-			parent: parentId,
-			children: []
-		};
+		return await db.transaction('rw', [db.conversations, db.messages], async () => {
+			const conversation = await requireConversation(convId);
+			const parentMessage = await requireOwnedMessage(convId, parentId);
+			const systemMessage: DatabaseMessage = {
+				id: uuid(),
+				convId,
+				type: MessageRole.SYSTEM,
+				timestamp: Date.now(),
+				role: MessageRole.SYSTEM,
+				content: trimmedPrompt,
+				parent: parentId,
+				toolCalls: '',
+				children: []
+			};
 
-		await db.messages.add(systemMessage);
+			await db.messages.add(systemMessage);
+			await requireUpdated(
+				await db.messages.update(parentId, {
+					children: [...parentMessage.children, systemMessage.id]
+				}),
+				`Parent message ${parentId}`
+			);
+			await requireUpdated(
+				await db.conversations.update(convId, {
+					lastModified: nextLastModified(conversation)
+				}),
+				`Conversation ${convId}`
+			);
 
-		const parentMessage = await db.messages.get(parentId);
-		if (parentMessage) {
-			await db.messages.update(parentId, {
-				children: [...parentMessage.children, systemMessage.id]
-			});
-		}
+			return systemMessage;
+		});
+	}
 
-		return systemMessage;
+	/** Inserts a system prompt between the root and the selected first message. */
+	static async insertSystemPrompt(
+		convId: string,
+		systemPrompt: string,
+		rootId: string,
+		firstMessageId?: string
+	): Promise<DatabaseMessage> {
+		const trimmedPrompt = systemPrompt.trim();
+		if (!trimmedPrompt) throw new Error('Cannot create system message with empty content');
+
+		return await db.transaction('rw', [db.conversations, db.messages], async () => {
+			const conversation = await requireConversation(convId);
+			const root = await requireOwnedMessage(convId, rootId);
+			if (root.parent !== null || root.type !== 'root') throw new Error('Invalid root message');
+			const firstMessage = firstMessageId
+				? await requireOwnedMessage(convId, firstMessageId)
+				: undefined;
+			if (
+				firstMessage &&
+				(firstMessage.parent !== rootId || !root.children.includes(firstMessage.id))
+			) {
+				throw new Error(`Message ${firstMessage.id} is not a child of root ${rootId}`);
+			}
+
+			const systemMessage: DatabaseMessage = {
+				id: uuid(),
+				convId,
+				type: MessageRole.SYSTEM,
+				timestamp: Date.now(),
+				role: MessageRole.SYSTEM,
+				content: trimmedPrompt,
+				parent: rootId,
+				toolCalls: '',
+				children: firstMessage ? [firstMessage.id] : []
+			};
+			await db.messages.add(systemMessage);
+			if (firstMessage) {
+				await requireUpdated(
+					await db.messages.update(firstMessage.id, { parent: systemMessage.id }),
+					`Message ${firstMessage.id}`
+				);
+			}
+			await requireUpdated(
+				await db.messages.update(rootId, {
+					children: [
+						...root.children.filter(
+							(id: string) => id !== firstMessage?.id && id !== systemMessage.id
+						),
+						systemMessage.id
+					]
+				}),
+				`Root message ${rootId}`
+			);
+			await requireUpdated(
+				await db.conversations.update(convId, {
+					lastModified: nextLastModified(conversation)
+				}),
+				`Conversation ${convId}`
+			);
+			return systemMessage;
+		});
+	}
+
+	/** Removes a system prompt and reconnects all of its children to the root. */
+	static async removeSystemPrompt(convId: string, messageId: string): Promise<void> {
+		await db.transaction('rw', [db.conversations, db.messages], async () => {
+			const conversation = await requireConversation(convId);
+			const systemMessage = await requireOwnedMessage(convId, messageId);
+			if (systemMessage.role !== MessageRole.SYSTEM || !systemMessage.parent) {
+				throw new Error(`Message ${messageId} is not a removable system prompt`);
+			}
+			const root = await requireOwnedMessage(convId, systemMessage.parent);
+			for (const childId of systemMessage.children) {
+				const child = await requireOwnedMessage(convId, childId);
+				if (child.parent !== messageId) throw new Error(`Invalid child ${childId}`);
+				await requireUpdated(
+					await db.messages.update(childId, { parent: root.id }),
+					`Message ${childId}`
+				);
+			}
+			await requireUpdated(
+				await db.messages.update(root.id, {
+					children: [
+						...root.children.filter((id: string) => id !== messageId),
+						...systemMessage.children.filter((id: string) => !root.children.includes(id))
+					]
+				}),
+				`Root message ${root.id}`
+			);
+			await db.messages.delete(messageId);
+			await requireUpdated(
+				await db.conversations.update(convId, {
+					currNode: conversation.currNode === messageId ? root.id : conversation.currNode,
+					lastModified: nextLastModified(conversation)
+				}),
+				`Conversation ${convId}`
+			);
+		});
+	}
+
+	/** Updates a message and its conversation timestamp in one transaction. */
+	static async updateConversationMessage(
+		convId: string,
+		messageId: string,
+		updates: Partial<Omit<DatabaseMessage, 'id' | 'convId'>>
+	): Promise<void> {
+		await db.transaction('rw', [db.conversations, db.messages], async () => {
+			const conversation = await requireConversation(convId);
+			await requireOwnedMessage(convId, messageId);
+			await requireUpdated(await db.messages.update(messageId, updates), `Message ${messageId}`);
+			await requireUpdated(
+				await db.conversations.update(convId, {
+					lastModified: nextLastModified(conversation)
+				}),
+				`Conversation ${convId}`
+			);
+		});
+	}
+
+	/** Replaces a user message and removes its selected response branch atomically. */
+	static async replaceUserMessageAndTruncateBranch(
+		convId: string,
+		messageId: string,
+		content: string,
+		extra?: DatabaseMessage['extra']
+	): Promise<{ deletedIds: string[]; lastModified: number }> {
+		return await db.transaction('rw', [db.conversations, db.messages], async () => {
+			const conversation = await requireConversation(convId);
+			const target = await requireOwnedMessage(convId, messageId);
+			if (target.role !== MessageRole.USER)
+				throw new Error(`Message ${messageId} is not a user message`);
+			const allMessages = await db.messages.where('convId').equals(convId).toArray();
+			const deletedIds = findDescendantMessages(allMessages, messageId);
+			const deletedIdSet = new Set(deletedIds);
+			for (const candidate of allMessages) {
+				if (candidate.id === messageId || deletedIdSet.has(candidate.id)) continue;
+				const nextChildren = candidate.children.filter((id: string) => !deletedIdSet.has(id));
+				if (nextChildren.length === candidate.children.length) continue;
+				await requireUpdated(
+					await db.messages.update(candidate.id, { children: nextChildren }),
+					`Message ${candidate.id}`
+				);
+			}
+			await requireUpdated(
+				await db.messages.update(messageId, { content, extra, children: [] }),
+				`Message ${messageId}`
+			);
+			if (deletedIds.length > 0) await db.messages.bulkDelete(deletedIds);
+			const lastModified = nextLastModified(conversation);
+			await requireUpdated(
+				await db.conversations.update(convId, { currNode: messageId, lastModified }),
+				`Conversation ${convId}`
+			);
+			return { deletedIds, lastModified };
+		});
+	}
+
+	/** Removes an assistant response branch and selects its parent for regeneration. */
+	static async truncateBranchForRegeneration(
+		convId: string,
+		messageId: string
+	): Promise<{ parentId: string; deletedIds: string[]; lastModified: number }> {
+		return await db.transaction('rw', [db.conversations, db.messages], async () => {
+			const conversation = await requireConversation(convId);
+			const target = await requireOwnedMessage(convId, messageId);
+			if (target.role !== MessageRole.ASSISTANT || !target.parent) {
+				throw new Error(`Message ${messageId} is not a regeneratable assistant message`);
+			}
+			const parent = await requireOwnedMessage(convId, target.parent);
+			if (!parent.children.includes(messageId))
+				throw new Error(`Invalid parent for message ${messageId}`);
+			const allMessages = await db.messages.where('convId').equals(convId).toArray();
+			const deletedIds = [messageId, ...findDescendantMessages(allMessages, messageId)];
+			await requireUpdated(
+				await db.messages.update(parent.id, {
+					children: parent.children.filter((id: string) => id !== messageId)
+				}),
+				`Parent message ${parent.id}`
+			);
+			await db.messages.bulkDelete(deletedIds);
+			const lastModified = nextLastModified(conversation);
+			await requireUpdated(
+				await db.conversations.update(convId, { currNode: parent.id, lastModified }),
+				`Conversation ${convId}`
+			);
+			return { parentId: parent.id, deletedIds, lastModified };
+		});
 	}
 
 	/**
@@ -210,9 +570,12 @@ export class DatabaseService {
 					.toArray();
 
 				for (const child of directChildren) {
-					await db.conversations.update(child.id, {
-						forkedFromConversationId: newParent ?? undefined
-					});
+					await requireUpdated(
+						await db.conversations.update(child.id, {
+							forkedFromConversationId: newParent ?? undefined
+						}),
+						`Conversation ${child.id}`
+					);
 				}
 			}
 
@@ -234,9 +597,12 @@ export class DatabaseService {
 			const plan = planConversationDeletion(conversations, ids);
 
 			for (const update of plan.parentUpdates) {
-				await db.conversations.update(update.id, {
-					forkedFromConversationId: update.forkedFromConversationId
-				});
+				await requireUpdated(
+					await db.conversations.update(update.id, {
+						forkedFromConversationId: update.forkedFromConversationId
+					}),
+					`Conversation ${update.id}`
+				);
 			}
 
 			if (plan.deletedIds.length > 0) {
@@ -285,28 +651,48 @@ export class DatabaseService {
 	 */
 	static async deleteMessageCascading(
 		conversationId: string,
-		messageId: string
+		messageId: string,
+		replacementCurrentNode: string
 	): Promise<string[]> {
-		return await db.transaction('rw', db.messages, async () => {
+		return await db.transaction('rw', [db.conversations, db.messages], async () => {
+			const conversation = await requireConversation(conversationId);
+			const message = await db.messages.get(messageId);
+			if (!message) return [];
+			if (message.convId !== conversationId) {
+				throw new Error('Message does not belong to conversation');
+			}
+
 			// Get all messages in the conversation to find descendants
 			const allMessages = await db.messages.where('convId').equals(conversationId).toArray();
 
 			// Find all descendant messages
 			const descendants = findDescendantMessages(allMessages, messageId);
-			const allToDelete = [messageId, ...descendants];
+			const allToDelete = [...new Set([messageId, ...descendants])];
+			const replacement = await requireOwnedMessage(conversationId, replacementCurrentNode);
+			if (allToDelete.includes(replacement.id)) {
+				throw new Error('Replacement current node cannot be deleted with the branch');
+			}
 
 			// Get the message to delete for parent cleanup
-			const message = await db.messages.get(messageId);
-			if (message && message.parent) {
-				const parent = await db.messages.get(message.parent);
-				if (parent) {
-					parent.children = parent.children.filter((childId: string) => childId !== messageId);
-					await db.messages.put(parent);
-				}
+			if (message.parent) {
+				const parent = await requireOwnedMessage(conversationId, message.parent);
+				await requireUpdated(
+					await db.messages.update(parent.id, {
+						children: parent.children.filter((childId: string) => childId !== messageId)
+					}),
+					`Parent message ${parent.id}`
+				);
 			}
 
 			// Delete all messages in the branch
 			await db.messages.bulkDelete(allToDelete);
+			await requireUpdated(
+				await db.conversations.update(conversationId, {
+					currNode: replacement.id,
+					lastModified: nextLastModified(conversation)
+				}),
+				`Conversation ${conversationId}`
+			);
 
 			return allToDelete;
 		});
@@ -352,9 +738,15 @@ export class DatabaseService {
 		id: string,
 		updates: Partial<Omit<DatabaseConversation, 'id'>>
 	): Promise<void> {
-		await db.conversations.update(id, {
-			...updates,
-			lastModified: Date.now()
+		await db.transaction('rw', db.conversations, async () => {
+			const conversation = await requireConversation(id);
+			await requireUpdated(
+				await db.conversations.update(id, {
+					...updates,
+					lastModified: nextLastModified(conversation)
+				}),
+				`Conversation ${id}`
+			);
 		});
 	}
 
@@ -366,9 +758,12 @@ export class DatabaseService {
 	 * @param pinned - Whether the conversation should be pinned
 	 */
 	static async updateConversationPinned(id: string, pinned: boolean): Promise<void> {
-		await db.conversations.update(id, {
-			pinned: pinned ? true : undefined
-		});
+		await requireUpdated(
+			await db.conversations.update(id, {
+				pinned: pinned ? true : undefined
+			}),
+			`Conversation ${id}`
+		);
 	}
 
 	/** Updates the pinned state of multiple conversations atomically. */
@@ -378,9 +773,12 @@ export class DatabaseService {
 
 		await db.transaction('rw', db.conversations, async () => {
 			for (const id of uniqueIds) {
-				await db.conversations.update(id, {
-					pinned: pinned ? true : undefined
-				});
+				await requireUpdated(
+					await db.conversations.update(id, {
+						pinned: pinned ? true : undefined
+					}),
+					`Conversation ${id}`
+				);
 			}
 		});
 	}
@@ -417,7 +815,7 @@ export class DatabaseService {
 		id: string,
 		updates: Partial<Omit<DatabaseMessage, 'id'>>
 	): Promise<void> {
-		await db.messages.update(id, updates);
+		await requireUpdated(await db.messages.update(id, updates), `Message ${id}`);
 	}
 
 	/**
@@ -437,29 +835,40 @@ export class DatabaseService {
 	static async importConversations(
 		data: { conv: DatabaseConversation; messages: DatabaseMessage[] }[]
 	): Promise<{ imported: number; skipped: number }> {
-		let importedCount = 0;
-		let skippedCount = 0;
+		const imports = validateConversationImports(data);
 
 		return await db.transaction('rw', [db.conversations, db.messages], async () => {
-			for (const item of data) {
-				const { conv, messages } = item;
-
-				const existing = await db.conversations.get(conv.id);
-				if (existing) {
-					console.warn(`Conversation "${conv.name}" already exists, skipping...`);
-					skippedCount++;
-					continue;
-				}
-
-				await db.conversations.add(conv);
-				for (const msg of messages) {
-					await db.messages.put(msg);
-				}
-
-				importedCount++;
+			const existingConversations = await db.conversations.bulkGet(
+				imports.map(({ conv }) => conv.id)
+			);
+			const importable = imports.filter((item, index) => {
+				if (!existingConversations[index]) return true;
+				console.warn(`Conversation "${item.conv.name}" already exists, skipping...`);
+				return false;
+			});
+			const messages = importable.flatMap((item) => item.messages);
+			const collisions = await db.messages.bulkGet(messages.map((message) => message.id));
+			const collisionIndex = collisions.findIndex((message) => message !== undefined);
+			if (collisionIndex !== -1) {
+				throw new Error(`Message ID already exists in database: ${messages[collisionIndex].id}`);
 			}
 
-			return { imported: importedCount, skipped: skippedCount };
+			await db.conversations.bulkAdd(importable.map((item) => item.conv));
+			await db.messages.bulkAdd(messages);
+
+			return { imported: importable.length, skipped: imports.length - importable.length };
+		});
+	}
+
+	/** Runs one legacy conversation migration as a single graph transaction. */
+	static async runConversationGraphTransaction<T>(operation: () => Promise<T>): Promise<T> {
+		return await db.transaction('rw', [db.conversations, db.messages], async (transaction) => {
+			try {
+				return await operation();
+			} catch (error) {
+				transaction.abort();
+				throw error;
+			}
 		});
 	}
 

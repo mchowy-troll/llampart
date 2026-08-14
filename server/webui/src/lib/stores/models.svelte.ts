@@ -8,9 +8,16 @@ import { getApiProvider } from '$lib/services/providers';
 import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers';
 import { config } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
-import { detectThinkingSupport, detectThinkingSupportWithReason, TTLCache } from '$lib/utils';
+import { TTLCache } from '$lib/utils/cache-ttl';
+import {
+	detectThinkingSupport,
+	detectThinkingSupportWithReason
+} from '$lib/utils/chat-template-thinking-detector';
+import { throwIfAborted } from '$lib/utils/abort';
+import { sleepWithAbort } from '$lib/utils/retry';
 import { t } from '$lib/i18n';
 import type { ModelReferenceResolution } from '$lib/types/models';
+import type { ProviderConnectionContext } from '$lib/types/provider';
 import {
 	MODEL_PROPS_CACHE_TTL_MS,
 	MODEL_PROPS_CACHE_MAX_ENTRIES,
@@ -19,6 +26,14 @@ import {
 
 function uniqueStringList(values: string[] | undefined): string[] {
 	return [...new Set(values ?? [])];
+}
+
+function normalizeModelModalities(props?: ApiLlamaCppServerProps | null): ModelModalities {
+	return {
+		vision: props?.modalities?.vision ?? false,
+		audio: props?.modalities?.audio ?? false,
+		video: props?.modalities?.video ?? false
+	};
 }
 
 /**
@@ -72,6 +87,17 @@ class ModelsStore {
 
 	favoriteModelIds = $state<Set<string>>(this.loadFavoritesFromStorage());
 	private loadedModelListSourceKey: string | null = null;
+	private fetchPromise: Promise<void> | null = null;
+	private requestGeneration = 0;
+	private routerMetadataSourceKey: string | null = null;
+	private routerMetadataPromise: Promise<void> | null = null;
+	private routerMetadataPendingSourceKey: string | null = null;
+	private operationControllers = new Map<string, AbortController>();
+	private readonly sourceKeySalt = (() => {
+		const bytes = new Uint32Array(2);
+		crypto.getRandomValues(bytes);
+		return `${bytes[0].toString(16)}${bytes[1].toString(16)}`;
+	})();
 
 	/**
 	 * Model-specific props cache with TTL
@@ -82,7 +108,7 @@ class ModelsStore {
 		ttlMs: MODEL_PROPS_CACHE_TTL_MS,
 		maxEntries: MODEL_PROPS_CACHE_MAX_ENTRIES
 	});
-	private modelPropsFetching = $state<Set<string>>(new Set());
+	private modelPropsRequests = new Map<string, Promise<ApiLlamaCppServerProps | null>>();
 
 	/**
 	 * Version counter for props cache - used to trigger reactivity when props are updated
@@ -107,6 +133,41 @@ class ModelsStore {
 		return isApiProviderId(providerId) ? providerId : API_PROVIDER_IDS.LLAMA_SERVER;
 	}
 
+	private currentRequestContext(): ProviderConnectionContext {
+		const currentConfig = config();
+
+		return Object.freeze({
+			providerId: getApiProvider(String(currentConfig.apiProvider ?? '')).id,
+			serverBaseUrl: String(currentConfig.serverBaseUrl ?? ''),
+			apiKey: String(currentConfig.apiKey ?? '')
+		});
+	}
+
+	private getModelListSourceKey(context: ProviderConnectionContext): string {
+		let hash = 2166136261;
+		for (const character of `${this.sourceKeySalt}:${context.apiKey.trim()}`) {
+			hash ^= character.charCodeAt(0);
+			hash = Math.imul(hash, 16777619);
+		}
+		return [
+			context.providerId,
+			context.serverBaseUrl.trim(),
+			`credential:${(hash >>> 0).toString(16)}`
+		].join('|');
+	}
+
+	private getSourceModelKey(context: ProviderConnectionContext, modelId: string): string {
+		return `${this.getModelListSourceKey(context)}\u0000${modelId}`;
+	}
+
+	private rememberSelection(sourceKey: string, selection: { id: string; model: string }): void {
+		const entries = Object.entries(this.selectedModelsBySourceKey).filter(
+			([key]) => key !== sourceKey
+		);
+		entries.push([sourceKey, selection]);
+		this.selectedModelsBySourceKey = Object.fromEntries(entries.slice(-10));
+	}
+
 	private getFavoriteStorageKey(providerId = this.currentProviderId): string {
 		return `${FAVORITE_MODELS_LOCALSTORAGE_KEY}.${providerId}`;
 	}
@@ -114,13 +175,10 @@ class ModelsStore {
 	private saveCurrentSelectionForSource(): void {
 		if (!this.loadedModelListSourceKey || !this.selectedModelId || !this.selectedModelName) return;
 
-		this.selectedModelsBySourceKey = {
-			...this.selectedModelsBySourceKey,
-			[this.loadedModelListSourceKey]: {
-				id: this.selectedModelId,
-				model: this.selectedModelName
-			}
-		};
+		this.rememberSelection(this.loadedModelListSourceKey, {
+			id: this.selectedModelId,
+			model: this.selectedModelName
+		});
 	}
 
 	private restoreSelectionForSource(sourceKey: string): boolean {
@@ -140,14 +198,15 @@ class ModelsStore {
 	}
 
 	get modelListSourceKey(): string {
-		const currentConfig = config();
-		const provider = this.currentProvider;
+		return this.getModelListSourceKey(this.currentRequestContext());
+	}
 
-		return [
-			provider.id,
-			String(currentConfig.serverBaseUrl ?? '').trim(),
-			String(currentConfig.apiKey ?? '').trim()
-		].join('|');
+	get hasRouterMetadataForCurrentSource(): boolean {
+		return this.routerMetadataSourceKey === this.modelListSourceKey;
+	}
+
+	get rememberedSelectionSourceCount(): number {
+		return Object.keys(this.selectedModelsBySourceKey).length;
 	}
 
 	get usesSelectableModelList(): boolean {
@@ -178,9 +237,10 @@ class ModelsStore {
 	}
 
 	get loadingModelIds(): string[] {
+		const sourcePrefix = `${this.modelListSourceKey}\u0000`;
 		return Array.from(this.modelLoadingStates.entries())
-			.filter(([, loading]) => loading)
-			.map(([id]) => id);
+			.filter(([key, loading]) => loading && key.startsWith(sourcePrefix))
+			.map(([key]) => key.slice(sourcePrefix.length));
 	}
 
 	/**
@@ -220,13 +280,11 @@ class ModelsStore {
 			return model.modalities;
 		}
 
-		const props = this.modelPropsCache.get(modelId);
+		const props = this.modelPropsCache.get(
+			this.getSourceModelKey(this.currentRequestContext(), modelId)
+		);
 		if (props?.modalities) {
-			return {
-				vision: props.modalities.vision ?? false,
-				audio: props.modalities.audio ?? false,
-				video: props.modalities.video ?? false
-			};
+			return normalizeModelModalities(props);
 		}
 
 		return null;
@@ -273,7 +331,7 @@ class ModelsStore {
 	 * Get props for a specific model (from cache)
 	 */
 	getModelProps(modelId: string): ApiLlamaCppServerProps | null {
-		return this.modelPropsCache.get(modelId);
+		return this.modelPropsCache.get(this.getSourceModelKey(this.currentRequestContext(), modelId));
 	}
 
 	/**
@@ -298,7 +356,9 @@ class ModelsStore {
 	 * Check if props are being fetched for a model
 	 */
 	isModelPropsFetching(modelId: string): boolean {
-		return this.modelPropsFetching.has(modelId);
+		return this.modelPropsRequests.has(
+			this.getSourceModelKey(this.currentRequestContext(), modelId)
+		);
 	}
 
 	//
@@ -316,7 +376,7 @@ class ModelsStore {
 		const modelId = this.selectedModelName;
 		if (!modelId) return false;
 
-		if (this.supportsModelProps && serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
+		if (this.supportsModelProps && serverStore.isRouterMode && !this.getModelProps(modelId)) {
 			this.fetchModelProps(modelId);
 		}
 
@@ -334,7 +394,7 @@ class ModelsStore {
 
 		if (!modelId) return false;
 
-		if (this.supportsModelProps && serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
+		if (this.supportsModelProps && serverStore.isRouterMode && !this.getModelProps(modelId)) {
 			this.fetchModelProps(modelId);
 		}
 
@@ -353,7 +413,7 @@ class ModelsStore {
 		const modelId = this.selectedModelName;
 		if (!modelId) return { supported: false, reason: 'No model selected' };
 
-		if (serverStore.isRouterMode && !this.modelPropsCache.get(modelId)) {
+		if (serverStore.isRouterMode && !this.getModelProps(modelId)) {
 			this.fetchModelProps(modelId);
 		}
 
@@ -379,7 +439,10 @@ class ModelsStore {
 	}
 
 	isModelOperationInProgress(modelId: string): boolean {
-		return this.modelLoadingStates.get(modelId) ?? false;
+		return (
+			this.modelLoadingStates.get(this.getSourceModelKey(this.currentRequestContext(), modelId)) ??
+			false
+		);
 	}
 
 	getModelStatus(modelId: string): ServerModelStatus | null {
@@ -408,11 +471,12 @@ class ModelsStore {
 	 * Fetch list of models from server and detect server role
 	 * Also fetches modalities for MODEL mode (single model)
 	 */
-	async fetch(force = false): Promise<void> {
-		if (this.loading) return;
+	fetch(force = false): Promise<void> {
+		if (this.fetchPromise) return this.fetchPromise;
 
-		const provider = this.currentProvider;
-		const sourceKey = this.modelListSourceKey;
+		const context = this.currentRequestContext();
+		const provider = getApiProvider(context.providerId);
+		const sourceKey = this.getModelListSourceKey(context);
 		const sourceChanged = this.loadedModelListSourceKey !== sourceKey;
 
 		if (sourceChanged) {
@@ -422,114 +486,156 @@ class ModelsStore {
 			this.selectedModelId = null;
 			this.selectedModelName = null;
 			this.favoriteModelIds = new SvelteSet(this.loadFavoritesFromStorage(provider.id));
-			this.modelPropsCache.clear();
-			this.modelPropsFetching.clear();
 		}
 
-		if (this.models.length > 0 && !force && !sourceChanged) return;
+		if (this.models.length > 0 && !force && !sourceChanged) return Promise.resolve();
 
+		const generation = ++this.requestGeneration;
 		this.loading = true;
 		this.error = null;
 
-		try {
-			if (provider.capabilities.supportsServerProps && !serverStore.props) {
-				await serverStore.fetch();
-			}
+		const request: { promise: Promise<void> | null } = { promise: null };
+		const fetchPromise = (async () => {
+			try {
+				if (provider.capabilities.supportsServerProps && !serverStore.props) {
+					await serverStore.fetch(context);
+					if (generation !== this.requestGeneration) return;
+				}
 
-			const response = await ModelsService.list(provider.id);
+				const response = await ModelsService.list(context);
+				if (generation !== this.requestGeneration) return;
 
-			const models: ModelOption[] = response.data.map((item: ApiModelDataEntry, index: number) => {
-				const details = response.models?.[index];
-				const rawCapabilities = Array.isArray(details?.capabilities) ? details?.capabilities : [];
-				const displayNameSource =
-					details?.name && details.name.trim().length > 0 ? details.name : item.id;
-				const displayName = this.toDisplayName(displayNameSource);
-				const modelId = details?.model || item.id;
+				const models: ModelOption[] = response.data.map(
+					(item: ApiModelDataEntry, index: number) => {
+						const details = response.models?.[index];
+						const rawCapabilities = Array.isArray(details?.capabilities)
+							? details?.capabilities
+							: [];
+						const displayNameSource =
+							details?.name && details.name.trim().length > 0 ? details.name : item.id;
+						const displayName = this.toDisplayName(displayNameSource);
+						const modelId = details?.model || item.id;
 
-				return {
-					id: item.id,
-					name: displayName,
-					model: modelId,
-					description: details?.description,
-					capabilities: rawCapabilities.filter((value: unknown): value is string => Boolean(value)),
-					details: details?.details,
-					meta: item.meta ?? null,
-					parsedId: ModelsService.parseModelId(modelId),
-					aliases: uniqueStringList(item.aliases),
-					tags: uniqueStringList(item.tags)
-				} satisfies ModelOption;
-			});
-
-			this.models = models;
-
-			// WORKAROUND: In MODEL mode, /props returns modalities for the single model,
-			// but /v1/models doesn't include modalities. We bridge this gap here.
-			const serverProps = serverStore.props;
-			if (
-				provider.capabilities.supportsModelProps &&
-				serverStore.isModelMode &&
-				this.models.length > 0 &&
-				serverProps?.modalities
-			) {
-				const modalities: ModelModalities = {
-					vision: serverProps.modalities.vision ?? false,
-					audio: serverProps.modalities.audio ?? false,
-					video: serverProps.modalities.video ?? false
-				};
-				this.modelPropsCache.set(this.models[0].model, serverProps);
-				this.models = this.models.map((model, index) =>
-					index === 0 ? { ...model, modalities } : model
+						return {
+							id: item.id,
+							name: displayName,
+							model: modelId,
+							description: details?.description,
+							capabilities: rawCapabilities.filter((value: unknown): value is string =>
+								Boolean(value)
+							),
+							details: details?.details,
+							meta: item.meta ?? null,
+							parsedId: ModelsService.parseModelId(modelId),
+							aliases: uniqueStringList(item.aliases),
+							tags: uniqueStringList(item.tags)
+						} satisfies ModelOption;
+					}
 				);
-			}
 
-			if (!this.selectedModelId) {
-				this.restoreSelectionForSource(sourceKey);
-			}
+				this.models = models;
 
-			if (
-				provider.capabilities.requiresModelInChatRequest &&
-				!this.selectedModelId &&
-				this.models.length > 0
-			) {
-				this.selectedModelId = this.models[0].id;
-				this.selectedModelName = this.models[0].model;
-			}
+				// WORKAROUND: In MODEL mode, /props returns modalities for the single model,
+				// but /v1/models doesn't include modalities. We bridge this gap here.
+				const serverProps = serverStore.props;
+				if (
+					provider.capabilities.supportsModelProps &&
+					serverStore.isModelMode &&
+					this.models.length > 0 &&
+					serverProps?.modalities
+				) {
+					const modalities = normalizeModelModalities(serverProps);
+					this.modelPropsCache.set(
+						this.getSourceModelKey(context, this.models[0].model),
+						serverProps
+					);
+					this.models = this.models.map((model, index) =>
+						index === 0 ? { ...model, modalities } : model
+					);
+				}
 
-			this.loadedModelListSourceKey = sourceKey;
-		} catch (error) {
-			this.models = [];
-			this.error = error instanceof Error ? error.message : 'Failed to load models';
-			throw error;
-		} finally {
-			this.loading = false;
-		}
+				if (!this.selectedModelId) {
+					this.restoreSelectionForSource(sourceKey);
+				}
+
+				if (
+					provider.capabilities.requiresModelInChatRequest &&
+					!this.selectedModelId &&
+					this.models.length > 0
+				) {
+					this.selectedModelId = this.models[0].id;
+					this.selectedModelName = this.models[0].model;
+				}
+
+				this.loadedModelListSourceKey = sourceKey;
+			} catch (error) {
+				if (generation !== this.requestGeneration) return;
+
+				this.models = [];
+				this.error = error instanceof Error ? error.message : 'Failed to load models';
+				throw error;
+			} finally {
+				if (generation === this.requestGeneration && this.fetchPromise === request.promise) {
+					this.loading = false;
+					this.fetchPromise = null;
+				}
+			}
+		})();
+
+		request.promise = fetchPromise;
+		this.fetchPromise = fetchPromise;
+		return fetchPromise;
 	}
 
 	/**
 	 * Fetch router models with full metadata (ROUTER mode only)
 	 * This fetches the /models endpoint which returns status info for each model
 	 */
-	async fetchRouterModels(): Promise<void> {
-		if (!this.supportsModelLoadUnload) return;
-
-		try {
-			const response = await ModelsService.listRouter();
-			this.routerModels = response.data;
-			await this.fetchModalitiesForLoadedModels();
-
-			const o = this.models.filter((option) => {
-				const modelProps = this.getModelProps(option.model);
-
-				return modelProps?.webui !== false;
-			});
-
-			if (o.length === 1 && this.isModelLoaded(o[0].model)) {
-				this.selectModelById(o[0].id);
-			}
-		} catch (error) {
-			console.warn('Failed to fetch router models:', error);
-			this.routerModels = [];
+	fetchRouterModels(
+		context: ProviderConnectionContext = this.currentRequestContext(),
+		signal?: AbortSignal
+	): Promise<void> {
+		if (!this.supportsModelLoadUnload) return Promise.resolve();
+		const sourceKey = this.getModelListSourceKey(context);
+		if (this.routerMetadataPromise && this.routerMetadataPendingSourceKey === sourceKey) {
+			return this.routerMetadataPromise;
 		}
+		const generation = this.requestGeneration;
+		const request: { promise: Promise<void> | null } = { promise: null };
+
+		const promise = (async () => {
+			try {
+				const response = await ModelsService.listRouter(context, signal);
+				if (generation !== this.requestGeneration || sourceKey !== this.modelListSourceKey) return;
+				this.routerModels = response.data;
+				this.routerMetadataSourceKey = sourceKey;
+				await this.fetchModalitiesForLoadedModels();
+				if (generation !== this.requestGeneration || sourceKey !== this.modelListSourceKey) return;
+
+				const o = this.models.filter((option) => {
+					const modelProps = this.getModelProps(option.model);
+
+					return modelProps?.webui !== false;
+				});
+
+				if (o.length === 1 && this.isModelLoaded(o[0].model)) {
+					await this.selectModelById(o[0].id);
+				}
+			} catch (error) {
+				if (signal?.aborted || generation !== this.requestGeneration) return;
+				console.warn('Failed to fetch router models:', error);
+				this.routerModels = [];
+			} finally {
+				if (this.routerMetadataPromise === request.promise) {
+					this.routerMetadataPromise = null;
+					this.routerMetadataPendingSourceKey = null;
+				}
+			}
+		})();
+		request.promise = promise;
+		this.routerMetadataPromise = promise;
+		this.routerMetadataPendingSourceKey = sourceKey;
+		return promise;
 	}
 
 	/**
@@ -544,28 +650,39 @@ class ModelsStore {
 	 */
 	async fetchModelProps(modelId: string): Promise<ApiLlamaCppServerProps | null> {
 		if (!this.supportsModelProps) return null;
+		const context = this.currentRequestContext();
+		const sourceKey = this.getModelListSourceKey(context);
+		const cacheKey = this.getSourceModelKey(context, modelId);
 
-		const cached = this.modelPropsCache.get(modelId);
+		const cached = this.modelPropsCache.get(cacheKey);
 		if (cached) return cached;
 
 		if (serverStore.isRouterMode && !this.isModelLoaded(modelId)) {
 			return null;
 		}
 
-		if (this.modelPropsFetching.has(modelId)) return null;
+		const existing = this.modelPropsRequests.get(cacheKey);
+		if (existing) return existing;
 
-		this.modelPropsFetching.add(modelId);
-
-		try {
-			const props = await PropsService.fetchForModel(modelId);
-			this.modelPropsCache.set(modelId, props);
-			return props;
-		} catch (error) {
-			console.warn(`Failed to fetch props for model ${modelId}:`, error);
-			return null;
-		} finally {
-			this.modelPropsFetching.delete(modelId);
-		}
+		const holder: { promise: Promise<ApiLlamaCppServerProps | null> | null } = { promise: null };
+		const request = (async () => {
+			try {
+				const props = await PropsService.fetchForModel(context, modelId);
+				if (sourceKey !== this.modelListSourceKey) return null;
+				this.modelPropsCache.set(cacheKey, props);
+				return props;
+			} catch (error) {
+				console.warn(`Failed to fetch props for model ${modelId}:`, error);
+				return null;
+			} finally {
+				if (this.modelPropsRequests.get(cacheKey) === holder.promise) {
+					this.modelPropsRequests.delete(cacheKey);
+				}
+			}
+		})();
+		holder.promise = request;
+		this.modelPropsRequests.set(cacheKey, request);
+		return request;
 	}
 
 	/**
@@ -591,10 +708,7 @@ class ModelsStore {
 				const props = results[modelIndex];
 				if (!props?.modalities) return model;
 
-				const modalities: ModelModalities = {
-					vision: props.modalities.vision ?? false,
-					audio: props.modalities.audio ?? false
-				};
+				const modalities = normalizeModelModalities(props);
 
 				return { ...model, modalities };
 			});
@@ -616,11 +730,7 @@ class ModelsStore {
 			const props = await this.fetchModelProps(modelId);
 			if (!props?.modalities) return;
 
-			const modalities: ModelModalities = {
-				vision: props.modalities.vision ?? false,
-				audio: props.modalities.audio ?? false,
-				video: props.modalities.video ?? false
-			};
+			const modalities = normalizeModelModalities(props);
 
 			this.models = this.models.map((model) =>
 				model.model === modelId ? { ...model, modalities } : model
@@ -656,10 +766,7 @@ class ModelsStore {
 		try {
 			this.selectedModelId = option.id;
 			this.selectedModelName = option.model;
-			this.selectedModelsBySourceKey = {
-				...this.selectedModelsBySourceKey,
-				[this.modelListSourceKey]: { id: option.id, model: option.model }
-			};
+			this.rememberSelection(this.modelListSourceKey, { id: option.id, model: option.model });
 		} finally {
 			this.updating = false;
 		}
@@ -674,10 +781,7 @@ class ModelsStore {
 		if (option) {
 			this.selectedModelId = option.id;
 			this.selectedModelName = option.model;
-			this.selectedModelsBySourceKey = {
-				...this.selectedModelsBySourceKey,
-				[this.modelListSourceKey]: { id: option.id, model: option.model }
-			};
+			this.rememberSelection(this.modelListSourceKey, { id: option.id, model: option.model });
 		}
 	}
 
@@ -750,13 +854,20 @@ class ModelsStore {
 	 * @throws Error if model reaches FAILED status or polling times out
 	 */
 	private async pollForModelStatus(
+		context: ProviderConnectionContext,
 		modelId: string,
-		expectedStatus: ServerModelStatus
+		expectedStatus: ServerModelStatus,
+		signal: AbortSignal
 	): Promise<void> {
 		const startedAt = Date.now();
+		const sourceKey = this.getModelListSourceKey(context);
 
 		while (true) {
-			await this.fetchRouterModels();
+			throwIfAborted(signal);
+			if (sourceKey !== this.modelListSourceKey)
+				throw new DOMException('Source changed', 'AbortError');
+			await this.fetchRouterModels(context, signal);
+			throwIfAborted(signal);
 
 			const currentStatus = this.getModelStatus(modelId);
 			if (currentStatus === expectedStatus) {
@@ -779,7 +890,9 @@ class ModelsStore {
 				);
 			}
 
-			await new Promise((resolve) => setTimeout(resolve, ModelsStore.STATUS_POLL_INTERVAL));
+			if (!(await sleepWithAbort(ModelsStore.STATUS_POLL_INTERVAL, signal))) {
+				throw new DOMException('Operation was aborted', 'AbortError');
+			}
 		}
 	}
 
@@ -794,20 +907,30 @@ class ModelsStore {
 			return;
 		}
 
-		if (this.modelLoadingStates.get(modelId)) return;
+		const context = this.currentRequestContext();
+		const operationKey = this.getSourceModelKey(context, modelId);
+		if (this.modelLoadingStates.get(operationKey)) return;
+		const controller = new AbortController();
+		this.operationControllers.set(operationKey, controller);
 
-		this.modelLoadingStates.set(modelId, true);
+		this.modelLoadingStates.set(operationKey, true);
 		this.error = null;
 
 		try {
-			await ModelsService.load(modelId);
-			await this.pollForModelStatus(modelId, ServerModelStatus.LOADED);
+			await ModelsService.load(context, modelId, undefined, controller.signal);
+			throwIfAborted(controller.signal);
+			await this.pollForModelStatus(context, modelId, ServerModelStatus.LOADED, controller.signal);
+			throwIfAborted(controller.signal);
+			if (this.getModelListSourceKey(context) !== this.modelListSourceKey) {
+				throw new DOMException('Source changed', 'AbortError');
+			}
 
 			await this.updateModelModalities(modelId);
 			toast.success(t('models.modelLoaded'), {
 				description: this.toDisplayName(modelId)
 			});
 		} catch (error) {
+			if (controller.signal.aborted) throw new DOMException('Operation was aborted', 'AbortError');
 			const message = error instanceof Error ? error.message : t('models.failedToLoadModel');
 			this.error = message;
 			toast.error(t('models.failedToLoadModel'), {
@@ -815,7 +938,10 @@ class ModelsStore {
 			});
 			throw error;
 		} finally {
-			this.modelLoadingStates.set(modelId, false);
+			this.modelLoadingStates.delete(operationKey);
+			if (this.operationControllers.get(operationKey) === controller) {
+				this.operationControllers.delete(operationKey);
+			}
 		}
 	}
 
@@ -830,19 +956,33 @@ class ModelsStore {
 			return;
 		}
 
-		if (this.modelLoadingStates.get(modelId)) return;
+		const context = this.currentRequestContext();
+		const operationKey = this.getSourceModelKey(context, modelId);
+		if (this.modelLoadingStates.get(operationKey)) return;
+		const controller = new AbortController();
+		this.operationControllers.set(operationKey, controller);
 
-		this.modelLoadingStates.set(modelId, true);
+		this.modelLoadingStates.set(operationKey, true);
 		this.error = null;
 
 		try {
-			await ModelsService.unload(modelId);
+			await ModelsService.unload(context, modelId, controller.signal);
 
-			await this.pollForModelStatus(modelId, ServerModelStatus.UNLOADED);
+			await this.pollForModelStatus(
+				context,
+				modelId,
+				ServerModelStatus.UNLOADED,
+				controller.signal
+			);
+			throwIfAborted(controller.signal);
+			if (this.getModelListSourceKey(context) !== this.modelListSourceKey) {
+				throw new DOMException('Source changed', 'AbortError');
+			}
 			toast.info(t('models.modelUnloaded'), {
 				description: this.toDisplayName(modelId)
 			});
 		} catch (error) {
+			if (controller.signal.aborted) throw new DOMException('Operation was aborted', 'AbortError');
 			const message = error instanceof Error ? error.message : t('models.failedToUnloadModel');
 			this.error = message;
 			toast.error(t('models.failedToUnloadModel'), {
@@ -850,7 +990,10 @@ class ModelsStore {
 			});
 			throw error;
 		} finally {
-			this.modelLoadingStates.set(modelId, false);
+			this.modelLoadingStates.delete(operationKey);
+			if (this.operationControllers.get(operationKey) === controller) {
+				this.operationControllers.delete(operationKey);
+			}
 		}
 	}
 
@@ -941,6 +1084,10 @@ class ModelsStore {
 	}
 
 	clear(): void {
+		this.saveCurrentSelectionForSource();
+		this.requestGeneration++;
+		for (const controller of this.operationControllers.values()) controller.abort();
+		this.operationControllers.clear();
 		this.models = [];
 		this.routerModels = [];
 		this.loading = false;
@@ -950,9 +1097,17 @@ class ModelsStore {
 		this.selectedModelName = null;
 		this.modelUsage.clear();
 		this.modelLoadingStates.clear();
-		this.modelPropsCache.clear();
-		this.modelPropsFetching.clear();
 		this.loadedModelListSourceKey = null;
+		this.routerMetadataSourceKey = null;
+		this.routerMetadataPromise = null;
+		this.routerMetadataPendingSourceKey = null;
+		this.fetchPromise = null;
+	}
+
+	resetAllModelState(): void {
+		this.clear();
+		this.modelPropsCache.clear();
+		this.modelPropsRequests.clear();
 		this.selectedModelsBySourceKey = {};
 	}
 

@@ -31,13 +31,18 @@ describe('model thinking support ownership', () => {
 		} as ApiLlamaCppServerProps;
 		modelsStore.selectedModelId = 'thinking-model';
 		modelsStore.selectedModelName = 'thinking-model';
-		const propsCache = (
-			modelsStore as unknown as { modelPropsCache: Map<string, ApiLlamaCppServerProps> }
-		).modelPropsCache;
-		propsCache.set('thinking-model', {
-			chat_template: '{% if enable_thinking %}think{% endif %}',
-			default_generation_settings: { n_ctx: 16384, params: {} }
-		} as ApiLlamaCppServerProps);
+		const internals = modelsStore as unknown as {
+			modelPropsCache: Map<string, ApiLlamaCppServerProps>;
+			getSourceModelKey: (context: unknown, modelId: string) => string;
+			currentRequestContext: () => unknown;
+		};
+		internals.modelPropsCache.set(
+			internals.getSourceModelKey(internals.currentRequestContext(), 'thinking-model'),
+			{
+				chat_template: '{% if enable_thinking %}think{% endif %}',
+				default_generation_settings: { n_ctx: 16384, params: {} }
+			} as ApiLlamaCppServerProps
+		);
 
 		expect(modelsStore.supportsThinking).toBe(true);
 		expect(modelsStore.thinkingSupportDetails.supported).toBe(true);

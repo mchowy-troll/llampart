@@ -6,9 +6,11 @@ import { redactValue } from './redact';
  * Get authorization headers for API requests
  * Includes Bearer token if API key is configured
  */
-export function getAuthHeaders(): Record<string, string> {
-	const currentConfig = config();
-	const apiKey = currentConfig.apiKey?.toString().trim();
+export function getAuthHeaders(apiKeyOverride?: string): Record<string, string> {
+	const apiKey =
+		apiKeyOverride === undefined
+			? config().apiKey?.toString().trim()
+			: apiKeyOverride.toString().trim();
 
 	return apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
 }
@@ -16,10 +18,10 @@ export function getAuthHeaders(): Record<string, string> {
 /**
  * Get standard JSON headers with optional authorization
  */
-export function getJsonHeaders(): Record<string, string> {
+export function getJsonHeaders(apiKeyOverride?: string): Record<string, string> {
 	return {
 		'Content-Type': 'application/json',
-		...getAuthHeaders()
+		...getAuthHeaders(apiKeyOverride)
 	};
 }
 

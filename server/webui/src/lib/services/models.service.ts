@@ -1,9 +1,9 @@
 import { ServerModelStatus } from '$lib/enums';
-import { apiFetch, apiPost } from '$lib/utils';
-import { config } from '$lib/stores/settings.svelte';
+import { apiFetch, apiPost } from '$lib/utils/api-fetch';
 import { getApiProvider } from '$lib/services/providers';
+import { buildProviderEndpointUrl } from '$lib/services/providers/provider-url';
 import type { ParsedModelId } from '$lib/types/models';
-import type { ApiProviderId } from '$lib/constants/api-providers';
+import type { ProviderConnectionContext } from '$lib/types/provider';
 import {
 	MODEL_QUANTIZATION_SEGMENT_RE,
 	MODEL_CUSTOM_QUANTIZATION_PREFIX_RE,
@@ -32,13 +32,12 @@ export class ModelsService {
 	 *
 	 * @returns List of available models with basic metadata
 	 */
-	static async list(providerId?: ApiProviderId): Promise<ApiModelListResponse> {
-		const currentConfig = config();
-		const provider = getApiProvider(providerId ?? String(currentConfig.apiProvider ?? ''));
+	static async list(context: ProviderConnectionContext): Promise<ApiModelListResponse> {
+		const provider = getApiProvider(context.providerId);
 
 		return provider.listModels({
-			serverBaseUrl: String(currentConfig.serverBaseUrl ?? ''),
-			apiKey: String(currentConfig.apiKey ?? '')
+			serverBaseUrl: context.serverBaseUrl,
+			apiKey: context.apiKey
 		});
 	}
 
@@ -49,8 +48,14 @@ export class ModelsService {
 	 *
 	 * @returns List of models with detailed status and configuration info
 	 */
-	static async listRouter(): Promise<ApiRouterModelsListResponse> {
-		return apiFetch<ApiRouterModelsListResponse>(API_MODELS.LIST);
+	static async listRouter(
+		context: ProviderConnectionContext,
+		signal?: AbortSignal
+	): Promise<ApiRouterModelsListResponse> {
+		return apiFetch<ApiRouterModelsListResponse>(
+			buildProviderEndpointUrl(context.serverBaseUrl, API_MODELS.LIST),
+			{ apiKey: context.apiKey, signal }
+		);
 	}
 
 	/**
@@ -70,13 +75,22 @@ export class ModelsService {
 	 * @param extraArgs - Optional additional arguments to pass to the model instance
 	 * @returns Load response from the server
 	 */
-	static async load(modelId: string, extraArgs?: string[]): Promise<ApiRouterModelsLoadResponse> {
+	static async load(
+		context: ProviderConnectionContext,
+		modelId: string,
+		extraArgs?: string[],
+		signal?: AbortSignal
+	): Promise<ApiRouterModelsLoadResponse> {
 		const payload: { model: string; extra_args?: string[] } = { model: modelId };
 		if (extraArgs && extraArgs.length > 0) {
 			payload.extra_args = extraArgs;
 		}
 
-		return apiPost<ApiRouterModelsLoadResponse>(API_MODELS.LOAD, payload);
+		return apiPost<ApiRouterModelsLoadResponse>(
+			buildProviderEndpointUrl(context.serverBaseUrl, API_MODELS.LOAD),
+			payload,
+			{ apiKey: context.apiKey, signal }
+		);
 	}
 
 	/**
@@ -87,8 +101,16 @@ export class ModelsService {
 	 * @param modelId - Model identifier to unload
 	 * @returns Unload response from the server
 	 */
-	static async unload(modelId: string): Promise<ApiRouterModelsUnloadResponse> {
-		return apiPost<ApiRouterModelsUnloadResponse>(API_MODELS.UNLOAD, { model: modelId });
+	static async unload(
+		context: ProviderConnectionContext,
+		modelId: string,
+		signal?: AbortSignal
+	): Promise<ApiRouterModelsUnloadResponse> {
+		return apiPost<ApiRouterModelsUnloadResponse>(
+			buildProviderEndpointUrl(context.serverBaseUrl, API_MODELS.UNLOAD),
+			{ model: modelId },
+			{ apiKey: context.apiKey, signal }
+		);
 	}
 
 	/**

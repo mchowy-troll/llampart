@@ -64,10 +64,16 @@ export interface ChatMessagePromptProgress {
 export interface ChatMessageTimings {
 	cache_n?: number;
 	context_total?: number;
+	draft_n?: number;
+	draft_n_accepted?: number;
 	predicted_ms?: number;
 	predicted_n?: number;
+	predicted_per_second?: number;
+	predicted_per_token_ms?: number;
 	prompt_ms?: number;
 	prompt_n?: number;
+	prompt_per_second?: number;
+	prompt_per_token_ms?: number;
 	agentic?: ChatMessageAgenticTimings;
 }
 
@@ -127,7 +133,7 @@ export interface ChatStreamCallbacks {
 	) => Promise<DatabaseMessage>;
 	createAssistantMessage?: () => Promise<DatabaseMessage>;
 	onFlowComplete?: (timings?: ChatMessageTimings) => void;
-	onError?: (error: Error) => void;
+	onError?: (error: Error) => void | Promise<void>;
 	onTurnComplete?: (intermediateTimings: ChatMessageTimings) => void;
 	onStreamCheckpoint?: (checkpoint: ChatStreamCheckpoint) => void | Promise<void>;
 }

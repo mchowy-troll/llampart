@@ -1,6 +1,9 @@
 import { t } from '$lib/i18n';
 import { PropsService } from '$lib/services/props.service';
 import { ServerRole } from '$lib/enums';
+import { getApiProvider } from '$lib/services/providers';
+import { config } from '$lib/stores/settings.svelte';
+import type { ProviderConnectionContext } from '$lib/types/provider';
 
 /**
  * serverStore - Server connection state, configuration, and role detection
@@ -32,6 +35,7 @@ class ServerStore {
 	error = $state<string | null>(null);
 	role = $state<ServerRole | null>(null);
 	private fetchPromise: Promise<void> | null = null;
+	private requestGeneration = 0;
 
 	/**
 	 *
@@ -71,29 +75,49 @@ class ServerStore {
 	 *
 	 */
 
-	async fetch(): Promise<void> {
+	private currentRequestContext(): ProviderConnectionContext {
+		const currentConfig = config();
+
+		return Object.freeze({
+			providerId: getApiProvider(String(currentConfig.apiProvider ?? '')).id,
+			serverBaseUrl: String(currentConfig.serverBaseUrl ?? ''),
+			apiKey: String(currentConfig.apiKey ?? '')
+		});
+	}
+
+	fetch(context: ProviderConnectionContext = this.currentRequestContext()): Promise<void> {
 		if (this.fetchPromise) return this.fetchPromise;
 
+		const requestContext = Object.freeze({ ...context });
+		const generation = ++this.requestGeneration;
 		this.loading = true;
 		this.error = null;
 
+		const request: { promise: Promise<void> | null } = { promise: null };
 		const fetchPromise = (async () => {
 			try {
-				const props = await PropsService.fetch();
+				const props = await PropsService.fetch(requestContext);
+				if (generation !== this.requestGeneration) return;
+
 				this.props = props;
 				this.error = null;
 				this.detectRole(props);
 			} catch (error) {
+				if (generation !== this.requestGeneration) return;
+
 				this.error = this.getErrorMessage(error);
 				console.error('Error fetching server properties:', error);
 			} finally {
-				this.loading = false;
-				this.fetchPromise = null;
+				if (generation === this.requestGeneration && this.fetchPromise === request.promise) {
+					this.loading = false;
+					this.fetchPromise = null;
+				}
 			}
 		})();
 
+		request.promise = fetchPromise;
 		this.fetchPromise = fetchPromise;
-		await fetchPromise;
+		return fetchPromise;
 	}
 
 	private getErrorMessage(error: unknown): string {
@@ -123,6 +147,7 @@ class ServerStore {
 	}
 
 	clear(): void {
+		this.requestGeneration++;
 		this.props = null;
 		this.error = null;
 		this.loading = false;

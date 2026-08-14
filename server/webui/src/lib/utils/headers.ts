@@ -3,26 +3,14 @@
  * Generic utilities not specific to MCP.
  */
 
+import { parseMcpHeaders } from './mcp-config';
+
 /**
  * Parses a JSON string of headers into an array of key-value pairs.
  * Returns empty array if the JSON is invalid or empty.
  */
 export function parseHeadersToArray(headersJson: string): { key: string; value: string }[] {
-	if (!headersJson?.trim()) return [];
-
-	try {
-		const parsed = JSON.parse(headersJson);
-		if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-			return Object.entries(parsed).map(([key, value]) => ({
-				key,
-				value: String(value)
-			}));
-		}
-	} catch {
-		return [];
-	}
-
-	return [];
+	return Object.entries(parseMcpHeaders(headersJson) ?? {}).map(([key, value]) => ({ key, value }));
 }
 
 /**
