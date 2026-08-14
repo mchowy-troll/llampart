@@ -22,7 +22,6 @@
 		const source = toolsStore.getToolSource(toolName);
 
 		if (source === ToolSource.BUILTIN) return TOOL_SERVER_LABELS[ToolSource.BUILTIN];
-		if (source === ToolSource.CUSTOM) return TOOL_SERVER_LABELS[ToolSource.CUSTOM];
 
 		return t('messages.mcpToolsProvider');
 	});

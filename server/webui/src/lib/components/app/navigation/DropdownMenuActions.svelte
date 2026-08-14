@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { KeyboardShortcutInfo } from '$lib/components/app';
+	import KeyboardShortcutInfo from '$lib/components/app/misc/KeyboardShortcutInfo.svelte';
 	import type { Component } from 'svelte';
 
 	interface ActionItem {

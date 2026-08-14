@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import { SearchInput } from '$lib/components/app';
+	import SearchInput from '$lib/components/app/forms/SearchInput.svelte';
 
 	interface Props {
 		value?: string;

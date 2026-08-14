@@ -6,7 +6,7 @@ sequenceDiagram
     participant ParamSvc as ⚙️ ParameterSyncService
     participant LS as 💾 LocalStorage
 
-    Note over settingsStore: State:<br/>config: SettingsConfigType<br/>theme: string ("auto" | "light" | "dark")<br/>isInitialized: boolean<br/>userOverrides: Set&lt;string&gt;
+    Note over settingsStore: State:<br/>config: SettingsConfigType (includes theme ID)<br/>isInitialized: boolean<br/>userOverrides: Set&lt;string&gt;
 
     %% ═══════════════════════════════════════════════════════════════════════════
     Note over UI,LS: 🚀 INITIALIZATION
@@ -30,10 +30,6 @@ sequenceDiagram
     settingsStore->>LS: get("llama-userOverrides")
     LS-->>settingsStore: string[] | null
     settingsStore->>settingsStore: userOverrides = new Set(data)
-
-    settingsStore->>settingsStore: loadTheme()
-    settingsStore->>LS: get("llama-theme")
-    LS-->>settingsStore: theme | "auto"
 
     settingsStore->>settingsStore: isInitialized = true
     deactivate settingsStore
@@ -119,11 +115,11 @@ sequenceDiagram
     Note over UI,LS: 🎨 THEME
     %% ═══════════════════════════════════════════════════════════════════════════
 
-    UI->>settingsStore: updateTheme(newTheme)
+    UI->>settingsStore: updateConfig("theme", newTheme)
     activate settingsStore
-    settingsStore->>settingsStore: theme = newTheme
-    settingsStore->>settingsStore: saveTheme()
-    settingsStore->>LS: set("llama-theme", theme)
+    settingsStore->>settingsStore: normalize theme through the theme registry
+    settingsStore->>settingsStore: saveConfig()
+    settingsStore->>LS: set(CONFIG_LOCALSTORAGE_KEY, config)
     deactivate settingsStore
 
     %% ═══════════════════════════════════════════════════════════════════════════

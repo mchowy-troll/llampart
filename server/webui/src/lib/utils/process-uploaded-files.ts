@@ -4,7 +4,7 @@ import { FileTypeCategory } from '$lib/enums';
 import { modelsStore } from '$lib/stores/models.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { toast } from 'svelte-sonner';
-import { getFileTypeCategory, getFileTypeCategoryByExtension } from '$lib/utils';
+import { getFileTypeCategory, getFileTypeCategoryByExtension } from './file-type';
 import { convertPDFToText } from './pdf-processing';
 import { t } from '$lib/i18n';
 

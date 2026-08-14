@@ -13,7 +13,7 @@ This WebUI lives in `server/webui` and builds into `server/public`, where it can
 
 ## Requirements
 
-- Node.js 20.19+ or 22.12+
+- Node.js 22.13+ (22.x) or Node.js 24+
 - npm 9+
 - git
 - optional: running `llama-server` locally for backend/API access during development
@@ -47,19 +47,21 @@ This starts the llampart Vite development server at `http://localhost:5173`.
 
 ## Available scripts
 
-| Command                 | Purpose                                     |
-| ----------------------- | ------------------------------------------- |
-| `npm run dev`           | Start the llampart Vite dev server          |
-| `npm run dev:vite`      | Start the Vite dev server directly          |
-| `npm run build`         | Create production build for `server/public` |
-| `npm run preview`       | Preview the production build                |
-| `npm run check`         | Run Svelte sync + type checks               |
-| `npm run lint`          | Run Prettier check and ESLint               |
-| `npm run format`        | Format the project with Prettier            |
-| `npm run test`          | Run unit tests                              |
-| `npm run hooks:install` | Install the WebUI pre-commit hook           |
-| `npm run cleanup`       | Remove generated local frontend artifacts   |
-| `npm run reset`         | Remove `.svelte-kit` and `node_modules`     |
+| Command                    | Purpose                                      |
+| -------------------------- | -------------------------------------------- |
+| `npm run dev`              | Start the llampart Vite dev server           |
+| `npm run dev:vite`         | Start the Vite dev server directly           |
+| `npm run build`            | Create production build for `server/public`  |
+| `npm run preview`          | Preview the production build                 |
+| `npm run check`            | Run validators, Svelte sync, and type checks |
+| `npm run lint`             | Run Prettier check and ESLint                |
+| `npm run format`           | Format the project with Prettier             |
+| `npm run test`             | Run unit tests                               |
+| `npm run validate:docs`    | Reject stale documentation contracts         |
+| `npm run validate:imports` | Enforce internal leaf-import boundaries      |
+| `npm run hooks:install`    | Install the WebUI pre-commit hook            |
+| `npm run cleanup`          | Remove generated local frontend artifacts    |
+| `npm run reset`            | Remove `.svelte-kit` and `node_modules`      |
 
 ## Git hook setup
 
@@ -95,6 +97,9 @@ Important pieces:
 - `svelte.config.js` targets `../public`
 - `scripts/post-build.sh` runs the static build normalizer
 - `scripts/normalize-static-build.mjs` prepares final output for backend consumption
+- the normalizer writes `.llampart-build.json` with version, Git commit, dirty state, timestamp, and normalizer version
+
+`scripts/package-release-llampart.sh` packages the existing build only. It never runs the build and rejects release packaging unless provenance matches the current clean `HEAD` and package version. Releases remain manual.
 
 ## Frontend workflow
 

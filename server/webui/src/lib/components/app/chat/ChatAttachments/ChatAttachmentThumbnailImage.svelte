@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import { ActionIconRemove } from '$lib/components/app';
+	import ActionIconRemove from '$lib/components/app/actions/ActionIconRemove.svelte';
 
 	interface Props {
 		id: string;

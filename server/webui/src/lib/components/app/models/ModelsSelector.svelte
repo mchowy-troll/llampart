@@ -13,13 +13,11 @@
 		singleModelName
 	} from '$lib/stores/models.svelte';
 	import { KeyboardKey } from '$lib/enums';
-	import {
-		DialogModelInformation,
-		DropdownMenuSearchable,
-		ModelId,
-		ModelsSelectorList,
-		ModelsSelectorOption
-	} from '$lib/components/app';
+	import DialogModelInformation from '$lib/components/app/dialogs/DialogModelInformation.svelte';
+	import DropdownMenuSearchable from '$lib/components/app/navigation/DropdownMenuSearchable.svelte';
+	import ModelId from '$lib/components/app/models/ModelId.svelte';
+	import ModelsSelectorList from '$lib/components/app/models/ModelsSelectorList.svelte';
+	import ModelsSelectorOption from '$lib/components/app/models/ModelsSelectorOption.svelte';
 	import type { ModelOption } from '$lib/types/models';
 	import { filterModelOptions, groupModelOptions, type ModelItem } from './utils';
 	import { t } from '$lib/i18n';

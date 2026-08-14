@@ -10,6 +10,8 @@ It is intended for normal users who want to run llampart locally. It is not a de
 
 Caddy must already be installed and available as a systemd service.
 
+The `ss` command from the distribution's `iproute2` package is also required so the installer can verify that the selected port is free. If it is unavailable or the check fails, the installer stops before making changes.
+
 The llampart installer does not install Caddy.
 
 Install Caddy first using your distribution package manager or the official Caddy instructions:
@@ -234,7 +236,7 @@ llampart-webui-vX.Y.Z.tar.xz
 llampart-webui-vX.Y.Z.sha256
 ```
 
-If the asset or checksum is missing, the installer stops before deployment.
+If the asset, checksum, `index.html`, `200.html`, or `_app/` directory is missing, the installer stops before deployment.
 
 ## Troubleshooting
 
@@ -277,7 +279,7 @@ For Web UI development, use the repository workflow:
 
 ```bash
 cd server/webui
-npm install
+npm ci
 npm run dev
 ```
 

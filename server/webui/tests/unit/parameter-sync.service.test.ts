@@ -1,8 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { ParameterSyncService } from './parameter-sync.service';
+import { ParameterSyncService } from '$lib/services/parameter-sync.service';
 
 describe('ParameterSyncService', () => {
 	describe('roundFloatingPoint', () => {
+		it('keeps showSystemMessage syncable as a boolean webui setting', () => {
+			expect(ParameterSyncService.canSyncParameter('showSystemMessage')).toBe(true);
+			expect(
+				ParameterSyncService.extractServerDefaults(null, { showSystemMessage: false })
+			).toMatchObject({ showSystemMessage: false });
+			expect(ParameterSyncService.validateServerParameter('showSystemMessage', false)).toBe(true);
+			expect(ParameterSyncService.validateServerParameter('showSystemMessage', 'false')).toBe(
+				false
+			);
+		});
+
 		it('should fix JavaScript floating-point precision issues', () => {
 			// Test the specific values from the screenshot
 			const mockServerParams = {

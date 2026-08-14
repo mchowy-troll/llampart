@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { ChatSettings } from '$lib/components/app';
+	import ChatSettings from '$lib/components/app/chat/ChatSettings/ChatSettings.svelte';
 	import type { SettingsSectionTitle } from '$lib/constants';
 
 	interface Props {

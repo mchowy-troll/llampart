@@ -10,7 +10,7 @@
 		createBase64DataUrl
 	} from '$lib/utils';
 	import { convertPDFToImage } from '$lib/utils/browser-only';
-	import { MarkdownContent } from '$lib/components/app/content';
+	import MarkdownContent from '$lib/components/app/content/MarkdownContent.svelte';
 	import { modelsStore } from '$lib/stores/models.svelte';
 	import { t } from '$lib/i18n';
 

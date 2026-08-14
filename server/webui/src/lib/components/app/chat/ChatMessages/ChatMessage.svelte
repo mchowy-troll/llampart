@@ -7,12 +7,10 @@
 	import { DatabaseService } from '$lib/services/database.service';
 	import { SYSTEM_MESSAGE_PLACEHOLDER } from '$lib/constants';
 	import { MessageRole, AttachmentType } from '$lib/enums';
-	import {
-		ChatMessageAssistant,
-		ChatMessageUser,
-		ChatMessageSystem,
-		ChatMessageMcpPrompt
-	} from '$lib/components/app/chat';
+	import ChatMessageAssistant from '$lib/components/app/chat/ChatMessages/ChatMessageAssistant.svelte';
+	import ChatMessageUser from '$lib/components/app/chat/ChatMessages/ChatMessageUser.svelte';
+	import ChatMessageSystem from '$lib/components/app/chat/ChatMessages/ChatMessageSystem.svelte';
+	import ChatMessageMcpPrompt from '$lib/components/app/chat/ChatMessages/ChatMessageMcpPrompt.svelte';
 	import { parseFilesToMessageExtras } from '$lib/utils/browser-only';
 	import type { DatabaseMessageExtraMcpPrompt } from '$lib/types';
 

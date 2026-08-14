@@ -1,9 +1,7 @@
 <script lang="ts">
-	import {
-		ChatMessageActions,
-		ChatMessageEditForm,
-		ChatMessageMcpPromptContent
-	} from '$lib/components/app';
+	import ChatMessageActions from '$lib/components/app/chat/ChatMessages/ChatMessageActions.svelte';
+	import ChatMessageEditForm from '$lib/components/app/chat/ChatMessages/ChatMessageEditForm.svelte';
+	import ChatMessageMcpPromptContent from '$lib/components/app/chat/ChatMessages/ChatMessageMcpPromptContent.svelte';
 	import { getMessageEditContext } from '$lib/contexts';
 	import { MessageRole, McpPromptVariant } from '$lib/enums';
 	import type { DatabaseMessageExtraMcpPrompt } from '$lib/types';

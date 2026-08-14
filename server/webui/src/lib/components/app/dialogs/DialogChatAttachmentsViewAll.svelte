@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { ChatAttachmentsViewAll } from '$lib/components/app';
+	import ChatAttachmentsViewAll from '$lib/components/app/chat/ChatAttachments/ChatAttachmentsViewAll.svelte';
 	import { t } from '$lib/i18n';
 
 	interface Props {

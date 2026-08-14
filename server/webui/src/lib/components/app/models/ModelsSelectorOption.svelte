@@ -10,7 +10,8 @@
 		RotateCw
 	} from '@lucide/svelte';
 	import { cn } from '$lib/components/ui/utils';
-	import { ActionIcon, ModelId } from '$lib/components/app';
+	import ActionIcon from '$lib/components/app/actions/ActionIcon.svelte';
+	import ModelId from '$lib/components/app/models/ModelId.svelte';
 	import type { ModelOption } from '$lib/types/models';
 	import { ServerModelStatus } from '$lib/enums';
 	import { modelsStore, routerModels } from '$lib/stores/models.svelte';

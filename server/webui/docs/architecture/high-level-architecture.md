@@ -72,7 +72,7 @@ end
             S3Status["<b>Status Queries:</b><br/>isModelLoaded()<br/>isModelOperationInProgress()<br/>getModelStatus()<br/>isModelPropsFetching()"]
             S3Fetch["<b>Data Fetching:</b><br/>fetch()<br/>fetchRouterModels()<br/>fetchModelProps()<br/>fetchModalitiesForLoadedModels()"]
             S3Select["<b>Model Selection:</b><br/>selectModelById()<br/>selectModelByName()<br/>clearSelection()<br/>findModelByName()<br/>findModelById()<br/>hasModel()"]
-            S3LoadUnload["<b>Loading/Unloading Models:</b><br/>loadModel()<br/>unloadModel()<br/>ensureModelLoaded()<br/>waitForModelStatus()<br/>pollForModelStatus()"]
+            S3LoadUnload["<b>Loading/Unloading Models:</b><br/>loadModel()<br/>unloadModel()<br/>ensureModelLoaded()<br/>pollForModelStatus()"]
             S3Utils["<b>Utilities:</b><br/>toDisplayName()<br/>clear()"]
         end
         subgraph S4["serverStore"]
@@ -82,10 +82,10 @@ end
             S4Utils["<b>Utilities:</b><br/>detectRole()"]
         end
         subgraph S5["settingsStore"]
-            S5State["<b>State:</b><br/>config<br/>theme<br/>isInitialized<br/>userOverrides"]
-            S5Lifecycle["<b>Lifecycle:</b><br/>initialize()<br/>loadConfig()<br/>saveConfig()<br/>loadTheme()<br/>saveTheme()"]
-            S5Update["<b>Config Updates:</b><br/>updateConfig()<br/>updateMultipleConfig()<br/>updateTheme()"]
-            S5Reset["<b>Reset:</b><br/>resetConfig()<br/>resetTheme()<br/>resetAll()<br/>resetParameterToServerDefault()"]
+            S5State["<b>State:</b><br/>config (including theme ID)<br/>isInitialized<br/>userOverrides"]
+            S5Lifecycle["<b>Lifecycle:</b><br/>initialize()<br/>loadConfig()<br/>saveConfig()"]
+            S5Update["<b>Config Updates:</b><br/>updateConfig()<br/>updateMultipleConfig()"]
+            S5Reset["<b>Reset:</b><br/>resetConfig()<br/>resetAll()<br/>resetParameterToServerDefault()"]
             S5Sync["<b>Server Sync:</b><br/>syncWithServerDefaults()<br/>forceSyncWithServerDefaults()"]
             S5Utils["<b>Utilities:</b><br/>getConfig()<br/>getAllConfig()<br/>getParameterInfo()<br/>getParameterDiff()<br/>getServerDefaults()<br/>clearAllUserOverrides()"]
         end

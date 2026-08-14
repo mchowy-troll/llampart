@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ModelsService } from '$lib/services/models.service';
 	import { config } from '$lib/stores/settings.svelte';
-	import { TruncatedText } from '$lib/components/app';
+	import TruncatedText from '$lib/components/app/misc/TruncatedText.svelte';
 
 	interface Props {
 		modelId: string;

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import * as Dialog from '$lib/components/ui/dialog';
-	import { ChatAttachmentPreview } from '$lib/components/app';
+	import ChatAttachmentPreview from '$lib/components/app/chat/ChatAttachments/ChatAttachmentPreview.svelte';
 	import { formatFileSize } from '$lib/utils';
 
 	interface Props {

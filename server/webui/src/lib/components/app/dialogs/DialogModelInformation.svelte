@@ -1,7 +1,8 @@
 <script lang="ts">
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Table from '$lib/components/ui/table';
-	import { BadgeModality, ActionIconCopyToClipboard } from '$lib/components/app';
+	import BadgeModality from '$lib/components/app/badges/BadgeModality.svelte';
+	import ActionIconCopyToClipboard from '$lib/components/app/actions/ActionIconCopyToClipboard.svelte';
 	import { ChevronDown } from '@lucide/svelte';
 	import { serverStore } from '$lib/stores/server.svelte';
 	import { modelsStore, modelOptions, modelsLoading } from '$lib/stores/models.svelte';

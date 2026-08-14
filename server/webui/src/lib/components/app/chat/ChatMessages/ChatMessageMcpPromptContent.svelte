@@ -4,7 +4,7 @@
 	import { mcpStore } from '$lib/stores/mcp.svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import { McpPromptVariant } from '$lib/enums';
-	import { TruncatedText } from '$lib/components/app/misc';
+	import TruncatedText from '$lib/components/app/misc/TruncatedText.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 
 	interface ContentPart {

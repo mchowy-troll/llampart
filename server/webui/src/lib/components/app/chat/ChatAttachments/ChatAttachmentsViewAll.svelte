@@ -1,9 +1,7 @@
 <script lang="ts">
-	import {
-		ChatAttachmentThumbnailImage,
-		ChatAttachmentThumbnailFile,
-		DialogChatAttachmentPreview
-	} from '$lib/components/app';
+	import ChatAttachmentThumbnailImage from '$lib/components/app/chat/ChatAttachments/ChatAttachmentThumbnailImage.svelte';
+	import ChatAttachmentThumbnailFile from '$lib/components/app/chat/ChatAttachments/ChatAttachmentThumbnailFile.svelte';
+	import DialogChatAttachmentPreview from '$lib/components/app/dialogs/DialogChatAttachmentPreview.svelte';
 	import { getAttachmentDisplayItems } from '$lib/utils';
 	import { t } from '$lib/i18n';
 

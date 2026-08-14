@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Package } from '@lucide/svelte';
-	import { BadgeInfo, ActionIconCopyToClipboard } from '$lib/components/app';
+	import BadgeInfo from '$lib/components/app/badges/BadgeInfo.svelte';
+	import ActionIconCopyToClipboard from '$lib/components/app/actions/ActionIconCopyToClipboard.svelte';
 	import ModelId from './ModelId.svelte';
 	import { modelsStore } from '$lib/stores/models.svelte';
 	import { serverStore } from '$lib/stores/server.svelte';

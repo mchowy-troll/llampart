@@ -3,7 +3,7 @@
 	import { Check, X } from '@lucide/svelte';
 	import { Card } from '$lib/components/ui/card';
 	import { Button } from '$lib/components/ui/button';
-	import { MarkdownContent } from '$lib/components/app';
+	import MarkdownContent from '$lib/components/app/content/MarkdownContent.svelte';
 	import { getMessageEditContext } from '$lib/contexts';
 	import { INPUT_CLASSES } from '$lib/constants';
 	import { config } from '$lib/stores/settings.svelte';

@@ -1,5 +1,6 @@
 import { AttachmentType, FileTypeCategory, SpecialFileType } from '$lib/enums';
-import { getFileTypeCategory, getFileTypeCategoryByExtension, isImageFile } from '$lib/utils';
+import { isImageFile } from './attachment-type';
+import { getFileTypeCategory, getFileTypeCategoryByExtension } from './file-type';
 import type {
 	AttachmentDisplayItemsOptions,
 	ChatUploadedFile,

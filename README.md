@@ -45,7 +45,7 @@ Key llampart features include:
   MCP prompt/resource workflows and server-related UI flows integrated into the customized llampart chat interface.
 
 - **Linux Installer**
-  A bundled Linux installer for deploying prebuilt llampart release assets, serving them through Caddy, and supporting installation, update, status, and maintenance flows.
+  A bundled Linux installer for deploying prebuilt llampart release assets, serving them through Caddy, and supporting installation, update, configuration, and uninstall flows.
 
 ## Screenshots
 
@@ -84,7 +84,7 @@ For normal installed use:
 
 For Web UI development:
 
-- Node.js 20.19+ or 22.12+
+- Node.js 22.13+ (22.x) or Node.js 24+
 - npm
 - git
 
@@ -108,7 +108,7 @@ npm test
 npm run build
 ```
 
-The production Web UI build is generated into `server/public`.
+The production Web UI build is generated into `server/public`. Validation includes settings metadata, theme boundaries, documentation contracts, and import boundaries.
 
 Release Web UI assets for the installer are packaged from an already-built `server/public` directory with:
 
@@ -116,6 +116,8 @@ Release Web UI assets for the installer are packaged from an already-built `serv
 cd server/webui
 bash scripts/package-release-llampart.sh
 ```
+
+The build writes `server/public/.llampart-build.json`. The packager does not rebuild the application and accepts release packaging only when this provenance matches the current version and `HEAD`, the build was created from a clean worktree, and the worktree remains clean. Tag creation and GitHub Release publication stay manual.
 
 ## Repository layout
 

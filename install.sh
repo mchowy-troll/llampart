@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-INSTALLER_VERSION="0.2.1"
+INSTALLER_VERSION="0.2.2"
 APP_NAME="llampart"
 REPO_OWNER="mchowy-troll"
 REPO_NAME="llampart"
@@ -49,10 +49,20 @@ CHECKSUM_URL=""
 ARTIFACT_SHA256=""
 PREVIOUS_TARGET=""
 DEPLOYED_RELEASE_DIR=""
+DEPLOYED_RELEASE_CREATED=0
+DEPLOYED_RELEASE_BACKUP=""
+CURRENT_PATH_TYPE="absent"
+CURRENT_PATH_BACKUP=""
+CURRENT_PATH_CHANGED=0
 CADDYFILE_BACKUP=""
 LLAMPART_CONFIG_BACKUP=""
 CADDYFILE_CREATED=0
 LLAMPART_CONFIG_CREATED=0
+CADDY_WAS_ACTIVE=0
+CADDY_WAS_ENABLED=0
+CADDY_SERVICE_MUTATED=0
+TRANSACTION_ACTIVE=0
+TRANSACTION_ROLLING_BACK=0
 BACKEND_RESPONDED=0
 UI_SMOKE_OK=0
 
@@ -74,9 +84,14 @@ on_error() {
 trap 'on_error $LINENO' ERR
 
 cleanup() {
+  local exit_code=$?
+  if [[ "$TRANSACTION_ACTIVE" == "1" && "$TRANSACTION_ROLLING_BACK" != "1" ]]; then
+    rollback_transaction || true
+  fi
   if [[ -n "${WORK_DIR}" && -d "${WORK_DIR}" ]]; then
     rm -rf "${WORK_DIR}" || true
   fi
+  return "$exit_code"
 }
 trap cleanup EXIT
 
@@ -288,7 +303,7 @@ caddy_enabled() {
   systemctl is-enabled --quiet caddy
 }
 
-require_caddy_dependency() {
+validate_caddy_dependency() {
   if ! caddy_installed; then
     fatal "Caddy must already be installed and available as a systemd service.
 
@@ -308,7 +323,10 @@ then run this installer again.
 
 llampart did not make any changes."
   fi
+}
 
+require_caddy_dependency() {
+  validate_caddy_dependency
   if ! caddy_active || ! caddy_enabled; then
     echo
     warn "Caddy is installed, but the systemd service is not active and enabled."
@@ -320,6 +338,7 @@ llampart did not make any changes."
       fatal "Caddy service is required. llampart did not make any changes."
     fi
     ensure_sudo
+    CADDY_SERVICE_MUTATED=1
     run_priv systemctl enable --now caddy
     success "Caddy service is active and enabled."
   fi
@@ -327,8 +346,8 @@ llampart did not make any changes."
 
 manifest_get() {
   local key="$1"
-  if [[ -r "$MANIFEST_PATH" ]]; then
-    sed -nE "s/^[[:space:]]*\"${key}\"[[:space:]]*:[[:space:]]*\"(.*)\",?[[:space:]]*$/\1/p" "$MANIFEST_PATH" | head -n 1
+  if priv_test -r "$MANIFEST_PATH"; then
+    run_priv sed -nE "s/^[[:space:]]*\"${key}\"[[:space:]]*:[[:space:]]*\"(.*)\",?[[:space:]]*$/\1/p" "$MANIFEST_PATH" | head -n 1
   fi
 }
 
@@ -603,10 +622,15 @@ confirm_plan_or_exit() {
 port_is_listening() {
   local port="$1"
   if ! command -v ss >/dev/null 2>&1; then
-    return 1
+    return 2
   fi
 
-  ss -ltnH 2>/dev/null | awk -v target_port="$port" '
+  local sockets=""
+  if ! sockets="$(ss -ltnH 2>/dev/null)"; then
+    return 2
+  fi
+
+  awk -v target_port="$port" '
     {
       local_addr = $4
       sub(/^.*:/, "", local_addr)
@@ -615,7 +639,7 @@ port_is_listening() {
       }
     }
     END { exit found ? 0 : 1 }
-  '
+  ' <<< "$sockets"
 }
 
 our_config_uses_port() {
@@ -649,8 +673,17 @@ validate_public_port_available() {
   if port_in_other_caddy_configs "$LLAMPART_PORT"; then
     fatal "Port ${LLAMPART_PORT} appears in another Caddy configuration. Choose another port."
   fi
+  local port_status=0
   if port_is_listening "$LLAMPART_PORT"; then
     fatal "Port ${LLAMPART_PORT} is already listening. Choose another port."
+  else
+    port_status=$?
+  fi
+  if [[ "$port_status" -eq 2 ]]; then
+    fatal "Cannot verify whether port ${LLAMPART_PORT} is available because the ss command is missing or failed.
+
+Install the iproute2 package with your distribution package manager, then run this installer again.
+llampart did not make any changes."
   fi
 }
 
@@ -703,10 +736,14 @@ download_artifact() {
 validate_extracted_artifact() {
   local root="$1"
   priv_test -f "${root}/index.html" || fatal "Release artifact is invalid: index.html is missing."
+  priv_test -f "${root}/200.html" || fatal "Release artifact is invalid: 200.html is missing."
   priv_test -d "${root}/_app" || fatal "Release artifact is invalid: _app/ is missing."
-  if ! priv_test -f "${root}/200.html"; then
-    warn "200.html was not found in the artifact. Continuing because index.html and _app/ exist."
-  fi
+}
+
+release_tree_digest() {
+  local root="$1"
+  run_priv tar --sort=name --mtime=@0 --numeric-owner -cf - -C "$root" . |
+    sha256sum | awk '{print $1}'
 }
 
 deploy_release() {
@@ -714,6 +751,18 @@ deploy_release() {
   local stage="${TMP_ROOT}/extract-${VERSION}-${TIMESTAMP}"
   local tmp_release="${TMP_ROOT}/release-${VERSION}-${TIMESTAMP}"
   local release_dir="${RELEASE_ROOT}/${VERSION}"
+
+  local release_exists=0
+  if priv_test -e "$release_dir"; then
+    release_exists=1
+    local installed_version=""
+    local installed_digest=""
+    installed_version="$(manifest_get version || true)"
+    installed_digest="$(manifest_get artifact_sha256 || true)"
+    if [[ "$installed_version" != "$VERSION" || "$installed_digest" != "$ARTIFACT_SHA256" ]]; then
+      fatal "Release ${VERSION} already exists with a different or unverifiable checksum. Refusing to replace immutable release files."
+    fi
+  fi
 
   run_priv mkdir -p "$RELEASE_ROOT" "$TMP_ROOT" "$WEB_ROOT"
   run_priv rm -rf "$stage" "$tmp_release"
@@ -741,18 +790,36 @@ deploy_release() {
   run_priv find "$tmp_release" -type d -exec chmod 755 {} \;
   run_priv find "$tmp_release" -type f -exec chmod 644 {} \;
 
-  if priv_test -e "$release_dir"; then
-    local backup="${release_dir}.llampart-backup-${TIMESTAMP}"
-    run_priv mv "$release_dir" "$backup"
+  if [[ "$release_exists" == "1" ]]; then
+    local staged_tree_digest=""
+    local installed_tree_digest=""
+    staged_tree_digest="$(release_tree_digest "$tmp_release")"
+    installed_tree_digest="$(release_tree_digest "$release_dir")"
+
+    if [[ "$staged_tree_digest" == "$installed_tree_digest" ]]; then
+      run_priv rm -rf "$stage" "$tmp_release"
+      DEPLOYED_RELEASE_DIR="$release_dir"
+      success "Release ${VERSION} matches the verified artifact; keeping immutable files."
+      return 0
+    fi
+
+    local release_backup="${TMP_ROOT}/replaced-${VERSION}-${TIMESTAMP}"
+    if priv_test -e "$release_backup" || priv_test -L "$release_backup"; then
+      fatal "Cannot repair ${release_dir}: transaction backup ${release_backup} already exists."
+    fi
+    DEPLOYED_RELEASE_DIR="$release_dir"
+    DEPLOYED_RELEASE_BACKUP="$release_backup"
+    run_priv mv "$release_dir" "$release_backup"
     run_priv mv "$tmp_release" "$release_dir"
-    success "Replaced existing release directory. Backup: ${backup}"
+    success "Repaired release ${VERSION} from the verified artifact."
   else
     run_priv mv "$tmp_release" "$release_dir"
+    DEPLOYED_RELEASE_CREATED=1
+    DEPLOYED_RELEASE_DIR="$release_dir"
     success "Installed release files into ${release_dir}"
   fi
 
   run_priv rm -rf "$stage"
-  DEPLOYED_RELEASE_DIR="$release_dir"
 }
 
 prepare_current_symlink() {
@@ -763,23 +830,122 @@ prepare_current_symlink() {
     if ! confirm "Continue?" 1; then
       fatal "Cannot continue while ${CURRENT_SYMLINK} exists as a non-symlink."
     fi
+    if priv_test -e "$backup" || priv_test -L "$backup"; then
+      fatal "Cannot back up ${CURRENT_SYMLINK}: ${backup} already exists. It was left untouched."
+    fi
+    CURRENT_PATH_CHANGED=1
     run_priv mv "$CURRENT_SYMLINK" "$backup"
+    CURRENT_PATH_BACKUP="$backup"
+    success "Backed up ${CURRENT_SYMLINK} -> ${backup}"
   fi
 }
 
 switch_current_symlink() {
   prepare_current_symlink
-  PREVIOUS_TARGET="$(readlink -f "$CURRENT_SYMLINK" 2>/dev/null || true)"
+  CURRENT_PATH_CHANGED=1
   run_priv ln -sfn "$DEPLOYED_RELEASE_DIR" "$CURRENT_SYMLINK"
   success "Active Web UI symlink now points to ${DEPLOYED_RELEASE_DIR}"
 }
 
 rollback_symlink() {
-  if [[ -n "$PREVIOUS_TARGET" && -d "$PREVIOUS_TARGET" ]]; then
+  [[ "$CURRENT_PATH_CHANGED" == "1" ]] || return 0
+
+  if [[ "$CURRENT_PATH_TYPE" == "symlink" ]]; then
     warn "Rolling back active symlink to ${PREVIOUS_TARGET}"
-    run_priv ln -sfn "$PREVIOUS_TARGET" "$CURRENT_SYMLINK"
-    enable_reload_caddy || true
+    run_priv rm -f "$CURRENT_SYMLINK"
+    run_priv ln -s "$PREVIOUS_TARGET" "$CURRENT_SYMLINK"
+  elif [[ "$CURRENT_PATH_TYPE" == "absent" ]]; then
+    run_priv rm -f "$CURRENT_SYMLINK"
+  elif [[ -n "$CURRENT_PATH_BACKUP" ]] && (priv_test -e "$CURRENT_PATH_BACKUP" || priv_test -L "$CURRENT_PATH_BACKUP"); then
+    run_priv rm -f "$CURRENT_SYMLINK"
+    run_priv mv "$CURRENT_PATH_BACKUP" "$CURRENT_SYMLINK"
+    CURRENT_PATH_BACKUP=""
   fi
+  CURRENT_PATH_CHANGED=0
+}
+
+begin_transaction() {
+  if priv_test -L "$CURRENT_SYMLINK"; then
+    CURRENT_PATH_TYPE="symlink"
+    PREVIOUS_TARGET="$(run_priv readlink "$CURRENT_SYMLINK")"
+  elif priv_test -e "$CURRENT_SYMLINK"; then
+    CURRENT_PATH_TYPE="path"
+    PREVIOUS_TARGET=""
+  else
+    CURRENT_PATH_TYPE="absent"
+    PREVIOUS_TARGET=""
+  fi
+  if systemctl is-active --quiet caddy; then
+    CADDY_WAS_ACTIVE=1
+  fi
+  if systemctl is-enabled --quiet caddy; then
+    CADDY_WAS_ENABLED=1
+  fi
+  TRANSACTION_ACTIVE=1
+}
+
+cleanup_transaction_backups() {
+  [[ -z "$CADDYFILE_BACKUP" ]] || run_priv rm -f "$CADDYFILE_BACKUP"
+  [[ -z "$LLAMPART_CONFIG_BACKUP" ]] || run_priv rm -f "$LLAMPART_CONFIG_BACKUP"
+  CADDYFILE_BACKUP=""
+  LLAMPART_CONFIG_BACKUP=""
+}
+
+rollback_release() {
+  if [[ -n "$DEPLOYED_RELEASE_BACKUP" ]] && (priv_test -e "$DEPLOYED_RELEASE_BACKUP" || priv_test -L "$DEPLOYED_RELEASE_BACKUP"); then
+    run_priv rm -rf "$DEPLOYED_RELEASE_DIR" || return 1
+    run_priv mv "$DEPLOYED_RELEASE_BACKUP" "$DEPLOYED_RELEASE_DIR" || return 1
+    DEPLOYED_RELEASE_BACKUP=""
+  elif [[ "$DEPLOYED_RELEASE_CREATED" == "1" && -n "$DEPLOYED_RELEASE_DIR" ]]; then
+    run_priv rm -rf "$DEPLOYED_RELEASE_DIR" || return 1
+  fi
+  DEPLOYED_RELEASE_CREATED=0
+}
+
+cleanup_release_backup() {
+  [[ -z "$DEPLOYED_RELEASE_BACKUP" ]] || run_priv rm -rf "$DEPLOYED_RELEASE_BACKUP"
+  DEPLOYED_RELEASE_BACKUP=""
+}
+
+restore_caddy_service_state() {
+  [[ "$CADDY_SERVICE_MUTATED" == "1" ]] || return 0
+
+  if [[ "$CADDY_WAS_ENABLED" == "1" ]]; then
+    "${SUDO[@]}" systemctl enable caddy || true
+  else
+    "${SUDO[@]}" systemctl disable caddy || true
+  fi
+  if [[ "$CADDY_WAS_ACTIVE" == "1" ]]; then
+    if systemctl is-active --quiet caddy; then
+      "${SUDO[@]}" systemctl reload caddy || "${SUDO[@]}" systemctl restart caddy || true
+    else
+      "${SUDO[@]}" systemctl start caddy || true
+    fi
+  else
+    "${SUDO[@]}" systemctl stop caddy || true
+  fi
+  CADDY_SERVICE_MUTATED=0
+}
+
+rollback_transaction() {
+  [[ "$TRANSACTION_ACTIVE" == "1" ]] || return 0
+  TRANSACTION_ROLLING_BACK=1
+  warn "Rolling back llampart transaction..."
+
+  rollback_symlink || true
+  rollback_release || true
+  restore_caddy_backups || true
+  restore_caddy_service_state || true
+  cleanup_transaction_backups || true
+
+  TRANSACTION_ACTIVE=0
+  TRANSACTION_ROLLING_BACK=0
+}
+
+commit_transaction() {
+  cleanup_transaction_backups
+  cleanup_release_backup
+  TRANSACTION_ACTIVE=0
 }
 
 backup_file_if_exists() {
@@ -847,13 +1013,13 @@ EOF_CADDY
 restore_caddy_backups() {
   warn "Restoring Caddy configuration backups..."
 
-  if [[ -n "$CADDYFILE_BACKUP" && -e "$CADDYFILE_BACKUP" ]]; then
+  if [[ -n "$CADDYFILE_BACKUP" ]] && priv_test -e "$CADDYFILE_BACKUP"; then
     run_priv cp -a "$CADDYFILE_BACKUP" "$CADDYFILE"
   elif [[ "$CADDYFILE_CREATED" == "1" ]]; then
     run_priv rm -f "$CADDYFILE"
   fi
 
-  if [[ -n "$LLAMPART_CONFIG_BACKUP" && -e "$LLAMPART_CONFIG_BACKUP" ]]; then
+  if [[ -n "$LLAMPART_CONFIG_BACKUP" ]] && priv_test -e "$LLAMPART_CONFIG_BACKUP"; then
     run_priv cp -a "$LLAMPART_CONFIG_BACKUP" "$LLAMPART_CADDY_CONFIG"
   elif [[ "$LLAMPART_CONFIG_CREATED" == "1" ]]; then
     run_priv rm -f "$LLAMPART_CADDY_CONFIG"
@@ -875,7 +1041,6 @@ validate_existing_caddy_config() {
 }
 
 write_and_validate_caddy_config() {
-  validate_existing_caddy_config
   ensure_caddy_import
   backup_file_if_exists "$LLAMPART_CADDY_CONFIG" LLAMPART_CONFIG_BACKUP
 
@@ -901,6 +1066,7 @@ write_and_validate_caddy_config() {
 
 enable_reload_caddy() {
   info "Enabling and reloading Caddy..."
+  CADDY_SERVICE_MUTATED=1
   run_priv systemctl enable --now caddy
   if ! "${SUDO[@]}" systemctl reload caddy; then
     warn "Caddy reload failed; trying restart."
@@ -1001,7 +1167,7 @@ update_manifest_config_only() {
   local current_version=""
   current_version="$(manifest_get version || true)"
   VERSION="${current_version:-current}"
-  DEPLOYED_RELEASE_DIR="$(readlink -f "$CURRENT_SYMLINK" 2>/dev/null || manifest_get current_target || true)"
+  DEPLOYED_RELEASE_DIR="$(run_priv readlink -f "$CURRENT_SYMLINK" 2>/dev/null || manifest_get current_target || true)"
   ARTIFACT_URL="$(manifest_get artifact_url || true)"
   ARTIFACT_SHA256="$(manifest_get artifact_sha256 || true)"
 
@@ -1153,11 +1319,15 @@ perform_install_like() {
   print_plan
   confirm_plan_or_exit
 
-  require_caddy_dependency
   ensure_sudo
   validate_public_port_available
+  validate_caddy_dependency
+  validate_existing_caddy_config
 
   init_work_dir
+  begin_transaction
+  require_caddy_dependency
+
   download_artifact
   deploy_release
   write_and_validate_caddy_config
@@ -1174,6 +1344,7 @@ perform_install_like() {
 
   check_backend_warning_only
   write_manifest
+  commit_transaction
   print_success_summary
 }
 
@@ -1182,16 +1353,21 @@ perform_configure() {
   print_plan
   confirm_plan_or_exit
 
-  require_caddy_dependency
   ensure_sudo
   validate_public_port_available
+  validate_caddy_dependency
+  validate_existing_caddy_config
 
   init_work_dir
+  begin_transaction
+  require_caddy_dependency
+
   write_and_validate_caddy_config
   enable_reload_caddy
   smoke_test_ui || fatal "Web UI smoke test failed after configure."
   check_backend_warning_only
   update_manifest_config_only
+  commit_transaction
   print_success_summary
 }
 

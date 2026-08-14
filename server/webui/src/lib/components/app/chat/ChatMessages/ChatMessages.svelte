@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { fadeInView } from '$lib/actions/fade-in-view.svelte';
-	import { ChatMessage } from '$lib/components/app';
+	import ChatMessage from '$lib/components/app/chat/ChatMessages/ChatMessage.svelte';
 	import { setChatActionsContext } from '$lib/contexts';
 	import { MessageRole, MimeTypeText } from '$lib/enums';
 	import { chatStore } from '$lib/stores/chat.svelte';

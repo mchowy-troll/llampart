@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
-	import { ChatFormHelperText, ChatForm } from '$lib/components/app';
+	import ChatFormHelperText from '$lib/components/app/chat/ChatForm/ChatFormHelperText.svelte';
+	import ChatForm from '$lib/components/app/chat/ChatForm/ChatForm.svelte';
 	import { onMount } from 'svelte';
 
 	interface Props {

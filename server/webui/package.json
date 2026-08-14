@@ -6,20 +6,26 @@
 	"license": "MIT",
 	"author": "Marcin Gluziński",
 	"type": "module",
+	"engines": {
+		"node": ">=22.13.0 <23 || >=24.0.0"
+	},
 	"scripts": {
 		"dev": "bash scripts/dev.sh",
 		"build": "vite build && ./scripts/post-build.sh",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
-		"check": "npm run validate:settings && npm run validate:themes && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check": "npm run validate:settings && npm run validate:themes && npm run validate:docs && npm run validate:imports && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"validate:settings": "node scripts/validate-settings-metadata.mjs",
 		"validate:themes": "node scripts/validate-theme-boundaries.mjs",
+		"validate:docs": "node scripts/validate-docs.mjs",
+		"validate:imports": "node scripts/validate-import-boundaries.mjs",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"reset": "rm -rf .svelte-kit node_modules",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
-		"test": "npm run test:unit -- --run",
+		"test": "npm run validate:test-discovery && npm run test:unit -- --run",
 		"test:unit": "vitest --project=unit",
+		"validate:test-discovery": "node scripts/validate-test-discovery.mjs",
 		"cleanup": "rm -rf .svelte-kit build node_modules",
 		"dev:vite": "NODE_OPTIONS=\"--insecure-http-parser\" vite dev --host 0.0.0.0",
 		"hooks:install": "bash scripts/install-git-hooks.sh"
@@ -35,6 +41,7 @@
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/typography": "^0.5.15",
 		"@tailwindcss/vite": "^4.3.1",
+		"@types/hast": "3.0.4",
 		"@types/mdast": "^4.0.4",
 		"@types/node": "^24",
 		"@vitest/coverage-v8": "^4.1.8",
@@ -68,6 +75,7 @@
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.30.0",
 		"highlight.js": "^11.11.1",
+		"lowlight": "^3.3.0",
 		"pdfjs-dist": "^6.2.108",
 		"rehype-highlight": "^7.0.2",
 		"rehype-stringify": "^10.0.1",
@@ -78,6 +86,7 @@
 		"remark-rehype": "^11.1.2",
 		"svelte-sonner": "^1.0.5",
 		"unist-util-visit": "^5.0.0",
+		"unist-util-visit-parents": "^6.0.2",
 		"zod": "^4.2.1"
 	},
 	"overrides": {

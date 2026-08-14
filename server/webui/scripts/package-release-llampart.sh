@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 SCRIPT_NAME="package-release-llampart.sh"
-SCRIPT_VERSION="0.1.5"
+SCRIPT_VERSION="0.1.6"
 PROJECT_NAME="llampart"
 ARTIFACT_PREFIX="llampart-webui"
 DEFAULT_PUBLIC_RELATIVE="server/public"
@@ -263,15 +263,40 @@ validate_public_dir() {
   [[ -d "$PUBLIC_DIR" ]] || fail "Static Web UI directory does not exist: $PUBLIC_DIR"
   [[ -f "$PUBLIC_DIR/index.html" ]] || fail "Missing required static file: $PUBLIC_DIR/index.html"
   [[ -f "$PUBLIC_DIR/200.html" ]] || fail "Missing required static file: $PUBLIC_DIR/200.html"
+  [[ -f "$PUBLIC_DIR/.llampart-build.json" ]] || fail "Missing build provenance: $PUBLIC_DIR/.llampart-build.json. Run npm run build first."
   [[ -d "$PUBLIC_DIR/_app" ]] || fail "Missing required static assets directory: $PUBLIC_DIR/_app"
 
-  if find "$PUBLIC_DIR" -mindepth 1 -maxdepth 1 -name '.git' -o -name '.github' | grep -q .; then
+  if find "$PUBLIC_DIR" -mindepth 1 -maxdepth 1 \( -name '.git' -o -name '.github' \) | grep -q .; then
     fail "Static Web UI directory contains repository metadata. Refusing to package: $PUBLIC_DIR"
   fi
 }
 
+validate_build_provenance() {
+  local package_version="$1"
+  local provenance="$PUBLIC_DIR/.llampart-build.json"
+  local built_version built_commit built_dirty normalizer_version built_artifact_digest artifact_digest head_commit status
+
+  built_version="$(read_json_field_with_node "$provenance" "data.appVersion")"
+  built_commit="$(read_json_field_with_node "$provenance" "data.gitCommit")"
+  built_dirty="$(read_json_field_with_node "$provenance" "data.dirty")"
+  normalizer_version="$(read_json_field_with_node "$provenance" "data.normalizerVersion")"
+  built_artifact_digest="$(read_json_field_with_node "$provenance" "data.artifactDigest")"
+  artifact_digest="$(node "$(script_dir)/static-artifact-digest.mjs" "$PUBLIC_DIR")"
+  head_commit="$(git -C "$REPO_DIR" rev-parse HEAD)"
+  status="$(git -C "$REPO_DIR" status --porcelain --untracked-files=all | awk '{ path = substr($0, 4); sub(/^.* -> /, "", path); if (path !~ /^server\/public\//) print }')"
+
+  [[ "$built_version" == "$package_version" ]] || fail "Build provenance version mismatch: build=${built_version}, package.json=${package_version}"
+  [[ "$built_commit" == "$head_commit" ]] || fail "Build provenance commit mismatch: build=${built_commit}, HEAD=${head_commit}"
+  [[ "$built_dirty" == "false" ]] || fail "Build provenance is dirty. Release assets require a build created from a clean worktree."
+  [[ "$normalizer_version" =~ ^[1-9][0-9]*$ ]] || fail "Build provenance has an invalid normalizerVersion."
+  [[ "$built_artifact_digest" =~ ^[0-9a-f]{64}$ ]] || fail "Build provenance has an invalid artifactDigest."
+  [[ "$built_artifact_digest" == "$artifact_digest" ]] || fail "Build artifact digest mismatch: server/public changed after normalization."
+  [[ -z "$status" ]] || fail "Repository worktree is dirty. Release packaging requires a clean worktree."
+}
+
 validate_tools() {
   command_required node
+  command_required git
   command_required tar
   command_required xz
   command_required sha256sum
@@ -302,12 +327,6 @@ create_stage() {
   tar -C "$PUBLIC_DIR" -cf - . | tar -C "$stage_parent/$package_root" -xf -
 
   printf '%s\n' "$stage_parent"
-}
-
-normalize_permissions() {
-  local dir="$1"
-  find "$dir" -type d -exec chmod 755 {} \;
-  find "$dir" -type f -exec chmod 644 {} \;
 }
 
 create_tarball() {
@@ -450,6 +469,8 @@ main() {
     release_version="$(normalize_version "$package_version")"
   fi
 
+  validate_build_provenance "$package_version"
+
   local package_root tarball_name sha_name tarball_path sha_path
   package_root="${ARTIFACT_PREFIX}-${release_version}"
   tarball_name="${package_root}.tar.xz"
@@ -482,8 +503,6 @@ main() {
     fi
   }
   trap cleanup_stage EXIT
-
-  normalize_permissions "$STAGE_PARENT/$package_root"
 
   rm -f "$tarball_path" "$sha_path"
   create_tarball "$STAGE_PARENT" "$package_root" "$tarball_path"

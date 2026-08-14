@@ -1,17 +1,15 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
 	import { t } from '$lib/i18n';
-	import {
-		ChatScreenForm,
-		ChatScreenHeader,
-		ChatMessages,
-		ChatScreenProcessingInfo,
-		DialogEmptyFileAlert,
-		DialogChatError,
-		ServerLoadingSplash,
-		DialogConfirmation,
-		ProviderConnectionNotice
-	} from '$lib/components/app';
+	import ChatScreenForm from '$lib/components/app/chat/ChatScreen/ChatScreenForm.svelte';
+	import ChatScreenHeader from '$lib/components/app/chat/ChatScreen/ChatScreenHeader.svelte';
+	import ChatMessages from '$lib/components/app/chat/ChatMessages/ChatMessages.svelte';
+	import ChatScreenProcessingInfo from '$lib/components/app/chat/ChatScreen/ChatScreenProcessingInfo.svelte';
+	import DialogEmptyFileAlert from '$lib/components/app/dialogs/DialogEmptyFileAlert.svelte';
+	import DialogChatError from '$lib/components/app/dialogs/DialogChatError.svelte';
+	import ServerLoadingSplash from '$lib/components/app/server/ServerLoadingSplash.svelte';
+	import DialogConfirmation from '$lib/components/app/dialogs/DialogConfirmation.svelte';
+	import ProviderConnectionNotice from '$lib/components/app/server/ProviderConnectionNotice.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { KeyboardKey } from '$lib/enums';
 	import { createAutoScrollController } from '$lib/hooks/use-auto-scroll.svelte';
