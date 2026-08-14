@@ -58,9 +58,9 @@ package metadata during public-release preparation. At that checkpoint:
 
 - `server/webui/package.json` declared the Web UI package as MIT-licensed.
 - The lockfile contained 544 `node_modules` package entries.
-- The manifest declared 13 direct runtime dependency names and 39 direct
+- The manifest declared 15 direct runtime dependency names and 40 direct
   development dependency names.
-- The lockfile audit found 492 transitive package entries.
+- The lockfile audit found 489 transitive package entries.
 - No package entry was marked as `unknown` or `unlicensed`.
 - The most common license fields were MIT, ISC, Apache-2.0, MPL-2.0,
   BSD-3-Clause, and BSD-2-Clause.
