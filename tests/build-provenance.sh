@@ -4,6 +4,8 @@ set -Eeuo pipefail
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 PACKAGER="${REPO_ROOT}/server/webui/scripts/package-release-llampart.sh"
 DIGEST_TOOL="${REPO_ROOT}/server/webui/scripts/static-artifact-digest.mjs"
+APP_VERSION="$(node -p "require('${REPO_ROOT}/server/webui/package.json').version")"
+RELEASE_ROOT="llampart-webui-v${APP_VERSION}"
 HARNESS_ROOT="$(mktemp -d -t llampart-provenance-tests-XXXXXXXX)"
 OUTPUT_ROOT="$(mktemp -d -t llampart-provenance-output-XXXXXXXX)"
 
@@ -57,13 +59,13 @@ git -C "$HARNESS_ROOT" add .
 git -C "$HARNESS_ROOT" -c user.name=llampart -c user.email=tests@llampart.invalid commit -qm fixture
 head_commit="$(git -C "$HARNESS_ROOT" rev-parse HEAD)"
 
-write_provenance "1.8.2" "$head_commit" false
+write_provenance "$APP_VERSION" "$head_commit" false
 bash "$PACKAGER" --repo-dir "$HARNESS_ROOT" --dry-run --yes >/dev/null || fail "matching provenance was rejected"
 bash "$PACKAGER" --repo-dir "$HARNESS_ROOT" --output-dir "$OUTPUT_ROOT" --yes >/dev/null ||
   fail "matching provenance could not be packaged"
 mkdir -p "${OUTPUT_ROOT}/extracted"
-tar -xJf "${OUTPUT_ROOT}/llampart-webui-v1.8.2.tar.xz" -C "${OUTPUT_ROOT}/extracted"
-[[ "$(stat -c %a "${OUTPUT_ROOT}/extracted/llampart-webui-v1.8.2/_app/worker.sh")" == "755" ]] ||
+tar -xJf "${OUTPUT_ROOT}/${RELEASE_ROOT}.tar.xz" -C "${OUTPUT_ROOT}/extracted"
+[[ "$(stat -c %a "${OUTPUT_ROOT}/extracted/${RELEASE_ROOT}/_app/worker.sh")" == "755" ]] ||
   fail "packager did not preserve artifact modes"
 
 artifact_digest_before_mtime_change="$(node "$DIGEST_TOOL" "${HARNESS_ROOT}/server/public")"
@@ -72,27 +74,27 @@ artifact_digest_after_mtime_change="$(node "$DIGEST_TOOL" "${HARNESS_ROOT}/serve
 [[ "$artifact_digest_before_mtime_change" == "$artifact_digest_after_mtime_change" ]] ||
   fail "artifact digest depends on mtime"
 
-write_provenance "1.8.2" "$head_commit" false
+write_provenance "$APP_VERSION" "$head_commit" false
 printf 'mutated index\n' > "${HARNESS_ROOT}/server/public/index.html"
 assert_rejected index-mutation
 printf 'index\n' > "${HARNESS_ROOT}/server/public/index.html"
 
-write_provenance "1.8.2" "$head_commit" false
+write_provenance "$APP_VERSION" "$head_commit" false
 printf 'mutated asset\n' > "${HARNESS_ROOT}/server/public/_app/app.js"
 assert_rejected app-mutation
 printf 'asset\n' > "${HARNESS_ROOT}/server/public/_app/app.js"
 
-write_provenance "1.8.2" "$head_commit" false
+write_provenance "$APP_VERSION" "$head_commit" false
 chmod 755 "${HARNESS_ROOT}/server/public/_app/app.js"
 assert_rejected mode-mutation
 chmod 644 "${HARNESS_ROOT}/server/public/_app/app.js"
 
-write_provenance "1.8.2" "$head_commit" false "0000000000000000000000000000000000000000000000000000000000000000"
+write_provenance "$APP_VERSION" "$head_commit" false "0000000000000000000000000000000000000000000000000000000000000000"
 assert_rejected manually-tampered-marker
 
-write_provenance "1.8.2" "$head_commit" true
+write_provenance "$APP_VERSION" "$head_commit" true
 assert_rejected dirty
-write_provenance "1.8.2" "0000000000000000000000000000000000000000" false
+write_provenance "$APP_VERSION" "0000000000000000000000000000000000000000" false
 assert_rejected commit-mismatch
 write_provenance "0.0.0" "$head_commit" false
 assert_rejected version-mismatch
