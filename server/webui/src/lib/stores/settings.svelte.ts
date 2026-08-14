@@ -32,6 +32,7 @@
  */
 
 import { browser } from '$app/environment';
+import { SvelteSet } from 'svelte/reactivity';
 import {
 	CONFIG_LOCALSTORAGE_KEY,
 	PROVIDER_CONNECTION_SETTING_KEYS,
@@ -43,12 +44,14 @@ import type { ApiProviderId } from '$lib/constants/api-providers';
 import { ParameterSyncService } from '$lib/services/parameter-sync.service';
 import { serverStore } from '$lib/stores/server.svelte';
 import { normalizeThemeId } from '$lib/themes/registry';
+import { configToParameterRecord, getConfigValue, setConfigValue } from '$lib/utils/config-helpers';
+import { normalizeFloatingPoint } from '$lib/utils/precision';
 import {
-	configToParameterRecord,
-	normalizeFloatingPoint,
-	getConfigValue,
-	setConfigValue
-} from '$lib/utils';
+	parseSettingsStorage,
+	parseUserOverrides,
+	serializeSettingsStorage,
+	validateSettingsPatch
+} from '$lib/utils/settings-schema';
 
 class SettingsStore {
 	/**
@@ -61,7 +64,7 @@ class SettingsStore {
 
 	config = $state<SettingsConfigType>({ ...SETTING_CONFIG_DEFAULT });
 	isInitialized = $state(false);
-	userOverrides = $state<Set<string>>(new Set());
+	userOverrides = new SvelteSet<string>();
 
 	/**
 	 *
@@ -179,29 +182,26 @@ class SettingsStore {
 		if (!browser) return;
 
 		try {
-			const storedConfigRaw = localStorage.getItem(CONFIG_LOCALSTORAGE_KEY);
-			const savedVal = JSON.parse(storedConfigRaw || '{}');
+			const savedConfig = parseSettingsStorage(localStorage.getItem(CONFIG_LOCALSTORAGE_KEY));
+			this.config = this.withSyncedProviderConnection(savedConfig);
 
-			// Merge with defaults to prevent breaking changes
-			this.config = this.withSyncedProviderConnection({
-				...SETTING_CONFIG_DEFAULT,
-				...savedVal
-			} as SettingsConfigType);
-
-			// Load user overrides
-			const savedOverrides = JSON.parse(
-				localStorage.getItem(USER_OVERRIDES_LOCALSTORAGE_KEY) || '[]'
-			);
-			this.userOverrides = new Set(savedOverrides);
-
-			if (savedVal.theme !== this.config.theme || localStorage.getItem('theme') !== null) {
+			if (savedConfig.theme !== this.config.theme || localStorage.getItem('theme') !== null) {
 				localStorage.removeItem('theme');
 				this.saveConfig();
 			}
 		} catch (error) {
 			console.warn('Failed to parse config from localStorage, using defaults:', error);
-			this.config = { ...SETTING_CONFIG_DEFAULT };
-			this.userOverrides = new Set();
+			this.config = this.withSyncedProviderConnection({ ...SETTING_CONFIG_DEFAULT });
+		}
+
+		try {
+			this.userOverrides.clear();
+			for (const key of parseUserOverrides(localStorage.getItem(USER_OVERRIDES_LOCALSTORAGE_KEY))) {
+				this.userOverrides.add(key);
+			}
+		} catch (error) {
+			console.warn('Failed to parse user overrides from localStorage:', error);
+			this.userOverrides.clear();
 		}
 	}
 
@@ -219,10 +219,13 @@ class SettingsStore {
 	 * @param value - The new value for the configuration key
 	 */
 	updateConfig<K extends keyof SettingsConfigType>(key: K, value: SettingsConfigType[K]): void {
+		const updates = validateSettingsPatch({ [key]: value }) as Partial<SettingsConfigType>;
+		if (!(key in updates)) throw new Error(`Unknown setting ${String(key)}`);
+		const validatedValue = updates[key];
 		this.config = this.withSyncedProviderConnection(
 			{
 				...this.config,
-				[key]: value
+				[key]: validatedValue
 			} as SettingsConfigType,
 			new Set([key as string])
 		);
@@ -232,7 +235,7 @@ class SettingsStore {
 			const propsDefault = propsDefaults[key as string];
 
 			if (propsDefault !== undefined) {
-				const normalizedValue = normalizeFloatingPoint(value);
+				const normalizedValue = normalizeFloatingPoint(validatedValue);
 				const normalizedDefault = normalizeFloatingPoint(propsDefault);
 
 				if (normalizedValue === normalizedDefault) {
@@ -251,17 +254,18 @@ class SettingsStore {
 	 * @param updates - Object containing the configuration updates
 	 */
 	updateMultipleConfig(updates: Partial<SettingsConfigType>) {
+		const validatedUpdates = validateSettingsPatch(updates) as Partial<SettingsConfigType>;
 		this.config = this.withSyncedProviderConnection(
 			{
 				...this.config,
-				...updates
+				...validatedUpdates
 			} as SettingsConfigType,
-			new Set(Object.keys(updates))
+			new Set(Object.keys(validatedUpdates))
 		);
 
 		const propsDefaults = this.getServerDefaults();
 
-		for (const [key, value] of Object.entries(updates)) {
+		for (const [key, value] of Object.entries(validatedUpdates)) {
 			if (ParameterSyncService.canSyncParameter(key)) {
 				const propsDefault = propsDefaults[key];
 
@@ -288,7 +292,7 @@ class SettingsStore {
 		if (!browser) return;
 
 		try {
-			localStorage.setItem(CONFIG_LOCALSTORAGE_KEY, JSON.stringify(this.config));
+			localStorage.setItem(CONFIG_LOCALSTORAGE_KEY, serializeSettingsStorage(this.config));
 
 			localStorage.setItem(
 				USER_OVERRIDES_LOCALSTORAGE_KEY,
@@ -311,7 +315,7 @@ class SettingsStore {
 	 * Reset configuration to defaults
 	 */
 	resetConfig() {
-		this.config = { ...SETTING_CONFIG_DEFAULT };
+		this.config = validateSettingsPatch(SETTING_CONFIG_DEFAULT) as SettingsConfigType;
 		this.saveConfig();
 	}
 
@@ -326,17 +330,31 @@ class SettingsStore {
 	 * Reset a parameter to server default (or webui default if no server default)
 	 */
 	resetParameterToServerDefault(key: string): void {
-		const serverDefaults = this.getServerDefaults();
 		const webuiSettings = serverStore.webuiSettings;
+		const validatedWebuiSettings = webuiSettings ? validateSettingsPatch(webuiSettings) : {};
+		const serverDefaults = validateSettingsPatch(this.getServerDefaults());
+		let resetValue: SettingsConfigValue;
+		let hasResetValue = false;
 
-		if (webuiSettings && key in webuiSettings) {
+		if (key in validatedWebuiSettings) {
 			// UI setting from admin config: write actual value
-			setConfigValue(this.config, key, this.normalizeConfigValue(key, webuiSettings[key]));
+			resetValue = this.normalizeConfigValue(
+				key,
+				validatedWebuiSettings[key]
+			) as SettingsConfigValue;
+			hasResetValue = true;
 		} else if (serverDefaults[key] !== undefined) {
 			// sampling param known by server: clear it, let server decide
-			setConfigValue(this.config, key, '');
+			resetValue = '';
+			hasResetValue = true;
 		} else if (key in SETTING_CONFIG_DEFAULT) {
-			setConfigValue(this.config, key, getConfigValue(SETTING_CONFIG_DEFAULT, key));
+			resetValue = getConfigValue(SETTING_CONFIG_DEFAULT, key);
+			hasResetValue = true;
+		}
+
+		if (hasResetValue) {
+			const updates = validateSettingsPatch({ [key]: resetValue });
+			this.config = { ...this.config, ...updates } as SettingsConfigType;
 		}
 
 		this.userOverrides.delete(key);
@@ -356,7 +374,9 @@ class SettingsStore {
 	 * This sets up the default values from /props endpoint
 	 */
 	syncWithServerDefaults(): void {
-		const propsDefaults = this.getServerDefaults();
+		const webuiSettings = serverStore.webuiSettings;
+		const validatedWebuiSettings = webuiSettings ? validateSettingsPatch(webuiSettings) : {};
+		const propsDefaults = validateSettingsPatch(this.getServerDefaults());
 		if (Object.keys(propsDefaults).length === 0) return;
 
 		for (const [key, propsValue] of Object.entries(propsDefaults)) {
@@ -373,9 +393,8 @@ class SettingsStore {
 
 		// webui settings need actual values in config (no placeholder mechanism),
 		// so write them for non-overridden keys
-		const webuiSettings = serverStore.webuiSettings;
 		if (webuiSettings) {
-			for (const [key, value] of Object.entries(webuiSettings)) {
+			for (const [key, value] of Object.entries(validatedWebuiSettings)) {
 				if (!this.userOverrides.has(key) && value !== undefined) {
 					setConfigValue(this.config, key, this.normalizeConfigValue(key, value));
 				}
@@ -391,23 +410,30 @@ class SettingsStore {
 	 * Prioritizes server defaults from /props, falls back to webui defaults
 	 */
 	forceSyncWithServerDefaults(): void {
-		const propsDefaults = this.getServerDefaults();
 		const webuiSettings = serverStore.webuiSettings;
+		const validatedWebuiSettings = webuiSettings ? validateSettingsPatch(webuiSettings) : {};
+		const propsDefaults = validateSettingsPatch(this.getServerDefaults());
+		const nextConfig = { ...this.config };
 
 		for (const key of ParameterSyncService.getSyncableParameterKeys()) {
-			if (webuiSettings && key in webuiSettings) {
+			if (key in validatedWebuiSettings) {
 				// UI setting from admin config: write actual value
-				setConfigValue(this.config, key, this.normalizeConfigValue(key, webuiSettings[key]));
+				setConfigValue(
+					nextConfig,
+					key,
+					this.normalizeConfigValue(key, validatedWebuiSettings[key])
+				);
 			} else if (propsDefaults[key] !== undefined) {
 				// sampling param: clear it, let server decide
-				setConfigValue(this.config, key, '');
+				setConfigValue(nextConfig, key, '');
 			} else if (key in SETTING_CONFIG_DEFAULT) {
-				setConfigValue(this.config, key, getConfigValue(SETTING_CONFIG_DEFAULT, key));
+				setConfigValue(nextConfig, key, getConfigValue(SETTING_CONFIG_DEFAULT, key));
 			}
 
 			this.userOverrides.delete(key);
 		}
 
+		this.config = nextConfig;
 		this.saveConfig();
 	}
 

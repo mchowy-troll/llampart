@@ -9,14 +9,12 @@
 		Wrench,
 		AlertTriangle
 	} from '@lucide/svelte';
-	import {
-		ChatSettingsFooter,
-		ChatSettingsImportExportTab,
-		ChatSettingsToolsTab,
-		ChatSettingsFields,
-		McpLogo,
-		McpServersSettings
-	} from '$lib/components/app';
+	import ChatSettingsFooter from '$lib/components/app/chat/ChatSettings/ChatSettingsFooter.svelte';
+	import ChatSettingsImportExportTab from '$lib/components/app/chat/ChatSettings/ChatSettingsImportExportTab.svelte';
+	import ChatSettingsToolsTab from '$lib/components/app/chat/ChatSettings/ChatSettingsToolsTab.svelte';
+	import ChatSettingsFields from '$lib/components/app/chat/ChatSettings/ChatSettingsFields.svelte';
+	import McpLogo from '$lib/components/app/mcp/McpLogo.svelte';
+	import McpServersSettings from '$lib/components/app/mcp/McpServersSettings.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { config, settingsStore } from '$lib/stores/settings.svelte';
@@ -895,7 +893,12 @@
 			return;
 		}
 
-		settingsStore.updateMultipleConfig(processedConfig);
+		try {
+			settingsStore.updateMultipleConfig(processedConfig);
+		} catch (error) {
+			showSettingsWarning(error instanceof Error ? error.message : t('settings.enterValidNumber'));
+			return;
+		}
 		onSave?.();
 	}
 

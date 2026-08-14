@@ -4,7 +4,12 @@ import {
 	USER_OVERRIDES_LOCALSTORAGE_KEY
 } from '$lib/constants';
 import type { SettingsConfigValue } from '$lib/types';
-import { normalizeThemeId } from '$lib/themes/registry';
+import {
+	parseSettingsStorage,
+	parseUserOverrides,
+	serializeSettingsStorage,
+	validateSettingsPatch
+} from '$lib/utils/settings-schema';
 
 const SETTINGS_EXPORT_TYPE = 'llampart-settings-export';
 const SETTINGS_EXPORT_FORMAT_VERSION = 1;
@@ -46,18 +51,6 @@ type SettingsExportFile = {
 	userOverrides?: string[];
 };
 
-function readJsonObject(value: string | null): Record<string, unknown> {
-	if (!value) return {};
-
-	const parsed = JSON.parse(value);
-
-	if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-		return {};
-	}
-
-	return parsed as Record<string, unknown>;
-}
-
 function isSettingsConfigValue(value: unknown): value is SettingsConfigValue {
 	return (
 		value === undefined ||
@@ -68,19 +61,15 @@ function isSettingsConfigValue(value: unknown): value is SettingsConfigValue {
 }
 
 function getStoredConfig(): Record<string, unknown> {
-	return readJsonObject(localStorage.getItem(CONFIG_LOCALSTORAGE_KEY));
+	try {
+		return parseSettingsStorage(localStorage.getItem(CONFIG_LOCALSTORAGE_KEY));
+	} catch {
+		return {};
+	}
 }
 
 function getStoredUserOverrides(): string[] {
-	try {
-		const parsed = JSON.parse(localStorage.getItem(USER_OVERRIDES_LOCALSTORAGE_KEY) || '[]');
-
-		if (!Array.isArray(parsed)) return [];
-
-		return parsed.filter((key): key is string => typeof key === 'string');
-	} catch {
-		return [];
-	}
+	return parseUserOverrides(localStorage.getItem(USER_OVERRIDES_LOCALSTORAGE_KEY));
 }
 
 function getExportableSettings(): ExportableSettings {
@@ -136,19 +125,13 @@ export function importApplicationSettings(fileText: string): void {
 	}
 
 	const currentConfig = getStoredConfig();
-	const importedSettings: ExportableSettings = {};
+	const candidateSettings: Record<string, unknown> = {};
 
 	for (const [key, value] of Object.entries(parsed.settings)) {
-		if (!EXPORTABLE_CONFIG_KEY_SET.has(key) || !isSettingsConfigValue(value)) continue;
-
-		importedSettings[key] = key === 'theme' ? normalizeThemeId(value) : value;
+		if (!EXPORTABLE_CONFIG_KEY_SET.has(key)) continue;
+		candidateSettings[key] = value;
 	}
-
-	localStorage.setItem(
-		CONFIG_LOCALSTORAGE_KEY,
-		JSON.stringify({ ...currentConfig, ...importedSettings })
-	);
-
+	const importedSettings = validateSettingsPatch(candidateSettings);
 	const importedOverrides = Array.isArray(parsed.userOverrides)
 		? parsed.userOverrides.filter(
 				(key): key is string => typeof key === 'string' && EXPORTABLE_CONFIG_KEY_SET.has(key)
@@ -159,5 +142,9 @@ export function importApplicationSettings(fileText: string): void {
 	);
 	const nextOverrides = [...new Set([...existingOverrides, ...importedOverrides])];
 
+	localStorage.setItem(
+		CONFIG_LOCALSTORAGE_KEY,
+		serializeSettingsStorage({ ...currentConfig, ...importedSettings } as SettingsConfigType)
+	);
 	localStorage.setItem(USER_OVERRIDES_LOCALSTORAGE_KEY, JSON.stringify(nextOverrides));
 }
