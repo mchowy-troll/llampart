@@ -7,13 +7,11 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import { FolderOpen } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
-	import {
-		ChatFormPickerPopover,
-		ChatFormPickerList,
-		ChatFormPickerListItem,
-		ChatFormPickerItemHeader,
-		ChatFormPickerListItemSkeleton
-	} from '$lib/components/app/chat';
+	import ChatFormPickerPopover from '$lib/components/app/chat/ChatForm/ChatFormPickerPopover.svelte';
+	import ChatFormPickerList from '$lib/components/app/chat/ChatForm/ChatFormPicker/ChatFormPickerList.svelte';
+	import ChatFormPickerListItem from '$lib/components/app/chat/ChatForm/ChatFormPicker/ChatFormPickerListItem.svelte';
+	import ChatFormPickerItemHeader from '$lib/components/app/chat/ChatForm/ChatFormPicker/ChatFormPickerItemHeader.svelte';
+	import ChatFormPickerListItemSkeleton from '$lib/components/app/chat/ChatForm/ChatFormPicker/ChatFormPickerListItemSkeleton.svelte';
 	import { t } from '$lib/i18n';
 
 	interface Props {

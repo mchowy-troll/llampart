@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import { InputWithSuggestions } from '$lib/components/app';
+	import InputWithSuggestions from '$lib/components/app/forms/InputWithSuggestions.svelte';
 	import { KeyboardKey } from '$lib/enums';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
 	import { MIN_AUTOCOMPLETE_INPUT_LENGTH } from '$lib/constants';

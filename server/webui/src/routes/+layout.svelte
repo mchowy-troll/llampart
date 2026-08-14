@@ -20,6 +20,7 @@
 	import { modelsStore } from '$lib/stores/models.svelte';
 	import { getApiProvider } from '$lib/services/providers';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
+	import { sourceLifecycleService } from '$lib/services/source-lifecycle.service';
 	import { TOOLTIP_DELAY_DURATION } from '$lib/constants';
 	import type { SettingsSectionTitle } from '$lib/constants';
 	import { KeyboardKey } from '$lib/enums';
@@ -198,24 +199,21 @@
 		}
 	});
 
-	// Fetch router models when in router mode (for status and modalities)
-	// Wait for models to be loaded first, run only once
-	let routerModelsFetched = false;
-
 	$effect(() => {
 		const isRouter = isRouterMode();
 		const modelsCount = modelsStore.models.length;
+		const hasCurrentMetadata = modelsStore.hasRouterMetadataForCurrentSource;
 
-		// Only fetch router models once when we have models loaded and in router mode
 		if (
 			currentApiProvider.capabilities.supportsModelLoadUnload &&
 			isRouter &&
 			modelsCount > 0 &&
-			!routerModelsFetched
+			!hasCurrentMetadata
 		) {
-			routerModelsFetched = true;
 			untrack(() => {
-				modelsStore.fetchRouterModels();
+				modelsStore.fetchRouterModels().catch((error) => {
+					console.error('Unable to load router model metadata:', error);
+				});
 			});
 		}
 	});
@@ -254,6 +252,12 @@
 		const nextSource = JSON.stringify([source.providerId, source.serverBaseUrl, source.apiKey]);
 
 		if (previousConnectionSource && previousConnectionSource !== nextSource) {
+			const mcpOverrides = conversationsStore.getAllMcpServerOverrides();
+			untrack(() => {
+				sourceLifecycleService.switchSource(source, mcpOverrides).catch((error) => {
+					console.error('Error switching provider source:', error);
+				});
+			});
 			serverStore.clear();
 			modelsStore.clear();
 		}

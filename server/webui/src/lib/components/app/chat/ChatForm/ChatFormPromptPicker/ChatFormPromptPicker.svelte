@@ -6,14 +6,12 @@
 	import type { MCPPromptInfo, GetPromptResult, MCPServerSettingsEntry } from '$lib/types';
 	import { SvelteMap } from 'svelte/reactivity';
 	import Badge from '$lib/components/ui/badge/badge.svelte';
-	import {
-		ChatFormPickerPopover,
-		ChatFormPickerList,
-		ChatFormPickerListItem,
-		ChatFormPickerItemHeader,
-		ChatFormPickerListItemSkeleton,
-		ChatFormPromptPickerArgumentForm
-	} from '$lib/components/app/chat';
+	import ChatFormPickerPopover from '$lib/components/app/chat/ChatForm/ChatFormPickerPopover.svelte';
+	import ChatFormPickerList from '$lib/components/app/chat/ChatForm/ChatFormPicker/ChatFormPickerList.svelte';
+	import ChatFormPickerListItem from '$lib/components/app/chat/ChatForm/ChatFormPicker/ChatFormPickerListItem.svelte';
+	import ChatFormPickerItemHeader from '$lib/components/app/chat/ChatForm/ChatFormPicker/ChatFormPickerItemHeader.svelte';
+	import ChatFormPickerListItemSkeleton from '$lib/components/app/chat/ChatForm/ChatFormPicker/ChatFormPickerListItemSkeleton.svelte';
+	import ChatFormPromptPickerArgumentForm from '$lib/components/app/chat/ChatForm/ChatFormPromptPicker/ChatFormPromptPickerArgumentForm.svelte';
 	import { t } from '$lib/i18n';
 
 	interface Props {

@@ -7,7 +7,8 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Switch } from '$lib/components/ui/switch';
 	import { FILE_TYPE_ICONS, TOOLTIP_DELAY_DURATION } from '$lib/constants';
-	import { McpLogo, DropdownMenuSearchable } from '$lib/components/app';
+	import McpLogo from '$lib/components/app/mcp/McpLogo.svelte';
+	import DropdownMenuSearchable from '$lib/components/app/navigation/DropdownMenuSearchable.svelte';
 	import { conversationsStore } from '$lib/stores/conversations.svelte';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
 	import { HealthCheckStatus } from '$lib/enums';

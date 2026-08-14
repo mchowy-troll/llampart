@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
-	import { McpServerForm } from '$lib/components/app/mcp';
+	import McpServerForm from '$lib/components/app/mcp/McpServerForm.svelte';
 	import { t } from '$lib/i18n';
 
 	interface Props {

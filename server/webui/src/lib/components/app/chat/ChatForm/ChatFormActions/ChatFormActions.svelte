@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { Square } from '@lucide/svelte';
 	import { Button } from '$lib/components/ui/button';
-	import {
-		ChatFormActionAttachmentsDropdown,
-		ChatFormActionRecord,
-		ChatFormActionSubmit,
-		ChatFormReasoningToggle,
-		McpServersSelector,
-		ModelsSelector
-	} from '$lib/components/app';
+	import ChatFormActionAttachmentsDropdown from '$lib/components/app/chat/ChatForm/ChatFormActions/ChatFormActionAttachmentsDropdown.svelte';
+	import ChatFormActionRecord from '$lib/components/app/chat/ChatForm/ChatFormActions/ChatFormActionRecord.svelte';
+	import ChatFormActionSubmit from '$lib/components/app/chat/ChatForm/ChatFormActions/ChatFormActionSubmit.svelte';
+	import ChatFormReasoningToggle from '$lib/components/app/chat/ChatForm/ChatFormActions/ChatFormReasoningToggle.svelte';
+	import McpServersSelector from '$lib/components/app/mcp/McpServersSelector.svelte';
+	import ModelsSelector from '$lib/components/app/models/ModelsSelector.svelte';
 	import { SETTINGS_SECTION_TITLES } from '$lib/constants';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
 	import { getChatSettingsDialogContext } from '$lib/contexts';

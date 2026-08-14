@@ -5,15 +5,13 @@
 	import type { MCPServerSettingsEntry, HealthCheckState } from '$lib/types';
 	import { HealthCheckStatus } from '$lib/enums';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
-	import {
-		McpServerCardActions,
-		McpServerCardDeleteDialog,
-		McpServerCardEditForm,
-		McpServerCardHeader,
-		McpServerCardToolsList,
-		McpConnectionLogs,
-		McpServerInfo
-	} from '$lib/components/app/mcp';
+	import McpServerCardActions from '$lib/components/app/mcp/McpServerCard/McpServerCardActions.svelte';
+	import McpServerCardDeleteDialog from '$lib/components/app/mcp/McpServerCard/McpServerCardDeleteDialog.svelte';
+	import McpServerCardEditForm from '$lib/components/app/mcp/McpServerCard/McpServerCardEditForm.svelte';
+	import McpServerCardHeader from '$lib/components/app/mcp/McpServerCard/McpServerCardHeader.svelte';
+	import McpServerCardToolsList from '$lib/components/app/mcp/McpServerCard/McpServerCardToolsList.svelte';
+	import McpConnectionLogs from '$lib/components/app/mcp/McpConnectionLogs.svelte';
+	import McpServerInfo from '$lib/components/app/mcp/McpServerInfo.svelte';
 
 	interface Props {
 		server: MCPServerSettingsEntry;

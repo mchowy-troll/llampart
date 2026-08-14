@@ -23,14 +23,16 @@ import { browser } from '$app/environment';
 import { MCPService } from '$lib/services/mcp.service';
 import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { mcpResourceStore } from '$lib/stores/mcp-resources.svelte';
+import { getApiBaseUrl } from '$lib/utils/api-fetch';
+import { getProxiedUrlString } from '$lib/utils/cors-proxy';
+import { getFaviconUrl } from '$lib/utils/favicon';
 import {
-	getProxiedUrlString,
 	parseMcpServerSettings,
-	detectMcpTransportFromUrl,
-	getFaviconUrl,
-	uuid,
-	getApiBaseUrl
-} from '$lib/utils';
+	buildMcpClientConfig,
+	buildMcpServerConfig
+} from '$lib/utils/mcp-config';
+import { uuid } from '$lib/utils/uuid';
+import { resolveToolName } from '$lib/utils/tool-registry';
 import {
 	MCPConnectionPhase,
 	MCPLogLevel,
@@ -46,7 +48,6 @@ import {
 	DEFAULT_MCP_CONFIG,
 	EXPECTED_THEMED_ICON_PAIR_COUNT,
 	MCP_ALLOWED_ICON_MIME_TYPES,
-	MCP_SERVER_ID_PREFIX,
 	MCP_RECONNECT_INITIAL_DELAY,
 	MCP_RECONNECT_BACKOFF_MULTIPLIER,
 	MCP_RECONNECT_MAX_DELAY,
@@ -77,6 +78,7 @@ import type {
 import type { ListChangedHandlers } from '@modelcontextprotocol/sdk/types.js';
 import type { DatabaseMessageExtraMcpResource, McpServerOverride } from '$lib/types/database';
 import type { SettingsConfigType } from '$lib/types/settings';
+import { SvelteMap } from 'svelte/reactivity';
 
 class MCPStore {
 	private _isInitializing = $state(false);
@@ -87,12 +89,18 @@ class MCPStore {
 	private _proxyAvailable = $state(false);
 
 	private connections = new Map<string, MCPConnection>();
-	private toolsIndex = new Map<string, string>();
+	private toolsIndex = new Map<string, string[]>();
 	private serverConfigs = new Map<string, MCPServerConfig>(); // Store configs for reconnection
 	private reconnectingServers = new Set<string>(); // Guard against concurrent reconnections
+	private reconnectPromises = new Map<string, Promise<void>>();
+	private reconnectControllers = new Map<string, AbortController>();
+	private pendingConnectControllers = new Set<AbortController>();
 	private configSignature: string | null = null;
 	private initPromise: Promise<boolean> | null = null;
 	private activeFlowCount = 0;
+	private lifecycleGeneration = 0;
+	private toolRegistryGeneration = 0;
+	private proxyProbeGeneration = 0;
 
 	constructor() {
 		if (browser) {
@@ -106,106 +114,21 @@ class MCPStore {
 	 * Older llama-server builds may also accept --webui-mcp-proxy as a deprecated alias.
 	 */
 	async probeProxy(): Promise<void> {
+		const generation = ++this.proxyProbeGeneration;
+		let available = false;
 		try {
 			const response = await fetch(`${getApiBaseUrl()}${CORS_PROXY_ENDPOINT}`, {
 				method: 'HEAD'
 			});
-			this._proxyAvailable = response.status !== 404;
+			available = response.status !== 404;
 		} catch {
-			this._proxyAvailable = false;
+			// An unreachable endpoint means the proxy is unavailable for this source.
 		}
+		if (generation === this.proxyProbeGeneration) this._proxyAvailable = available;
 	}
 
 	get isProxyAvailable(): boolean {
 		return this._proxyAvailable;
-	}
-
-	/**
-	 * Generates a unique server ID from an optional ID string or index.
-	 */
-	#generateServerId(id: unknown, index: number): string {
-		if (typeof id === 'string' && id.trim()) {
-			return id.trim();
-		}
-
-		return `${MCP_SERVER_ID_PREFIX}-${index + 1}`;
-	}
-
-	/**
-	 * Parses raw server settings from config into MCPServerSettingsEntry array.
-	 */
-	#parseServerSettings(rawServers: unknown): MCPServerSettingsEntry[] {
-		if (!rawServers) {
-			return [];
-		}
-
-		let parsed: unknown;
-		if (typeof rawServers === 'string') {
-			const trimmed = rawServers.trim();
-			if (!trimmed) {
-				return [];
-			}
-
-			try {
-				parsed = JSON.parse(trimmed);
-			} catch (error) {
-				console.warn('[MCP] Failed to parse mcpServers JSON:', error);
-
-				return [];
-			}
-		} else {
-			parsed = rawServers;
-		}
-		if (!Array.isArray(parsed)) {
-			return [];
-		}
-
-		return parsed.map((entry, index) => {
-			const url = typeof entry?.url === 'string' ? entry.url.trim() : '';
-			const headers = typeof entry?.headers === 'string' ? entry.headers.trim() : undefined;
-
-			return {
-				id: this.#generateServerId((entry as { id?: unknown })?.id, index),
-				enabled: Boolean((entry as { enabled?: unknown })?.enabled),
-				url,
-				name: (entry as { name?: string })?.name,
-				requestTimeoutSeconds: DEFAULT_MCP_CONFIG.requestTimeoutSeconds,
-				headers: headers || undefined,
-				useProxy: Boolean((entry as { useProxy?: unknown })?.useProxy)
-			} satisfies MCPServerSettingsEntry;
-		});
-	}
-
-	/**
-	 * Builds server configuration from a settings entry.
-	 */
-	#buildServerConfig(
-		entry: MCPServerSettingsEntry,
-		connectionTimeoutMs = DEFAULT_MCP_CONFIG.connectionTimeoutMs
-	): MCPServerConfig | undefined {
-		if (!entry?.url) {
-			return undefined;
-		}
-
-		let headers: Record<string, string> | undefined;
-		if (entry.headers) {
-			try {
-				const parsed = JSON.parse(entry.headers);
-				if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed))
-					headers = parsed as Record<string, string>;
-			} catch {
-				console.warn('[MCP] Failed to parse custom headers JSON:', entry.headers);
-			}
-		}
-
-		return {
-			url: entry.url,
-			transport: detectMcpTransportFromUrl(entry.url),
-			handshakeTimeoutMs: connectionTimeoutMs,
-			requestTimeoutMs: Math.round(entry.requestTimeoutSeconds * 1000),
-			headers,
-			useProxy: entry.useProxy
-		};
 	}
 
 	/**
@@ -228,30 +151,14 @@ class MCPStore {
 		cfg: SettingsConfigType,
 		perChatOverrides?: McpServerOverride[]
 	): MCPClientConfig | undefined {
-		const rawServers = this.#parseServerSettings(cfg.mcpServers);
+		const rawServers = parseMcpServerSettings(cfg.mcpServers);
 		if (!rawServers.length) {
 			return undefined;
 		}
 
-		const servers: Record<string, MCPServerConfig> = {};
-
-		for (const [index, entry] of rawServers.entries()) {
-			if (!this.#checkServerEnabled(entry, perChatOverrides)) continue;
-			const normalized = this.#buildServerConfig(entry);
-			if (normalized) servers[this.#generateServerId(entry.id, index)] = normalized;
-		}
-
-		if (Object.keys(servers).length === 0) {
-			return undefined;
-		}
-
-		return {
-			protocolVersion: DEFAULT_MCP_CONFIG.protocolVersion,
-			capabilities: DEFAULT_MCP_CONFIG.capabilities,
-			clientInfo: DEFAULT_MCP_CONFIG.clientInfo,
-			requestTimeoutMs: Math.round(DEFAULT_MCP_CONFIG.requestTimeoutSeconds * 1000),
-			servers
-		};
+		return buildMcpClientConfig(rawServers, (entry) =>
+			this.#checkServerEnabled(entry, perChatOverrides)
+		);
 	}
 
 	/**
@@ -318,7 +225,33 @@ class MCPStore {
 	}
 
 	get availableTools(): string[] {
-		return Array.from(this.toolsIndex.keys());
+		return this.getToolNames();
+	}
+
+	private rebuildToolsIndex(): void {
+		this.toolRegistryGeneration++;
+		this.toolsIndex.clear();
+		for (const [serverName, connection] of this.connections) {
+			for (const tool of connection.tools) {
+				const owners = this.toolsIndex.get(tool.name) ?? [];
+				owners.push(serverName);
+				this.toolsIndex.set(tool.name, owners);
+			}
+		}
+		this.updateState({
+			toolCount: this.getToolNames().length,
+			connectedServers: Array.from(this.connections.keys())
+		});
+	}
+
+	private commitConnection(serverName: string, connection?: MCPConnection): void {
+		if (connection) this.connections.set(serverName, connection);
+		else this.connections.delete(serverName);
+		this.rebuildToolsIndex();
+	}
+
+	getToolRegistryGeneration(): number {
+		return this.toolRegistryGeneration;
 	}
 
 	private updateState(state: {
@@ -588,11 +521,18 @@ class MCPStore {
 			return this.initPromise;
 		}
 
-		if (this.connections.size > 0 || this.initPromise) await this.shutdown();
+		if (
+			this.connections.size > 0 ||
+			this.initPromise ||
+			(this.configSignature !== null && this.configSignature !== signature)
+		) {
+			await this.shutdown();
+		}
 		return this.initialize(signature, mcpConfig!);
 	}
 
 	private async initialize(signature: string, mcpConfig: MCPClientConfig): Promise<boolean> {
+		const generation = this.lifecycleGeneration;
 		this.updateState({ isInitializing: true, error: null });
 		this.configSignature = signature;
 
@@ -603,7 +543,7 @@ class MCPStore {
 
 			return false;
 		}
-		this.initPromise = this.doInitialize(signature, mcpConfig, serverEntries);
+		this.initPromise = this.doInitialize(signature, mcpConfig, serverEntries, generation);
 
 		return this.initPromise;
 	}
@@ -611,35 +551,43 @@ class MCPStore {
 	private async doInitialize(
 		signature: string,
 		mcpConfig: MCPClientConfig,
-		serverEntries: [string, MCPClientConfig['servers'][string]][]
+		serverEntries: [string, MCPClientConfig['servers'][string]][],
+		generation: number
 	): Promise<boolean> {
 		const clientInfo = mcpConfig.clientInfo ?? DEFAULT_MCP_CONFIG.clientInfo;
 		const capabilities = mcpConfig.capabilities ?? DEFAULT_MCP_CONFIG.capabilities;
 		const results = await Promise.allSettled(
 			serverEntries.map(async ([name, serverConfig]) => {
+				if (generation !== this.lifecycleGeneration) {
+					throw new DOMException('Operation was aborted', 'AbortError');
+				}
 				// Store config for reconnection
 				this.serverConfigs.set(name, serverConfig);
 
 				const listChangedHandlers = this.createListChangedHandlers(name);
-				const connection = await MCPService.connect(
+				const connection = await this.connectServer(
 					name,
 					serverConfig,
 					clientInfo,
 					capabilities,
 					(phase) => {
 						// Handle WebSocket disconnection
-						if (phase === MCPConnectionPhase.DISCONNECTED) {
+						if (
+							phase === MCPConnectionPhase.DISCONNECTED &&
+							generation === this.lifecycleGeneration
+						) {
 							console.log(`[MCPStore][${name}] Connection lost, starting auto-reconnect`);
 							this.autoReconnect(name);
 						}
 					},
-					listChangedHandlers
+					listChangedHandlers,
+					generation
 				);
 
 				return { name, connection };
 			})
 		);
-		if (this.configSignature !== signature) {
+		if (generation !== this.lifecycleGeneration || this.configSignature !== signature) {
 			for (const result of results) {
 				if (result.status === 'fulfilled')
 					await MCPService.disconnect(result.value.connection).catch(console.warn);
@@ -648,18 +596,11 @@ class MCPStore {
 			return false;
 		}
 		for (const result of results) {
+			if (generation !== this.lifecycleGeneration) return false;
 			if (result.status === 'fulfilled') {
 				const { name, connection } = result.value;
 
-				this.connections.set(name, connection);
-
-				for (const tool of connection.tools) {
-					if (this.toolsIndex.has(tool.name))
-						console.warn(
-							`[MCPStore] Tool name conflict: "${tool.name}" exists in "${this.toolsIndex.get(tool.name)}" and "${name}". Using tool from "${name}".`
-						);
-					this.toolsIndex.set(tool.name, name);
-				}
+				this.commitConnection(name, connection);
 			} else {
 				console.error(`[MCPStore] Failed to connect:`, result.reason);
 			}
@@ -678,15 +619,86 @@ class MCPStore {
 			return false;
 		}
 
-		this.updateState({
-			isInitializing: false,
-			error: null,
-			toolCount: this.toolsIndex.size,
-			connectedServers: Array.from(this.connections.keys())
-		});
+		this.updateState({ isInitializing: false, error: null });
 		this.initPromise = null;
 
 		return true;
+	}
+
+	private async connectServer(
+		serverName: string,
+		serverConfig: MCPServerConfig,
+		clientInfo: MCPClientConfig['clientInfo'],
+		capabilities: MCPClientConfig['capabilities'],
+		onPhase: Parameters<typeof MCPService.connect>[4],
+		listChangedHandlers: Parameters<typeof MCPService.connect>[5],
+		generation: number,
+		controller = new AbortController(),
+		parentSignal?: AbortSignal
+	): Promise<MCPConnection> {
+		const abortFromParent = () => controller.abort(parentSignal?.reason);
+		if (parentSignal?.aborted) abortFromParent();
+		else parentSignal?.addEventListener('abort', abortFromParent, { once: true });
+
+		this.pendingConnectControllers.add(controller);
+		const connectPromise = MCPService.connect(
+			serverName,
+			serverConfig,
+			clientInfo,
+			capabilities,
+			onPhase,
+			listChangedHandlers,
+			controller.signal
+		);
+
+		try {
+			return await new Promise<MCPConnection>((resolve, reject) => {
+				const rejectAborted = () => {
+					reject(
+						controller.signal.reason instanceof Error
+							? controller.signal.reason
+							: new DOMException('Operation was aborted', 'AbortError')
+					);
+				};
+				controller.signal.addEventListener('abort', rejectAborted, { once: true });
+
+				connectPromise.then(
+					async (connection) => {
+						controller.signal.removeEventListener('abort', rejectAborted);
+						if (controller.signal.aborted || generation !== this.lifecycleGeneration) {
+							await MCPService.disconnect(connection).catch(console.warn);
+							rejectAborted();
+							return;
+						}
+						resolve(connection);
+					},
+					(error) => {
+						controller.signal.removeEventListener('abort', rejectAborted);
+						reject(error);
+					}
+				);
+			});
+		} finally {
+			parentSignal?.removeEventListener('abort', abortFromParent);
+			this.pendingConnectControllers.delete(controller);
+		}
+	}
+
+	private sleepWithAbort(ms: number, signal: AbortSignal): Promise<void> {
+		if (signal.aborted) return Promise.reject(signal.reason);
+
+		return new Promise((resolve, reject) => {
+			const timeout = setTimeout(() => {
+				signal.removeEventListener('abort', onAbort);
+				resolve();
+			}, ms);
+			const onAbort = () => {
+				clearTimeout(timeout);
+				signal.removeEventListener('abort', onAbort);
+				reject(signal.reason);
+			};
+			signal.addEventListener('abort', onAbort, { once: true });
+		});
 	}
 
 	private createListChangedHandlers(serverName: string): ListChangedHandlers {
@@ -717,20 +729,8 @@ class MCPStore {
 			return;
 		}
 
-		for (const [toolName, ownerServer] of this.toolsIndex.entries()) {
-			if (ownerServer === serverName) this.toolsIndex.delete(toolName);
-		}
-
 		connection.tools = tools;
-
-		for (const tool of tools) {
-			if (this.toolsIndex.has(tool.name))
-				console.warn(
-					`[MCPStore] Tool name conflict after list change: "${tool.name}" exists in "${this.toolsIndex.get(tool.name)}" and "${serverName}". Using tool from "${serverName}".`
-				);
-			this.toolsIndex.set(tool.name, serverName);
-		}
-		this.updateState({ toolCount: this.toolsIndex.size });
+		this.commitConnection(serverName, connection);
 	}
 
 	acquireConnection(): void {
@@ -754,28 +754,33 @@ class MCPStore {
 	}
 
 	async shutdown(): Promise<void> {
-		if (this.initPromise) {
-			await this.initPromise.catch(() => {});
-			this.initPromise = null;
-		}
+		this.lifecycleGeneration++;
+		for (const controller of this.reconnectControllers.values()) controller.abort();
+		for (const controller of this.pendingConnectControllers) controller.abort();
 
-		if (this.connections.size === 0) {
-			return;
-		}
+		const initPromise = this.initPromise;
+		const reconnectPromises = Array.from(this.reconnectPromises.values());
+		const connections = Array.from(this.connections.values());
+		this.initPromise = null;
+		this.connections.clear();
+		this.toolsIndex.clear();
+		this.toolRegistryGeneration++;
+		this.serverConfigs.clear();
+		this.reconnectingServers.clear();
+		this.reconnectPromises.clear();
+		this.reconnectControllers.clear();
+		this.pendingConnectControllers.clear();
+		this.configSignature = null;
+		this.updateState({ isInitializing: false, error: null, toolCount: 0, connectedServers: [] });
 
+		await Promise.allSettled([...(initPromise ? [initPromise] : []), ...reconnectPromises]);
 		await Promise.all(
-			Array.from(this.connections.values()).map((conn) =>
+			connections.map((conn) =>
 				MCPService.disconnect(conn).catch((error) =>
 					console.warn(`[MCPStore] Error disconnecting ${conn.serverName}:`, error)
 				)
 			)
 		);
-
-		this.connections.clear();
-		this.toolsIndex.clear();
-		this.serverConfigs.clear();
-		this.configSignature = null;
-		this.updateState({ isInitializing: false, error: null, toolCount: 0, connectedServers: [] });
 	}
 
 	/**
@@ -787,7 +792,22 @@ class MCPStore {
 	 * this performs a single immediate reconnection attempt since the server is known
 	 * to be reachable (it responded with 404).
 	 */
-	private async reconnectServer(serverName: string): Promise<void> {
+	private reconnectServer(serverName: string): Promise<void> {
+		const pending = this.reconnectPromises.get(serverName);
+		if (pending) return pending;
+
+		const reconnect = this.doReconnectServer(serverName).finally(() => {
+			if (this.reconnectPromises.get(serverName) === reconnect) {
+				this.reconnectPromises.delete(serverName);
+			}
+		});
+		this.reconnectPromises.set(serverName, reconnect);
+
+		return reconnect;
+	}
+
+	private async doReconnectServer(serverName: string): Promise<void> {
+		const generation = this.lifecycleGeneration;
 		const serverConfig = this.serverConfigs.get(serverName);
 		if (!serverConfig) {
 			throw new Error(`[MCPStore] No config found for ${serverName}, cannot reconnect`);
@@ -796,32 +816,43 @@ class MCPStore {
 		// Disconnect stale connection (clears old transport + session ID)
 		const oldConnection = this.connections.get(serverName);
 		if (oldConnection) {
+			this.commitConnection(serverName);
 			await MCPService.disconnect(oldConnection).catch(console.warn);
-			this.connections.delete(serverName);
+			if (generation !== this.lifecycleGeneration) return;
 		}
 
 		console.log(`[MCPStore][${serverName}] Session expired, reconnecting with fresh session...`);
 
 		const listChangedHandlers = this.createListChangedHandlers(serverName);
-		const connection = await MCPService.connect(
+		const connection = await this.connectServer(
 			serverName,
 			serverConfig,
 			DEFAULT_MCP_CONFIG.clientInfo,
 			DEFAULT_MCP_CONFIG.capabilities,
 			(phase) => {
-				if (phase === MCPConnectionPhase.DISCONNECTED) {
+				if (phase === MCPConnectionPhase.DISCONNECTED && generation === this.lifecycleGeneration) {
 					console.log(`[MCPStore][${serverName}] Connection lost, starting auto-reconnect`);
 					this.autoReconnect(serverName);
 				}
 			},
-			listChangedHandlers
+			listChangedHandlers,
+			generation
 		);
 
-		// Replace connection and rebuild tool index for this server
-		this.connections.set(serverName, connection);
-		for (const tool of connection.tools) {
-			this.toolsIndex.set(tool.name, serverName);
+		if (generation !== this.lifecycleGeneration) {
+			await MCPService.disconnect(connection).catch(console.warn);
+			return;
 		}
+		const replacedConnection = this.connections.get(serverName);
+		if (replacedConnection && replacedConnection !== connection) {
+			this.commitConnection(serverName);
+			await MCPService.disconnect(replacedConnection).catch(console.warn);
+			if (generation !== this.lifecycleGeneration) {
+				await MCPService.disconnect(connection).catch(console.warn);
+				return;
+			}
+		}
+		this.commitConnection(serverName, connection);
 
 		console.log(`[MCPStore][${serverName}] Session recovered successfully`);
 	}
@@ -854,42 +885,56 @@ class MCPStore {
 			return;
 		}
 
+		const generation = this.lifecycleGeneration;
+		const reconnectController = new AbortController();
 		this.reconnectingServers.add(serverName);
+		this.reconnectControllers.set(serverName, reconnectController);
 		let backoff = MCP_RECONNECT_INITIAL_DELAY;
 		// Flag set by the phase callback when a DISCONNECTED event fires while
 		// reconnectingServers still holds this server (see JSDoc above).
 		let needsReconnect = false;
 
 		try {
-			while (true) {
-				await new Promise((resolve) => setTimeout(resolve, backoff));
+			const staleConnection = this.connections.get(serverName);
+			if (staleConnection) {
+				this.commitConnection(serverName);
+				await MCPService.disconnect(staleConnection).catch(console.warn);
+				if (generation !== this.lifecycleGeneration || reconnectController.signal.aborted) return;
+			}
+
+			while (generation === this.lifecycleGeneration && !reconnectController.signal.aborted) {
+				try {
+					await this.sleepWithAbort(backoff, reconnectController.signal);
+				} catch {
+					break;
+				}
+				if (generation !== this.lifecycleGeneration || reconnectController.signal.aborted) break;
 
 				console.log(`[MCPStore][${serverName}] Auto-reconnecting...`);
 
+				let attemptTimeout: ReturnType<typeof setTimeout> | undefined;
 				try {
-					// Per-attempt timeout: reject if the server doesn't respond in time,
-					// then fall through to backoff logic as with any other failure.
-					const timeoutPromise = new Promise<never>((_, reject) =>
-						setTimeout(
-							() =>
-								reject(
-									new Error(
-										`Reconnect attempt timed out after ${MCP_RECONNECT_ATTEMPT_TIMEOUT_MS}ms`
-									)
-								),
-							MCP_RECONNECT_ATTEMPT_TIMEOUT_MS
-						)
-					);
-
 					needsReconnect = false;
 					const listChangedHandlers = this.createListChangedHandlers(serverName);
-					const connectPromise = MCPService.connect(
+					const attemptController = new AbortController();
+					attemptTimeout = setTimeout(
+						() =>
+							attemptController.abort(
+								new Error(`Reconnect attempt timed out after ${MCP_RECONNECT_ATTEMPT_TIMEOUT_MS}ms`)
+							),
+						MCP_RECONNECT_ATTEMPT_TIMEOUT_MS
+					);
+					const connection = await this.connectServer(
 						serverName,
 						serverConfig,
 						DEFAULT_MCP_CONFIG.clientInfo,
 						DEFAULT_MCP_CONFIG.capabilities,
 						(phase) => {
-							if (phase === MCPConnectionPhase.DISCONNECTED) {
+							if (
+								phase === MCPConnectionPhase.DISCONNECTED &&
+								generation === this.lifecycleGeneration &&
+								!reconnectController.signal.aborted
+							) {
 								if (this.reconnectingServers.has(serverName)) {
 									// Reconnect loop is active; defer to after it exits.
 									needsReconnect = true;
@@ -901,31 +946,49 @@ class MCPStore {
 								}
 							}
 						},
-						listChangedHandlers
+						listChangedHandlers,
+						generation,
+						attemptController,
+						reconnectController.signal
 					);
-
-					const connection = await Promise.race([connectPromise, timeoutPromise]);
-
-					// Replace old connection with new one
-					this.connections.set(serverName, connection);
-
-					// Rebuild tool index for this server
-					for (const tool of connection.tools) {
-						this.toolsIndex.set(tool.name, serverName);
+					clearTimeout(attemptTimeout);
+					if (generation !== this.lifecycleGeneration || reconnectController.signal.aborted) {
+						await MCPService.disconnect(connection).catch(console.warn);
+						break;
 					}
+					const replacedConnection = this.connections.get(serverName);
+					if (replacedConnection && replacedConnection !== connection) {
+						this.commitConnection(serverName);
+						await MCPService.disconnect(replacedConnection).catch(console.warn);
+						if (generation !== this.lifecycleGeneration || reconnectController.signal.aborted) {
+							await MCPService.disconnect(connection).catch(console.warn);
+							break;
+						}
+					}
+
+					this.commitConnection(serverName, connection);
 
 					console.log(`[MCPStore][${serverName}] Reconnected successfully`);
 					break;
 				} catch (error) {
+					if (attemptTimeout) clearTimeout(attemptTimeout);
+					if (generation !== this.lifecycleGeneration || reconnectController.signal.aborted) break;
 					console.warn(`[MCPStore][${serverName}] Reconnection failed:`, error);
 					backoff = Math.min(backoff * MCP_RECONNECT_BACKOFF_MULTIPLIER, MCP_RECONNECT_MAX_DELAY);
 				}
 			}
 		} finally {
-			this.reconnectingServers.delete(serverName);
+			if (this.reconnectControllers.get(serverName) === reconnectController) {
+				this.reconnectControllers.delete(serverName);
+				this.reconnectingServers.delete(serverName);
+			}
 			// If the phase callback signalled a disconnect while this function held
 			// the guard, kick off a fresh reconnect now that the guard is released.
-			if (needsReconnect) {
+			if (
+				needsReconnect &&
+				generation === this.lifecycleGeneration &&
+				!reconnectController.signal.aborted
+			) {
 				console.log(
 					`[MCPStore][${serverName}] Deferred disconnect detected, restarting auto-reconnect`
 				);
@@ -935,7 +998,7 @@ class MCPStore {
 	}
 
 	getToolDefinitionsForLLM(): OpenAIToolDefinition[] {
-		const tools: OpenAIToolDefinition[] = [];
+		const toolsByName = new SvelteMap<string, OpenAIToolDefinition[]>();
 
 		for (const connection of this.connections.values()) {
 			for (const tool of connection.tools) {
@@ -945,21 +1008,27 @@ class MCPStore {
 					required: []
 				};
 
-				tools.push({
+				const definition: OpenAIToolDefinition = {
 					type: ToolCallType.FUNCTION as const,
 					function: {
 						name: tool.name,
 						description: tool.description,
 						parameters: this.normalizeSchemaProperties(rawSchema)
 					}
-				});
+				};
+				const candidates = toolsByName.get(tool.name) ?? [];
+				candidates.push(definition);
+				toolsByName.set(tool.name, candidates);
 			}
 		}
 
-		return tools;
+		return [...toolsByName.values()].flatMap((definitions) => {
+			const resolution = resolveToolName(definitions);
+			return resolution.status === 'unique' ? [resolution.entry] : [];
+		});
 	}
 
-	private normalizeSchemaProperties(schema: Record<string, unknown>): Record<string, unknown> {
+	normalizeSchemaProperties(schema: Record<string, unknown>): Record<string, unknown> {
 		if (!schema || typeof schema !== 'object') {
 			return schema;
 		}
@@ -1002,15 +1071,19 @@ class MCPStore {
 	}
 
 	getToolNames(): string[] {
-		return Array.from(this.toolsIndex.keys());
+		return Array.from(this.toolsIndex.entries())
+			.filter(([, owners]) => owners.length === 1)
+			.map(([name]) => name);
 	}
 
 	hasTool(toolName: string): boolean {
-		return this.toolsIndex.has(toolName);
+		return this.toolsIndex.get(toolName)?.length === 1;
 	}
 
 	getToolServer(toolName: string): string | undefined {
-		return this.toolsIndex.get(toolName);
+		const owners = this.toolsIndex.get(toolName);
+		const resolution = resolveToolName(owners ? [...owners] : []);
+		return resolution.status === 'unique' ? resolution.entry : undefined;
 	}
 
 	hasPromptsSupport(): boolean {
@@ -1124,29 +1197,17 @@ class MCPStore {
 	async executeTool(toolCall: MCPToolCall, signal?: AbortSignal): Promise<ToolExecutionResult> {
 		const toolName = toolCall.function.name;
 
-		const serverName = this.toolsIndex.get(toolName);
-		if (!serverName) throw new Error(`Unknown tool: ${toolName}`);
-
-		const connection = this.connections.get(serverName);
-		if (!connection) throw new Error(`Server "${serverName}" is not connected`);
+		const serverName = this.getToolServer(toolName);
+		if (!serverName) {
+			throw new Error(
+				this.toolsIndex.has(toolName)
+					? `Tool name conflict: ${toolName}`
+					: `Unknown tool: ${toolName}`
+			);
+		}
 
 		const args = this.parseToolArguments(toolCall.function.arguments);
-
-		try {
-			return await MCPService.callTool(connection, { name: toolName, arguments: args }, signal);
-		} catch (error) {
-			// Session expired (server restarted) - reconnect and retry once
-			if (MCPService.isSessionExpiredError(error)) {
-				await this.reconnectServer(serverName);
-
-				const newConnection = this.connections.get(serverName);
-				if (!newConnection) throw new Error(`Failed to reconnect to "${serverName}"`);
-
-				return MCPService.callTool(newConnection, { name: toolName, arguments: args }, signal);
-			}
-
-			throw error;
-		}
+		return this.executeToolOnServer(serverName, toolName, args, signal);
 	}
 
 	async executeToolByName(
@@ -1154,24 +1215,49 @@ class MCPStore {
 		args: Record<string, unknown>,
 		signal?: AbortSignal
 	): Promise<ToolExecutionResult> {
-		const serverName = this.toolsIndex.get(toolName);
-		if (!serverName) throw new Error(`Unknown tool: ${toolName}`);
+		const serverName = this.getToolServer(toolName);
+		if (!serverName) {
+			throw new Error(
+				this.toolsIndex.has(toolName)
+					? `Tool name conflict: ${toolName}`
+					: `Unknown tool: ${toolName}`
+			);
+		}
+		return this.executeToolOnServer(serverName, toolName, args, signal);
+	}
+
+	async executeToolOnServer(
+		serverName: string,
+		toolName: string,
+		args: Record<string, unknown>,
+		signal?: AbortSignal
+	): Promise<ToolExecutionResult> {
+		const owner = this.getToolServer(toolName);
+		if (owner !== serverName) {
+			throw new Error(
+				this.toolsIndex.has(toolName)
+					? `Tool name conflict: ${toolName}`
+					: `Tool unavailable: ${serverName}:${toolName}`
+			);
+		}
 		const connection = this.connections.get(serverName);
-		if (!connection) throw new Error(`Server "${serverName}" is not connected`);
+		if (!connection || !connection.tools.some((tool) => tool.name === toolName)) {
+			throw new Error(`Tool unavailable: ${serverName}:${toolName}`);
+		}
 
 		try {
 			return await MCPService.callTool(connection, { name: toolName, arguments: args }, signal);
 		} catch (error) {
-			if (MCPService.isSessionExpiredError(error)) {
-				await this.reconnectServer(serverName);
-
-				const newConnection = this.connections.get(serverName);
-				if (!newConnection) throw new Error(`Failed to reconnect to "${serverName}"`);
-
-				return MCPService.callTool(newConnection, { name: toolName, arguments: args }, signal);
+			if (!MCPService.isSessionExpiredError(error)) throw error;
+			await this.reconnectServer(serverName);
+			if (this.getToolServer(toolName) !== serverName) {
+				throw new Error(`Tool name conflict after reconnect: ${toolName}`);
 			}
-
-			throw error;
+			const newConnection = this.connections.get(serverName);
+			if (!newConnection || !newConnection.tools.some((tool) => tool.name === toolName)) {
+				throw new Error(`Tool unavailable after reconnect: ${serverName}:${toolName}`);
+			}
+			return MCPService.callTool(newConnection, { name: toolName, arguments: args }, signal);
 		}
 	}
 
@@ -1276,22 +1362,6 @@ class MCPStore {
 		}
 	}
 
-	private parseHeaders(headersJson?: string): Record<string, string> | undefined {
-		if (!headersJson?.trim()) {
-			return undefined;
-		}
-
-		try {
-			const parsed = JSON.parse(headersJson);
-			if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed))
-				return parsed as Record<string, string>;
-		} catch {
-			console.warn('[MCPStore] Failed to parse custom headers JSON:', headersJson);
-		}
-
-		return undefined;
-	}
-
 	async runHealthChecksForServers(
 		servers: {
 			id: string;
@@ -1333,12 +1403,16 @@ class MCPStore {
 	 * and promoted to an active connection instead of being disconnected.
 	 */
 	async runHealthCheck(server: HealthCheckParams, promoteToActive = false): Promise<void> {
+		const generation = this.lifecycleGeneration;
 		// Check if we already have an active connection for this server
 		const existingConnection = this.connections.get(server.id);
 		if (existingConnection) {
 			// Reuse existing connection - just refresh tools list
 			try {
 				const tools = await MCPService.listTools(existingConnection);
+				if (generation !== this.lifecycleGeneration) return;
+				existingConnection.tools = tools;
+				this.commitConnection(server.id, existingConnection);
 				const capabilities = this.#buildCapabilitiesInfo(
 					existingConnection.serverCapabilities,
 					existingConnection.clientCapabilities
@@ -1360,12 +1434,15 @@ class MCPStore {
 				});
 				return;
 			} catch (error) {
+				if (generation !== this.lifecycleGeneration) return;
 				console.warn(
 					`[MCPStore] Failed to reuse connection for ${server.id}, creating new one:`,
 					error
 				);
 				// Connection may be stale, remove it and create new one
-				this.connections.delete(server.id);
+				this.commitConnection(server.id);
+				await MCPService.disconnect(existingConnection).catch(console.warn);
+				if (generation !== this.lifecycleGeneration) return;
 			}
 		}
 
@@ -1388,28 +1465,20 @@ class MCPStore {
 			logs: []
 		});
 
-		const timeoutMs = Math.round(server.requestTimeoutSeconds * 1000);
-		const headers = this.parseHeaders(server.headers);
-
 		try {
-			const serverConfig: MCPServerConfig = {
-				url: trimmedUrl,
-				transport: detectMcpTransportFromUrl(trimmedUrl),
-				handshakeTimeoutMs: DEFAULT_MCP_CONFIG.connectionTimeoutMs,
-				requestTimeoutMs: timeoutMs,
-				headers,
-				useProxy: server.useProxy
-			};
+			const serverConfig = buildMcpServerConfig({ ...server, url: trimmedUrl });
+			if (!serverConfig) return;
 
 			// Store config for reconnection
 			this.serverConfigs.set(server.id, serverConfig);
 
-			const connection = await MCPService.connect(
+			const connection = await this.connectServer(
 				server.id,
 				serverConfig,
 				DEFAULT_MCP_CONFIG.clientInfo,
 				DEFAULT_MCP_CONFIG.capabilities,
 				(phase, log) => {
+					if (generation !== this.lifecycleGeneration) return;
 					currentPhase = phase;
 					logs.push(log);
 					this.updateHealthCheck(server.id, {
@@ -1419,14 +1488,24 @@ class MCPStore {
 					});
 
 					// Handle WebSocket disconnection
-					if (phase === MCPConnectionPhase.DISCONNECTED && promoteToActive) {
+					if (
+						phase === MCPConnectionPhase.DISCONNECTED &&
+						promoteToActive &&
+						generation === this.lifecycleGeneration
+					) {
 						console.log(
 							`[MCPStore][${server.id}] Connection lost during health check, starting auto-reconnect`
 						);
 						this.autoReconnect(server.id);
 					}
-				}
+				},
+				promoteToActive ? this.createListChangedHandlers(server.id) : undefined,
+				generation
 			);
+			if (generation !== this.lifecycleGeneration) {
+				await MCPService.disconnect(connection).catch(console.warn);
+				return;
+			}
 
 			const tools = connection.tools.map((tool) => ({
 				name: tool.name,
@@ -1458,6 +1537,7 @@ class MCPStore {
 				await MCPService.disconnect(connection);
 			}
 		} catch (error) {
+			if (generation !== this.lifecycleGeneration) return;
 			const message = error instanceof Error ? error.message : 'Unknown error occurred';
 
 			if (logs.at(-1)?.phase !== MCPConnectionPhase.ERROR) {
@@ -1483,24 +1563,7 @@ class MCPStore {
 	 * This avoids the need to reconnect when the server is needed for agentic flows.
 	 */
 	private promoteHealthCheckToConnection(serverId: string, connection: MCPConnection): void {
-		// Register tools from the connection
-		for (const tool of connection.tools) {
-			if (this.toolsIndex.has(tool.name)) {
-				console.warn(
-					`[MCPStore] Tool name conflict during promotion: "${tool.name}" exists in "${this.toolsIndex.get(tool.name)}" and "${serverId}". Using tool from "${serverId}".`
-				);
-			}
-			this.toolsIndex.set(tool.name, serverId);
-		}
-
-		// Add to active connections
-		this.connections.set(serverId, connection);
-
-		// Update state
-		this.updateState({
-			toolCount: this.toolsIndex.size,
-			connectedServers: Array.from(this.connections.keys())
-		});
+		this.commitConnection(serverId, connection);
 	}
 
 	getServersStatus(): ServerStatus[] {

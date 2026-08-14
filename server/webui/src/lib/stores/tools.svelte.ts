@@ -1,6 +1,12 @@
-import type { OpenAIToolDefinition, ToolEntry, ToolGroup } from '$lib/types';
+import type {
+	OpenAIToolDefinition,
+	ProviderRequestContext,
+	ToolEntry,
+	ToolExecutionResult,
+	ToolGroup
+} from '$lib/types';
 import { ToolsService } from '$lib/services/tools.service';
-import { getApiProviderCapabilities } from '$lib/services/providers';
+import { getApiProvider, getApiProviderCapabilities } from '$lib/services/providers';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { HealthCheckStatus, JsonSchemaType, ToolCallType, ToolSource } from '$lib/enums';
 import { config } from '$lib/stores/settings.svelte';
@@ -11,14 +17,13 @@ import {
 	TOOL_SERVER_LABELS
 } from '$lib/constants';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
+import { resolveToolName } from '$lib/utils/tool-registry';
 
 /** Stable selection identity for a tool, shared by disabled tools and permission lookups. */
 function toolKey(source: ToolSource, name: string, serverId?: string): string {
 	switch (source) {
 		case ToolSource.MCP:
 			return serverId ? `mcp-${serverId}:${name}` : `mcp:${name}`;
-		case ToolSource.CUSTOM:
-			return `custom:${name}`;
 		default:
 			return `builtin:${name}`;
 	}
@@ -46,6 +51,10 @@ class ToolsStore {
 	private _disabledTools = $state(new SvelteSet<string>());
 	private _legacyDisabledToolNames = new SvelteSet<string>();
 	private _toolsEndpointUnreachable = $state(false);
+	private builtinContext: ProviderRequestContext | null = null;
+	private requestGeneration = 0;
+	private registryGeneration = 0;
+	private fetchController: AbortController | null = null;
 
 	constructor() {
 		if (typeof localStorage !== 'undefined') {
@@ -100,36 +109,19 @@ class ToolsStore {
 			.supportsOpenAiToolCalls;
 	}
 
+	get supportsBuiltinToolsEndpoint(): boolean {
+		const currentConfig = config();
+
+		return getApiProviderCapabilities(String(currentConfig.apiProvider ?? ''), currentConfig)
+			.supportsBuiltinToolsEndpoint;
+	}
+
 	get builtinTools(): OpenAIToolDefinition[] {
-		return this.supportsProviderTools ? this._builtinTools : [];
+		return this.supportsBuiltinToolsEndpoint ? this._builtinTools : [];
 	}
 
 	get mcpTools(): OpenAIToolDefinition[] {
 		return this.supportsProviderTools ? mcpStore.getToolDefinitionsForLLM() : [];
-	}
-
-	get customTools(): OpenAIToolDefinition[] {
-		if (!this.supportsProviderTools) return [];
-
-		const raw = config().custom;
-		if (!raw || typeof raw !== 'string') return [];
-
-		try {
-			const parsed = JSON.parse(raw);
-			if (!Array.isArray(parsed)) return [];
-
-			return parsed.filter(
-				(t: unknown): t is OpenAIToolDefinition =>
-					typeof t === 'object' &&
-					t !== null &&
-					'type' in t &&
-					(t as OpenAIToolDefinition).type === 'function' &&
-					'function' in t &&
-					typeof (t as OpenAIToolDefinition).function?.name === 'string'
-			);
-		} catch {
-			return [];
-		}
 	}
 
 	private mcpEntries(): {
@@ -157,7 +149,11 @@ class ToolsStore {
 				entries.push({
 					serverId,
 					serverName,
-					definition: mcpDefinition(tool.name, tool.description, rawSchema)
+					definition: mcpDefinition(
+						tool.name,
+						tool.description,
+						mcpStore.normalizeSchemaProperties(rawSchema)
+					)
 				});
 			}
 		}
@@ -199,41 +195,31 @@ class ToolsStore {
 	/** Canonical flat list of tool entries with source metadata and stable keys. */
 	get allTools(): ToolEntry[] {
 		const entries: ToolEntry[] = [];
-		const seen = new SvelteSet<string>();
-
-		const push = (entry: ToolEntry) => {
-			if (seen.has(entry.key)) return;
-			seen.add(entry.key);
-			entries.push(entry);
-		};
 
 		if (!this.supportsProviderTools) return [];
 
 		for (const definition of this._builtinTools) {
 			const name = definition.function.name;
-			push({
+			entries.push({
 				source: ToolSource.BUILTIN,
+				apiName: name,
 				key: toolKey(ToolSource.BUILTIN, name),
+				sourceGeneration: this.builtinContext?.sourceGeneration,
+				registryGeneration: this.registryGeneration,
 				definition
 			});
 		}
 
 		for (const { serverId, serverName, definition } of this.mcpEntries()) {
 			const name = definition.function.name;
-			push({
+			entries.push({
 				source: ToolSource.MCP,
+				apiName: name,
 				serverId,
 				serverName,
 				key: toolKey(ToolSource.MCP, name, serverId),
-				definition
-			});
-		}
-
-		for (const definition of this.customTools) {
-			const name = definition.function.name;
-			push({
-				source: ToolSource.CUSTOM,
-				key: toolKey(ToolSource.CUSTOM, name),
+				registryGeneration: this.registryGeneration,
+				mcpGeneration: mcpStore.getToolRegistryGeneration(),
 				definition
 			});
 		}
@@ -264,7 +250,9 @@ class ToolsStore {
 				groups.push(group);
 			}
 
-			group.tools.push(entry);
+			if (!group.tools.some((candidate) => candidate.key === entry.key)) {
+				group.tools.push(entry);
+			}
 		}
 
 		return groups;
@@ -274,49 +262,56 @@ class ToolsStore {
 		switch (entry.source) {
 			case ToolSource.MCP:
 				return entry.serverName ?? '';
-			case ToolSource.CUSTOM:
-				return TOOL_GROUP_LABELS[ToolSource.CUSTOM];
 			default:
 				return TOOL_GROUP_LABELS[ToolSource.BUILTIN];
 		}
 	}
 
-	/** Only enabled tool definitions (for sending to the API). */
+	private availableEntries(context?: ProviderRequestContext): ToolEntry[] {
+		const byApiName = new SvelteMap<string, ToolEntry[]>();
+		for (const entry of this.allTools) {
+			if (
+				entry.source === ToolSource.BUILTIN &&
+				(!this.builtinContext ||
+					(context !== undefined &&
+						(entry.sourceGeneration !== context.sourceGeneration ||
+							this.builtinContext.providerId !== context.providerId ||
+							this.builtinContext.serverBaseUrl !== context.serverBaseUrl ||
+							this.builtinContext.apiKey !== context.apiKey)))
+			) {
+				continue;
+			}
+			const candidates = byApiName.get(entry.apiName) ?? [];
+			candidates.push(entry);
+			byApiName.set(entry.apiName, candidates);
+		}
+
+		return [...byApiName.values()].flatMap((entries) => {
+			const resolution = resolveToolName(entries);
+			return resolution.status === 'unique' ? [resolution.entry] : [];
+		});
+	}
+
+	/** Only enabled, unambiguous tool definitions for sending to the API. */
 	get enabledToolDefinitions(): OpenAIToolDefinition[] {
-		return this.allTools
+		return this.availableEntries()
 			.filter((entry) => this.isToolEnabled(entry.key))
 			.map((entry) => entry.definition);
 	}
 
 	/**
 	 * Returns enabled tool definitions for sending to the LLM.
-	 * MCP tools use normalized schemas from mcpStore.
-	 * API tool names are deduped because the API identifies tools by function.name.
+	 * Every duplicate API-visible name is excluded, regardless of enabled state.
 	 */
-	getEnabledToolsForLLM(): OpenAIToolDefinition[] {
-		const enabledNames = new SvelteSet<string>();
+	getEnabledToolEntriesForLLM(context: ProviderRequestContext): ToolEntry[] {
+		return this.availableEntries(context).filter((entry) => this.isToolEnabled(entry.key));
+	}
 
-		for (const entry of this.allTools) {
-			if (this.isToolEnabled(entry.key)) {
-				enabledNames.add(entry.definition.function.name);
-			}
-		}
-
-		const result: OpenAIToolDefinition[] = [];
-		const seen = new SvelteSet<string>();
-
-		const take = (definition: OpenAIToolDefinition) => {
-			const name = definition.function.name;
-			if (!enabledNames.has(name) || seen.has(name)) return;
-			seen.add(name);
-			result.push(definition);
-		};
-
-		for (const definition of this.builtinTools) take(definition);
-		for (const definition of this.mcpTools) take(definition);
-		for (const definition of this.customTools) take(definition);
-
-		return result;
+	getEnabledToolsForLLM(context?: ProviderRequestContext): OpenAIToolDefinition[] {
+		const entries = context ? this.getEnabledToolEntriesForLLM(context) : this.availableEntries();
+		return entries
+			.filter((entry) => this.isToolEnabled(entry.key))
+			.map((entry) => entry.definition);
 	}
 
 	get allToolDefinitions(): OpenAIToolDefinition[] {
@@ -417,10 +412,8 @@ class ToolsStore {
 	}
 
 	private findEntryByName(toolName: string): ToolEntry | null {
-		for (const entry of this.allTools) {
-			if (entry.definition.function.name === toolName) return entry;
-		}
-		return null;
+		const resolution = resolveToolName(this.allTools.filter((entry) => entry.apiName === toolName));
+		return resolution.status === 'unique' ? resolution.entry : null;
 	}
 
 	/** Determine the source of a tool by its name. */
@@ -434,7 +427,6 @@ class ToolsStore {
 		if (!entry) return '';
 		if (entry.serverName) return entry.serverName;
 		if (entry.source === ToolSource.BUILTIN) return TOOL_SERVER_LABELS[ToolSource.BUILTIN];
-		if (entry.source === ToolSource.CUSTOM) return TOOL_SERVER_LABELS[ToolSource.CUSTOM];
 		return '';
 	}
 
@@ -448,25 +440,120 @@ class ToolsStore {
 		return this.getEnabledToolsForLLM().length > 0;
 	}
 
-	async fetchBuiltinTools(): Promise<void> {
-		if (!this.supportsProviderTools) {
-			this._builtinTools = [];
-			this._loading = false;
-			this._error = null;
-			this._toolsEndpointUnreachable = false;
+	getServerPermissionKeys(entry: ToolEntry): string[] {
+		return this.allTools
+			.filter((candidate) =>
+				entry.source === ToolSource.MCP
+					? candidate.source === ToolSource.MCP && candidate.serverId === entry.serverId
+					: candidate.source === entry.source
+			)
+			.map((candidate) => candidate.key);
+	}
+
+	hasBuiltinToolsForContext(context: ProviderRequestContext): boolean {
+		return (
+			this._builtinTools.length > 0 &&
+			this.builtinContext?.providerId === context.providerId &&
+			this.builtinContext.serverBaseUrl === context.serverBaseUrl &&
+			this.builtinContext.apiKey === context.apiKey &&
+			this.builtinContext.sourceGeneration === context.sourceGeneration
+		);
+	}
+
+	async executeTool(
+		entry: ToolEntry,
+		params: Record<string, unknown>,
+		context: ProviderRequestContext,
+		signal?: AbortSignal
+	): Promise<ToolExecutionResult> {
+		const currentConfig = config();
+		if (
+			getApiProvider(String(currentConfig.apiProvider ?? '')).id !== context.providerId ||
+			String(currentConfig.serverBaseUrl ?? '') !== context.serverBaseUrl ||
+			String(currentConfig.apiKey ?? '') !== context.apiKey
+		) {
+			throw new Error(`Tool unavailable for provider source: ${entry.apiName}`);
+		}
+		if (entry.registryGeneration !== this.registryGeneration) {
+			throw new Error(`Tool unavailable: ${entry.apiName}`);
+		}
+		const candidates = this.allTools.filter((candidate) => candidate.apiName === entry.apiName);
+		const resolution = resolveToolName(candidates);
+		if (resolution.status === 'conflicted') throw new Error(`Tool name conflict: ${entry.apiName}`);
+		if (resolution.status === 'unavailable') throw new Error(`Tool unavailable: ${entry.apiName}`);
+		if (
+			entry.source === ToolSource.MCP &&
+			entry.mcpGeneration !== mcpStore.getToolRegistryGeneration()
+		) {
+			throw new Error(`Tool unavailable: ${entry.apiName}`);
+		}
+		const current = resolution.entry;
+		if (!current || current.key !== entry.key || !this.isToolEnabled(current.key)) {
+			throw new Error(`Tool unavailable: ${entry.apiName}`);
+		}
+
+		if (entry.source === ToolSource.BUILTIN) {
+			if (
+				!this.builtinContext ||
+				entry.sourceGeneration !== context.sourceGeneration ||
+				this.builtinContext.providerId !== context.providerId ||
+				this.builtinContext.serverBaseUrl !== context.serverBaseUrl ||
+				this.builtinContext.apiKey !== context.apiKey
+			) {
+				throw new Error(`Tool unavailable for provider source: ${entry.apiName}`);
+			}
+			return ToolsService.executeTool(entry.apiName, params, context, signal);
+		}
+
+		if (!entry.serverId) throw new Error(`Tool unavailable: ${entry.apiName}`);
+		return mcpStore.executeToolOnServer(entry.serverId, entry.apiName, params, signal);
+	}
+
+	clear(): void {
+		this.requestGeneration++;
+		this.registryGeneration++;
+		this.fetchController?.abort();
+		this.fetchController = null;
+		this.builtinContext = null;
+		this._builtinTools = [];
+		this._loading = false;
+		this._error = null;
+		this._toolsEndpointUnreachable = false;
+	}
+
+	private currentRequestContext(): ProviderRequestContext {
+		const currentConfig = config();
+		return Object.freeze({
+			providerId: getApiProvider(String(currentConfig.apiProvider ?? '')).id,
+			serverBaseUrl: String(currentConfig.serverBaseUrl ?? ''),
+			apiKey: String(currentConfig.apiKey ?? ''),
+			sourceGeneration: this.registryGeneration
+		});
+	}
+
+	async fetchBuiltinTools(context = this.currentRequestContext()): Promise<void> {
+		if (!getApiProvider(context.providerId).capabilities.supportsBuiltinToolsEndpoint) {
+			this.clear();
 			return;
 		}
 
-		if (this._loading) return;
+		this.fetchController?.abort();
+		const generation = ++this.requestGeneration;
+		const controller = new AbortController();
+		this.fetchController = controller;
 
 		this._loading = true;
 		this._error = null;
 		this._toolsEndpointUnreachable = false;
 
 		try {
-			const toolInfos = await ToolsService.list();
+			const toolInfos = await ToolsService.list(context, controller.signal);
+			if (generation !== this.requestGeneration || controller.signal.aborted) return;
+			this.registryGeneration++;
 			this._builtinTools = toolInfos.map((info) => info.definition);
+			this.builtinContext = Object.freeze({ ...context });
 		} catch (err) {
+			if (generation !== this.requestGeneration || controller.signal.aborted) return;
 			const errorMessage = err instanceof Error ? err.message : String(err);
 			this._error = errorMessage;
 			// 404 from /tools means the server was started without --tools
@@ -475,7 +562,10 @@ class ToolsStore {
 			}
 			console.error('[ToolsStore] Failed to fetch built-in tools:', err);
 		} finally {
-			this._loading = false;
+			if (generation === this.requestGeneration) {
+				this._loading = false;
+				if (this.fetchController === controller) this.fetchController = null;
+			}
 		}
 	}
 }

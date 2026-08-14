@@ -11,7 +11,7 @@
 		downloadResourceContent
 	} from '$lib/utils';
 	import { MimeTypeApplication, MimeTypeText } from '$lib/enums';
-	import { ActionIconCopyToClipboard } from '$lib/components/app';
+	import ActionIconCopyToClipboard from '$lib/components/app/actions/ActionIconCopyToClipboard.svelte';
 	import type { MCPResourceInfo, MCPResourceContent } from '$lib/types';
 	import { t } from '$lib/i18n';
 

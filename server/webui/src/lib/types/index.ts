@@ -57,6 +57,8 @@ export type { ReasoningEffortLevel, ReasoningEffortOptionValue } from './reasoni
 export type {
 	ProviderCapabilities,
 	ProviderCapabilityKey,
+	ProviderConnectionContext,
+	ProviderRequestContext,
 	ProviderConnectionInput,
 	ProviderConnectionValidationResult,
 	ProviderModelListInput,

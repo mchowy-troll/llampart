@@ -1,16 +1,12 @@
-import type { MCPServerSettingsEntry, MCPResourceContent, MCPResourceInfo } from '$lib/types';
+import type { MCPResourceContent, MCPResourceInfo } from '$lib/types';
 import {
-	MCPTransportType,
 	MCPLogLevel,
-	UrlProtocol,
 	MimeTypePrefix,
 	MimeTypeIncludes,
 	UriPattern,
 	MimeTypeText
 } from '$lib/enums';
 import {
-	DEFAULT_MCP_CONFIG,
-	MCP_SERVER_ID_PREFIX,
 	IMAGE_FILE_EXTENSION_REGEX,
 	CODE_FILE_EXTENSION_REGEX,
 	TEXT_FILE_EXTENSION_REGEX,
@@ -34,67 +30,6 @@ import {
 } from '@lucide/svelte';
 import type { Component } from 'svelte';
 import type { MimeTypeUnion } from '$lib/types/common';
-
-/**
- * Detects the MCP transport type from a URL.
- * WebSocket URLs (ws:// or wss://) use 'websocket', others use 'streamable_http'.
- */
-export function detectMcpTransportFromUrl(url: string): MCPTransportType {
-	const normalized = url.trim().toLowerCase();
-
-	return normalized.startsWith(UrlProtocol.WEBSOCKET) ||
-		normalized.startsWith(UrlProtocol.WEBSOCKET_SECURE)
-		? MCPTransportType.WEBSOCKET
-		: MCPTransportType.STREAMABLE_HTTP;
-}
-
-/**
- * Parses MCP server settings from a JSON string or array.
- * requestTimeoutSeconds is not user-configurable in the UI, so we always use the default value.
- * @param rawServers - The raw servers to parse
- * @returns An empty array if the input is invalid.
- */
-export function parseMcpServerSettings(rawServers: unknown): MCPServerSettingsEntry[] {
-	if (!rawServers) return [];
-
-	let parsed: unknown;
-
-	if (typeof rawServers === 'string') {
-		const trimmed = rawServers.trim();
-		if (!trimmed) return [];
-
-		try {
-			parsed = JSON.parse(trimmed);
-		} catch (error) {
-			console.warn('[MCP] Failed to parse mcpServers JSON, ignoring value:', error);
-
-			return [];
-		}
-	} else {
-		parsed = rawServers;
-	}
-
-	if (!Array.isArray(parsed)) return [];
-
-	return parsed.map((entry, index) => {
-		const url = typeof entry?.url === 'string' ? entry.url.trim() : '';
-		const headers = typeof entry?.headers === 'string' ? entry.headers.trim() : undefined;
-		const id =
-			typeof (entry as { id?: unknown })?.id === 'string' && (entry as { id?: string }).id?.trim()
-				? (entry as { id: string }).id.trim()
-				: `${MCP_SERVER_ID_PREFIX}-${index + 1}`;
-
-		return {
-			id,
-			enabled: Boolean((entry as { enabled?: unknown })?.enabled),
-			url,
-			name: (entry as { name?: string })?.name,
-			requestTimeoutSeconds: DEFAULT_MCP_CONFIG.requestTimeoutSeconds,
-			headers: headers || undefined,
-			useProxy: Boolean((entry as { useProxy?: unknown })?.useProxy)
-		} satisfies MCPServerSettingsEntry;
-	});
-}
 
 /**
  * Get the appropriate icon component for a log level

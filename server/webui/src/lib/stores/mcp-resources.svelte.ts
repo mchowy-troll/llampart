@@ -20,7 +20,7 @@ import {
 	RESOURCE_UNKNOWN_TYPE,
 	BINARY_CONTENT_LABEL
 } from '$lib/constants';
-import { normalizeResourceUri } from '$lib/utils';
+import { normalizeResourceUri } from '$lib/utils/uri-template';
 import type {
 	MCPResource,
 	MCPResourceTemplate,
