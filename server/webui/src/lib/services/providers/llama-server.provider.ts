@@ -26,6 +26,17 @@ import {
 } from './provider-url';
 import type { ApiProviderAdapter } from './provider.types';
 
+const PROTECTED_CHAT_REQUEST_KEYS = new Set([
+	'messages',
+	'stream',
+	'tools',
+	'model',
+	'return_progress',
+	'reasoning_format',
+	'n_predict',
+	'max_tokens'
+]);
+
 function buildHeaders(apiKey: string): Record<string, string> {
 	const headers: Record<string, string> = {
 		Accept: 'application/json'
@@ -230,11 +241,27 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 	if (timings_per_token !== undefined) requestBody.timings_per_token = timings_per_token;
 
 	if (custom) {
+		let customParams: unknown;
 		try {
-			const customParams = typeof custom === 'string' ? JSON.parse(custom) : custom;
-			Object.assign(requestBody, customParams);
+			customParams = typeof custom === 'string' ? JSON.parse(custom) : custom;
 		} catch (error) {
 			console.warn('Failed to parse custom parameters:', error);
+			customParams = null;
+		}
+
+		if (customParams !== null) {
+			if (typeof customParams !== 'object' || Array.isArray(customParams)) {
+				throw new Error('Custom parameters must be a JSON object');
+			}
+			const collisions = Object.keys(customParams).filter((key) =>
+				PROTECTED_CHAT_REQUEST_KEYS.has(key)
+			);
+			if (collisions.length > 0) {
+				throw new Error(
+					`Custom parameters cannot override protected chat request keys: ${collisions.join(', ')}`
+				);
+			}
+			Object.assign(requestBody, customParams);
 		}
 	}
 

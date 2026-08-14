@@ -29,6 +29,9 @@ describe('api provider registry', () => {
 
 	it('keeps provider capabilities owned by each provider', () => {
 		expect(PROVIDER_CAPABILITIES[API_PROVIDER_IDS.LLAMA_SERVER].supportsServerProps).toBe(true);
+		expect(PROVIDER_CAPABILITIES[API_PROVIDER_IDS.LLAMA_SERVER].supportsBuiltinToolsEndpoint).toBe(
+			true
+		);
 		expect(PROVIDER_CAPABILITIES[API_PROVIDER_IDS.LLAMA_SERVER].supportsTopK).toBe(true);
 		expect(PROVIDER_CAPABILITIES[API_PROVIDER_IDS.LLAMA_SERVER].supportsPreEncode).toBe(true);
 		expect(PROVIDER_CAPABILITIES[API_PROVIDER_IDS.LLAMA_SERVER].supportsResumableStreams).toBe(
@@ -43,6 +46,7 @@ describe('api provider registry', () => {
 		expect(openAiCapabilities.supportsPreEncode).toBe(false);
 		expect(openAiCapabilities.supportsLlamaReasoningControls).toBe(false);
 		expect(openAiCapabilities.supportsOpenAiToolCalls).toBe(true);
+		expect(openAiCapabilities.supportsBuiltinToolsEndpoint).toBe(false);
 		expect(
 			getApiProviderCapabilities(API_PROVIDER_IDS.OPENAI_COMPATIBLE, {
 				disableOpenAiCompatibleTools: true

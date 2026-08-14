@@ -63,7 +63,7 @@
 		}
 	}
 
-	onMount(async () => {
+	async function initializeHomeRoute(): Promise<void> {
 		if (!isConversationsInitialized()) {
 			await conversationsStore.initialize();
 		}
@@ -88,6 +88,12 @@
 		if (qParam !== null || modelParam !== null || newChatParam === 'true') {
 			await handleUrlParams();
 		}
+	}
+
+	onMount(() => {
+		void initializeHomeRoute().catch((error) => {
+			console.error('Failed to initialize home route:', error);
+		});
 	});
 </script>
 

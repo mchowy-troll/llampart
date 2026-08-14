@@ -41,6 +41,7 @@ export interface ProviderCapabilities {
 	supportsBackendSampling: boolean;
 	supportsLlamaReasoningControls: boolean;
 	supportsOpenAiToolCalls: boolean;
+	supportsBuiltinToolsEndpoint: boolean;
 	supportsVisionInput: boolean | 'unknown';
 	supportsCustomJsonPayload: boolean;
 }
@@ -62,6 +63,16 @@ export interface ProviderModel {
 export interface ProviderConnectionInput {
 	serverBaseUrl: string;
 	apiKey: string;
+}
+
+export interface ProviderConnectionContext extends ProviderConnectionInput {
+	readonly providerId: ApiProviderId;
+	readonly serverBaseUrl: string;
+	readonly apiKey: string;
+}
+
+export interface ProviderRequestContext extends ProviderConnectionContext {
+	readonly sourceGeneration: number;
 }
 
 export interface ProviderConnectionValidationResult {

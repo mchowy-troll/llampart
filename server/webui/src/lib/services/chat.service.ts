@@ -1,8 +1,7 @@
 import { t } from '$lib/i18n';
-import { getApiBaseUrl } from '$lib/utils';
 import { getApiProvider } from '$lib/services/providers';
 import type { ApiProviderAdapter } from '$lib/services/providers/provider.types';
-import type { ProviderUsage } from '$lib/types/provider';
+import type { ProviderRequestContext, ProviderUsage } from '$lib/types/provider';
 import { formatAttachmentText } from '$lib/utils/formatters';
 import { isAbortError } from '$lib/utils/abort';
 import {
@@ -23,20 +22,36 @@ import { createStreamIdentity, buildStreamRequestUrl } from '$lib/utils/stream-i
 import { SseByteParser } from '$lib/utils/sse-byte-parser';
 import {
 	getResumableStreamState,
+	loadResumableStreamStates,
 	removeResumableStreamState,
 	saveResumableStreamState,
+	createSourceFingerprint,
+	RESUMABLE_STREAM_STATE_TTL_MS,
 	type ResumableStreamState
 } from '$lib/utils/resumable-stream-state';
 import type { ChatStreamResumeSeed, SettingsChatServiceOptions } from '$lib/types/settings';
+import { getReconnectDelay, sleepWithAbort } from '$lib/utils/retry';
 
 interface FrozenStreamRequest {
 	provider: ApiProviderAdapter;
-	serverBaseUrl: string;
-	apiKey: string;
+	context: ProviderRequestContext;
+}
+
+class IncompleteStreamError extends Error {
+	name = 'IncompleteStreamError';
+}
+
+class StreamProtocolError extends Error {
+	name = 'StreamProtocolError';
+}
+
+class StreamCheckpointError extends Error {
+	name = 'StreamCheckpointError';
 }
 
 export class ChatService {
 	private static frozenStreamRequests = new Map<string, FrozenStreamRequest>();
+	private static sourceGeneration = 0;
 	private static readonly optionalStreamEndpointStatuses = new Set([404, 405, 501]);
 	/**
 	 * Generates a short conversation title with a small auxiliary LLM request.
@@ -96,8 +111,10 @@ export class ChatService {
 		conversationId?: string,
 		signal?: AbortSignal
 	): Promise<string | void> {
-		const currentConfig = config();
-		const provider = getApiProvider(String(currentConfig.apiProvider ?? ''));
+		const requestContext =
+			options.providerRequestContext ?? ChatService.createProviderRequestContext();
+		if (!ChatService.isProviderRequestContextCurrent(requestContext)) return;
+		const provider = getApiProvider(requestContext.providerId);
 		const selectedProviderModel =
 			(modelsStore.selectedModelName || modelsStore.selectedModelId || '').trim() || undefined;
 		const effectiveOptions: SettingsChatServiceOptions =
@@ -161,25 +178,36 @@ export class ChatService {
 			});
 		}
 
-		const frozenServerBaseUrl = String(currentConfig.serverBaseUrl ?? '');
-		const frozenApiKey = String(currentConfig.apiKey ?? '');
-		const resumableState =
-			stream && conversationId && provider.capabilities.supportsResumableStreams
-				? ({
-						conversationId,
-						streamIdentity: createStreamIdentity(conversationId, effectiveOptions.model ?? null),
-						model: effectiveOptions.model ?? null,
-						bytesReceived: 0,
-						updatedAt: Date.now()
-					} satisfies ResumableStreamState)
-				: null;
+		const frozenServerBaseUrl = requestContext.serverBaseUrl;
+		const frozenApiKey = requestContext.apiKey;
+		let resumableState: ResumableStreamState | null = null;
+		if (
+			stream &&
+			conversationId &&
+			effectiveOptions.assistantMessageId &&
+			provider.id === API_PROVIDER_IDS.LLAMA_SERVER &&
+			provider.capabilities.supportsResumableStreams
+		) {
+			const sourceFingerprint = await createSourceFingerprint(requestContext);
+			if (!ChatService.isProviderRequestContextCurrent(requestContext)) return;
+			resumableState = {
+				schemaVersion: 2,
+				conversationId,
+				assistantMessageId: effectiveOptions.assistantMessageId,
+				providerId: API_PROVIDER_IDS.LLAMA_SERVER,
+				sourceFingerprint,
+				streamIdentity: createStreamIdentity(conversationId, effectiveOptions.model ?? null),
+				model: effectiveOptions.model ?? null,
+				bytesReceived: 0,
+				updatedAt: Date.now()
+			} satisfies ResumableStreamState;
+		}
 
 		if (resumableState) {
 			saveResumableStreamState(resumableState);
 			ChatService.frozenStreamRequests.set(resumableState.streamIdentity, {
 				provider,
-				serverBaseUrl: frozenServerBaseUrl,
-				apiKey: frozenApiKey
+				context: requestContext
 			});
 		}
 
@@ -203,10 +231,6 @@ export class ChatService {
 				if (resumableState) ChatService.clearResumableState(resumableState);
 				const error = await ChatService.parseErrorResponse(response);
 
-				if (onError) {
-					onError(error);
-				}
-
 				throw error;
 			}
 
@@ -216,7 +240,6 @@ export class ChatService {
 					response,
 					onChunk,
 					onComplete,
-					onError,
 					onReasoningChunk,
 					onToolCallChunk,
 					onModel,
@@ -231,11 +254,10 @@ export class ChatService {
 
 				return;
 			} else {
-				return ChatService.handleNonStreamResponse(
+				return await ChatService.handleNonStreamResponse(
 					provider,
 					response,
 					onComplete,
-					onError,
 					onToolCallChunk,
 					onModel,
 					requestStartedAt
@@ -268,12 +290,38 @@ export class ChatService {
 
 			console.error('Error in sendMessage:', error);
 
-			if (onError) {
-				onError(userFriendlyError);
+			try {
+				await onError?.(userFriendlyError);
+			} catch (callbackError) {
+				console.error('Error in chat error callback:', callbackError);
 			}
 
 			throw userFriendlyError;
 		}
+	}
+
+	static createProviderRequestContext(): ProviderRequestContext {
+		const currentConfig = config();
+		return Object.freeze({
+			providerId: getApiProvider(String(currentConfig.apiProvider ?? '')).id,
+			serverBaseUrl: String(currentConfig.serverBaseUrl ?? ''),
+			apiKey: String(currentConfig.apiKey ?? ''),
+			sourceGeneration: ChatService.sourceGeneration
+		});
+	}
+
+	static invalidateProviderRequestContexts(): void {
+		ChatService.sourceGeneration += 1;
+	}
+
+	static isProviderRequestContextCurrent(context: ProviderRequestContext): boolean {
+		if (context.sourceGeneration !== ChatService.sourceGeneration) return false;
+		const currentConfig = config();
+		return (
+			context.providerId === getApiProvider(String(currentConfig.apiProvider ?? '')).id &&
+			context.serverBaseUrl === String(currentConfig.serverBaseUrl ?? '') &&
+			context.apiKey === String(currentConfig.apiKey ?? '')
+		);
 	}
 
 	/**
@@ -286,18 +334,28 @@ export class ChatService {
 	 * @param model - Optional model name to check slots for (required in ROUTER mode)
 	 * @returns {Promise<boolean>} Promise that resolves to true if all slots are idle, false if any is processing
 	 */
-	static async areAllSlotsIdle(model?: string | null, signal?: AbortSignal): Promise<boolean> {
+	static async areAllSlotsIdle(
+		context: ProviderRequestContext,
+		model?: string | null,
+		signal?: AbortSignal
+	): Promise<boolean> {
+		if (!ChatService.isProviderRequestContextCurrent(context)) return false;
 		try {
 			const url = model
-				? `${getApiBaseUrl()}/slots?model=${encodeURIComponent(model)}`
-				: `${getApiBaseUrl()}/slots`;
-			const res = await fetch(url, { signal });
-			if (!res.ok) return true;
+				? `${buildProviderEndpointUrl(context.serverBaseUrl, '/slots')}?model=${encodeURIComponent(model)}`
+				: buildProviderEndpointUrl(context.serverBaseUrl, '/slots');
+			const res = await fetch(url, {
+				headers: ChatService.buildStreamHeaders(context.apiKey, false),
+				signal
+			});
+			if (!res.ok || !ChatService.isProviderRequestContextCurrent(context)) return false;
 
 			const slots: { is_processing: boolean }[] = await res.json();
-			return slots.every((s) => !s.is_processing);
+			return ChatService.isProviderRequestContextCurrent(context)
+				? slots.every((s) => !s.is_processing)
+				: false;
 		} catch {
-			return true;
+			return false;
 		}
 	}
 
@@ -318,10 +376,12 @@ export class ChatService {
 	 */
 	static async preEncode(
 		messages: ApiChatMessageData[] | (DatabaseMessage & { extra?: DatabaseMessageExtra[] })[],
+		context: ProviderRequestContext,
 		model?: string | null,
 		excludeReasoning?: boolean,
 		signal?: AbortSignal
 	): Promise<void> {
+		if (!ChatService.isProviderRequestContextCurrent(context)) return;
 		const normalizedMessages: ApiChatMessageData[] = messages
 			.map((msg) => {
 				if ('id' in msg && 'convId' in msg && 'timestamp' in msg) {
@@ -366,21 +426,23 @@ export class ChatService {
 		}
 
 		try {
-			const currentConfig = config();
-			const provider = getApiProvider(String(currentConfig.apiProvider ?? ''));
+			const provider = getApiProvider(context.providerId);
 			if (!provider.capabilities.supportsPreEncode) return;
+			if (!ChatService.isProviderRequestContextCurrent(context)) return;
 
-			await fetch(`${getApiBaseUrl()}/v1/chat/completions`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					...(String(currentConfig.apiKey ?? '').trim()
-						? { Authorization: `Bearer ${String(currentConfig.apiKey ?? '').trim()}` }
-						: {})
-				},
-				body: JSON.stringify(requestBody),
-				signal
-			});
+			const response = await fetch(
+				buildProviderEndpointUrl(context.serverBaseUrl, '/v1/chat/completions'),
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						...(context.apiKey.trim() ? { Authorization: `Bearer ${context.apiKey.trim()}` } : {})
+					},
+					body: JSON.stringify(requestBody),
+					signal
+				}
+			);
+			if (!response.ok) throw await ChatService.parseErrorResponse(response);
 		} catch (error) {
 			if (!isAbortError(error)) {
 				console.warn('[ChatService] Pre-encode request failed:', error);
@@ -422,23 +484,53 @@ export class ChatService {
 		return getResumableStreamState(conversationId);
 	}
 
+	static discardResumableStream(conversationId: string): void {
+		const state = getResumableStreamState(conversationId);
+		if (state) ChatService.clearResumableState(state);
+	}
+
+	static async canResumeStream(state: ResumableStreamState): Promise<boolean> {
+		const context = ChatService.createProviderRequestContext();
+		const valid = await ChatService.isResumableStateForContext(state, context);
+		if (!valid) ChatService.clearResumableState(state);
+		return valid;
+	}
+
+	private static async isResumableStateForContext(
+		state: ResumableStreamState,
+		context: ProviderRequestContext
+	): Promise<boolean> {
+		const age = Date.now() - state.updatedAt;
+		return (
+			state.schemaVersion === 2 &&
+			state.providerId === API_PROVIDER_IDS.LLAMA_SERVER &&
+			context.providerId === state.providerId &&
+			age >= 0 &&
+			age <= RESUMABLE_STREAM_STATE_TTL_MS &&
+			(await createSourceFingerprint(context)) === state.sourceFingerprint &&
+			ChatService.isProviderRequestContextCurrent(context)
+		);
+	}
+
 	static async stopResumableStream(conversationId: string): Promise<void> {
 		const state = getResumableStreamState(conversationId);
 		if (!state) return;
 
-		const currentConfig = config();
 		const frozen = ChatService.frozenStreamRequests.get(state.streamIdentity);
-		const serverBaseUrl = frozen?.serverBaseUrl ?? String(currentConfig.serverBaseUrl ?? '');
-		const apiKey = frozen?.apiKey ?? String(currentConfig.apiKey ?? '');
+		const context = frozen?.context ?? ChatService.createProviderRequestContext();
+		if ((await createSourceFingerprint(context)) !== state.sourceFingerprint) {
+			ChatService.clearResumableState(state);
+			return;
+		}
 		const url = buildStreamRequestUrl(
-			buildProviderEndpointUrl(serverBaseUrl, API_STREAM.BASE),
+			buildProviderEndpointUrl(context.serverBaseUrl, API_STREAM.BASE),
 			state.streamIdentity
 		);
 
 		try {
 			await fetch(url, {
 				method: 'DELETE',
-				headers: ChatService.buildStreamHeaders(apiKey, false)
+				headers: ChatService.buildStreamHeaders(context.apiKey, false)
 			});
 		} catch (error) {
 			console.warn('[ChatService] Failed to stop resumable stream:', error);
@@ -452,12 +544,21 @@ export class ChatService {
 		options: SettingsChatServiceOptions,
 		signal?: AbortSignal
 	): Promise<boolean> {
-		const currentConfig = config();
-		const provider = getApiProvider(API_PROVIDER_IDS.LLAMA_SERVER);
-		const serverBaseUrl = String(currentConfig.serverBaseUrl ?? '');
-		const apiKey = String(currentConfig.apiKey ?? '');
+		const context = ChatService.createProviderRequestContext();
+		if (!(await ChatService.isResumableStateForContext(state, context))) {
+			ChatService.clearResumableState(state);
+			return false;
+		}
+		const provider = getApiProvider(state.providerId);
+		const serverBaseUrl = context.serverBaseUrl;
+		const apiKey = context.apiKey;
 		let lookupResponse: Response;
+		let lookupAttempt = 0;
 		do {
+			if (!ChatService.isProviderRequestContextCurrent(context)) {
+				ChatService.clearResumableState(state);
+				return false;
+			}
 			lookupResponse = await fetch(buildProviderEndpointUrl(serverBaseUrl, API_STREAM.LOOKUP), {
 				method: 'POST',
 				headers: ChatService.buildStreamHeaders(apiKey, true),
@@ -465,7 +566,9 @@ export class ChatService {
 				signal
 			});
 
-			if (lookupResponse.status === 503) await ChatService.waitForReconnect(signal);
+			if (lookupResponse.status === 503) {
+				await ChatService.waitForReconnect(lookupAttempt++, signal);
+			}
 		} while (lookupResponse.status === 503 && !signal?.aborted);
 		if (signal?.aborted) return false;
 
@@ -484,28 +587,40 @@ export class ChatService {
 
 		ChatService.frozenStreamRequests.set(state.streamIdentity, {
 			provider,
-			serverBaseUrl,
-			apiKey
+			context
 		});
 		if (state.model) options.onModel?.(state.model);
 
-		await ChatService.handleStreamResponse(
-			provider,
-			response,
-			options.onChunk,
-			options.onComplete,
-			options.onError,
-			options.onReasoningChunk,
-			options.onToolCallChunk,
-			options.onModel,
-			options.onCompletionId,
-			options.onTimings,
-			state.conversationId,
-			signal,
-			state,
-			options.onStreamCheckpoint,
-			options.resumeSeed
-		);
+		try {
+			await ChatService.handleStreamResponse(
+				provider,
+				response,
+				options.onChunk,
+				options.onComplete,
+				options.onReasoningChunk,
+				options.onToolCallChunk,
+				options.onModel,
+				options.onCompletionId,
+				options.onTimings,
+				state.conversationId,
+				signal,
+				state,
+				options.onStreamCheckpoint,
+				options.resumeSeed
+			);
+		} catch (error) {
+			if (!isAbortError(error)) {
+				const normalizedError = error instanceof Error ? error : new Error('Stream resume failed');
+
+				try {
+					await options.onError?.(normalizedError);
+				} catch (callbackError) {
+					console.error('Error in chat error callback:', callbackError);
+				}
+			}
+
+			throw error;
+		}
 
 		return true;
 	}
@@ -543,22 +658,15 @@ export class ChatService {
 		ChatService.frozenStreamRequests.delete(state.streamIdentity);
 	}
 
-	private static waitForReconnect(signal?: AbortSignal): Promise<void> {
-		return new Promise((resolve) => {
-			if (signal?.aborted) {
-				resolve();
-				return;
-			}
-			const timeout = setTimeout(resolve, 250);
-			signal?.addEventListener(
-				'abort',
-				() => {
-					clearTimeout(timeout);
-					resolve();
-				},
-				{ once: true }
-			);
-		});
+	static discardAllResumableStreams(): void {
+		for (const state of loadResumableStreamStates()) {
+			removeResumableStreamState(state.conversationId);
+		}
+		ChatService.frozenStreamRequests.clear();
+	}
+
+	private static async waitForReconnect(attempt: number, signal?: AbortSignal): Promise<void> {
+		await sleepWithAbort(getReconnectDelay(attempt), signal);
 	}
 
 	/**
@@ -566,7 +674,6 @@ export class ChatService {
 	 * @param response - The Response object from the fetch request
 	 * @param onChunk - Optional callback invoked for each content chunk received
 	 * @param onComplete - Optional callback invoked when the stream is complete with full response
-	 * @param onError - Optional callback invoked if an error occurs during streaming
 	 * @param onReasoningChunk - Optional callback invoked for each reasoning content chunk
 	 * @param conversationId - Optional conversation ID for per-conversation state tracking
 	 * @returns {Promise<void>} Promise that resolves when streaming is complete
@@ -582,7 +689,6 @@ export class ChatService {
 			timings?: ChatMessageTimings,
 			toolCalls?: string
 		) => void | Promise<void>,
-		onError?: (error: Error) => void,
 		onReasoningChunk?: (chunk: string) => void,
 		onToolCallChunk?: (chunk: string) => void,
 		onModel?: (model: string) => void,
@@ -606,6 +712,7 @@ export class ChatService {
 		let idEmitted = false;
 		let toolCallIndexOffset = 0;
 		let hasOpenToolCallBatch = false;
+		let reconnectAttempt = 0;
 
 		const finalizeOpenToolCallBatch = () => {
 			if (!hasOpenToolCallBatch) {
@@ -656,60 +763,70 @@ export class ChatService {
 					if (abortSignal?.aborted) return;
 
 					if (record.data !== null) {
+						let event;
 						try {
-							const event = provider.parseChatCompletionStreamData(record.data);
-							if (event?.done) streamFinished = true;
-							else if (event) {
-								if (event.model && !modelEmitted) {
-									modelEmitted = true;
-									onModel?.(event.model);
-								}
-								if (event.completionId && !idEmitted) {
-									idEmitted = true;
-									onCompletionId?.(event.completionId);
-								}
-								if (event.promptProgress) {
-									ChatService.notifyTimings(undefined, event.promptProgress, onTimings);
-								}
-								if (event.timings) {
-									ChatService.notifyTimings(event.timings, event.promptProgress, onTimings);
-									lastTimings = event.timings;
-								} else if (event.usage) {
-									const usageTimings = ChatService.buildProviderUsageTimings(
-										event.usage,
-										streamStartedAt,
-										ChatService.getMonotonicNow()
-									);
-									if (usageTimings) {
-										ChatService.notifyTimings(usageTimings, event.promptProgress, onTimings);
-										lastTimings = usageTimings;
-									}
-								}
-								if (event.content) {
-									finalizeOpenToolCallBatch();
-									aggregatedContent += event.content;
-									onChunk?.(event.content);
-								}
-								if (event.reasoningContent) {
-									finalizeOpenToolCallBatch();
-									fullReasoningContent += event.reasoningContent;
-									onReasoningChunk?.(event.reasoningContent);
-								}
-								processToolCallDelta(event.toolCalls);
-							}
+							event = provider.parseChatCompletionStreamData(record.data);
 						} catch (error) {
-							console.error('Error parsing provider stream chunk:', error);
+							throw new StreamProtocolError('Failed to parse provider stream data', {
+								cause: error
+							});
+						}
+
+						if (event?.done) streamFinished = true;
+						else if (event) {
+							if (event.model && !modelEmitted) {
+								modelEmitted = true;
+								onModel?.(event.model);
+							}
+							if (event.completionId && !idEmitted) {
+								idEmitted = true;
+								onCompletionId?.(event.completionId);
+							}
+							if (event.promptProgress) {
+								ChatService.notifyTimings(undefined, event.promptProgress, onTimings);
+							}
+							if (event.timings) {
+								ChatService.notifyTimings(event.timings, event.promptProgress, onTimings);
+								lastTimings = event.timings;
+							} else if (event.usage) {
+								const usageTimings = ChatService.buildProviderUsageTimings(
+									event.usage,
+									streamStartedAt,
+									ChatService.getMonotonicNow()
+								);
+								if (usageTimings) {
+									ChatService.notifyTimings(usageTimings, event.promptProgress, onTimings);
+									lastTimings = usageTimings;
+								}
+							}
+							if (event.content) {
+								finalizeOpenToolCallBatch();
+								aggregatedContent += event.content;
+								onChunk?.(event.content);
+							}
+							if (event.reasoningContent) {
+								finalizeOpenToolCallBatch();
+								fullReasoningContent += event.reasoningContent;
+								onReasoningChunk?.(event.reasoningContent);
+							}
+							processToolCallDelta(event.toolCalls);
 						}
 					}
 
 					const bytesReceived = baseOffset + record.bytesParsed;
-					await onStreamCheckpoint?.({
-						content: aggregatedContent,
-						reasoningContent: fullReasoningContent,
-						toolCalls: aggregatedToolCalls,
-						timings: lastTimings,
-						bytesReceived
-					});
+					try {
+						await onStreamCheckpoint?.({
+							content: aggregatedContent,
+							reasoningContent: fullReasoningContent,
+							toolCalls: aggregatedToolCalls,
+							timings: lastTimings,
+							bytesReceived
+						});
+					} catch (error) {
+						throw new StreamCheckpointError('Failed to persist stream checkpoint', {
+							cause: error
+						});
+					}
 					if (resumableState) {
 						resumableState = {
 							...resumableState,
@@ -721,9 +838,18 @@ export class ChatService {
 				}
 			};
 
+			let transportError: unknown;
 			try {
 				while (!abortSignal?.aborted) {
-					const { done, value } = await reader.read();
+					let result: ReadableStreamReadResult<Uint8Array>;
+					try {
+						result = await reader.read();
+					} catch (error) {
+						transportError = error;
+						break;
+					}
+
+					const { done, value } = result;
 					if (done) {
 						await processRecords(parser.finish());
 						break;
@@ -731,14 +857,14 @@ export class ChatService {
 
 					await processRecords(parser.push(value));
 				}
-			} catch (error) {
-				if (abortSignal?.aborted) return;
-				console.warn('[ChatService] Stream disconnected; attempting resume:', error);
 			} finally {
 				reader.releaseLock();
 			}
 
 			if (abortSignal?.aborted) return;
+			if (transportError) {
+				console.warn('[ChatService] Stream disconnected; attempting resume:', transportError);
+			}
 			if (streamFinished) {
 				finalizeOpenToolCallBatch();
 				const finalToolCalls =
@@ -752,18 +878,22 @@ export class ChatService {
 				);
 				return;
 			}
-			if (!resumableState) return;
+			if (!resumableState) {
+				throw new IncompleteStreamError('Stream ended before a terminal event', {
+					cause: transportError
+				});
+			}
 
 			const frozen = ChatService.frozenStreamRequests.get(resumableState.streamIdentity);
 			if (!frozen) throw new Error('Missing frozen stream request');
-			await ChatService.waitForReconnect(abortSignal);
+			await ChatService.waitForReconnect(reconnectAttempt++, abortSignal);
 			if (abortSignal?.aborted) return;
 
 			try {
 				activeResponse = await ChatService.fetchResumedStream(
 					resumableState,
-					frozen.serverBaseUrl,
-					frozen.apiKey,
+					frozen.context.serverBaseUrl,
+					frozen.context.apiKey,
 					abortSignal
 				);
 			} catch (error) {
@@ -785,6 +915,7 @@ export class ChatService {
 				return;
 			}
 			if (!activeResponse.ok) throw await ChatService.parseErrorResponse(activeResponse);
+			reconnectAttempt = 0;
 		}
 	}
 
@@ -807,66 +938,57 @@ export class ChatService {
 			timings?: ChatMessageTimings,
 			toolCalls?: string
 		) => void,
-		onError?: (error: Error) => void,
 		onToolCallChunk?: (chunk: string) => void,
 		onModel?: (model: string) => void,
 		requestStartedAt?: number
 	): Promise<string> {
-		try {
-			const responseText = await response.text();
+		const responseText = await response.text();
 
-			if (!responseText.trim()) {
-				const noResponseError = new Error('No response received from server. Please try again.');
+		if (!responseText.trim()) {
+			const noResponseError = new Error('No response received from server. Please try again.');
 
-				throw noResponseError;
-			}
+			throw noResponseError;
+		}
 
-			const data = JSON.parse(responseText);
-			const parsedResponse = provider.parseChatCompletionResponse(data);
+		const data = JSON.parse(responseText);
+		const parsedResponse = provider.parseChatCompletionResponse(data);
 
-			if (parsedResponse.model) {
-				onModel?.(parsedResponse.model);
-			}
+		if (parsedResponse.model) {
+			onModel?.(parsedResponse.model);
+		}
 
-			const content = parsedResponse.content;
-			const reasoningContent = parsedResponse.reasoningContent;
-			const toolCalls = parsedResponse.toolCalls;
+		const content = parsedResponse.content;
+		const reasoningContent = parsedResponse.reasoningContent;
+		const toolCalls = parsedResponse.toolCalls;
 
-			let serializedToolCalls: string | undefined;
+		let serializedToolCalls: string | undefined;
 
-			if (toolCalls && toolCalls.length > 0) {
-				const mergedToolCalls = ChatService.mergeToolCallDeltas([], toolCalls);
+		if (toolCalls && toolCalls.length > 0) {
+			const mergedToolCalls = ChatService.mergeToolCallDeltas([], toolCalls);
 
-				if (mergedToolCalls.length > 0) {
-					serializedToolCalls = JSON.stringify(mergedToolCalls);
-					if (serializedToolCalls) {
-						onToolCallChunk?.(serializedToolCalls);
-					}
+			if (mergedToolCalls.length > 0) {
+				serializedToolCalls = JSON.stringify(mergedToolCalls);
+				if (serializedToolCalls) {
+					onToolCallChunk?.(serializedToolCalls);
 				}
 			}
-
-			if (!content.trim() && !serializedToolCalls) {
-				const noResponseError = new Error('No response received from server. Please try again.');
-
-				throw noResponseError;
-			}
-
-			const timings = ChatService.buildProviderUsageTimings(
-				parsedResponse.usage,
-				requestStartedAt ?? ChatService.getMonotonicNow(),
-				ChatService.getMonotonicNow()
-			);
-
-			onComplete?.(content, reasoningContent, timings, serializedToolCalls);
-
-			return content;
-		} catch (error) {
-			const err = error instanceof Error ? error : new Error('Parse error');
-
-			onError?.(err);
-
-			throw err;
 		}
+
+		if (!content.trim() && !serializedToolCalls) {
+			const noResponseError = new Error('No response received from server. Please try again.');
+
+			throw noResponseError;
+		}
+
+		const timings = ChatService.buildProviderUsageTimings(
+			parsedResponse.usage,
+			requestStartedAt ?? ChatService.getMonotonicNow(),
+			ChatService.getMonotonicNow()
+		);
+
+		onComplete?.(content, reasoningContent, timings, serializedToolCalls);
+
+		return content;
 	}
 
 	/**

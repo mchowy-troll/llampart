@@ -21,15 +21,15 @@ import { agenticStore } from '$lib/stores/agentic.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { contextSize, isRouterMode } from '$lib/stores/server.svelte';
 import { selectedModelName, modelsStore } from '$lib/stores/models.svelte';
+import { isAbortError } from '$lib/utils/abort';
 import {
-	normalizeModelName,
 	filterByLeafNodeId,
 	findDescendantMessages,
 	findLeafNode,
-	findMessageById,
-	isAbortError,
-	generateConversationTitle
-} from '$lib/utils';
+	findMessageById
+} from '$lib/utils/branching';
+import { normalizeModelName } from '$lib/utils/model-names';
+import { generateConversationTitle } from '$lib/utils/text';
 import {
 	MAX_INACTIVE_CONVERSATION_STATES,
 	INACTIVE_CONVERSATION_STATE_MAX_AGE_MS,
@@ -80,6 +80,7 @@ class ChatStore {
 	private processingStates = new SvelteMap<string, ApiProcessingState | null>();
 	private conversationStateTimestamps = new SvelteMap<string, ConversationStateEntry>();
 	private resumingStreams = new Set<string>();
+	private conversationOperationLocks = new Set<string>();
 	private activeConversationId = $state<string | null>(null);
 	private isStreamingActive = $state(false);
 	private isEditModeActive = $state(false);
@@ -206,6 +207,24 @@ class ChatStore {
 		}
 	}
 
+	handleProviderSourceSwitch(): void {
+		const activeConversationIds = [...this.abortControllers.keys()];
+		ChatService.invalidateProviderRequestContexts();
+		this.cancelPreEncode();
+		this.abortRequest();
+		for (const convId of activeConversationIds) {
+			void ChatService.stopResumableStream(convId);
+		}
+		ChatService.discardAllResumableStreams();
+		for (const convId of this.chatLoadingStates.keys()) {
+			this.setChatLoading(convId, false);
+			this.clearChatStreaming(convId);
+			this.setChatReasoning(convId, false);
+			this.setProcessingState(convId, null);
+		}
+		this.setStreamingActive(false);
+	}
+
 	private showErrorDialog(state: ErrorDialogState | null): void {
 		this.errorDialogState = state;
 	}
@@ -270,7 +289,7 @@ class ChatStore {
 	}
 
 	private isChatLoadingInternal(convId: string): boolean {
-		return this.chatStreamingStates.has(convId);
+		return this.chatLoadingStates.has(convId) || this.conversationOperationLocks.has(convId);
 	}
 
 	private touchConversationState(convId: string): void {
@@ -376,7 +395,7 @@ class ChatStore {
 		);
 		conversationsStore.addMessageToActive(message);
 		await conversationsStore.updateCurrentNode(message.id);
-		conversationsStore.updateConversationTimestamp();
+		await conversationsStore.refreshConversationTimestamp();
 		return message;
 	}
 
@@ -404,32 +423,20 @@ class ChatStore {
 			}
 			const am = conversationsStore.activeMessages;
 			const firstActiveMessage = am.find((m) => m.parent === rootId);
-			const systemMessage = await DatabaseService.createSystemMessage(
+			const systemMessage = await DatabaseService.insertSystemPrompt(
 				activeConv.id,
 				SYSTEM_MESSAGE_PLACEHOLDER,
-				rootId
+				rootId,
+				firstActiveMessage?.id
 			);
 			if (firstActiveMessage) {
-				await DatabaseService.updateMessage(firstActiveMessage.id, { parent: systemMessage.id });
-				await DatabaseService.updateMessage(systemMessage.id, {
-					children: [firstActiveMessage.id]
-				});
-				const updatedRootChildren = rootMessage
-					? rootMessage.children.filter((id: string) => id !== firstActiveMessage.id)
-					: [];
-				await DatabaseService.updateMessage(rootId, {
-					children: [
-						...updatedRootChildren.filter((id: string) => id !== systemMessage.id),
-						systemMessage.id
-					]
-				});
 				const firstMsgIndex = conversationsStore.findMessageIndex(firstActiveMessage.id);
 				if (firstMsgIndex !== -1)
 					conversationsStore.updateMessageAtIndex(firstMsgIndex, { parent: systemMessage.id });
 			}
 			conversationsStore.activeMessages.unshift(systemMessage);
 			this.pendingEditMessageId = systemMessage.id;
-			conversationsStore.updateConversationTimestamp();
+			await conversationsStore.refreshConversationTimestamp();
 		} catch (error) {
 			console.error('Failed to add system prompt:', error);
 		}
@@ -448,22 +455,15 @@ class ChatStore {
 				await conversationsStore.deleteConversation(activeConv.id);
 				return true;
 			}
+			await DatabaseService.removeSystemPrompt(activeConv.id, messageId);
 			for (const childId of systemMessage.children) {
-				await DatabaseService.updateMessage(childId, { parent: rootMessage.id });
 				const childIndex = conversationsStore.findMessageIndex(childId);
 				if (childIndex !== -1)
 					conversationsStore.updateMessageAtIndex(childIndex, { parent: rootMessage.id });
 			}
-			await DatabaseService.updateMessage(rootMessage.id, {
-				children: [
-					...rootMessage.children.filter((id: string) => id !== messageId),
-					...systemMessage.children
-				]
-			});
-			await DatabaseService.deleteMessage(messageId);
 			const systemIndex = conversationsStore.findMessageIndex(messageId);
 			if (systemIndex !== -1) conversationsStore.activeMessages.splice(systemIndex, 1);
-			conversationsStore.updateConversationTimestamp();
+			await conversationsStore.refreshConversationTimestamp();
 			return false;
 		} catch (error) {
 			console.error('Failed to remove system prompt placeholder:', error);
@@ -492,82 +492,94 @@ class ChatStore {
 	async sendMessage(content: string, extras?: DatabaseMessageExtra[]): Promise<void> {
 		if (!content.trim() && (!extras || extras.length === 0)) return;
 		const activeConv = conversationsStore.activeConversation;
+		const operationKey = activeConv?.id ?? '__new_conversation__';
+		if (this.conversationOperationLocks.has('__new_conversation__')) return;
+		if (this.conversationOperationLocks.has(operationKey)) return;
 		if (activeConv && this.isChatLoadingInternal(activeConv.id)) return;
+		this.conversationOperationLocks.add(operationKey);
+		let lockedConversationId: string | null = activeConv?.id ?? null;
 
-		// Cancel any in-flight pre-encode request
-		this.cancelPreEncode();
-
-		// Consume MCP resource attachments - converts them to extras and clears the live store
-		const resourceExtras = mcpStore.consumeResourceAttachmentsAsExtras();
-		const allExtras = resourceExtras.length > 0 ? [...(extras || []), ...resourceExtras] : extras;
-
-		let isNewConversation = false;
-		if (!activeConv) {
-			await conversationsStore.createConversation();
-			isNewConversation = true;
-		}
-		const currentConv = conversationsStore.activeConversation;
-		if (!currentConv) return;
-		this.showErrorDialog(null);
-		this.setChatLoading(currentConv.id, true);
-		this.clearChatStreaming(currentConv.id);
 		try {
-			let parentIdForUserMessage: string | undefined;
-			if (isNewConversation) {
-				const rootId = await DatabaseService.createRootMessage(currentConv.id);
-				const currentConfig = config();
-				const systemPrompt = currentConfig.systemMessage?.toString().trim();
-				if (systemPrompt) {
-					const systemMessage = await DatabaseService.createSystemMessage(
-						currentConv.id,
-						systemPrompt,
-						rootId
-					);
-					conversationsStore.addMessageToActive(systemMessage);
-					parentIdForUserMessage = systemMessage.id;
-				} else parentIdForUserMessage = rootId;
+			// Cancel any in-flight pre-encode request
+			this.cancelPreEncode();
+
+			// Consume MCP resource attachments - converts them to extras and clears the live store
+			const resourceExtras = mcpStore.consumeResourceAttachmentsAsExtras();
+			const allExtras = resourceExtras.length > 0 ? [...(extras || []), ...resourceExtras] : extras;
+
+			let isNewConversation = false;
+			if (!activeConv) {
+				await conversationsStore.createConversation();
+				isNewConversation = true;
 			}
-			const userMessage = await this.addMessage(
-				MessageRole.USER,
-				content,
-				MessageType.TEXT,
-				parentIdForUserMessage ?? '-1',
-				allExtras
-			);
-			if (isNewConversation && content)
-				await conversationsStore.updateConversationName(
-					currentConv.id,
-					generateConversationTitle(content, Boolean(config().titleGenerationUseFirstLine))
+			const currentConv = conversationsStore.activeConversation;
+			if (!currentConv) return;
+			this.conversationOperationLocks.add(currentConv.id);
+			lockedConversationId = currentConv.id;
+			this.showErrorDialog(null);
+			this.setChatLoading(currentConv.id, true);
+			this.clearChatStreaming(currentConv.id);
+			try {
+				let parentIdForUserMessage: string | undefined;
+				if (isNewConversation) {
+					const rootId = await DatabaseService.createRootMessage(currentConv.id);
+					const currentConfig = config();
+					const systemPrompt = currentConfig.systemMessage?.toString().trim();
+					if (systemPrompt) {
+						const systemMessage = await DatabaseService.createSystemMessage(
+							currentConv.id,
+							systemPrompt,
+							rootId
+						);
+						conversationsStore.addMessageToActive(systemMessage);
+						parentIdForUserMessage = systemMessage.id;
+					} else parentIdForUserMessage = rootId;
+				}
+				const userMessage = await this.addMessage(
+					MessageRole.USER,
+					content,
+					MessageType.TEXT,
+					parentIdForUserMessage ?? '-1',
+					allExtras
 				);
-			const assistantMessage = await this.createAssistantMessage(userMessage.id);
-			conversationsStore.addMessageToActive(assistantMessage);
-			await this.streamChatCompletion(
-				conversationsStore.activeMessages.slice(0, -1),
-				assistantMessage,
-				undefined,
-				undefined,
-				undefined,
-				config().titleGenerationUseLLM && isNewConversation ? content : undefined
-			);
-		} catch (error) {
-			if (isAbortError(error)) {
+				if (isNewConversation && content)
+					await conversationsStore.updateConversationName(
+						currentConv.id,
+						generateConversationTitle(content, Boolean(config().titleGenerationUseFirstLine))
+					);
+				const assistantMessage = await this.createAssistantMessage(userMessage.id);
+				conversationsStore.addMessageToActive(assistantMessage);
+				await this.streamChatCompletion(
+					conversationsStore.activeMessages.slice(0, -1),
+					assistantMessage,
+					undefined,
+					undefined,
+					undefined,
+					config().titleGenerationUseLLM && isNewConversation ? content : undefined
+				);
+			} catch (error) {
+				if (isAbortError(error)) {
+					this.setChatLoading(currentConv.id, false);
+					return;
+				}
+				console.error('Failed to send message:', error);
 				this.setChatLoading(currentConv.id, false);
-				return;
+				const dialogType =
+					error instanceof Error && error.name === 'TimeoutError'
+						? ErrorDialogType.TIMEOUT
+						: ErrorDialogType.SERVER;
+				const contextInfo = (
+					error as Error & { contextInfo?: { n_prompt_tokens: number; n_ctx: number } }
+				).contextInfo;
+				this.showErrorDialog({
+					type: dialogType,
+					message: error instanceof Error ? error.message : 'Unknown error',
+					contextInfo
+				});
 			}
-			console.error('Failed to send message:', error);
-			this.setChatLoading(currentConv.id, false);
-			const dialogType =
-				error instanceof Error && error.name === 'TimeoutError'
-					? ErrorDialogType.TIMEOUT
-					: ErrorDialogType.SERVER;
-			const contextInfo = (
-				error as Error & { contextInfo?: { n_prompt_tokens: number; n_ctx: number } }
-			).contextInfo;
-			this.showErrorDialog({
-				type: dialogType,
-				message: error instanceof Error ? error.message : 'Unknown error',
-				contextInfo
-			});
+		} finally {
+			this.conversationOperationLocks.delete(operationKey);
+			if (lockedConversationId) this.conversationOperationLocks.delete(lockedConversationId);
 		}
 	}
 
@@ -592,6 +604,11 @@ class ChatStore {
 		}
 
 		const frozenModel = effectiveModel ? normalizeModelName(effectiveModel) : null;
+		const providerRequestContext = ChatService.createProviderRequestContext();
+		const shouldPreEncode =
+			getApiProvider(providerRequestContext.providerId).capabilities.supportsPreEncode &&
+			Boolean(config().preEncodeConversation);
+		const excludeReasoningFromPreEncode = Boolean(config().excludeReasoningFromContext);
 		const resolvedContextTotal = this.getContextTotal(frozenModel);
 		const withContextTotal = (
 			timings: ChatMessageTimings | undefined
@@ -827,20 +844,18 @@ class ChatStore {
 				if (onComplete) onComplete(streamedContent);
 				if (isRouterMode()) modelsStore.fetchRouterModels().catch(console.error);
 				// Pre-encode conversation in KV cache for providers that expose llama-server slots.
-				if (
-					getApiProvider(String(config().apiProvider ?? '')).capabilities.supportsPreEncode &&
-					config().preEncodeConversation
-				) {
+				if (shouldPreEncode) {
 					this.triggerPreEncode(
 						allMessages,
 						assistantMessage,
 						streamedContent,
 						frozenModel,
-						!!config().excludeReasoningFromContext
+						excludeReasoningFromPreEncode,
+						providerRequestContext
 					);
 				}
 			},
-			onError: (error: Error) => {
+			onError: async (error: Error) => {
 				this.setStreamingActive(false);
 				if (isAbortError(error)) {
 					cleanupStreamingState();
@@ -848,10 +863,33 @@ class ChatStore {
 				}
 				console.error('Streaming error:', error);
 				cleanupStreamingState();
-				const idx = conversationsStore.findMessageIndex(assistantMessage.id);
-				if (idx !== -1) {
-					const failedMessage = conversationsStore.removeMessageAtIndex(idx);
-					if (failedMessage) DatabaseService.deleteMessage(failedMessage.id).catch(console.error);
+				if (assistantMessage.parent) {
+					try {
+						const deletedIds = await DatabaseService.deleteMessageCascading(
+							convId,
+							assistantMessage.id,
+							assistantMessage.parent
+						);
+						if (
+							deletedIds.includes(assistantMessage.id) &&
+							conversationsStore.activeConversation?.id === convId
+						) {
+							const deleted = new Set(deletedIds);
+							conversationsStore.activeMessages = conversationsStore.activeMessages
+								.filter((message) => !deleted.has(message.id))
+								.map((message) => ({
+									...message,
+									children: message.children.filter((childId: string) => !deleted.has(childId))
+								}));
+							conversationsStore.activeConversation = {
+								...conversationsStore.activeConversation,
+								currNode: assistantMessage.parent
+							};
+							await conversationsStore.refreshConversationTimestamp();
+						}
+					} catch (cleanupError) {
+						console.error('Failed to remove errored assistant message:', cleanupError);
+					}
 				}
 				const contextInfo = (
 					error as Error & { contextInfo?: { n_prompt_tokens: number; n_ctx: number } }
@@ -861,7 +899,7 @@ class ChatStore {
 					message: error.message,
 					contextInfo
 				});
-				if (onError) onError(error);
+				if (onError) await onError(error);
 			}
 		};
 
@@ -872,7 +910,12 @@ class ChatStore {
 			const agenticResult = await agenticStore.runAgenticFlow({
 				conversationId: convId,
 				messages: allMessages,
-				options: { ...this.getApiOptions(), ...(frozenModel ? { model: frozenModel } : {}) },
+				options: {
+					...this.getApiOptions(),
+					...(frozenModel ? { model: frozenModel } : {}),
+					assistantMessageId: assistantMessage.id,
+					providerRequestContext
+				},
 				callbacks: streamCallbacks,
 				signal: abortController.signal,
 				perChatOverrides
@@ -892,6 +935,8 @@ class ChatStore {
 			{
 				...this.getApiOptions(),
 				...(frozenModel ? { model: frozenModel } : {}),
+				assistantMessageId: assistantMessage.id,
+				providerRequestContext,
 				stream: true,
 				onChunk: streamCallbacks.onChunk,
 				onReasoningChunk: streamCallbacks.onReasoningChunk,
@@ -930,6 +975,16 @@ class ChatStore {
 					if (isRouterMode()) modelsStore.fetchRouterModels().catch(console.error);
 					if (firstUserMessageContent) {
 						await this.generateTitleWithLLM(firstUserMessageContent, content, convId);
+					}
+					if (shouldPreEncode) {
+						void this.triggerPreEncode(
+							allMessages,
+							assistantMessage,
+							content,
+							frozenModel,
+							excludeReasoningFromPreEncode,
+							providerRequestContext
+						);
 					}
 				},
 				onError: streamCallbacks.onError
@@ -1010,12 +1065,20 @@ class ChatStore {
 		if (this.resumingStreams.has(convId) || this.isChatLoadingInternal(convId)) return;
 		const state = ChatService.getResumableState(convId);
 		if (!state) return;
+		if (!(await ChatService.canResumeStream(state))) return;
 
 		const messages = await conversationsStore.getConversationMessages(convId);
-		const assistantMessage = messages
-			.filter((message) => message.role === MessageRole.ASSISTANT)
-			.sort((left, right) => right.timestamp - left.timestamp)[0];
-		if (!assistantMessage) return;
+		if (!(await ChatService.canResumeStream(state))) return;
+		const assistantMessage = messages.find(
+			(message) =>
+				message.id === state.assistantMessageId &&
+				message.convId === convId &&
+				message.role === MessageRole.ASSISTANT
+		);
+		if (!assistantMessage) {
+			ChatService.discardResumableStream(convId);
+			return;
+		}
 
 		let toolCalls: import('$lib/types/api').ApiChatCompletionToolCall[] = [];
 		try {
@@ -1182,22 +1245,24 @@ class ChatStore {
 		const result = this.getMessageByIdWithRole(messageId, MessageRole.USER);
 		if (!result) return;
 		const { message: messageToUpdate, index: messageIndex } = result;
-		const originalContent = messageToUpdate.content;
 		try {
 			const allMessages = await conversationsStore.getConversationMessages(activeConv.id);
 			const rootMessage = allMessages.find((m) => m.type === 'root' && m.parent === null);
 			const isFirstUserMessage = rootMessage && messageToUpdate.parent === rootMessage.id;
-			conversationsStore.updateMessageAtIndex(messageIndex, { content: newContent });
-			await DatabaseService.updateMessage(messageId, { content: newContent });
+			await DatabaseService.replaceUserMessageAndTruncateBranch(
+				activeConv.id,
+				messageId,
+				newContent,
+				messageToUpdate.extra
+			);
+			conversationsStore.updateMessageAtIndex(messageIndex, { content: newContent, children: [] });
 			if (isFirstUserMessage && newContent.trim())
 				await conversationsStore.updateConversationTitleWithConfirmation(
 					activeConv.id,
 					generateConversationTitle(newContent, Boolean(config().titleGenerationUseFirstLine))
 				);
-			const messagesToRemove = conversationsStore.activeMessages.slice(messageIndex + 1);
-			for (const message of messagesToRemove) await DatabaseService.deleteMessage(message.id);
 			conversationsStore.sliceActiveMessages(messageIndex + 1);
-			conversationsStore.updateConversationTimestamp();
+			await conversationsStore.refreshConversationTimestamp();
 			this.setChatLoading(activeConv.id, true);
 			this.clearChatStreaming(activeConv.id);
 			const assistantMessage = await this.createAssistantMessage();
@@ -1205,13 +1270,7 @@ class ChatStore {
 			await conversationsStore.updateCurrentNode(assistantMessage.id);
 			await this.streamChatCompletion(
 				conversationsStore.activeMessages.slice(0, -1),
-				assistantMessage,
-				undefined,
-				() => {
-					conversationsStore.updateMessageAtIndex(conversationsStore.findMessageIndex(messageId), {
-						content: originalContent
-					});
-				}
+				assistantMessage
 			);
 		} catch (error) {
 			if (!isAbortError(error)) console.error('Failed to update message:', error);
@@ -1226,10 +1285,9 @@ class ChatStore {
 		if (!result) return;
 		const { index: messageIndex } = result;
 		try {
-			const messagesToRemove = conversationsStore.activeMessages.slice(messageIndex);
-			for (const message of messagesToRemove) await DatabaseService.deleteMessage(message.id);
+			await DatabaseService.truncateBranchForRegeneration(activeConv.id, messageId);
 			conversationsStore.sliceActiveMessages(messageIndex);
-			conversationsStore.updateConversationTimestamp();
+			await conversationsStore.refreshConversationTimestamp();
 			this.setChatLoading(activeConv.id, true);
 			this.clearChatStreaming(activeConv.id);
 			const parentMessageId =
@@ -1276,7 +1334,7 @@ class ChatStore {
 				parentMessage.id
 			);
 			await conversationsStore.updateCurrentNode(newAssistantMessage.id);
-			conversationsStore.updateConversationTimestamp();
+			await conversationsStore.refreshConversationTimestamp();
 			await conversationsStore.refreshActiveMessages();
 			const conversationPath = filterByLeafNodeId(
 				allMessages,
@@ -1362,6 +1420,7 @@ class ChatStore {
 			const currentPath = filterByLeafNodeId(allMessages, activeConv.currNode || '', false);
 			const isInCurrentPath = currentPath.some((m) => m.id === messageId);
 
+			let replacementCurrentNode = activeConv.currNode;
 			if (isInCurrentPath && messageToDelete.parent) {
 				const siblings = allMessages.filter(
 					(m) => m.parent === messageToDelete.parent && m.id !== messageId
@@ -1372,18 +1431,27 @@ class ChatStore {
 						sibling.timestamp > latest.timestamp ? sibling : latest
 					);
 
-					await conversationsStore.updateCurrentNode(findLeafNode(allMessages, latestSibling.id));
+					replacementCurrentNode = findLeafNode(allMessages, latestSibling.id);
 				} else if (messageToDelete.parent) {
-					await conversationsStore.updateCurrentNode(
-						findLeafNode(allMessages, messageToDelete.parent)
-					);
+					replacementCurrentNode = messageToDelete.parent;
 				}
 			}
 
-			await DatabaseService.deleteMessageCascading(activeConv.id, messageId);
+			if (!replacementCurrentNode) throw new Error('Cannot delete a branch without a replacement');
+			await DatabaseService.deleteMessageCascading(
+				activeConv.id,
+				messageId,
+				replacementCurrentNode
+			);
+			if (conversationsStore.activeConversation?.id === activeConv.id) {
+				conversationsStore.activeConversation = {
+					...conversationsStore.activeConversation,
+					currNode: replacementCurrentNode
+				};
+			}
 			await conversationsStore.refreshActiveMessages();
 
-			conversationsStore.updateConversationTimestamp();
+			await conversationsStore.refreshConversationTimestamp();
 		} catch (error) {
 			console.error('Failed to delete message:', error);
 		}
@@ -1420,11 +1488,13 @@ class ChatStore {
 
 				await conversationsStore.updateCurrentNode(newMessage.id);
 			} else {
-				await DatabaseService.updateMessage(msg.id, { content: newContent });
+				await DatabaseService.updateConversationMessage(activeConv.id, msg.id, {
+					content: newContent
+				});
 				conversationsStore.updateMessageAtIndex(idx, { content: newContent });
 			}
 
-			conversationsStore.updateConversationTimestamp();
+			await conversationsStore.refreshConversationTimestamp();
 
 			await conversationsStore.refreshActiveMessages();
 		} catch (error) {
@@ -1449,7 +1519,7 @@ class ChatStore {
 
 			if (newExtras !== undefined) updateData.extra = JSON.parse(JSON.stringify(newExtras));
 
-			await DatabaseService.updateMessage(messageId, updateData);
+			await DatabaseService.updateConversationMessage(activeConv.id, messageId, updateData);
 
 			conversationsStore.updateMessageAtIndex(idx, updateData);
 
@@ -1463,7 +1533,7 @@ class ChatStore {
 				);
 			}
 
-			conversationsStore.updateConversationTimestamp();
+			await conversationsStore.refreshConversationTimestamp();
 		} catch (error) {
 			console.error('Failed to edit user message:', error);
 		}
@@ -1504,7 +1574,7 @@ class ChatStore {
 					timestamp: Date.now(),
 					extra: extrasToUse
 				};
-				await DatabaseService.updateMessage(msg.id, updates);
+				await DatabaseService.updateConversationMessage(activeConv.id, msg.id, updates);
 				conversationsStore.updateMessageAtIndex(idx, updates);
 				messageIdForResponse = msg.id;
 			} else {
@@ -1529,7 +1599,7 @@ class ChatStore {
 				messageIdForResponse = newMessage.id;
 			}
 
-			conversationsStore.updateConversationTimestamp();
+			await conversationsStore.refreshConversationTimestamp();
 			if (isFirstUserMessage && newContent.trim())
 				await conversationsStore.updateConversationTitleWithConfirmation(
 					activeConv.id,
@@ -1816,8 +1886,9 @@ class ChatStore {
 		allMessages: DatabaseMessage[],
 		assistantMessage: DatabaseMessage,
 		assistantContent: string,
-		model?: string | null,
-		excludeReasoning?: boolean
+		model: string | null | undefined,
+		excludeReasoning: boolean | undefined,
+		providerRequestContext: import('$lib/types/provider').ProviderRequestContext
 	): Promise<void> {
 		this.cancelPreEncode();
 		this.preEncodeAbortController = new AbortController();
@@ -1825,7 +1896,7 @@ class ChatStore {
 		const signal = this.preEncodeAbortController.signal;
 
 		try {
-			const allIdle = await ChatService.areAllSlotsIdle(model, signal);
+			const allIdle = await ChatService.areAllSlotsIdle(providerRequestContext, model, signal);
 			if (!allIdle || signal.aborted) return;
 
 			const messagesWithAssistant: DatabaseMessage[] = [
@@ -1833,7 +1904,13 @@ class ChatStore {
 				{ ...assistantMessage, content: assistantContent }
 			];
 
-			await ChatService.preEncode(messagesWithAssistant, model, excludeReasoning, signal);
+			await ChatService.preEncode(
+				messagesWithAssistant,
+				providerRequestContext,
+				model,
+				excludeReasoning,
+				signal
+			);
 		} catch (err) {
 			if (!isAbortError(err)) {
 				console.warn('[ChatStore] Pre-encode failed:', err);

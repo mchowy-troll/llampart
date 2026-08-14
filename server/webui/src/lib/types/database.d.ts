@@ -115,7 +115,7 @@ export interface DatabaseMessage {
 	children: string[];
 	extra?: DatabaseMessageExtra[];
 	timings?: ChatMessageTimings;
-	model?: string;
+	model?: string | null;
 }
 
 export type ExportedConversation = {
@@ -124,3 +124,11 @@ export type ExportedConversation = {
 };
 
 export type ExportedConversations = ExportedConversation | ExportedConversation[];
+
+export interface ConversationExportEnvelope {
+	type: 'llampart-conversations';
+	formatVersion: 1;
+	appVersion: string;
+	exportedAt: string;
+	conversations: ExportedConversation[];
+}

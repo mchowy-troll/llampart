@@ -9,6 +9,7 @@ import type {
 import type { ChatMessageTimings, ChatMessagePromptProgress } from './chat';
 import type { ChatStreamCheckpoint } from './settings';
 import type { DatabaseMessage, DatabaseMessageExtra, McpServerOverride } from './database';
+import type { ProviderRequestContext } from './provider';
 
 /**
  * Agentic orchestration configuration.
@@ -111,7 +112,7 @@ export interface AgenticFlowCallbacks {
 	/** Entire agentic flow is complete */
 	onFlowComplete?: (timings?: ChatMessageTimings) => void;
 	/** Error during flow */
-	onError?: (error: Error) => void;
+	onError?: (error: Error) => void | Promise<void>;
 	/** Timing updates during streaming */
 	onTimings?: (timings?: ChatMessageTimings, promptProgress?: ChatMessagePromptProgress) => void;
 	/** An agentic turn (LLM + tool execution) completed - intermediate timing update */
@@ -126,6 +127,8 @@ export interface AgenticFlowCallbacks {
 export interface AgenticFlowOptions {
 	stream?: boolean;
 	model?: string;
+	assistantMessageId?: string;
+	providerRequestContext?: ProviderRequestContext;
 	temperature?: number;
 	max_tokens?: number;
 	onStreamCheckpoint?: (checkpoint: ChatStreamCheckpoint) => void | Promise<void>;

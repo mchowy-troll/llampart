@@ -33,6 +33,7 @@ export const LLAMA_SERVER_PROVIDER_CAPABILITIES = {
 	supportsBackendSampling: true,
 	supportsLlamaReasoningControls: true,
 	supportsOpenAiToolCalls: true,
+	supportsBuiltinToolsEndpoint: true,
 	supportsVisionInput: 'unknown',
 	supportsCustomJsonPayload: true
 } as const satisfies ProviderCapabilities;
@@ -70,6 +71,7 @@ export const OPENAI_COMPATIBLE_PROVIDER_CAPABILITIES = {
 	supportsBackendSampling: false,
 	supportsLlamaReasoningControls: false,
 	supportsOpenAiToolCalls: true,
+	supportsBuiltinToolsEndpoint: false,
 	supportsVisionInput: 'unknown',
 	supportsCustomJsonPayload: false
 } as const satisfies ProviderCapabilities;
