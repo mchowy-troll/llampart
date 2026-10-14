@@ -43,10 +43,10 @@ const context: ProviderRequestContext = {
 };
 const original = { ...settingsStore.config };
 afterEach(() => {
+	vi.restoreAllMocks();
 	settingsStore.updateMultipleConfig(original);
 	modelsStore.clear();
 	vi.unstubAllGlobals();
-	vi.restoreAllMocks();
 	ChatService.invalidateProviderRequestContexts();
 });
 const event = (
@@ -565,6 +565,16 @@ describe('stream integration and compatibility', () => {
 		);
 		const complete = vi.fn();
 		const error = vi.fn();
+		const expectedLog = [
+			'Error in sendMessage:',
+			'ProviderOutcomeError',
+			'Provider response failed: failed'
+		];
+		const originalError = console.error;
+		const errorLog = vi.spyOn(console, 'error').mockImplementation((...args) => {
+			if (args.length !== expectedLog.length || args.some((arg, i) => arg !== expectedLog[i]))
+				originalError(...args);
+		});
 		await expect(
 			ChatService.sendMessage(input.messages, {
 				model: 'exact',
@@ -572,9 +582,19 @@ describe('stream integration and compatibility', () => {
 				onComplete: complete,
 				onError: error
 			})
-		).rejects.toMatchObject({ name: 'ProviderOutcomeError' });
+		).rejects.toMatchObject({
+			name: 'ProviderOutcomeError',
+			message: 'Provider response failed: failed'
+		});
+		expect(errorLog).toHaveBeenCalledExactlyOnceWith(...expectedLog);
 		expect(complete).not.toHaveBeenCalled();
 		expect(error).toHaveBeenCalledTimes(1);
+		expect(error).toHaveBeenCalledWith(
+			expect.objectContaining({
+				name: 'ProviderOutcomeError',
+				message: 'Provider response failed: failed'
+			})
+		);
 	});
 	it('keeps V1 exports unchanged and readable, stripping only new internal continuation/telemetry', () => {
 		const continuation = {

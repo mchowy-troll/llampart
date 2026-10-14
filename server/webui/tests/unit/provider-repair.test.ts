@@ -30,9 +30,9 @@ const input: ProviderChatCompletionInput = {
 };
 const original = { ...settingsStore.config };
 afterEach(() => {
+	vi.restoreAllMocks();
 	settingsStore.updateMultipleConfig(original);
 	modelsStore.clear();
-	vi.restoreAllMocks();
 	vi.unstubAllGlobals();
 });
 
@@ -101,7 +101,17 @@ describe('automatic protocol contract', () => {
 			});
 			const fetch = vi.fn().mockResolvedValue(new Response('Endpoint unavailable', { status }));
 			vi.stubGlobal('fetch', fetch);
-			await expect(ChatService.sendMessage(input.messages, input.options)).rejects.toThrow();
+			const expectedLog = ['Error in sendMessage:', 'HttpError', `Server error (${status}): `];
+			const originalError = console.error;
+			const errorLog = vi.spyOn(console, 'error').mockImplementation((...args) => {
+				if (args.length !== expectedLog.length || args.some((arg, i) => arg !== expectedLog[i]))
+					originalError(...args);
+			});
+			await expect(ChatService.sendMessage(input.messages, input.options)).rejects.toMatchObject({
+				name: 'HttpError',
+				message: `Server error (${status}): `
+			});
+			expect(errorLog).toHaveBeenCalledExactlyOnceWith(...expectedLog);
 			expect(fetch).toHaveBeenCalledTimes(1);
 			expect(fetch.mock.calls[0][0]).toContain('/chat/completions');
 		}
@@ -121,7 +131,17 @@ describe('automatic protocol contract', () => {
 			);
 			const fetch = vi.fn().mockResolvedValue(new Response('Endpoint unavailable', { status }));
 			vi.stubGlobal('fetch', fetch);
-			await expect(ChatService.sendMessage(input.messages, input.options)).rejects.toThrow();
+			const expectedLog = ['Error in sendMessage:', 'HttpError', `Server error (${status}): `];
+			const originalError = console.error;
+			const errorLog = vi.spyOn(console, 'error').mockImplementation((...args) => {
+				if (args.length !== expectedLog.length || args.some((arg, i) => arg !== expectedLog[i]))
+					originalError(...args);
+			});
+			await expect(ChatService.sendMessage(input.messages, input.options)).rejects.toMatchObject({
+				name: 'HttpError',
+				message: `Server error (${status}): `
+			});
+			expect(errorLog).toHaveBeenCalledExactlyOnceWith(...expectedLog);
 			expect(fetch).toHaveBeenCalledTimes(1);
 			expect(fetch.mock.calls[0][0]).toContain('/responses');
 		}

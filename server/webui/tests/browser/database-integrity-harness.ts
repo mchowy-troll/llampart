@@ -410,14 +410,46 @@ async function migrationRetry() {
 
 	const before = await snapshot(['migration']);
 	const originalCreateMessageBranch = DatabaseService.createMessageBranch;
+	const originalConsoleError = console.error;
+	const expectedPrefix = '[Migration] Failed to migrate legacy messages:';
+	const injectedFailure = new Error('injected migration failure');
+	const errorLogs: unknown[][] = [];
 	let createCalls = 0;
-	DatabaseService.createMessageBranch = async (newMessage, parentId) => {
-		createCalls++;
-		if (createCalls === 2) throw new Error('injected migration failure');
-		return await originalCreateMessageBranch.call(DatabaseService, newMessage, parentId);
-	};
-	await runLegacyMigration();
-	DatabaseService.createMessageBranch = originalCreateMessageBranch;
+	let failureLog: { prefix: string; isError: boolean; name: string; message: string };
+	try {
+		console.error = (...args: unknown[]) => {
+			errorLogs.push(args);
+			if (args.length !== 2 || args[0] !== expectedPrefix || args[1] !== injectedFailure)
+				originalConsoleError(...args);
+		};
+		DatabaseService.createMessageBranch = async (newMessage, parentId) => {
+			createCalls++;
+			if (createCalls === 2) throw injectedFailure;
+			return await originalCreateMessageBranch.call(DatabaseService, newMessage, parentId);
+		};
+		await runLegacyMigration();
+		if (errorLogs.length !== 1)
+			throw new Error(`Expected one injected migration error log, received ${errorLogs.length}`);
+		const [prefix, error] = errorLogs[0];
+		if (
+			errorLogs[0].length !== 2 ||
+			prefix !== expectedPrefix ||
+			!(error instanceof Error) ||
+			error !== injectedFailure ||
+			error.name !== 'Error' ||
+			error.message !== 'injected migration failure'
+		)
+			throw new Error('Unexpected console.error during the first legacy migration');
+		failureLog = {
+			prefix,
+			isError: error instanceof Error,
+			name: error.name,
+			message: error.message
+		};
+	} finally {
+		console.error = originalConsoleError;
+		DatabaseService.createMessageBranch = originalCreateMessageBranch;
+	}
 
 	const afterFailure = await snapshot(['migration']);
 	const doneAfterFailure = localStorage.getItem(MIGRATION_DONE_KEY);
@@ -428,6 +460,7 @@ async function migrationRetry() {
 
 	return {
 		before,
+		failureLogs: [failureLog],
 		afterFailure,
 		doneAfterFailure,
 		afterSuccess,

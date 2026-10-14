@@ -9,9 +9,9 @@ import type { ChatMessageTimings } from '$lib/types/chat';
 
 const original = { ...settingsStore.config };
 afterEach(() => {
+	vi.restoreAllMocks();
 	settingsStore.updateMultipleConfig(original);
 	modelsStore.clear();
-	vi.restoreAllMocks();
 	vi.unstubAllGlobals();
 });
 const usage = (completionTokens: number) => ({ usage: { completionTokens } });
@@ -141,15 +141,35 @@ describe('realistic vLLM SSE fixture through ChatService', () => {
 					? 'data: {"error":{"message":"generation failed"}}\n\n'
 					: 'data: [DONE]\n\n');
 			vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(text)));
+			const expectedLog = [
+				'Error in sendMessage:',
+				'StreamProtocolError',
+				'Failed to parse provider stream data'
+			];
+			const originalError = console.error;
+			const errorLog =
+				mode === 'broken'
+					? vi.spyOn(console, 'error').mockImplementation((...args) => {
+							if (
+								args.length !== expectedLog.length ||
+								args.some((arg, i) => arg !== expectedLog[i])
+							)
+								originalError(...args);
+						})
+					: undefined;
 			const pending = ChatService.sendMessage(
 				[{ role: 'user', content: 'hi' }],
 				{ model: 'exact', stream: true, onComplete: complete, onTimings: timings },
 				undefined,
 				controller.signal
 			);
-			if (mode === 'broken')
-				await expect(pending).rejects.toMatchObject({ name: 'StreamProtocolError' });
-			else await pending;
+			if (mode === 'broken') {
+				await expect(pending).rejects.toMatchObject({
+					name: 'StreamProtocolError',
+					message: 'Failed to parse provider stream data'
+				});
+				expect(errorLog).toHaveBeenCalledExactlyOnceWith(...expectedLog);
+			} else await pending;
 			if (mode === 'broken' || mode === 'aborted') expect(complete).not.toHaveBeenCalled();
 			else expect(complete).toHaveBeenCalledTimes(1);
 			if (mode === 'aborted') expect(timings).toHaveBeenCalledTimes(1);
@@ -222,6 +242,16 @@ describe('realistic vLLM SSE fixture through ChatService', () => {
 		});
 	});
 	it('surfaces a continuous-usage rejection without a second POST', async () => {
+		const expectedLog = [
+			'Error in sendMessage:',
+			'ServerError',
+			'continuous_usage_stats is unsupported'
+		];
+		const originalError = console.error;
+		const errorLog = vi.spyOn(console, 'error').mockImplementation((...args) => {
+			if (args.length !== expectedLog.length || args.some((arg, i) => arg !== expectedLog[i]))
+				originalError(...args);
+		});
 		settingsStore.updateMultipleConfig({
 			apiProvider: 'vllm',
 			serverBaseUrl: 'http://localhost:8000',
@@ -243,7 +273,11 @@ describe('realistic vLLM SSE fixture through ChatService', () => {
 				stream: true,
 				onComplete: complete
 			})
-		).rejects.toThrow('continuous_usage_stats');
+		).rejects.toMatchObject({
+			name: 'ServerError',
+			message: 'continuous_usage_stats is unsupported'
+		});
+		expect(errorLog).toHaveBeenCalledExactlyOnceWith(...expectedLog);
 		expect(fetch).toHaveBeenCalledTimes(1);
 		expect(complete).not.toHaveBeenCalled();
 	});

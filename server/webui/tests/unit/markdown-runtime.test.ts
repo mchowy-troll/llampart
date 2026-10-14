@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createMarkdownProcessor } from '$lib/markdown/markdown-runtime';
 
 async function renderMarkdown(markdown: string, disableMath = false) {
@@ -26,13 +26,19 @@ describe('markdown-runtime', () => {
 
 	it('keeps untrusted LaTeX links and HTML extensions disabled with a polluted prototype', async () => {
 		const originalTrust = Object.getOwnPropertyDescriptor(Object.prototype, 'trust');
-		Object.defineProperty(Object.prototype, 'trust', {
-			configurable: true,
-			writable: true,
-			value: true
+		const expectedWarning =
+			"LaTeX-incompatible input and strict mode is set to 'warn': HTML extension is disabled on strict mode [htmlExtension]";
+		const originalWarn = console.warn;
+		const warningLog = vi.spyOn(console, 'warn').mockImplementation((...args) => {
+			if (args.length !== 1 || args[0] !== expectedWarning) originalWarn(...args);
 		});
 
 		try {
+			Object.defineProperty(Object.prototype, 'trust', {
+				configurable: true,
+				writable: true,
+				value: true
+			});
 			const html = await renderMarkdown(
 				String.raw`$\href{https://untrusted.test/}{link} + \htmlClass{untrusted-class}{x} + \includegraphics{https://untrusted.test/image.png}$`
 			);
@@ -42,7 +48,9 @@ describe('markdown-runtime', () => {
 			expect(html).not.toContain('<a ');
 			expect(html).not.toContain('<img ');
 			expect(html).not.toMatch(/class="[^"]*untrusted-class/);
+			expect(warningLog).toHaveBeenCalledExactlyOnceWith(expectedWarning);
 		} finally {
+			warningLog.mockRestore();
 			if (originalTrust) {
 				Object.defineProperty(Object.prototype, 'trust', originalTrust);
 			} else {

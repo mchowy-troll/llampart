@@ -269,12 +269,21 @@ describeWithChromium('DatabaseService integrity on IndexedDB', () => {
 	it('keeps a failed migration pending and retries it without duplicate graph edges', async () => {
 		const result = await runScenario<{
 			before: unknown;
+			failureLogs: Array<{ prefix: string; isError: boolean; name: string; message: string }>;
 			afterFailure: unknown;
 			doneAfterFailure: string | null;
 			afterSuccess: { messages: DatabaseMessage[] };
 			doneAfterSuccess: string | null;
 			afterCompletedRetry: unknown;
 		}>('migration-retry');
+		expect(result.failureLogs).toEqual([
+			{
+				prefix: '[Migration] Failed to migrate legacy messages:',
+				isError: true,
+				name: 'Error',
+				message: 'injected migration failure'
+			}
+		]);
 		expect(result.doneAfterFailure).toBeNull();
 		expect(result.afterFailure).toEqual(result.before);
 		expect(result.doneAfterSuccess).not.toBeNull();
