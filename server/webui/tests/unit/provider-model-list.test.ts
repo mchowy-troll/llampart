@@ -38,10 +38,12 @@ describe('provider-owned model lists', () => {
 
 		expect(result.data[0].id).toBe('local-model');
 		expect(fetchMock).toHaveBeenCalledWith(
-			'http://127.0.0.1:8080/v1/models',
+			'/__llampart/api/llama-server/v1/models',
 			expect.objectContaining({
 				headers: expect.objectContaining({
-					Accept: 'application/json'
+					Accept: 'application/json',
+					'X-Llampart-Host': '127.0.0.1',
+					'X-Llampart-Port': '8080'
 				})
 			})
 		);
@@ -73,11 +75,12 @@ describe('provider-owned model lists', () => {
 		expect(result.data[0].id).toBe('gpt-test');
 		expect(openAiCompatibleProvider.id).toBe(API_PROVIDER_IDS.OPENAI_COMPATIBLE);
 		expect(fetchMock).toHaveBeenCalledWith(
-			'https://api.example.test/v1/models',
+			'/__llampart/api/openai-compatible/v1/models',
 			expect.objectContaining({
 				headers: expect.objectContaining({
 					Accept: 'application/json',
-					Authorization: 'Bearer sk-test'
+					Authorization: 'Bearer sk-test',
+					'X-Llampart-Host': 'api.example.test'
 				})
 			})
 		);

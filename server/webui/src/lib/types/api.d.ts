@@ -17,6 +17,7 @@ export interface ApiChatMessageContentPart {
 	text?: string;
 	image_url?: {
 		url: string;
+		detail?: 'auto' | 'low' | 'high';
 	};
 	input_audio?: {
 		data: string;
@@ -47,6 +48,7 @@ export interface ApiErrorResponse {
 }
 
 export interface ApiChatMessageData {
+	providerContinuation?: import('./provider').ProviderContinuation;
 	role: ChatRole;
 	content: string | ApiChatMessageContentPart[];
 	reasoning_content?: string;

@@ -164,8 +164,10 @@ export const en: TranslationDictionary = {
 		apiKey: 'API Key',
 		fieldServerAddress: 'Server Address',
 		fieldApiProvider: 'API provider',
+		sourceBackend: 'Reported by backend; — means unavailable',
+		sourceBrowser: 'Measured in browser; includes transport, not backend generation time',
+		capabilityUnknown: 'Backend/model support is unknown. Setting this explicitly is experimental.',
 		fieldApiKey: 'API Key',
-		fieldDisableOpenAiCompatibleTools: 'Disable MCP and Tools for OpenAI-compatible',
 		fieldSystemMessage: 'System Message',
 		fieldPasteLongTextToFileLength: 'Paste long text to file length',
 		fieldSendMessageOnEnter: 'Send message on Enter',
@@ -244,7 +246,6 @@ export const en: TranslationDictionary = {
 		fieldStripThinkingFromMessageHistory: 'Strip thinking from message history',
 		fieldCustomJson: 'Custom JSON',
 		groupConnection: 'Connection',
-		groupOpenAiCompatibleOptions: 'OpenAI-compatible options',
 		groupSystemMessage: 'System message',
 		groupInterface: 'Interface',
 		groupApplicationBackground: 'Application background',
@@ -356,14 +357,9 @@ export const en: TranslationDictionary = {
 			noConversationsToDelete: 'No conversations to delete'
 		},
 		info: {
-			apiProvider: `Choose the API provider llampart should use.`,
-			serverBaseUrl: 'llama-server URL.',
-			apiKey: `Optional API key if llama-server was started with --api-key.`,
-			llamaServerBaseUrl: 'llama-server URL.',
-			llamaServerApiKey: `Optional API key if llama-server was started with --api-key.`,
-			openAiCompatibleBaseUrl: `OpenAI-compatible server address - e.g. LM Studio, Ollama, or another endpoint that supports /v1/models and /v1/chat/completions.`,
-			openAiCompatibleApiKey: 'API key required by the selected OpenAI-compatible server.',
-			disableOpenAiCompatibleTools: 'Hides tools and MCP from the OpenAI backend.',
+			apiProvider: 'Choose the API provider.',
+			serverBaseUrl: 'The address of the server you want to connect to.',
+			apiKey: 'API key, if required by the server.',
 			systemMessage: 'The starting message that defines how the model should behave.',
 			showSystemMessage: 'Display the system message at the top of each conversation.',
 			theme:
@@ -464,6 +460,9 @@ export const en: TranslationDictionary = {
 		}
 	},
 	server: {
+		modelDiscoveryFailed: 'Could not retrieve the model list. Check the server connection.',
+		invalidModelDiscovery: 'The server returned an invalid model list.',
+		connectionFailedSafe: 'Could not connect to the server. Check the address and API key.',
 		connectingToServer: 'Connecting to Server',
 		connecting: 'Connecting...',
 		connectionError: 'Connection error',
@@ -559,6 +558,7 @@ export const en: TranslationDictionary = {
 		welcomeScreenWithFileDropZone: 'Welcome screen with file drop zone'
 	},
 	messages: {
+		statsClientApproximate: 'Approximate client measurement based on the token counter.',
 		regenerate: 'Regenerate',
 		forkConversation: 'Fork conversation',
 		deleteMessageTitle: 'Delete Message',

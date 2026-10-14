@@ -44,4 +44,9 @@ echo "🚀 Starting llampart development server..."
 echo "📝 Note: Start llama-server separately if needed"
 echo "🌐 Vite: http://localhost:5173"
 
-NODE_OPTIONS="--insecure-http-parser" vite dev --host 0.0.0.0
+if [ ! -f "$WEBUI_ROOT/node_modules/vite/bin/vite.js" ]; then
+	echo "❌ Local Vite is missing. Install development dependencies with npm ci --include=dev." >&2
+	exit 1
+fi
+
+exec node "$WEBUI_ROOT/node_modules/vite/bin/vite.js" dev --host 0.0.0.0 "$@"

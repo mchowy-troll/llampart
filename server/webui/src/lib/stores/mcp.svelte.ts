@@ -23,7 +23,7 @@ import { browser } from '$app/environment';
 import { MCPService } from '$lib/services/mcp.service';
 import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { mcpResourceStore } from '$lib/stores/mcp-resources.svelte';
-import { getApiBaseUrl } from '$lib/utils/api-fetch';
+import { fetchProviderEndpoint } from '$lib/services/providers/provider-transport';
 import { getProxiedUrlString } from '$lib/utils/cors-proxy';
 import { getFaviconUrl } from '$lib/utils/favicon';
 import {
@@ -115,12 +115,25 @@ class MCPStore {
 	 */
 	async probeProxy(): Promise<void> {
 		const generation = ++this.proxyProbeGeneration;
+		if (String(config().apiProvider ?? 'llama-server') !== 'llama-server') {
+			this._proxyAvailable = false;
+			return;
+		}
 		let available = false;
 		try {
-			const response = await fetch(`${getApiBaseUrl()}${CORS_PROXY_ENDPOINT}`, {
-				method: 'HEAD'
-			});
-			available = response.status !== 404;
+			const current = config();
+			const response = await fetchProviderEndpoint(
+				{
+					providerId: 'llama-server',
+					serverBaseUrl: String(current.serverBaseUrl ?? ''),
+					apiKey: String(current.apiKey ?? '')
+				},
+				CORS_PROXY_ENDPOINT,
+				{
+					method: 'HEAD'
+				}
+			);
+			available = response.ok || response.status === 400 || response.status === 405;
 		} catch {
 			// An unreachable endpoint means the proxy is unavailable for this source.
 		}

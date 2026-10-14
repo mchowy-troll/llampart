@@ -1,6 +1,8 @@
 import { getJsonHeaders, getAuthHeaders } from './api-headers';
-import { UrlProtocol } from '$lib/enums';
 import { config } from '$lib/stores/settings.svelte';
+import { getApiProvider } from '$lib/services/providers';
+import { fetchProviderEndpoint } from '$lib/services/providers/provider-transport';
+import type { ProviderConnectionContext } from '$lib/types/provider';
 
 /**
  * API Fetch Utilities
@@ -12,6 +14,7 @@ import { config } from '$lib/stores/settings.svelte';
  */
 
 export interface ApiFetchOptions extends Omit<RequestInit, 'headers'> {
+	context?: ProviderConnectionContext;
 	/**
 	 * Use auth-only headers (no Content-Type).
 	 * Default: false (uses JSON headers with Content-Type: application/json)
@@ -48,34 +51,33 @@ export interface ApiFetchOptions extends Omit<RequestInit, 'headers'> {
  * ```
  */
 export function getApiBaseUrl(): string {
-	const configuredBaseUrl = String(config().serverBaseUrl || '').trim();
-
-	if (!configuredBaseUrl) {
-		return window.location.origin;
-	}
-
-	return configuredBaseUrl.replace(/\/+$/, '');
+	if (String(config().apiProvider ?? 'llama-server') !== 'llama-server')
+		throw new Error('The native MCP proxy requires llama-server');
+	return `${window.location.origin}/__llampart/api/llama-server`;
 }
 
 export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): Promise<T> {
-	const { authOnly = false, apiKey, headers: customHeaders, ...fetchOptions } = options;
+	const { authOnly = false, apiKey, context, headers: customHeaders, ...fetchOptions } = options;
 
 	const baseHeaders = authOnly ? getAuthHeaders(apiKey) : getJsonHeaders(apiKey);
 	const headers = { ...baseHeaders, ...customHeaders };
 
-	const url =
-		path.startsWith(UrlProtocol.HTTP) || path.startsWith(UrlProtocol.HTTPS)
-			? path
-			: `${getApiBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
-
-	const response = await fetch(url, {
+	const current = config();
+	const source = context ?? {
+		providerId: getApiProvider(String(current.apiProvider ?? '')).id,
+		serverBaseUrl: String(current.serverBaseUrl ?? ''),
+		apiKey: apiKey ?? String(current.apiKey ?? '')
+	};
+	const response = await fetchProviderEndpoint(source, path.startsWith('/') ? path : `/${path}`, {
 		...fetchOptions,
 		headers
 	});
 
 	if (!response.ok) {
 		const errorMessage = await parseErrorMessage(response);
-		throw new Error(errorMessage);
+		throw new Error(
+			source.apiKey ? errorMessage.split(source.apiKey).join('[redacted]') : errorMessage
+		);
 	}
 
 	return response.json() as Promise<T>;
@@ -102,12 +104,7 @@ export async function apiFetchWithParams<T>(
 	params: Record<string, string>,
 	options: ApiFetchOptions = {}
 ): Promise<T> {
-	const resolvedBasePath =
-		basePath.startsWith(UrlProtocol.HTTP) || basePath.startsWith(UrlProtocol.HTTPS)
-			? basePath
-			: `${getApiBaseUrl()}${basePath.startsWith('/') ? basePath : `/${basePath.replace(/^\.\//, '')}`}`;
-
-	const url = new URL(resolvedBasePath);
+	const url = new URL(basePath.replace(/^\.\//, '/'), 'http://gateway.invalid');
 
 	for (const [key, value] of Object.entries(params)) {
 		if (value !== undefined && value !== null) {
@@ -115,22 +112,7 @@ export async function apiFetchWithParams<T>(
 		}
 	}
 
-	const { authOnly = false, apiKey, headers: customHeaders, ...fetchOptions } = options;
-
-	const baseHeaders = authOnly ? getAuthHeaders(apiKey) : getJsonHeaders(apiKey);
-	const headers = { ...baseHeaders, ...customHeaders };
-
-	const response = await fetch(url.toString(), {
-		...fetchOptions,
-		headers
-	});
-
-	if (!response.ok) {
-		const errorMessage = await parseErrorMessage(response);
-		throw new Error(errorMessage);
-	}
-
-	return response.json() as Promise<T>;
+	return apiFetch<T>(`${url.pathname}${url.search}`, options);
 }
 
 /**

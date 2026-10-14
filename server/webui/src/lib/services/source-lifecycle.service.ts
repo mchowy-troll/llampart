@@ -6,11 +6,13 @@ import { mcpStore } from '$lib/stores/mcp.svelte';
 import { config } from '$lib/stores/settings.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
 import type { McpServerOverride } from '$lib/types';
+import { connectionProtocol } from '$lib/services/providers/provider-capabilities';
 
 export interface ProviderSource {
 	providerId: string;
 	serverBaseUrl: string;
 	apiKey: string;
+	protocol?: import('$lib/types/provider').ProviderProtocol;
 }
 
 class SourceLifecycleService {
@@ -23,7 +25,9 @@ class SourceLifecycleService {
 		return (
 			getApiProvider(String(currentConfig.apiProvider ?? '')).id === source.providerId &&
 			String(currentConfig.serverBaseUrl ?? '') === source.serverBaseUrl &&
-			String(currentConfig.apiKey ?? '') === source.apiKey
+			String(currentConfig.apiKey ?? '') === source.apiKey &&
+			(source.protocol ?? 'chat-completions') ===
+				connectionProtocol(source.providerId, currentConfig)
 		);
 	}
 

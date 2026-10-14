@@ -7,10 +7,6 @@ import type {
 	ServerBuiltinToolInfo
 } from '$lib/types';
 
-function endpoint(context: ProviderConnectionContext, path: string): string {
-	return `${context.serverBaseUrl.replace(/\/+$/, '')}${path}`;
-}
-
 export class ToolsService {
 	/**
 	 * Fetch the list of built-in tools from the server.
@@ -21,7 +17,8 @@ export class ToolsService {
 		context: ProviderConnectionContext,
 		signal?: AbortSignal
 	): Promise<ServerBuiltinToolInfo[]> {
-		return apiFetch<ServerBuiltinToolInfo[]>(endpoint(context, API_TOOLS.LIST), {
+		return apiFetch<ServerBuiltinToolInfo[]>(API_TOOLS.LIST, {
+			context,
 			apiKey: context.apiKey,
 			signal
 		});
@@ -36,7 +33,8 @@ export class ToolsService {
 		context: ProviderConnectionContext,
 		signal?: AbortSignal
 	): Promise<ToolExecutionResult> {
-		const result = await apiFetch<Record<string, unknown>>(endpoint(context, API_TOOLS.EXECUTE), {
+		const result = await apiFetch<Record<string, unknown>>(API_TOOLS.EXECUTE, {
+			context,
 			method: 'POST',
 			body: JSON.stringify({ tool: toolName, params }),
 			apiKey: context.apiKey,

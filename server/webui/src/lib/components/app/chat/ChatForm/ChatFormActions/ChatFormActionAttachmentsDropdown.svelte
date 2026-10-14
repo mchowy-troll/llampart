@@ -61,10 +61,6 @@
 	let dropdownOpen = $state(false);
 	let mcpServersSubmenuOpenedInSession = $state(false);
 	let attachmentMenuTooltipsEnabled = $state(false);
-	let imagesTooltipOpen = $state(false);
-	let audioTooltipOpen = $state(false);
-	let videoTooltipOpen = $state(false);
-	let pdfTooltipOpen = $state(false);
 	let systemTooltipOpen = $state(false);
 
 	let mcpServers = $derived(mcpStore.getServersSorted().filter((s) => s.enabled));
@@ -93,10 +89,6 @@
 	}
 
 	function closeFirstLevelAttachmentTooltips() {
-		imagesTooltipOpen = false;
-		audioTooltipOpen = false;
-		videoTooltipOpen = false;
-		pdfTooltipOpen = false;
 		systemTooltipOpen = false;
 	}
 
@@ -143,10 +135,6 @@
 		if (!dropdownOpen) return;
 
 		attachmentMenuTooltipsEnabled = false;
-		imagesTooltipOpen = false;
-		audioTooltipOpen = false;
-		videoTooltipOpen = false;
-		pdfTooltipOpen = false;
 		systemTooltipOpen = false;
 
 		const timeout = window.setTimeout(() => {
@@ -193,97 +181,37 @@
 			align="start"
 			class="llampart-composer-menu-content llampart-composer-main-menu w-72 overflow-visible"
 		>
-			{#if showModelDrivenAttachmentOptions && hasVisionModality}
+			{#if showModelDrivenAttachmentOptions}
 				<DropdownMenu.Item
 					class="images-button flex cursor-pointer items-center gap-2"
+					disabled={!hasVisionModality}
 					onclick={() => onFileUpload?.()}
 				>
 					<FILE_TYPE_ICONS.image class="h-4 w-4" />
 					<span>{t('attachments.images')}</span>
 				</DropdownMenu.Item>
-			{:else if showModelDrivenAttachmentOptions}
-				<Tooltip.Root
-					delayDuration={TOOLTIP_DELAY_DURATION}
-					bind:open={imagesTooltipOpen}
-					onOpenChange={(open) => {
-						imagesTooltipOpen =
-							attachmentMenuTooltipsEnabled && !mcpServersSubmenuOpenedInSession && open;
-					}}
-				>
-					<Tooltip.Trigger class="w-full">
-						<DropdownMenu.Item
-							class="images-button flex cursor-pointer items-center gap-2"
-							disabled
-						>
-							<FILE_TYPE_ICONS.image class="h-4 w-4" />
-							<span>{t('attachments.images')}</span>
-						</DropdownMenu.Item>
-					</Tooltip.Trigger>
-
-					<Tooltip.Content side="right">
-						<p>{t('attachments.imageProcessingRequiresVisionModel')}</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
 			{/if}
 
-			{#if showModelDrivenAttachmentOptions && hasAudioModality}
+			{#if showModelDrivenAttachmentOptions}
 				<DropdownMenu.Item
 					class="audio-button flex cursor-pointer items-center gap-2"
+					disabled={!hasAudioModality}
 					onclick={() => onFileUpload?.()}
 				>
 					<FILE_TYPE_ICONS.audio class="h-4 w-4" />
 					<span>{t('attachments.audioFiles')}</span>
 				</DropdownMenu.Item>
-			{:else if showModelDrivenAttachmentOptions}
-				<Tooltip.Root
-					delayDuration={TOOLTIP_DELAY_DURATION}
-					bind:open={audioTooltipOpen}
-					onOpenChange={(open) => {
-						audioTooltipOpen =
-							attachmentMenuTooltipsEnabled && !mcpServersSubmenuOpenedInSession && open;
-					}}
-				>
-					<Tooltip.Trigger class="w-full">
-						<DropdownMenu.Item class="audio-button flex cursor-pointer items-center gap-2" disabled>
-							<FILE_TYPE_ICONS.audio class="h-4 w-4" />
-							<span>{t('attachments.audioFiles')}</span>
-						</DropdownMenu.Item>
-					</Tooltip.Trigger>
-
-					<Tooltip.Content side="right">
-						<p>{t('attachments.audioFilesRequireAudioModel')}</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
 			{/if}
 
-			{#if showModelDrivenAttachmentOptions && hasVideoModality}
+			{#if showModelDrivenAttachmentOptions}
 				<DropdownMenu.Item
 					class="video-button flex cursor-pointer items-center gap-2"
+					disabled={!hasVideoModality}
 					onclick={() => onFileUpload?.()}
 				>
 					<FILE_TYPE_ICONS.video class="h-4 w-4" />
 					<span>{t('attachments.videoFiles')}</span>
 				</DropdownMenu.Item>
-			{:else if showModelDrivenAttachmentOptions}
-				<Tooltip.Root
-					delayDuration={TOOLTIP_DELAY_DURATION}
-					bind:open={videoTooltipOpen}
-					onOpenChange={(open) => {
-						videoTooltipOpen =
-							attachmentMenuTooltipsEnabled && !mcpServersSubmenuOpenedInSession && open;
-					}}
-				>
-					<Tooltip.Trigger class="w-full">
-						<DropdownMenu.Item class="video-button flex cursor-pointer items-center gap-2" disabled>
-							<FILE_TYPE_ICONS.video class="h-4 w-4" />
-							<span>{t('attachments.videoFiles')}</span>
-						</DropdownMenu.Item>
-					</Tooltip.Trigger>
-
-					<Tooltip.Content side="right">
-						<p>{t('attachments.videoFilesRequireVideoModel')}</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
 			{/if}
 
 			<DropdownMenu.Item
@@ -294,38 +222,13 @@
 				<span>{t('attachments.textFiles')}</span>
 			</DropdownMenu.Item>
 
-			{#if hasVisionModality}
-				<DropdownMenu.Item
-					class="flex cursor-pointer items-center gap-2"
-					onclick={() => onFileUpload?.()}
-				>
-					<FILE_TYPE_ICONS.pdf class="h-4 w-4" />
-					<span>{t('attachments.pdfFiles')}</span>
-				</DropdownMenu.Item>
-			{:else}
-				<Tooltip.Root
-					delayDuration={TOOLTIP_DELAY_DURATION}
-					bind:open={pdfTooltipOpen}
-					onOpenChange={(open) => {
-						pdfTooltipOpen =
-							attachmentMenuTooltipsEnabled && !mcpServersSubmenuOpenedInSession && open;
-					}}
-				>
-					<Tooltip.Trigger class="w-full">
-						<DropdownMenu.Item
-							class="flex cursor-pointer items-center gap-2"
-							onclick={() => onFileUpload?.()}
-						>
-							<FILE_TYPE_ICONS.pdf class="h-4 w-4" />
-							<span>{t('attachments.pdfFiles')}</span>
-						</DropdownMenu.Item>
-					</Tooltip.Trigger>
-
-					<Tooltip.Content side="right">
-						<p>{t('attachments.pdfsConvertedToTextHint')}</p>
-					</Tooltip.Content>
-				</Tooltip.Root>
-			{/if}
+			<DropdownMenu.Item
+				class="flex cursor-pointer items-center gap-2"
+				onclick={() => onFileUpload?.()}
+			>
+				<FILE_TYPE_ICONS.pdf class="h-4 w-4" />
+				<span>{t('attachments.pdfFiles')}</span>
+			</DropdownMenu.Item>
 
 			<Tooltip.Root
 				delayDuration={TOOLTIP_DELAY_DURATION}

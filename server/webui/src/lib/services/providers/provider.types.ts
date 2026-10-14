@@ -35,5 +35,12 @@ export interface ApiProviderAdapter {
 		input: ProviderChatCompletionInput
 	): ProviderChatCompletionFetchRequest;
 	parseChatCompletionStreamData(data: string): ProviderChatCompletionStreamEvent | null;
+	createStreamParser?(
+		protocol?: import('$lib/types/provider').ProviderProtocol
+	): (data: string, eventType?: string) => ProviderChatCompletionStreamEvent | null;
+	parseResponse?(
+		data: unknown,
+		protocol?: import('$lib/types/provider').ProviderProtocol
+	): ProviderChatCompletionResponse;
 	parseChatCompletionResponse(data: unknown): ProviderChatCompletionResponse;
 }

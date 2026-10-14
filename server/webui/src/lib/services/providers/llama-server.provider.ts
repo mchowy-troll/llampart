@@ -19,11 +19,8 @@ import type {
 	ProviderConnectionValidationResult,
 	ProviderModelListInput
 } from '$lib/types/provider';
-import {
-	buildProviderEndpointUrl,
-	isAbsoluteHttpUrl,
-	normalizeProviderBaseUrl
-} from './provider-url';
+import { isAbsoluteHttpUrl, normalizeProviderBaseUrl } from './provider-url';
+import { buildGatewayRequest, fetchProviderEndpoint } from './provider-transport';
 import type { ApiProviderAdapter } from './provider.types';
 
 const PROTECTED_CHAT_REQUEST_KEYS = new Set([
@@ -277,9 +274,12 @@ function buildLlamaServerChatCompletionRequest(
 		throw new Error(t('server.addressMustStartWithHttp'));
 	}
 
-	return {
-		url: buildProviderEndpointUrl(normalizedServerBaseUrl, API_CHAT.COMPLETIONS),
-		init: {
+	return buildGatewayRequest(
+		API_PROVIDER_IDS.LLAMA_SERVER,
+		input.serverBaseUrl,
+		API_CHAT.COMPLETIONS,
+		input.apiKey,
+		{
 			method: 'POST',
 			headers: {
 				...buildJsonHeaders(input.apiKey),
@@ -287,7 +287,7 @@ function buildLlamaServerChatCompletionRequest(
 			},
 			body: JSON.stringify(buildLlamaServerChatBody(input))
 		}
-	};
+	);
 }
 
 function parseLlamaServerChatCompletionStreamData(
@@ -338,9 +338,14 @@ async function validateLlamaServerConnection(
 	}
 
 	try {
-		const response = await fetchImpl(buildProviderEndpointUrl(normalizedServerBaseUrl, '/props'), {
-			headers: buildHeaders(input.apiKey)
-		});
+		const response = await fetchProviderEndpoint(
+			{ ...input, providerId: API_PROVIDER_IDS.LLAMA_SERVER },
+			'/props',
+			{
+				headers: buildHeaders(input.apiKey)
+			},
+			fetchImpl
+		);
 
 		if (response.status === 401 || response.status === 403) {
 			return {
@@ -427,11 +432,13 @@ async function listLlamaServerModels(
 		throw new Error(t('server.addressMustStartWithHttp'));
 	}
 
-	const response = await fetchImpl(
-		buildProviderEndpointUrl(normalizedServerBaseUrl, API_MODELS.LIST),
+	const response = await fetchProviderEndpoint(
+		{ ...input, providerId: API_PROVIDER_IDS.LLAMA_SERVER },
+		API_MODELS.LIST,
 		{
 			headers: buildHeaders(input.apiKey)
-		}
+		},
+		fetchImpl
 	);
 
 	return readModelListResponse(response);

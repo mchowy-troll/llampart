@@ -158,7 +158,6 @@
 	);
 
 	let displayedModel = $derived(message.model ?? null);
-	let canShowModelProps = $derived(modelsStore.supportsModelProps);
 
 	let isCurrentlyLoading = $derived(isLoading());
 	let isStreaming = $derived(isChatStreaming());
@@ -192,7 +191,7 @@
 	}
 
 	function handleShowModelInformation() {
-		if (!displayedModel || !canShowModelProps) return;
+		if (!displayedModel) return;
 
 		infoModelId = displayedModel;
 		showModelDialog = true;
@@ -271,6 +270,9 @@
 			</div>
 		</div>
 	{:else if message.role === MessageRole.ASSISTANT}
+		{#if message.timings?.provider?.refusal}
+			<p class="text-sm text-muted-foreground">{message.timings.provider.refusal}</p>
+		{/if}
 		{#if showAssistantMessageBody}
 			<!-- llampart-hide-empty-assistant-frame-while-processing -->
 			<ChatMessageAgenticContent
@@ -308,19 +310,18 @@
 											<ModelBadge model={displayedModel || undefined} onclick={handleCopyModel} />
 										{/if}
 
-										{#if canShowModelProps}
-											<ActionIcon
-												icon={Info}
-												tooltip={t('models.modelInformation')}
-												iconSize="h-2.5 w-2.5"
-												class="llampart-assistant-model-info-action h-3 w-3 hover:text-foreground"
-												onclick={handleShowModelInformation}
-											/>
-										{/if}
+										<ActionIcon
+											icon={Info}
+											tooltip={t('models.modelInformation')}
+											iconSize="h-2.5 w-2.5"
+											class="llampart-assistant-model-info-action h-3 w-3 hover:text-foreground"
+											onclick={handleShowModelInformation}
+										/>
 
-										{#if currentConfig.showMessageStats && message.timings && message.timings.predicted_n && message.timings.predicted_ms}
+										{#if currentConfig.showMessageStats && message.timings && (message.timings.provider || (message.timings.predicted_n && message.timings.predicted_ms))}
 											{@const agentic = message.timings.agentic}
 											<ChatMessageStatistics
+												provider={message.timings.provider}
 												promptTokens={agentic ? agentic.llm.prompt_n : message.timings.prompt_n}
 												promptMs={agentic ? agentic.llm.prompt_ms : message.timings.prompt_ms}
 												predictedTokens={agentic
@@ -385,9 +386,7 @@
 	{/if}
 </div>
 
-{#if canShowModelProps}
-	<DialogModelInformation bind:open={showModelDialog} modelId={infoModelId} />
-{/if}
+<DialogModelInformation bind:open={showModelDialog} modelId={infoModelId} />
 
 <style>
 	.llampart-assistant-message {

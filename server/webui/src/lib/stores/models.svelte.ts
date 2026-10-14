@@ -9,6 +9,7 @@ import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers'
 import { config } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { TTLCache } from '$lib/utils/cache-ttl';
+import { getModelContextSize } from '$lib/utils/model-information';
 import {
 	detectThinkingSupport,
 	detectThinkingSupportWithReason
@@ -18,6 +19,12 @@ import { sleepWithAbort } from '$lib/utils/retry';
 import { t } from '$lib/i18n';
 import type { ModelReferenceResolution } from '$lib/types/models';
 import type { ProviderConnectionContext } from '$lib/types/provider';
+import type { CapabilitySnapshot, ProviderRequestContext } from '$lib/types/provider';
+import { sha256 } from '@noble/hashes/sha2.js';
+import {
+	createCapabilitySnapshot,
+	connectionProtocol
+} from '$lib/services/providers/provider-capabilities';
 import {
 	MODEL_PROPS_CACHE_TTL_MS,
 	MODEL_PROPS_CACHE_MAX_ENTRIES,
@@ -30,9 +37,9 @@ function uniqueStringList(values: string[] | undefined): string[] {
 
 function normalizeModelModalities(props?: ApiLlamaCppServerProps | null): ModelModalities {
 	return {
-		vision: props?.modalities?.vision ?? false,
-		audio: props?.modalities?.audio ?? false,
-		video: props?.modalities?.video ?? false
+		vision: props?.modalities?.vision,
+		audio: props?.modalities?.audio,
+		video: props?.modalities?.video
 	};
 }
 
@@ -79,6 +86,26 @@ class ModelsStore {
 	error = $state<string | null>(null);
 	selectedModelId = $state<string | null>(null);
 	selectedModelName = $state<string | null>(null);
+	capabilitySnapshot = $state<CapabilitySnapshot | null>(null);
+	private capabilityGeneration = 0;
+	private modelMetadata: Record<string, unknown> = {};
+
+	async refreshCapabilities(
+		context: ProviderRequestContext,
+		model = this.selectedModelName
+	): Promise<CapabilitySnapshot | null> {
+		const generation = ++this.capabilityGeneration;
+		this.capabilitySnapshot = null;
+		const sourceKey = this.getModelListSourceKey(context);
+		const snapshot = await createCapabilitySnapshot(
+			context,
+			model,
+			this.loadedModelListSourceKey === sourceKey && model ? this.modelMetadata[model] : undefined
+		);
+		if (sourceKey !== this.modelListSourceKey) return null;
+		if (generation === this.capabilityGeneration) this.capabilitySnapshot = snapshot;
+		return snapshot;
+	}
 
 	private selectedModelsBySourceKey = $state<Record<string, { id: string; model: string }>>({});
 
@@ -139,20 +166,21 @@ class ModelsStore {
 		return Object.freeze({
 			providerId: getApiProvider(String(currentConfig.apiProvider ?? '')).id,
 			serverBaseUrl: String(currentConfig.serverBaseUrl ?? ''),
-			apiKey: String(currentConfig.apiKey ?? '')
+			apiKey: String(currentConfig.apiKey ?? ''),
+			protocol: connectionProtocol(String(currentConfig.apiProvider ?? ''), currentConfig)
 		});
 	}
 
 	private getModelListSourceKey(context: ProviderConnectionContext): string {
-		let hash = 2166136261;
-		for (const character of `${this.sourceKeySalt}:${context.apiKey.trim()}`) {
-			hash ^= character.charCodeAt(0);
-			hash = Math.imul(hash, 16777619);
-		}
+		const hash = Array.from(
+			sha256(new TextEncoder().encode(`${this.sourceKeySalt}:${context.apiKey}`)),
+			(byte) => byte.toString(16).padStart(2, '0')
+		).join('');
 		return [
 			context.providerId,
 			context.serverBaseUrl.trim(),
-			`credential:${(hash >>> 0).toString(16)}`
+			`credential:${hash}`,
+			context.protocol ?? 'chat-completions'
 		].join('|');
 	}
 
@@ -294,21 +322,41 @@ class ModelsStore {
 	 * Check if a model supports vision modality
 	 */
 	modelSupportsVision(modelId: string): boolean {
-		return this.getModelModalities(modelId)?.vision ?? false;
+		if (this.currentRequestContext().providerId !== API_PROVIDER_IDS.LLAMA_SERVER)
+			return this.currentModelCapability(modelId)?.features.vision?.state !== 'unsupported';
+		return this.getModelModalities(modelId)?.vision !== false;
 	}
 
 	/**
 	 * Check if a model supports audio modality
 	 */
 	modelSupportsAudio(modelId: string): boolean {
-		return this.getModelModalities(modelId)?.audio ?? false;
+		if (this.currentRequestContext().providerId !== API_PROVIDER_IDS.LLAMA_SERVER) {
+			const snapshot = this.currentModelCapability(modelId);
+			return (
+				snapshot?.protocol !== 'responses' && snapshot?.features.audio?.state !== 'unsupported'
+			);
+		}
+		return this.getModelModalities(modelId)?.audio !== false;
 	}
 
 	/**
 	 * Check if a model supports video modality
 	 */
 	modelSupportsVideo(modelId: string): boolean {
-		return this.getModelModalities(modelId)?.video ?? false;
+		if (this.currentRequestContext().providerId !== API_PROVIDER_IDS.LLAMA_SERVER) return false;
+		return this.getModelModalities(modelId)?.video !== false;
+	}
+
+	private currentModelCapability(modelId: string): CapabilitySnapshot | null {
+		const context = this.currentRequestContext();
+		const snapshot = this.capabilitySnapshot;
+		return snapshot &&
+			snapshot.model === (modelId || this.selectedModelName) &&
+			snapshot.providerId === context.providerId &&
+			this.loadedModelListSourceKey === this.getModelListSourceKey(context)
+			? snapshot
+			: null;
 	}
 
 	/**
@@ -503,7 +551,10 @@ class ModelsStore {
 				}
 
 				const response = await ModelsService.list(context);
-				if (generation !== this.requestGeneration) return;
+				if (generation !== this.requestGeneration || sourceKey !== this.modelListSourceKey) return;
+				this.modelMetadata = Object.fromEntries(
+					response.data.map((item: ApiModelDataEntry) => [item.id, item])
+				);
 
 				const models: ModelOption[] = response.data.map(
 					(item: ApiModelDataEntry, index: number) => {
@@ -514,12 +565,14 @@ class ModelsStore {
 						const displayNameSource =
 							details?.name && details.name.trim().length > 0 ? details.name : item.id;
 						const displayName = this.toDisplayName(displayNameSource);
-						const modelId = details?.model || item.id;
+						const modelId =
+							provider.id === API_PROVIDER_IDS.LLAMA_SERVER ? details?.model || item.id : item.id;
 
 						return {
 							id: item.id,
 							name: displayName,
 							model: modelId,
+							contextSize: getModelContextSize(item),
 							description: details?.description,
 							capabilities: rawCapabilities.filter((value: unknown): value is string =>
 								Boolean(value)
@@ -754,6 +807,8 @@ class ModelsStore {
 	 * Select a model for new conversations
 	 */
 	async selectModelById(modelId: string): Promise<void> {
+		this.capabilityGeneration++;
+		this.capabilitySnapshot = null;
 		if (!modelId || this.updating) return;
 		if (this.selectedModelId === modelId) return;
 
@@ -777,6 +832,10 @@ class ModelsStore {
 	 * @param modelName - Model name to select (e.g., "ggml-org/GLM-4.7-Flash-GGUF")
 	 */
 	selectModelByName(modelName: string): void {
+		if (modelName !== this.selectedModelName) {
+			this.capabilityGeneration++;
+			this.capabilitySnapshot = null;
+		}
 		const option = this.models.find((model) => model.model === modelName);
 		if (option) {
 			this.selectedModelId = option.id;
@@ -1084,6 +1143,9 @@ class ModelsStore {
 	}
 
 	clear(): void {
+		this.capabilityGeneration++;
+		this.capabilitySnapshot = null;
+		this.modelMetadata = {};
 		this.saveCurrentSelectionForSource();
 		this.requestGeneration++;
 		for (const controller of this.operationControllers.values()) controller.abort();

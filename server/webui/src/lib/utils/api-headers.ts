@@ -54,11 +54,18 @@ export function sanitizeHeaders(
 
 	for (const [key, value] of normalized.entries()) {
 		const normalizedKey = key.toLowerCase();
-		const partialChars = partialRedactHeaders?.get(normalizedKey);
+		const targetKey = normalizedKey.replace(/^x-proxy-header-/, '');
+		const partialChars =
+			partialRedactHeaders?.get(normalizedKey) ?? partialRedactHeaders?.get(targetKey);
 
 		if (partialChars !== undefined) {
 			sanitized[key] = redactValue(value, partialChars);
-		} else if (REDACTED_HEADERS.has(normalizedKey) || redactedHeaders.has(normalizedKey)) {
+		} else if (
+			REDACTED_HEADERS.has(targetKey) ||
+			redactedHeaders.has(targetKey) ||
+			REDACTED_HEADERS.has(normalizedKey) ||
+			redactedHeaders.has(normalizedKey)
+		) {
 			sanitized[key] = redactValue(value);
 		} else {
 			sanitized[key] = value;

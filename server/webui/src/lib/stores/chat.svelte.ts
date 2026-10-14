@@ -709,6 +709,7 @@ class ChatStore {
 				const toolCalls =
 					checkpoint.toolCalls.length > 0 ? JSON.stringify(checkpoint.toolCalls) : '';
 				const update: Partial<DatabaseMessage> = {
+					providerContinuation: checkpoint.providerContinuation,
 					content: checkpoint.content,
 					reasoningContent: checkpoint.reasoningContent || undefined,
 					toolCalls
@@ -759,10 +760,12 @@ class ChatStore {
 				content: string,
 				reasoningContent: string | undefined,
 				timings: ChatMessageTimings | undefined,
-				toolCalls: import('$lib/types/api').ApiChatCompletionToolCall[] | undefined
+				toolCalls: import('$lib/types/api').ApiChatCompletionToolCall[] | undefined,
+				providerContinuation?: import('$lib/types/provider').ProviderContinuation
 			) => {
 				const persistedTimings = withContextTotal(timings);
 				const updateData: Record<string, unknown> = {
+					providerContinuation,
 					content,
 					reasoningContent: reasoningContent || undefined,
 					toolCalls: toolCalls ? JSON.stringify(toolCalls) : '',
@@ -771,6 +774,7 @@ class ChatStore {
 				if (resolvedModel && !modelPersisted) updateData.model = resolvedModel;
 				await DatabaseService.updateMessage(currentMessageId, updateData);
 				const uiUpdate: Partial<DatabaseMessage> = {
+					providerContinuation,
 					content,
 					reasoningContent: reasoningContent || undefined,
 					toolCalls: toolCalls ? JSON.stringify(toolCalls) : ''
@@ -1158,6 +1162,7 @@ class ChatStore {
 							...(state.model ? { model: state.model } : {})
 						};
 						const timings = withContextTotal(checkpoint.timings);
+						update.providerContinuation = checkpoint.providerContinuation;
 						if (timings) update.timings = timings;
 						await DatabaseService.updateMessage(assistantMessage.id, update);
 						Object.assign(assistantMessage, update);
@@ -1795,11 +1800,7 @@ class ChatStore {
 		)
 			apiOptions.disableReasoningParsing = true;
 
-		if (
-			providerCapabilities.supportsLlamaReasoningControls &&
-			currentConfig.excludeReasoningFromContext
-		)
-			apiOptions.excludeReasoningFromContext = true;
+		if (currentConfig.excludeReasoningFromContext) apiOptions.excludeReasoningFromContext = true;
 
 		if (providerCapabilities.supportsTemperature && hasValue(currentConfig.temperature))
 			apiOptions.temperature = Number(currentConfig.temperature);
@@ -1864,13 +1865,11 @@ class ChatStore {
 		if (providerCapabilities.supportsBackendSampling)
 			apiOptions.backend_sampling = currentConfig.backend_sampling;
 
-		if (providerCapabilities.supportsLlamaReasoningControls) {
-			apiOptions.enableThinking = conversationsStore.getThinkingEnabled();
-			apiOptions.reasoningEffort = conversationsStore.getReasoningEffort();
-		}
+		// Shared reasoning intent; adapters own backend-specific payload mapping.
+		apiOptions.enableThinking = conversationsStore.getThinkingEnabled();
+		apiOptions.reasoningEffort = conversationsStore.getReasoningEffort();
 
-		if (providerCapabilities.supportsCustomJsonPayload && currentConfig.custom)
-			apiOptions.custom = currentConfig.custom;
+		if (currentConfig.custom) apiOptions.custom = currentConfig.custom;
 
 		return apiOptions;
 	}

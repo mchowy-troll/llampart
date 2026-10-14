@@ -60,7 +60,7 @@ describe('provider connection store', () => {
 
 		expect(store.status).toBe('connected');
 		expect(fetchMock).toHaveBeenCalledWith(
-			'https://api.example.test/v1/models',
+			'/__llampart/api/openai-compatible/v1/models',
 			expect.objectContaining({
 				headers: expect.objectContaining({ Authorization: 'Bearer secret' })
 			})

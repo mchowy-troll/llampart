@@ -21,8 +21,7 @@
 	let showComposerProcessingStats = $derived(config().showComposerStats !== false);
 	let supportsComposerProcessingStats = $derived(
 		showComposerProcessingStats &&
-			getApiProviderCapabilities(String(config().apiProvider ?? ''), config())
-				.supportsPromptProgress
+			getApiProviderCapabilities(String(config().apiProvider ?? '')).supportsPromptProgress
 	);
 	let composerProcessingStats = $derived(
 		supportsComposerProcessingStats ? processingState.getComposerProcessingStats() : null

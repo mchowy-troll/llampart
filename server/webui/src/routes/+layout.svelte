@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { connectionProtocol } from '$lib/services/providers/provider-capabilities';
+	import { ChatService } from '$lib/services/chat.service';
 	import '../app.css';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
@@ -247,9 +249,15 @@
 		const source = {
 			providerId: String(config().apiProvider ?? ''),
 			serverBaseUrl: String(config().serverBaseUrl ?? ''),
-			apiKey: String(config().apiKey ?? '')
+			apiKey: String(config().apiKey ?? ''),
+			protocol: connectionProtocol(String(config().apiProvider ?? ''), config())
 		};
-		const nextSource = JSON.stringify([source.providerId, source.serverBaseUrl, source.apiKey]);
+		const nextSource = JSON.stringify([
+			source.providerId,
+			source.serverBaseUrl,
+			source.apiKey,
+			source.protocol
+		]);
 
 		if (previousConnectionSource && previousConnectionSource !== nextSource) {
 			const mcpOverrides = conversationsStore.getAllMcpServerOverrides();
@@ -271,6 +279,18 @@
 	});
 
 	// Set up title update confirmation callback
+	$effect(() => {
+		if (!browser) return;
+		const model = modelsStore.selectedModelName;
+		void modelsStore.models;
+		const context = ChatService.createProviderRequestContext();
+		untrack(() => {
+			modelsStore.refreshCapabilities(context, model).catch(() => {
+				/* Connection validation owns user-facing errors. */
+			});
+		});
+	});
+
 	$effect(() => {
 		conversationsStore.setTitleUpdateConfirmationCallback(
 			async (currentTitle: string, newTitle: string) => {

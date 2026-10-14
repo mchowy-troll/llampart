@@ -1,6 +1,7 @@
 export interface ParsedSseRecord {
 	data: string | null;
 	bytesParsed: number;
+	eventType?: string;
 }
 
 function appendBytes(left: Uint8Array, right: Uint8Array): Uint8Array {
@@ -16,6 +17,7 @@ export class SseByteParser {
 	private pending: Uint8Array<ArrayBufferLike> = new Uint8Array();
 	private parsedBytes = 0;
 	private dataLines: string[] = [];
+	private eventType: string | undefined;
 	private readonly decoder = new TextDecoder();
 
 	push(chunk: Uint8Array): ParsedSseRecord[] {
@@ -61,9 +63,11 @@ export class SseByteParser {
 			if (line === '') {
 				records.push({
 					data: this.dataLines.length > 0 ? this.dataLines.join('\n') : null,
-					bytesParsed: this.parsedBytes
+					bytesParsed: this.parsedBytes,
+					...(this.eventType ? { eventType: this.eventType } : {})
 				});
 				this.dataLines = [];
+				this.eventType = undefined;
 				continue;
 			}
 
@@ -74,6 +78,7 @@ export class SseByteParser {
 			let value = colon === -1 ? '' : line.slice(colon + 1);
 			if (value.startsWith(' ')) value = value.slice(1);
 			if (field === 'data') this.dataLines.push(value);
+			if (field === 'event') this.eventType = value;
 		}
 
 		this.pending = this.pending.slice(cursor);

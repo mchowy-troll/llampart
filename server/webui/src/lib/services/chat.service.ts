@@ -1,4 +1,5 @@
 import { t } from '$lib/i18n';
+import { VllmLiveStatistics } from '$lib/utils/vllm-live-statistics';
 import { getApiProvider } from '$lib/services/providers';
 import type { ApiProviderAdapter } from '$lib/services/providers/provider.types';
 import type { ProviderRequestContext, ProviderUsage } from '$lib/types/provider';
@@ -17,7 +18,8 @@ import { modelsStore } from '$lib/stores/models.svelte';
 import { config } from '$lib/stores/settings.svelte';
 import { API_STREAM } from '$lib/constants/api-endpoints';
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
-import { buildProviderEndpointUrl } from '$lib/services/providers/provider-url';
+import { fetchProviderEndpoint } from '$lib/services/providers/provider-transport';
+import { connectionProtocol } from '$lib/services/providers/provider-capabilities';
 import { createStreamIdentity, buildStreamRequestUrl } from '$lib/utils/stream-identity';
 import { SseByteParser } from '$lib/utils/sse-byte-parser';
 import {
@@ -117,10 +119,14 @@ export class ChatService {
 		const provider = getApiProvider(requestContext.providerId);
 		const selectedProviderModel =
 			(modelsStore.selectedModelName || modelsStore.selectedModelId || '').trim() || undefined;
-		const effectiveOptions: SettingsChatServiceOptions =
+		let effectiveOptions: SettingsChatServiceOptions =
 			provider.capabilities.requiresModelInChatRequest && !options.model && selectedProviderModel
 				? { ...options, model: selectedProviderModel }
 				: options;
+		effectiveOptions = {
+			...effectiveOptions,
+			protocol: requestContext.protocol ?? 'chat-completions'
+		};
 
 		const {
 			stream,
@@ -156,7 +162,10 @@ export class ChatService {
 			});
 
 		// Filter out image attachments if the model doesn't support vision
-		if (effectiveOptions.model && !modelsStore.modelSupportsVision(effectiveOptions.model)) {
+		if (
+			effectiveOptions.model &&
+			modelsStore.getModelModalities(effectiveOptions.model)?.vision === false
+		) {
 			normalizedMessages.forEach((msg) => {
 				if (Array.isArray(msg.content)) {
 					msg.content = msg.content.filter((part: ApiChatMessageContentPart) => {
@@ -211,17 +220,26 @@ export class ChatService {
 			});
 		}
 
-		const providerRequest = provider.buildChatCompletionRequest({
-			serverBaseUrl: frozenServerBaseUrl,
-			apiKey: frozenApiKey,
-			messages: normalizedMessages,
-			options: effectiveOptions,
-			streamIdentity: resumableState?.streamIdentity
-		});
-
+		const capabilities = await modelsStore.refreshCapabilities(
+			requestContext,
+			effectiveOptions.model ?? null
+		);
+		if (!ChatService.isProviderRequestContextCurrent(requestContext) || signal?.aborted) return;
+		effectiveOptions = {
+			...effectiveOptions,
+			protocol: capabilities?.protocol ?? 'chat-completions'
+		};
 		const requestStartedAt = ChatService.getMonotonicNow();
-
 		try {
+			const providerRequest = provider.buildChatCompletionRequest({
+				serverBaseUrl: frozenServerBaseUrl,
+				apiKey: frozenApiKey,
+				messages: normalizedMessages,
+				options: effectiveOptions,
+				streamIdentity: resumableState?.streamIdentity,
+				capabilities: capabilities ?? undefined
+			});
+
 			const response = await fetch(providerRequest.url, {
 				...providerRequest.init,
 				signal
@@ -249,7 +267,16 @@ export class ChatService {
 					signal,
 					resumableState,
 					effectiveOptions.onStreamCheckpoint,
-					effectiveOptions.resumeSeed
+					effectiveOptions.resumeSeed,
+					effectiveOptions.protocol,
+					effectiveOptions.onProviderResult,
+					capabilities
+						? {
+								providerId: capabilities.providerId,
+								sourceFingerprint: capabilities.connectionIdentity,
+								model: effectiveOptions.model ?? ''
+							}
+						: undefined
 				);
 
 				return;
@@ -260,7 +287,16 @@ export class ChatService {
 					onComplete,
 					onToolCallChunk,
 					onModel,
-					requestStartedAt
+					requestStartedAt,
+					effectiveOptions.protocol,
+					effectiveOptions.onProviderResult,
+					capabilities
+						? {
+								providerId: capabilities.providerId,
+								sourceFingerprint: capabilities.connectionIdentity,
+								model: effectiveOptions.model ?? ''
+							}
+						: undefined
 				);
 			}
 		} catch (error) {
@@ -288,7 +324,11 @@ export class ChatService {
 				userFriendlyError = new Error('Unknown error occurred while sending message');
 			}
 
-			console.error('Error in sendMessage:', error);
+			if (frozenApiKey)
+				userFriendlyError.message = userFriendlyError.message
+					.split(frozenApiKey)
+					.join('[redacted]');
+			console.error('Error in sendMessage:', userFriendlyError.name, userFriendlyError.message);
 
 			try {
 				await onError?.(userFriendlyError);
@@ -306,6 +346,7 @@ export class ChatService {
 			providerId: getApiProvider(String(currentConfig.apiProvider ?? '')).id,
 			serverBaseUrl: String(currentConfig.serverBaseUrl ?? ''),
 			apiKey: String(currentConfig.apiKey ?? ''),
+			protocol: connectionProtocol(String(currentConfig.apiProvider ?? ''), currentConfig),
 			sourceGeneration: ChatService.sourceGeneration
 		});
 	}
@@ -320,7 +361,9 @@ export class ChatService {
 		return (
 			context.providerId === getApiProvider(String(currentConfig.apiProvider ?? '')).id &&
 			context.serverBaseUrl === String(currentConfig.serverBaseUrl ?? '') &&
-			context.apiKey === String(currentConfig.apiKey ?? '')
+			context.apiKey === String(currentConfig.apiKey ?? '') &&
+			(context.protocol ?? 'chat-completions') ===
+				connectionProtocol(context.providerId, currentConfig)
 		);
 	}
 
@@ -341,10 +384,8 @@ export class ChatService {
 	): Promise<boolean> {
 		if (!ChatService.isProviderRequestContextCurrent(context)) return false;
 		try {
-			const url = model
-				? `${buildProviderEndpointUrl(context.serverBaseUrl, '/slots')}?model=${encodeURIComponent(model)}`
-				: buildProviderEndpointUrl(context.serverBaseUrl, '/slots');
-			const res = await fetch(url, {
+			const url = model ? `/slots?model=${encodeURIComponent(model)}` : '/slots';
+			const res = await fetchProviderEndpoint(context, url, {
 				headers: ChatService.buildStreamHeaders(context.apiKey, false),
 				signal
 			});
@@ -430,18 +471,15 @@ export class ChatService {
 			if (!provider.capabilities.supportsPreEncode) return;
 			if (!ChatService.isProviderRequestContextCurrent(context)) return;
 
-			const response = await fetch(
-				buildProviderEndpointUrl(context.serverBaseUrl, '/v1/chat/completions'),
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						...(context.apiKey.trim() ? { Authorization: `Bearer ${context.apiKey.trim()}` } : {})
-					},
-					body: JSON.stringify(requestBody),
-					signal
-				}
-			);
+			const response = await fetchProviderEndpoint(context, '/v1/chat/completions', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					...(context.apiKey.trim() ? { Authorization: `Bearer ${context.apiKey.trim()}` } : {})
+				},
+				body: JSON.stringify(requestBody),
+				signal
+			});
 			if (!response.ok) throw await ChatService.parseErrorResponse(response);
 		} catch (error) {
 			if (!isAbortError(error)) {
@@ -469,14 +507,29 @@ export class ChatService {
 		startedAtMs: number,
 		completedAtMs: number
 	): ChatMessageTimings | undefined {
-		if (!usage?.completionTokens || usage.completionTokens <= 0) return undefined;
+		if (!usage) return undefined;
 
 		const elapsedMs = Math.max(1, Math.round(completedAtMs - startedAtMs));
 
 		return {
 			prompt_n: usage.promptTokens,
 			predicted_n: usage.completionTokens,
-			predicted_ms: elapsedMs
+			predicted_ms: usage.metrics?.find(
+				(metric) => metric.name === 'generationTime' && metric.available
+			)?.value,
+			predicted_per_second: usage.metrics?.find(
+				(metric) => metric.name === 'tokensPerSecond' && metric.available
+			)?.value,
+			predicted_per_token_ms: usage.metrics?.find(
+				(metric) => metric.name === 'interTokenLatency' && metric.available
+			)?.value,
+			provider: {
+				usage,
+				metrics: [
+					...(usage.metrics ?? []),
+					{ name: 'elapsedTime', value: elapsedMs, unit: 'ms', source: 'browser', available: true }
+				]
+			}
 		};
 	}
 
@@ -522,13 +575,10 @@ export class ChatService {
 			ChatService.clearResumableState(state);
 			return;
 		}
-		const url = buildStreamRequestUrl(
-			buildProviderEndpointUrl(context.serverBaseUrl, API_STREAM.BASE),
-			state.streamIdentity
-		);
+		const url = buildStreamRequestUrl(API_STREAM.BASE, state.streamIdentity);
 
 		try {
-			await fetch(url, {
+			await fetchProviderEndpoint(context, url, {
 				method: 'DELETE',
 				headers: ChatService.buildStreamHeaders(context.apiKey, false)
 			});
@@ -559,7 +609,7 @@ export class ChatService {
 				ChatService.clearResumableState(state);
 				return false;
 			}
-			lookupResponse = await fetch(buildProviderEndpointUrl(serverBaseUrl, API_STREAM.LOOKUP), {
+			lookupResponse = await fetchProviderEndpoint(context, API_STREAM.LOOKUP, {
 				method: 'POST',
 				headers: ChatService.buildStreamHeaders(apiKey, true),
 				body: JSON.stringify({ conversation_ids: [state.streamIdentity] }),
@@ -639,12 +689,9 @@ export class ChatService {
 		apiKey: string,
 		signal?: AbortSignal
 	): Promise<Response> {
-		return fetch(
-			buildStreamRequestUrl(
-				buildProviderEndpointUrl(serverBaseUrl, API_STREAM.BASE),
-				state.streamIdentity,
-				state.bytesReceived
-			),
+		return fetchProviderEndpoint(
+			{ providerId: API_PROVIDER_IDS.LLAMA_SERVER, serverBaseUrl, apiKey },
+			buildStreamRequestUrl(API_STREAM.BASE, state.streamIdentity, state.bytesReceived),
 			{
 				method: 'GET',
 				headers: ChatService.buildStreamHeaders(apiKey, false),
@@ -687,7 +734,8 @@ export class ChatService {
 			response: string,
 			reasoningContent?: string,
 			timings?: ChatMessageTimings,
-			toolCalls?: string
+			toolCalls?: string,
+			providerContinuation?: import('$lib/types/provider').ProviderContinuation
 		) => void | Promise<void>,
 		onReasoningChunk?: (chunk: string) => void,
 		onToolCallChunk?: (chunk: string) => void,
@@ -698,15 +746,28 @@ export class ChatService {
 		abortSignal?: AbortSignal,
 		resumableState?: ResumableStreamState | null,
 		onStreamCheckpoint?: SettingsChatServiceOptions['onStreamCheckpoint'],
-		resumeSeed?: ChatStreamResumeSeed
+		resumeSeed?: ChatStreamResumeSeed,
+		protocol?: import('$lib/types/provider').ProviderProtocol,
+		onProviderResult?: SettingsChatServiceOptions['onProviderResult'],
+		continuationSource?: Pick<
+			import('$lib/types/provider').ProviderContinuation,
+			'providerId' | 'sourceFingerprint' | 'model'
+		>
 	): Promise<void> {
 		let aggregatedContent = resumeSeed?.content ?? '';
+		const parseStream =
+			provider.createStreamParser?.(protocol) ?? provider.parseChatCompletionStreamData;
+		let providerContinuation: import('$lib/types/provider').ProviderContinuation | undefined;
 		let fullReasoningContent = resumeSeed?.reasoningContent ?? '';
 		let aggregatedToolCalls: ApiChatCompletionToolCall[] = (resumeSeed?.toolCalls ?? []).map(
 			(call) => ({ ...call, function: call.function ? { ...call.function } : undefined })
 		);
 		let lastTimings: ChatMessageTimings | undefined = resumeSeed?.timings;
 		const streamStartedAt = ChatService.getMonotonicNow();
+		const liveStatistics =
+			provider.id === API_PROVIDER_IDS.VLLM && protocol !== 'responses'
+				? new VllmLiveStatistics()
+				: undefined;
 		let streamFinished = false;
 		let modelEmitted = false;
 		let idEmitted = false;
@@ -715,6 +776,7 @@ export class ChatService {
 		let reconnectAttempt = 0;
 
 		const finalizeOpenToolCallBatch = () => {
+			if (provider.id !== API_PROVIDER_IDS.LLAMA_SERVER) return;
 			if (!hasOpenToolCallBatch) {
 				return;
 			}
@@ -731,7 +793,8 @@ export class ChatService {
 			aggregatedToolCalls = ChatService.mergeToolCallDeltas(
 				aggregatedToolCalls,
 				toolCalls,
-				toolCallIndexOffset
+				toolCallIndexOffset,
+				provider.id !== API_PROVIDER_IDS.LLAMA_SERVER
 			);
 
 			if (aggregatedToolCalls.length === 0) {
@@ -765,15 +828,47 @@ export class ChatService {
 					if (record.data !== null) {
 						let event;
 						try {
-							event = provider.parseChatCompletionStreamData(record.data);
+							if (streamFinished && !(protocol === 'responses' && record.data === '[DONE]'))
+								throw new Error('Event after terminal outcome');
+							event = parseStream(record.data, record.eventType);
 						} catch (error) {
 							throw new StreamProtocolError('Failed to parse provider stream data', {
 								cause: error
 							});
 						}
 
-						if (event?.done) streamFinished = true;
-						else if (event) {
+						if (event) {
+							const observedAt = ChatService.getMonotonicNow();
+							const liveRate = liveStatistics?.observe(event, observedAt);
+							if (event.reasoningItems && continuationSource)
+								providerContinuation = {
+									...continuationSource,
+									protocol: 'responses',
+									reasoningItems: event.reasoningItems
+								};
+							onProviderResult?.(event);
+							if (event.status && event.status !== 'completed') {
+								const error = new Error(
+									`Provider response ${event.status}: ${event.finishReason ?? event.status}`
+								);
+								error.name = 'ProviderOutcomeError';
+								throw error;
+							}
+							if (event.done) streamFinished = true;
+							if (
+								provider.id !== API_PROVIDER_IDS.LLAMA_SERVER &&
+								(event.finishReason || event.refusal || event.status || event.completionId)
+							)
+								lastTimings = {
+									...lastTimings,
+									provider: {
+										...lastTimings?.provider,
+										finishReason: event.finishReason ?? lastTimings?.provider?.finishReason,
+										refusal: (lastTimings?.provider?.refusal ?? '') + (event.refusal ?? ''),
+										status: event.status ?? lastTimings?.provider?.status,
+										completionId: event.completionId ?? lastTimings?.provider?.completionId
+									}
+								};
 							if (event.model && !modelEmitted) {
 								modelEmitted = true;
 								onModel?.(event.model);
@@ -792,11 +887,24 @@ export class ChatService {
 								const usageTimings = ChatService.buildProviderUsageTimings(
 									event.usage,
 									streamStartedAt,
-									ChatService.getMonotonicNow()
+									observedAt
 								);
 								if (usageTimings) {
+									if (
+										liveRate &&
+										!event.usage.metrics?.some(
+											(metric) =>
+												metric.name === 'tokensPerSecond' &&
+												metric.source === 'backend' &&
+												metric.available
+										)
+									)
+										usageTimings.provider?.metrics?.push(liveRate);
 									ChatService.notifyTimings(usageTimings, event.promptProgress, onTimings);
-									lastTimings = usageTimings;
+									lastTimings = {
+										...usageTimings,
+										provider: { ...lastTimings?.provider, ...usageTimings.provider }
+									};
 								}
 							}
 							if (event.content) {
@@ -816,6 +924,7 @@ export class ChatService {
 					const bytesReceived = baseOffset + record.bytesParsed;
 					try {
 						await onStreamCheckpoint?.({
+							providerContinuation,
 							content: aggregatedContent,
 							reasoningContent: fullReasoningContent,
 							toolCalls: aggregatedToolCalls,
@@ -858,6 +967,7 @@ export class ChatService {
 					await processRecords(parser.push(value));
 				}
 			} finally {
+				await reader.cancel().catch(() => {});
 				reader.releaseLock();
 			}
 
@@ -866,6 +976,22 @@ export class ChatService {
 				console.warn('[ChatService] Stream disconnected; attempting resume:', transportError);
 			}
 			if (streamFinished) {
+				if (provider.id !== API_PROVIDER_IDS.LLAMA_SERVER) {
+					for (const call of aggregatedToolCalls) {
+						if (
+							!call?.id ||
+							call.type !== 'function' ||
+							!call.function?.name ||
+							typeof call.function.arguments !== 'string'
+						)
+							throw new StreamProtocolError('Incomplete terminal function call');
+						try {
+							JSON.parse(call.function.arguments);
+						} catch {
+							throw new StreamProtocolError('Invalid terminal function arguments');
+						}
+					}
+				}
 				finalizeOpenToolCallBatch();
 				const finalToolCalls =
 					aggregatedToolCalls.length > 0 ? JSON.stringify(aggregatedToolCalls) : undefined;
@@ -874,7 +1000,8 @@ export class ChatService {
 					aggregatedContent,
 					fullReasoningContent || undefined,
 					lastTimings,
-					finalToolCalls
+					finalToolCalls,
+					providerContinuation
 				);
 				return;
 			}
@@ -936,11 +1063,18 @@ export class ChatService {
 			response: string,
 			reasoningContent?: string,
 			timings?: ChatMessageTimings,
-			toolCalls?: string
+			toolCalls?: string,
+			providerContinuation?: import('$lib/types/provider').ProviderContinuation
 		) => void,
 		onToolCallChunk?: (chunk: string) => void,
 		onModel?: (model: string) => void,
-		requestStartedAt?: number
+		requestStartedAt?: number,
+		protocol?: import('$lib/types/provider').ProviderProtocol,
+		onProviderResult?: SettingsChatServiceOptions['onProviderResult'],
+		continuationSource?: Pick<
+			import('$lib/types/provider').ProviderContinuation,
+			'providerId' | 'sourceFingerprint' | 'model'
+		>
 	): Promise<string> {
 		const responseText = await response.text();
 
@@ -951,7 +1085,16 @@ export class ChatService {
 		}
 
 		const data = JSON.parse(responseText);
-		const parsedResponse = provider.parseChatCompletionResponse(data);
+		const parsedResponse =
+			provider.parseResponse?.(data, protocol) ?? provider.parseChatCompletionResponse(data);
+		onProviderResult?.(parsedResponse);
+		if (parsedResponse.status && parsedResponse.status !== 'completed') {
+			const error = new Error(
+				`Provider response ${parsedResponse.status}: ${parsedResponse.finishReason ?? parsedResponse.status}`
+			);
+			error.name = 'ProviderOutcomeError';
+			throw error;
+		}
 
 		if (parsedResponse.model) {
 			onModel?.(parsedResponse.model);
@@ -974,7 +1117,7 @@ export class ChatService {
 			}
 		}
 
-		if (!content.trim() && !serializedToolCalls) {
+		if (!content.trim() && !serializedToolCalls && !parsedResponse.refusal) {
 			const noResponseError = new Error('No response received from server. Please try again.');
 
 			throw noResponseError;
@@ -986,7 +1129,30 @@ export class ChatService {
 			ChatService.getMonotonicNow()
 		);
 
-		onComplete?.(content, reasoningContent, timings, serializedToolCalls);
+		await onComplete?.(
+			content,
+			reasoningContent,
+			provider.id === API_PROVIDER_IDS.LLAMA_SERVER
+				? timings
+				: {
+						...timings,
+						provider: {
+							...timings?.provider,
+							finishReason: parsedResponse.finishReason,
+							refusal: parsedResponse.refusal,
+							status: parsedResponse.status,
+							completionId: parsedResponse.completionId
+						}
+					},
+			serializedToolCalls,
+			parsedResponse.reasoningItems && continuationSource
+				? {
+						...continuationSource,
+						protocol: 'responses',
+						reasoningItems: parsedResponse.reasoningItems
+					}
+				: undefined
+		);
 
 		return content;
 	}
@@ -1003,7 +1169,8 @@ export class ChatService {
 	private static mergeToolCallDeltas(
 		existing: ApiChatCompletionToolCall[],
 		deltas: ApiChatCompletionToolCallDelta[],
-		indexOffset = 0
+		indexOffset = 0,
+		mergeNameFragments = false
 	): ApiChatCompletionToolCall[] {
 		const result = existing.map((call) => ({
 			...call,
@@ -1023,6 +1190,8 @@ export class ChatService {
 			const target = result[index]!;
 
 			if (delta.id) {
+				if (mergeNameFragments && target.id && target.id !== delta.id)
+					throw new StreamProtocolError('Tool call ID changed within the same index');
 				target.id = delta.id;
 			}
 
@@ -1034,7 +1203,9 @@ export class ChatService {
 				const fn = target.function ? { ...target.function } : {};
 
 				if (delta.function.name) {
-					fn.name = delta.function.name;
+					fn.name = mergeNameFragments
+						? (fn.name ?? '') + delta.function.name
+						: delta.function.name;
 				}
 
 				if (delta.function.arguments) {
@@ -1092,6 +1263,7 @@ export class ChatService {
 
 		if (!message.extra || message.extra.length === 0) {
 			const result: ApiChatMessageData = {
+				providerContinuation: message.providerContinuation,
 				role: message.role as MessageRole,
 				content: message.content
 			};
@@ -1244,6 +1416,7 @@ export class ChatService {
 		}
 
 		const result: ApiChatMessageData = {
+			providerContinuation: message.providerContinuation,
 			role: message.role as MessageRole,
 			content: contentParts
 		};

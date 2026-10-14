@@ -37,9 +37,12 @@ describe('chat provider request context', () => {
 		const slots = ChatService.areAllSlotsIdle(context, 'model-a');
 
 		expect(fetchMock).toHaveBeenCalledWith(
-			'https://a.example.test/slots?model=model-a',
+			'/__llampart/api/llama-server/slots?model=model-a',
 			expect.objectContaining({
-				headers: expect.objectContaining({ Authorization: 'Bearer key-a' })
+				headers: expect.objectContaining({
+					Authorization: 'Bearer key-a',
+					'X-Llampart-Host': 'a.example.test'
+				})
 			})
 		);
 

@@ -162,8 +162,10 @@ export const it: TranslationDictionary = {
 		fieldInterfaceLanguage: "Lingua dell'interfaccia",
 		fieldServerAddress: 'Indirizzo del server',
 		fieldApiProvider: 'Provider API',
+		sourceBackend: 'Riportato dal backend; — indica non disponibile',
+		sourceBrowser: 'Misura del browser, incluso trasporto, non tempo di generazione del backend',
+		capabilityUnknown: 'Supporto backend/modello sconosciuto. Il valore esplicito è sperimentale.',
 		fieldApiKey: 'Chiave API',
-		fieldDisableOpenAiCompatibleTools: 'Disattiva MCP e Tools per OpenAI-compatible',
 		fieldSystemMessage: 'Messaggio di sistema',
 		fieldPasteLongTextToFileLength: "Lunghezza del testo da convertire in file durante l'incolla",
 		fieldSendMessageOnEnter: 'Invia il messaggio con Invio',
@@ -242,7 +244,6 @@ export const it: TranslationDictionary = {
 		fieldStripThinkingFromMessageHistory: 'Rimuovi Reasoning dalla cronologia dei messaggi',
 		fieldCustomJson: 'JSON personalizzato',
 		groupConnection: 'Connessione',
-		groupOpenAiCompatibleOptions: 'Opzioni OpenAI-compatible',
 		groupSystemMessage: 'Messaggio di sistema',
 		groupInterface: 'Interfaccia',
 		groupApplicationBackground: "Sfondo dell'app",
@@ -356,14 +357,9 @@ export const it: TranslationDictionary = {
 			noConversationsToDelete: 'Nessuna conversazione da eliminare'
 		},
 		info: {
-			apiProvider: `Scegli il provider API che llampart deve usare.`,
-			serverBaseUrl: 'URL di llama-server.',
-			apiKey: `Chiave API facoltativa se llama-server è stata avviata con --api-key.`,
-			llamaServerBaseUrl: 'URL di llama-server.',
-			llamaServerApiKey: `Chiave API facoltativa se llama-server è stata avviata con --api-key.`,
-			openAiCompatibleBaseUrl: `Indirizzo del server OpenAI-compatible - ad esempio LM Studio, Ollama o un altro endpoint che supporta /v1/models e /v1/chat/completions.`,
-			openAiCompatibleApiKey: 'Chiave API richiesta dal server OpenAI-compatible selezionato.',
-			disableOpenAiCompatibleTools: 'Nasconde strumenti e MCP al backend OpenAI.',
+			apiProvider: 'Scegli il provider API.',
+			serverBaseUrl: 'Indirizzo del server a cui vuoi connetterti.',
+			apiKey: 'Chiave API, se richiesta dal server.',
 			systemMessage: 'Il messaggio iniziale che definisce il comportamento del modello.',
 			showSystemMessage: "Mostra il messaggio di sistema all'inizio di ogni conversazione.",
 			theme: "Scegli il tema colore dell'interfaccia. Puoi usare Sistema, Chiaro o Scuro.",
@@ -471,6 +467,11 @@ export const it: TranslationDictionary = {
 		apiKey: 'API Key'
 	},
 	server: {
+		modelDiscoveryFailed:
+			'Impossibile recuperare l’elenco dei modelli. Controlla la connessione al server.',
+		invalidModelDiscovery: 'Il server ha restituito un elenco di modelli non valido.',
+		connectionFailedSafe:
+			'Impossibile connettersi al server. Controlla l’indirizzo e la chiave API.',
 		connectingToServer: 'Connessione al server',
 		serverConnectionError: 'Errore di connessione al server',
 		editServerAddressApiKey: 'Modifica indirizzo server / chiave API',
@@ -571,6 +572,7 @@ export const it: TranslationDictionary = {
 		welcomeScreenWithFileDropZone: 'Schermata iniziale con area di rilascio file'
 	},
 	messages: {
+		statsClientApproximate: 'Misurazione approssimativa del client basata sul contatore dei token.',
 		regenerate: 'Rigenera',
 		forkConversation: 'Dirama conversazione',
 		deleteMessageTitle: 'Elimina messaggio',

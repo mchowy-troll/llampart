@@ -44,6 +44,7 @@ export type AgenticMessage =
 			role: MessageRole.ASSISTANT;
 			content?: string | ApiChatMessageContentPart[];
 			reasoning_content?: string;
+			providerContinuation?: import('./provider').ProviderContinuation;
 			tool_calls?: AgenticToolCallPayload[];
 	  }
 	| {
@@ -99,7 +100,8 @@ export interface AgenticFlowCallbacks {
 		content: string,
 		reasoningContent: string | undefined,
 		timings: ChatMessageTimings | undefined,
-		toolCalls: ApiChatCompletionToolCall[] | undefined
+		toolCalls: ApiChatCompletionToolCall[] | undefined,
+		providerContinuation?: import('./provider').ProviderContinuation
 	) => Promise<void>;
 	/** Create a tool result message in the DB tree */
 	createToolResultMessage?: (

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 
 import { defineConfig } from 'vitest/config';
 import { searchForWorkspaceRoot } from 'vite';
+import { devGateway } from './scripts/dev-gateway';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -33,7 +34,7 @@ export default defineConfig({
 		}
 	},
 
-	plugins: [tailwindcss(), sveltekit()],
+	plugins: [devGateway(), tailwindcss(), sveltekit()],
 
 	test: {
 		projects: [
@@ -49,12 +50,6 @@ export default defineConfig({
 	},
 
 	server: {
-		proxy: {
-			'/v1': 'http://localhost:8080',
-			'/props': 'http://localhost:8080',
-			'/models': 'http://localhost:8080',
-			'/cors-proxy': 'http://localhost:8080'
-		},
 		headers: {
 			'Cross-Origin-Embedder-Policy': 'require-corp',
 			'Cross-Origin-Opener-Policy': 'same-origin'

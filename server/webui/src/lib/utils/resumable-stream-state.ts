@@ -2,6 +2,7 @@ import { RESUMABLE_STREAMS_LOCALSTORAGE_KEY } from '$lib/constants/localstorage-
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
 import type { ProviderConnectionContext } from '$lib/types/provider';
 import { normalizeProviderBaseUrl } from '$lib/services/providers/provider-url';
+import { sha256 } from '@noble/hashes/sha2.js';
 
 export interface ResumableStreamState {
 	schemaVersion: 2;
@@ -50,12 +51,15 @@ function persistStates(states: ResumableStreamState[], storage: StorageLike): vo
 }
 
 export async function createSourceFingerprint(context: ProviderConnectionContext): Promise<string> {
-	const source = JSON.stringify([
+	const identity = [
 		context.providerId,
 		normalizeProviderBaseUrl(context.serverBaseUrl),
 		context.apiKey
-	]);
-	const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(source));
+	];
+	// Preserve the shipped llama-server identity exactly.
+	if (context.protocol === 'responses') identity.push('responses');
+	const source = JSON.stringify(identity);
+	const digest = sha256(new TextEncoder().encode(source));
 	const hex = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join(
 		''
 	);

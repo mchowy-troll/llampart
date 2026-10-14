@@ -73,10 +73,20 @@ export const OPENAI_COMPATIBLE_PROVIDER_CAPABILITIES = {
 	supportsOpenAiToolCalls: true,
 	supportsBuiltinToolsEndpoint: false,
 	supportsVisionInput: 'unknown',
-	supportsCustomJsonPayload: false
+	supportsCustomJsonPayload: true
+} as const satisfies ProviderCapabilities;
+
+/** Static adapter implementation support, NOT a claim about a running model. */
+export const VLLM_PROVIDER_CAPABILITIES = {
+	...OPENAI_COMPATIBLE_PROVIDER_CAPABILITIES,
+	supportsTopK: true,
+	supportsMinP: true,
+	supportsRepeatPenalty: true,
+	supportsCustomJsonPayload: true
 } as const satisfies ProviderCapabilities;
 
 export const PROVIDER_CAPABILITIES = {
 	[API_PROVIDER_IDS.LLAMA_SERVER]: LLAMA_SERVER_PROVIDER_CAPABILITIES,
-	[API_PROVIDER_IDS.OPENAI_COMPATIBLE]: OPENAI_COMPATIBLE_PROVIDER_CAPABILITIES
+	[API_PROVIDER_IDS.OPENAI_COMPATIBLE]: OPENAI_COMPATIBLE_PROVIDER_CAPABILITIES,
+	[API_PROVIDER_IDS.VLLM]: VLLM_PROVIDER_CAPABILITIES
 } as const satisfies Record<ApiProviderId, ProviderCapabilities>;

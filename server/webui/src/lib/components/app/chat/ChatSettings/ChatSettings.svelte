@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { connectionErrorMessage } from '$lib/utils/connection-error-message';
 	import {
 		Settings,
 		Code,
@@ -38,6 +39,9 @@
 	import type { Component } from 'svelte';
 	import type { ProviderCapabilityKey } from '$lib/types/provider';
 	import { t } from '$lib/i18n';
+	import { CAPABILITY_FEATURES } from '$lib/services/providers/provider-capabilities';
+	import { normalizeGatewaySource } from '$lib/services/providers/provider-transport';
+	import { modelsStore } from '$lib/stores/models.svelte';
 	import { getThemeOptions } from '$lib/themes/registry';
 	import { getThemeSettingsPanel } from '$lib/themes/ui-registry';
 
@@ -145,20 +149,6 @@
 							order: 3,
 							label: t('settings.fieldApiKey'),
 							type: SettingsFieldType.INPUT
-						}
-					]
-				},
-				{
-					id: 'openai-compatible-options',
-					title: t('settings.groupOpenAiCompatibleOptions'),
-					layout: 'two-column',
-					visibleForProviders: [API_PROVIDER_IDS.OPENAI_COMPATIBLE],
-					fields: [
-						{
-							key: SETTINGS_KEYS.DISABLE_OPENAI_COMPATIBLE_TOOLS,
-							order: 1,
-							label: t('settings.fieldDisableOpenAiCompatibleTools'),
-							type: SettingsFieldType.CHECKBOX
 						}
 					]
 				},
@@ -656,12 +646,12 @@
 			groups: [
 				{
 					id: 'reasoning',
-					requiredProviderCapabilities: ['supportsLlamaReasoningControls'],
 					title: t('settings.groupReasoning'),
 					layout: 'two-column',
 					fields: [
 						{
 							key: SETTINGS_KEYS.DISABLE_REASONING_PARSING,
+							requiredProviderCapabilities: ['supportsLlamaReasoningControls'],
 							order: 1,
 							label: t('settings.fieldDisableServerSideThinkingExtraction'),
 							type: SettingsFieldType.CHECKBOX
@@ -713,7 +703,7 @@
 	let ThemeSettingsPanel = $derived(getThemeSettingsPanel(localConfig.theme));
 	let activeConnectionKeys = $derived(getConnectionKeys(localConfig.apiProvider));
 	let providerCapabilities = $derived(
-		getApiProviderCapabilities(String(localConfig.apiProvider ?? ''), localConfig)
+		getApiProviderCapabilities(String(localConfig.apiProvider ?? ''))
 	);
 	let settingsWarningDialogOpen = $state(false);
 	let settingsWarningDialogTitle = $state('');
@@ -721,8 +711,32 @@
 
 	function supportsRequiredCapabilities(capabilities?: ProviderCapabilityKey[]): boolean {
 		return (
-			!capabilities || capabilities.every((capability) => providerCapabilities[capability] === true)
+			!capabilities ||
+			capabilities.every((capability) => {
+				const feature = CAPABILITY_FEATURES[capability];
+				const snapshot = settingsCapabilitySnapshot();
+				if (feature && snapshot && snapshot.features[feature]?.state === 'unsupported')
+					return false;
+				return providerCapabilities[capability] === true;
+			})
 		);
+	}
+
+	function settingsCapabilitySnapshot() {
+		const snapshot = modelsStore.capabilitySnapshot;
+		const providerId = normalizeProviderId(localConfig.apiProvider);
+		const keys = getConnectionKeys(providerId);
+		try {
+			return snapshot?.providerId === providerId &&
+				snapshot.serverBaseUrl ===
+					normalizeGatewaySource(providerId, String(localConfig[keys.serverBaseUrl] ?? ''))
+						.baseUrl &&
+				String(localConfig[keys.apiKey] ?? '') === String(config().apiKey ?? '')
+				? snapshot
+				: null;
+		} catch {
+			return null;
+		}
 	}
 
 	function supportsVisibleForProviders(providers?: ApiProviderId[]): boolean {
@@ -730,6 +744,19 @@
 	}
 
 	function getProviderScopedField(field: SettingsFieldConfig): SettingsFieldConfig {
+		const feature = field.requiredProviderCapabilities
+			?.map((key: ProviderCapabilityKey) => CAPABILITY_FEATURES[key])
+			.find(Boolean);
+		if (
+			feature &&
+			normalizeProviderId(localConfig.apiProvider) !== API_PROVIDER_IDS.LLAMA_SERVER &&
+			settingsCapabilitySnapshot()?.features[feature]?.state !== 'supported'
+		)
+			field = {
+				...field,
+				isExperimental: true,
+				help: `${t('settings.capabilityUnknown')} ${field.help ?? ''}`
+			};
 		if (field.key === SETTINGS_KEYS.SERVER_BASE_URL) {
 			return { ...field, key: activeConnectionKeys.serverBaseUrl };
 		}
@@ -887,7 +914,11 @@
 
 		if (!connectionValidation.ok) {
 			showSettingsWarning(
-				connectionValidation.errorMessage || t('settings.invalidServerConnectionSettings'),
+				connectionErrorMessage(
+					connectionValidation.errorMessage,
+					undefined,
+					connectionValidation.status
+				),
 				t('settings.connectionValidationDialogTitle')
 			);
 			return;

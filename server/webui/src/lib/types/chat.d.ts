@@ -2,6 +2,7 @@ import type { AttachmentSource, ErrorDialogType } from '$lib/enums';
 import type { ApiChatCompletionToolCall } from './api';
 import type { DatabaseMessage, DatabaseMessageExtra } from './database';
 import type { ChatStreamCheckpoint } from './settings';
+export type ChatRole = `${import('$lib/enums').MessageRole}`;
 
 export interface ChatUploadedFile {
 	id: string;
@@ -62,6 +63,14 @@ export interface ChatMessagePromptProgress {
 }
 
 export interface ChatMessageTimings {
+	provider?: {
+		usage?: import('./provider').ProviderUsage;
+		metrics?: import('./provider').ProviderMetric[];
+		finishReason?: string;
+		refusal?: string;
+		status?: string;
+		completionId?: string;
+	};
 	cache_n?: number;
 	context_total?: number;
 	draft_n?: number;
@@ -124,7 +133,8 @@ export interface ChatStreamCallbacks {
 		content: string,
 		reasoningContent: string | undefined,
 		timings: ChatMessageTimings | undefined,
-		toolCalls: ApiChatCompletionToolCall[] | undefined
+		toolCalls: ApiChatCompletionToolCall[] | undefined,
+		providerContinuation?: import('./provider').ProviderContinuation
 	) => Promise<void>;
 	createToolResultMessage?: (
 		toolCallId: string,

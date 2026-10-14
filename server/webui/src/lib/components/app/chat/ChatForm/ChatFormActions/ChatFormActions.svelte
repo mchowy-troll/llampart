@@ -54,15 +54,20 @@
 
 	let currentConfig = $derived(config());
 	let providerCapabilities = $derived(
-		getApiProviderCapabilities(String(currentConfig.apiProvider ?? ''), currentConfig)
+		getApiProviderCapabilities(String(currentConfig.apiProvider ?? ''))
 	);
-	let canUseToolCalling = $derived(providerCapabilities.supportsOpenAiToolCalls === true);
+	let canUseToolCalling = $derived(
+		providerCapabilities.supportsOpenAiToolCalls === true &&
+			modelsStore.capabilitySnapshot?.features.tools?.state !== 'unsupported'
+	);
 	let canUseLlamaReasoningControls = $derived(
-		providerCapabilities.supportsLlamaReasoningControls === true
+		providerCapabilities.supportsLlamaReasoningControls === true ||
+			(modelsStore.capabilitySnapshot?.features.reasoning?.state !== 'unsupported' &&
+				modelsStore.capabilitySnapshot?.features.reasoning_effort?.state !== 'unsupported')
 	);
 	let canShowModelDrivenAttachmentOptions = $derived(
 		providerCapabilities.supportsModelProps === true ||
-			providerCapabilities.supportsVisionInput === true
+			providerCapabilities.supportsVisionInput !== false
 	);
 	let isRouter = $derived(isRouterMode());
 	let usesSelectableModelList = $derived(modelsStore.usesSelectableModelList);
@@ -93,7 +98,7 @@
 	let activeModelId = $derived.by(() => {
 		const options = modelOptions();
 
-		if (!isRouter) {
+		if (!isRouter && !usesSelectableModelList) {
 			return options.length > 0 ? options[0].model : null;
 		}
 
@@ -132,7 +137,7 @@
 			return canShowModelDrivenAttachmentOptions && modelsStore.modelSupportsAudio(activeModelId);
 		}
 
-		return false;
+		return canShowModelDrivenAttachmentOptions && modelsStore.modelSupportsAudio('');
 	});
 
 	let hasVideoModality = $derived.by(() => {
@@ -142,7 +147,7 @@
 			return canShowModelDrivenAttachmentOptions && modelsStore.modelSupportsVideo(activeModelId);
 		}
 
-		return false;
+		return canShowModelDrivenAttachmentOptions && modelsStore.modelSupportsVideo('');
 	});
 
 	let hasVisionModality = $derived.by(() => {
@@ -152,7 +157,7 @@
 			return canShowModelDrivenAttachmentOptions && modelsStore.modelSupportsVision(activeModelId);
 		}
 
-		return false;
+		return canShowModelDrivenAttachmentOptions && modelsStore.modelSupportsVision('');
 	});
 
 	let hasAudioAttachments = $derived(

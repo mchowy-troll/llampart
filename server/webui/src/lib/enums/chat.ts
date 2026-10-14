@@ -20,6 +20,7 @@ export enum MessageRole {
 	USER = 'user',
 	ASSISTANT = 'assistant',
 	SYSTEM = 'system',
+	DEVELOPER = 'developer',
 	TOOL = 'tool'
 }
 

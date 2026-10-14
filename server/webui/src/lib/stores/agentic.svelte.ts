@@ -103,6 +103,7 @@ function toAgenticMessages(messages: ApiChatMessageData[]): AgenticMessage[] {
 		) {
 			return {
 				role: MessageRole.ASSISTANT,
+				providerContinuation: message.providerContinuation,
 				content: message.content,
 				tool_calls: message.tool_calls.map((call, index) => ({
 					id: call.id ?? `call_${index}`,
@@ -228,9 +229,9 @@ class AgenticStore {
 	}
 
 	getConfig(settings: SettingsConfigType, perChatOverrides?: McpServerOverride[]): AgenticConfig {
-		const supportsToolCalling = getApiProviderCapabilities(String(settings.apiProvider ?? ''), {
-			disableOpenAiCompatibleTools: settings.disableOpenAiCompatibleTools
-		}).supportsOpenAiToolCalls;
+		const supportsToolCalling = getApiProviderCapabilities(
+			String(settings.apiProvider ?? '')
+		).supportsOpenAiToolCalls;
 		const maxTurns = Number(settings.agenticMaxTurns) || DEFAULT_AGENTIC_CONFIG.maxTurns;
 		const maxToolPreviewLines =
 			Number(settings.agenticMaxToolPreviewLines) || DEFAULT_AGENTIC_CONFIG.maxToolPreviewLines;
@@ -489,6 +490,7 @@ class AgenticStore {
 			let lastStreamingToolCallName = '';
 			let lastStreamingToolCallArgsLength = 0;
 			let turnTimings: ChatMessageTimings | undefined;
+			let turnContinuation: import('$lib/types/provider').ProviderContinuation | undefined;
 
 			const turnStats: ChatMessageAgenticTurnStats = {
 				turn: turn + 1,
@@ -547,8 +549,8 @@ class AgenticStore {
 							}
 						},
 						onStreamCheckpoint,
-						onComplete: () => {
-							/* Completion handled after sendMessage resolves */
+						onComplete: (_content, _reasoning, _timings, _tools, continuation) => {
+							turnContinuation = continuation;
 						},
 						onError: (error: Error) => {
 							throw error;
@@ -606,7 +608,8 @@ class AgenticStore {
 					turnContent,
 					turnReasoningContent || undefined,
 					finalTimings,
-					undefined
+					undefined,
+					turnContinuation
 				);
 
 				if (finalTimings) onTurnComplete?.(finalTimings);
@@ -637,7 +640,8 @@ class AgenticStore {
 				turnContent,
 				turnReasoningContent || undefined,
 				turnTimings,
-				normalizedCalls
+				normalizedCalls,
+				turnContinuation
 			);
 
 			// Add assistant message to session history
@@ -645,6 +649,7 @@ class AgenticStore {
 				role: MessageRole.ASSISTANT,
 				content: turnContent || undefined,
 				reasoning_content: turnReasoningContent || undefined,
+				providerContinuation: turnContinuation,
 				tool_calls: normalizedCalls
 			});
 

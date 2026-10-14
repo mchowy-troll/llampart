@@ -12,7 +12,8 @@ export const SETTING_CONFIG_DEFAULT = {
 	llamaServerApiKey: '',
 	openAiCompatibleBaseUrl: '',
 	openAiCompatibleApiKey: '',
-	disableOpenAiCompatibleTools: false,
+	vllmBaseUrl: '',
+	vllmApiKey: '',
 	systemMessage: '',
 	showSystemMessage: false,
 	theme: DEFAULT_THEME_ID,
@@ -89,6 +90,10 @@ export const PROVIDER_CONNECTION_SETTING_KEYS = {
 	[API_PROVIDER_IDS.OPENAI_COMPATIBLE]: {
 		serverBaseUrl: 'openAiCompatibleBaseUrl',
 		apiKey: 'openAiCompatibleApiKey'
+	},
+	[API_PROVIDER_IDS.VLLM]: {
+		serverBaseUrl: 'vllmBaseUrl',
+		apiKey: 'vllmApiKey'
 	}
 } as const;
 
@@ -96,11 +101,12 @@ export const SETTING_CONFIG_INFO: Record<string, string> = {
 	apiProvider: 'settings.info.apiProvider',
 	serverBaseUrl: 'settings.info.serverBaseUrl',
 	apiKey: 'settings.info.apiKey',
-	llamaServerBaseUrl: 'settings.info.llamaServerBaseUrl',
-	llamaServerApiKey: 'settings.info.llamaServerApiKey',
-	openAiCompatibleBaseUrl: 'settings.info.openAiCompatibleBaseUrl',
-	openAiCompatibleApiKey: 'settings.info.openAiCompatibleApiKey',
-	disableOpenAiCompatibleTools: 'settings.info.disableOpenAiCompatibleTools',
+	llamaServerBaseUrl: 'settings.info.serverBaseUrl',
+	llamaServerApiKey: 'settings.info.apiKey',
+	openAiCompatibleBaseUrl: 'settings.info.serverBaseUrl',
+	openAiCompatibleApiKey: 'settings.info.apiKey',
+	vllmBaseUrl: 'settings.info.serverBaseUrl',
+	vllmApiKey: 'settings.info.apiKey',
 	systemMessage: 'settings.info.systemMessage',
 	showSystemMessage: 'settings.info.showSystemMessage',
 	theme: 'settings.info.theme',

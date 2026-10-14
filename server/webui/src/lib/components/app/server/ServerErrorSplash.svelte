@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { connectionErrorMessage } from '$lib/utils/connection-error-message';
 	import { AlertTriangle, RefreshCw, Key, CheckCircle, XCircle } from '@lucide/svelte';
 	import { t } from '$lib/i18n';
 	import { goto } from '$app/navigation';
@@ -67,7 +68,11 @@
 
 		if (!validation.ok) {
 			connectionState = 'error';
-			connectionError = validation.errorMessage || t('server.connectionErrorTryAgain');
+			connectionError = connectionErrorMessage(
+				validation.errorMessage,
+				undefined,
+				validation.status
+			);
 
 			setTimeout(() => {
 				connectionState = 'idle';

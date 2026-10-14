@@ -6,7 +6,8 @@
  */
 export const API_PROVIDER_IDS = {
 	LLAMA_SERVER: 'llama-server',
-	OPENAI_COMPATIBLE: 'openai-compatible'
+	OPENAI_COMPATIBLE: 'openai-compatible',
+	VLLM: 'vllm'
 } as const;
 
 export type ApiProviderId = (typeof API_PROVIDER_IDS)[keyof typeof API_PROVIDER_IDS];
@@ -15,7 +16,8 @@ export const DEFAULT_API_PROVIDER_ID: ApiProviderId = API_PROVIDER_IDS.LLAMA_SER
 
 export const API_PROVIDER_LABELS: Record<ApiProviderId, string> = {
 	[API_PROVIDER_IDS.LLAMA_SERVER]: 'llama-server',
-	[API_PROVIDER_IDS.OPENAI_COMPATIBLE]: 'OpenAI-compatible'
+	[API_PROVIDER_IDS.OPENAI_COMPATIBLE]: 'OpenAI-compatible',
+	[API_PROVIDER_IDS.VLLM]: 'vLLM'
 };
 
 export const API_PROVIDER_OPTIONS = [
@@ -26,6 +28,10 @@ export const API_PROVIDER_OPTIONS = [
 	{
 		value: API_PROVIDER_IDS.OPENAI_COMPATIBLE,
 		label: API_PROVIDER_LABELS[API_PROVIDER_IDS.OPENAI_COMPATIBLE]
+	},
+	{
+		value: API_PROVIDER_IDS.VLLM,
+		label: API_PROVIDER_LABELS[API_PROVIDER_IDS.VLLM]
 	}
 ] as const satisfies ReadonlyArray<{ value: ApiProviderId; label: string }>;
 

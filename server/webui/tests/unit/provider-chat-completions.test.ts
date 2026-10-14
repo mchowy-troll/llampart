@@ -25,7 +25,7 @@ describe('provider-owned chat completions', () => {
 			serverBaseUrl: 'http://localhost:11434/v1'
 		});
 
-		expect(request.url).toBe('http://localhost:11434/v1/chat/completions');
+		expect(request.url).toBe('/__llampart/api/openai-compatible/v1/chat/completions');
 		expect(request.init.method).toBe('POST');
 		expect(request.init.headers).toMatchObject({
 			Authorization: 'Bearer secret-key',
@@ -51,7 +51,7 @@ describe('provider-owned chat completions', () => {
 			stream_options: { include_usage: true }
 		});
 		expect(body.top_k).toBeUndefined();
-		expect(body.chat_template_kwargs).toBeUndefined();
+		expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
 		expect(body.reasoning_format).toBeUndefined();
 		expect(body.return_progress).toBeUndefined();
 	});
@@ -116,7 +116,7 @@ describe('provider-owned chat completions', () => {
 		});
 		const body = JSON.parse(String(request.init.body));
 
-		expect(request.url).toBe('http://localhost:8080/v1/chat/completions');
+		expect(request.url).toBe('/__llampart/api/llama-server/v1/chat/completions');
 		expect(body.top_k).toBe(40);
 		expect(body.return_progress).toBe(true);
 		expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });

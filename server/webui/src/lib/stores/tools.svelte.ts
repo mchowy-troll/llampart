@@ -105,14 +105,14 @@ class ToolsStore {
 	get supportsProviderTools(): boolean {
 		const currentConfig = config();
 
-		return getApiProviderCapabilities(String(currentConfig.apiProvider ?? ''), currentConfig)
+		return getApiProviderCapabilities(String(currentConfig.apiProvider ?? ''))
 			.supportsOpenAiToolCalls;
 	}
 
 	get supportsBuiltinToolsEndpoint(): boolean {
 		const currentConfig = config();
 
-		return getApiProviderCapabilities(String(currentConfig.apiProvider ?? ''), currentConfig)
+		return getApiProviderCapabilities(String(currentConfig.apiProvider ?? ''))
 			.supportsBuiltinToolsEndpoint;
 	}
 

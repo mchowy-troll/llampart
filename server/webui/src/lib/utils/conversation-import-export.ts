@@ -297,10 +297,17 @@ export function createConversationExportEnvelope(
 		exportedAt: new Date().toISOString(),
 		conversations: conversations.map((item) => ({
 			...item,
-			messages: item.messages.map((message) => ({
-				...message,
-				toolCalls: message.toolCalls ?? ''
-			}))
+			messages: item.messages.map((message) => {
+				// Internal, connection-bound data is not part of the V1 export.
+				const exported = { ...message };
+				delete exported.providerContinuation;
+				if (exported.timings) {
+					const timings = { ...exported.timings };
+					delete timings.provider;
+					exported.timings = timings;
+				}
+				return { ...exported, toolCalls: message.toolCalls ?? '' };
+			})
 		}))
 	};
 }

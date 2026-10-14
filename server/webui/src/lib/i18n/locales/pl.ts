@@ -60,7 +60,7 @@ export const pl: TranslationDictionary = {
 		unknownFile: 'Nieznany plik',
 		add: 'Add',
 		and: 'and',
-		close: 'Close',
+		close: 'Zamknij',
 		export: 'Export',
 		gotIt: 'Rozumiem',
 		import: 'Import',
@@ -162,8 +162,11 @@ export const pl: TranslationDictionary = {
 		fieldInterfaceLanguage: 'Język interfejsu',
 		fieldServerAddress: 'Adres serwera',
 		fieldApiProvider: 'Dostawca API',
+		sourceBackend: 'Z backendu; — oznacza brak danych',
+		sourceBrowser: 'Pomiar w przeglądarce; obejmuje transport, nie jest czasem generacji backendu',
+		capabilityUnknown:
+			'Obsługa przez backend/model jest nieznana. Jawne ustawienie jest eksperymentalne.',
 		fieldApiKey: 'Klucz API',
-		fieldDisableOpenAiCompatibleTools: 'Wyłącz MCP i Tools dla OpenAI-compatible',
 		fieldSystemMessage: 'Wiadomość systemowa',
 		fieldPasteLongTextToFileLength: 'Długość tekstu do zamiany na plik przy wklejaniu',
 		fieldSendMessageOnEnter: 'Wysyłaj wiadomość Enterem',
@@ -242,7 +245,6 @@ export const pl: TranslationDictionary = {
 		fieldStripThinkingFromMessageHistory: 'Usuwaj reasoning z historii wiadomości',
 		fieldCustomJson: 'Własny JSON',
 		groupConnection: 'Połączenie',
-		groupOpenAiCompatibleOptions: 'Opcje OpenAI-compatible',
 		groupSystemMessage: 'Wiadomość systemowa',
 		groupInterface: 'Interfejs',
 		groupApplicationBackground: 'Tło aplikacji',
@@ -356,14 +358,9 @@ export const pl: TranslationDictionary = {
 			noConversationsToDelete: 'Brak rozmów do usunięcia'
 		},
 		info: {
-			apiProvider: `Wybierz dostawcę API, którego ma używać llampart.`,
-			serverBaseUrl: 'Adres URL llama-server.',
-			apiKey: `Opcjonalny klucz API, jeśli llama-server została uruchomiona z --api-key.`,
-			llamaServerBaseUrl: 'Adres URL llama-server.',
-			llamaServerApiKey: `Opcjonalny klucz API, jeśli llama-server została uruchomiona z --api-key.`,
-			openAiCompatibleBaseUrl: `Adres serwera OpenAI-compatible - np. LM Studio, Ollama albo inny endpoint obsługujący /v1/models i /v1/chat/completions.`,
-			openAiCompatibleApiKey: 'Klucz API wymagany przez wybrany serwer OpenAI-compatible.',
-			disableOpenAiCompatibleTools: 'Ukrywa narzędzia i MCP przed backendem OpenAI.',
+			apiProvider: 'Wybierz dostawcę API.',
+			serverBaseUrl: 'Adres serwera, z którym chcesz się połączyć.',
+			apiKey: 'Klucz API, jeśli jest wymagany przez serwer.',
 			systemMessage: 'Początkowa wiadomość określająca, jak model ma się zachowywać.',
 			showSystemMessage: 'Pokazuj wiadomość systemową na początku każdej rozmowy.',
 			theme:
@@ -469,6 +466,9 @@ export const pl: TranslationDictionary = {
 		apiKey: 'API Key'
 	},
 	server: {
+		modelDiscoveryFailed: 'Nie udało się pobrać listy modeli. Sprawdź połączenie z serwerem.',
+		invalidModelDiscovery: 'Serwer zwrócił nieprawidłową listę modeli.',
+		connectionFailedSafe: 'Nie udało się połączyć z serwerem. Sprawdź adres i klucz API.',
 		connectingToServer: 'Łączenie z serwerem',
 		serverConnectionError: 'Błąd połączenia z serwerem',
 		editServerAddressApiKey: 'Edytuj adres serwera / klucz API',
@@ -567,6 +567,7 @@ export const pl: TranslationDictionary = {
 		welcomeScreenWithFileDropZone: 'Ekran powitalny z obszarem upuszczania plików'
 	},
 	messages: {
+		statsClientApproximate: 'Przybliżony pomiar klienta na podstawie licznika tokenów.',
 		regenerate: 'Wygeneruj ponownie',
 		forkConversation: 'Rozwidl rozmowę',
 		deleteMessageTitle: 'Usuń wiadomość',

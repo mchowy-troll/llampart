@@ -158,9 +158,12 @@ describe('exact tool identity and collision policy', () => {
 		await ToolsService.list(sourceA);
 
 		expect(fetchMock).toHaveBeenCalledWith(
-			'https://a.test/tools',
+			'/__llampart/api/llama-server/tools',
 			expect.objectContaining({
-				headers: expect.objectContaining({ Authorization: 'Bearer https://a.test-key' })
+				headers: expect.objectContaining({
+					Authorization: 'Bearer https://a.test-key',
+					'X-Llampart-Host': 'a.test'
+				})
 			})
 		);
 	});
@@ -408,8 +411,10 @@ describe('exact tool identity and collision policy', () => {
 		vi.stubGlobal(
 			'fetch',
 			vi.fn(
-				async (input: string | URL | Request) =>
-					new Response(null, { status: String(input).includes('b.test') ? 200 : 404 })
+				async (_input: string | URL | Request, init?: RequestInit) =>
+					new Response(null, {
+						status: new Headers(init?.headers).get('X-Llampart-Host') === 'b.test' ? 200 : 404
+					})
 			)
 		);
 

@@ -93,6 +93,7 @@ export type DatabaseMessageExtra =
 	| DatabaseMessageExtraLegacyContext;
 
 export interface DatabaseMessage {
+	providerContinuation?: import('./provider').ProviderContinuation;
 	id: string;
 	convId: string;
 	type: ChatMessageType;

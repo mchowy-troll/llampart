@@ -14,7 +14,11 @@ import {
 describe('api provider registry', () => {
 	it('registers llama-server and OpenAI-compatible as independent providers', () => {
 		expect(Object.keys(API_PROVIDER_REGISTRY).sort()).toEqual(
-			[API_PROVIDER_IDS.LLAMA_SERVER, API_PROVIDER_IDS.OPENAI_COMPATIBLE].sort()
+			[
+				API_PROVIDER_IDS.LLAMA_SERVER,
+				API_PROVIDER_IDS.OPENAI_COMPATIBLE,
+				API_PROVIDER_IDS.VLLM
+			].sort()
 		);
 		expect(API_PROVIDER_REGISTRY[API_PROVIDER_IDS.LLAMA_SERVER]).not.toBe(
 			API_PROVIDER_REGISTRY[API_PROVIDER_IDS.OPENAI_COMPATIBLE]
@@ -47,17 +51,8 @@ describe('api provider registry', () => {
 		expect(openAiCapabilities.supportsLlamaReasoningControls).toBe(false);
 		expect(openAiCapabilities.supportsOpenAiToolCalls).toBe(true);
 		expect(openAiCapabilities.supportsBuiltinToolsEndpoint).toBe(false);
-		expect(
-			getApiProviderCapabilities(API_PROVIDER_IDS.OPENAI_COMPATIBLE, {
-				disableOpenAiCompatibleTools: true
-			}).supportsOpenAiToolCalls
-		).toBe(false);
-		expect(
-			getApiProviderCapabilities(API_PROVIDER_IDS.LLAMA_SERVER, {
-				disableOpenAiCompatibleTools: true
-			}).supportsOpenAiToolCalls
-		).toBe(true);
-		expect(openAiCapabilities.supportsCustomJsonPayload).toBe(false);
+		expect(getApiProviderCapabilities(API_PROVIDER_IDS.VLLM).supportsOpenAiToolCalls).toBe(true);
+		expect(openAiCapabilities.supportsCustomJsonPayload).toBe(true);
 		expect(openAiCapabilities.supportsStreamUsage).toBe(true);
 		expect(openAiCapabilities.requiresModelInChatRequest).toBe(true);
 		expect(openAiCapabilities.supportsResumableStreams).toBe(false);

@@ -163,8 +163,11 @@ export const de: TranslationDictionary = {
 		fieldInterfaceLanguage: 'Sprache der Oberfläche',
 		fieldServerAddress: 'Serveradresse',
 		fieldApiProvider: 'API-Anbieter',
+		sourceBackend: 'Vom Backend gemeldet; — bedeutet nicht verfügbar',
+		sourceBrowser: 'Browser-Messung einschließlich Transport, keine Backend-Generierungszeit',
+		capabilityUnknown:
+			'Backend-/Modellunterstützung unbekannt. Explizite Einstellung ist experimentell.',
 		fieldApiKey: 'API-Schlüssel',
-		fieldDisableOpenAiCompatibleTools: 'MCP und Tools für OpenAI-compatible deaktivieren',
 		fieldSystemMessage: 'Systemnachricht',
 		fieldPasteLongTextToFileLength: 'Länge für das Umwandeln langen Texts in eine Datei',
 		fieldSendMessageOnEnter: 'Nachricht mit Enter senden',
@@ -243,7 +246,6 @@ export const de: TranslationDictionary = {
 		fieldStripThinkingFromMessageHistory: 'Reasoning aus dem Nachrichtenverlauf entfernen',
 		fieldCustomJson: 'Benutzerdefiniertes JSON',
 		groupConnection: 'Verbindung',
-		groupOpenAiCompatibleOptions: 'OpenAI-compatible-Optionen',
 		groupSystemMessage: 'Systemnachricht',
 		groupInterface: 'Oberfläche',
 		groupApplicationBackground: 'App-Hintergrund',
@@ -358,15 +360,9 @@ export const de: TranslationDictionary = {
 			noConversationsToDelete: 'Keine Unterhaltungen zum Löschen'
 		},
 		info: {
-			apiProvider: `Wähle den API-Anbieter, den llampart verwenden soll.`,
-			serverBaseUrl: 'URL des llama-server.',
-			apiKey: `Optionaler API-Schlüssel, wenn llama-server mit --api-key gestartet wurde.`,
-			llamaServerBaseUrl: 'URL des llama-server.',
-			llamaServerApiKey: `Optionaler API-Schlüssel, wenn llama-server mit --api-key gestartet wurde.`,
-			openAiCompatibleBaseUrl: `Adresse des OpenAI-compatible Servers - z. B. LM Studio, Ollama oder ein anderer Endpunkt, der /v1/models und /v1/chat/completions unterstützt.`,
-			openAiCompatibleApiKey:
-				'API-Schlüssel, der vom ausgewählten OpenAI-compatible Server benötigt wird.',
-			disableOpenAiCompatibleTools: 'Blendet Tools und MCP vor dem OpenAI-Backend aus.',
+			apiProvider: 'Wähle den API-Anbieter.',
+			serverBaseUrl: 'Adresse des Servers, mit dem du dich verbinden möchtest.',
+			apiKey: 'API-Schlüssel, falls vom Server benötigt.',
 			systemMessage: 'Die Startnachricht, die festlegt, wie sich das Modell verhalten soll.',
 			showSystemMessage: 'Die Systemnachricht am Anfang jeder Unterhaltung anzeigen.',
 			theme:
@@ -470,6 +466,11 @@ export const de: TranslationDictionary = {
 		apiKey: 'API Key'
 	},
 	server: {
+		modelDiscoveryFailed:
+			'Die Modellliste konnte nicht abgerufen werden. Prüfe die Serververbindung.',
+		invalidModelDiscovery: 'Der Server hat eine ungültige Modellliste zurückgegeben.',
+		connectionFailedSafe:
+			'Verbindung zum Server fehlgeschlagen. Prüfe die Adresse und den API-Schlüssel.',
 		connectingToServer: 'Verbindung zum Server wird hergestellt',
 		serverConnectionError: 'Serververbindungsfehler',
 		editServerAddressApiKey: 'Serveradresse / API-Schlüssel bearbeiten',
@@ -572,6 +573,7 @@ export const de: TranslationDictionary = {
 		welcomeScreenWithFileDropZone: 'Willkommensbildschirm mit Datei-Ablagebereich'
 	},
 	messages: {
+		statsClientApproximate: 'Ungefähre clientseitige Messung anhand des Tokenzählers.',
 		regenerate: 'Neu generieren',
 		forkConversation: 'Unterhaltung verzweigen',
 		deleteMessageTitle: 'Nachricht löschen',

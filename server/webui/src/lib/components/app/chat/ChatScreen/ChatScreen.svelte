@@ -94,7 +94,7 @@
 	let activeModelId = $derived.by(() => {
 		const options = modelOptions();
 
-		if (!isRouter) {
+		if (!isRouter && !modelsStore.usesSelectableModelList) {
 			return options.length > 0 ? options[0].model : null;
 		}
 
@@ -131,7 +131,7 @@
 			return modelsStore.modelSupportsAudio(activeModelId);
 		}
 
-		return false;
+		return modelsStore.modelSupportsAudio('');
 	});
 
 	let hasVideoModality = $derived.by(() => {
@@ -141,7 +141,7 @@
 			return modelsStore.modelSupportsVideo(activeModelId);
 		}
 
-		return false;
+		return modelsStore.modelSupportsVideo('');
 	});
 
 	let hasVisionModality = $derived.by(() => {
@@ -151,7 +151,7 @@
 			return modelsStore.modelSupportsVision(activeModelId);
 		}
 
-		return false;
+		return modelsStore.modelSupportsVision('');
 	});
 
 	async function handleDeleteConfirm() {

@@ -1,15 +1,17 @@
 import type { ApiModelDataEntry, ApiModelDetails } from '$lib/types/api';
 
 export interface ModelModalities {
-	vision: boolean;
-	audio: boolean;
-	video: boolean;
+	/** Absent metadata is unknown, not a negative capability declaration. */
+	vision?: boolean;
+	audio?: boolean;
+	video?: boolean;
 }
 
 export interface ModelOption {
 	id: string;
 	name: string;
 	model: string;
+	contextSize?: number;
 	description?: string;
 	capabilities: string[];
 	modalities?: ModelModalities;

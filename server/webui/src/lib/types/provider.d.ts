@@ -69,6 +69,7 @@ export interface ProviderConnectionContext extends ProviderConnectionInput {
 	readonly providerId: ApiProviderId;
 	readonly serverBaseUrl: string;
 	readonly apiKey: string;
+	readonly protocol?: ProviderProtocol;
 }
 
 export interface ProviderRequestContext extends ProviderConnectionContext {
@@ -93,6 +94,7 @@ export interface ProviderChatCompletionInput {
 	messages: ApiChatMessageData[];
 	options: SettingsChatServiceOptions;
 	streamIdentity?: string;
+	capabilities?: CapabilitySnapshot;
 }
 
 export interface ProviderChatCompletionFetchRequest {
@@ -101,6 +103,7 @@ export interface ProviderChatCompletionFetchRequest {
 }
 
 export interface ProviderChatCompletionStreamEvent {
+	reasoningItems?: Record<string, unknown>[];
 	done?: boolean;
 	content?: string;
 	reasoningContent?: string;
@@ -110,19 +113,66 @@ export interface ProviderChatCompletionStreamEvent {
 	timings?: ChatMessageTimings;
 	promptProgress?: ChatMessagePromptProgress;
 	usage?: ProviderUsage;
+	finishReason?: string;
+	refusal?: string;
+	status?: 'completed' | 'incomplete' | 'failed' | 'cancelled';
 }
 
 export interface ProviderChatCompletionResponse {
+	reasoningItems?: Record<string, unknown>[];
 	content: string;
 	reasoningContent?: string;
 	toolCalls?: ApiChatCompletionToolCall[];
 	model?: string;
 	usage?: ProviderUsage;
+	completionId?: string;
+	finishReason?: string;
+	refusal?: string;
+	status?: 'completed' | 'incomplete' | 'failed' | 'cancelled';
 }
 
 export interface ProviderUsage {
 	promptTokens?: number;
 	completionTokens?: number;
 	totalTokens?: number;
+	reasoningTokens?: number;
+	cachedTokens?: number;
+	metrics?: ProviderMetric[];
 	raw?: unknown;
+}
+
+export type ProviderProtocol = 'chat-completions' | 'responses';
+export type CapabilityState = 'supported' | 'unsupported' | 'unknown';
+export interface CapabilityValue {
+	state: CapabilityState;
+	source?: 'adapter' | 'connection' | 'model-metadata' | 'server-metadata' | 'request';
+	values?: readonly unknown[];
+	minimum?: number;
+	maximum?: number;
+}
+export interface CapabilitySnapshot {
+	providerId: ApiProviderId;
+	serverBaseUrl: string;
+	sourceGeneration: number;
+	model: string | null;
+	connectionIdentity: string;
+	protocol: ProviderProtocol;
+	features: Readonly<Record<string, CapabilityValue>>;
+}
+export interface ProviderMetric {
+	name: string;
+	value?: number;
+	unit: 'tokens' | 'ms' | 'tokens/s';
+	source: 'backend' | 'browser';
+	available: boolean;
+}
+
+/** Opaque stateless Responses reasoning items, bound to the exact source.
+ * No API key or previous_response_id is persisted. */
+export interface ProviderContinuation {
+	providerId: ApiProviderId;
+	protocol: 'responses';
+	sourceFingerprint: string;
+	model: string;
+	reasoningItems: Record<string, unknown>[];
 }

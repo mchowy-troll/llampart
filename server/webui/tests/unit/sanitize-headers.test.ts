@@ -37,6 +37,14 @@ describe('sanitizeHeaders', () => {
 		expect(sanitizeHeaders(headers)['mcp-session-id']).toBe('[redacted]');
 	});
 
+	it('preserves partial redaction for wrapped MCP session headers', () => {
+		const headers = new Headers({ 'x-proxy-header-mcp-session-id': 'session-12345' });
+		const partial = new Map([['mcp-session-id', 5]]);
+		expect(sanitizeHeaders(headers, undefined, partial)['x-proxy-header-mcp-session-id']).toBe(
+			'....12345'
+		);
+	});
+
 	it('redacts extra headers provided by the caller', () => {
 		const headers = new Headers({
 			'x-vendor-key': 'vendor-secret',

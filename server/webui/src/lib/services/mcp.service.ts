@@ -40,7 +40,9 @@ import type {
 	MCPResourceContent,
 	MCPReadResourceResult
 } from '$lib/types';
-import { getAuthHeaders, sanitizeHeaders } from '$lib/utils/api-headers';
+import { sanitizeHeaders } from '$lib/utils/api-headers';
+import { config as settingsConfig } from '$lib/stores/settings.svelte';
+import { buildGatewayRequest } from '$lib/services/providers/provider-transport';
 import { isAbortError, throwIfAborted } from '$lib/utils/abort';
 import { buildProxiedHeaders, buildProxiedUrl } from '$lib/utils/cors-proxy';
 import { createBase64DataUrl } from '$lib/utils/data-url';
@@ -60,6 +62,23 @@ interface ToolResultContentItem {
 	data?: string;
 	mimeType?: string;
 	resource?: { text?: string; blob?: string; uri?: string };
+}
+
+function sanitizeDiagnosticUrl(value: string, depth = 0): string {
+	try {
+		const url = new URL(value, typeof window !== 'undefined' ? window.location.origin : undefined);
+		if (url.username) url.username = '[redacted]';
+		if (url.password) url.password = '[redacted]';
+		for (const [key, original] of [...url.searchParams]) {
+			if (/api.?key|token|secret|password|authorization|credential/i.test(key))
+				url.searchParams.set(key, '[redacted]');
+			else if (key === 'url' && depth < 2)
+				url.searchParams.set(key, sanitizeDiagnosticUrl(original, depth + 1));
+		}
+		return url.href;
+	} catch {
+		return '[invalid URL]';
+	}
 }
 
 interface ToolCallResult {
@@ -112,7 +131,7 @@ export class MCPService {
 	): DiagnosticRequestDetails {
 		const body = getRequestBody(input, init);
 		const details: DiagnosticRequestDetails = {
-			url: getRequestUrl(input),
+			url: sanitizeDiagnosticUrl(getRequestUrl(input)),
 			method: getRequestMethod(input, init, baseInit).toUpperCase(),
 			credentials: init?.credentials ?? baseInit.credentials,
 			mode: init?.mode ?? baseInit.mode,
@@ -269,9 +288,55 @@ export class MCPService {
 				);
 
 				try {
-					const response = await fetch(input, {
+					let fetchInput = input;
+					if (useProxy) {
+						let destination = new URL(getRequestUrl(input), window.location.origin);
+						// SDK redirects/endpoint events must not send the native API key
+						// or routing metadata to a different browser origin or path.
+						const gatewayPath = '/__llampart/api/llama-server/cors-proxy';
+						if (
+							destination.origin !== window.location.origin ||
+							destination.pathname !== gatewayPath
+						) {
+							// Legacy SSE endpoints may be relative to the MCP origin,
+							// or already wrapped by the native /cors-proxy handler.
+							const targetOrigin = new URL(config.url).origin;
+							const wrappedTarget = destination.pathname.endsWith('/cors-proxy')
+								? destination.searchParams.get('url')
+								: null;
+							let target: URL;
+							if (wrappedTarget) target = new URL(wrappedTarget);
+							else if (destination.origin === targetOrigin) target = destination;
+							else if (destination.origin === window.location.origin)
+								target = new URL(
+									destination.pathname.replace(/^\/__llampart\/api\/llama-server/, '') +
+										destination.search,
+									config.url
+								);
+							else throw new Error('MCP proxy endpoint escaped the configured MCP origin');
+							if (target.origin !== targetOrigin)
+								throw new Error('MCP proxy endpoint escaped the configured MCP origin');
+							destination = new URL(gatewayPath, window.location.origin);
+							destination.searchParams.set('url', target.href);
+							fetchInput =
+								typeof Request !== 'undefined' && input instanceof Request
+									? new Request(destination, input)
+									: destination;
+						}
+						const baseHeaders = new Headers(baseInit.headers);
+						const nativeAuthorization = baseHeaders.get('authorization');
+						const targetAuthorization = requestHeaders.get('authorization');
+						if (targetAuthorization && targetAuthorization !== nativeAuthorization)
+							requestHeaders.set('x-proxy-header-authorization', targetAuthorization);
+						requestHeaders.delete('authorization');
+						if (nativeAuthorization) requestHeaders.set('authorization', nativeAuthorization);
+						for (const [name, value] of baseHeaders)
+							if (name.startsWith('x-llampart-')) requestHeaders.set(name, value);
+					}
+					const response = await fetch(fetchInput, {
 						...baseInit,
 						...init,
+						...(useProxy ? ({ redirect: 'error', credentials: 'omit' } as const) : {}),
 						headers: requestHeaders
 					});
 					const durationMs = Math.round(performance.now() - startedAt);
@@ -369,15 +434,23 @@ export class MCPService {
 		}
 
 		if (useProxy) {
-			requestInit.headers = {
-				...getAuthHeaders(),
-				...(requestInit.headers as Record<string, string>)
-			};
+			const source = settingsConfig();
+			if (source.apiProvider !== 'llama-server')
+				throw new Error('The native MCP proxy requires llama-server');
+			requestInit.headers = buildGatewayRequest(
+				'llama-server',
+				String(source.serverBaseUrl ?? ''),
+				'/cors-proxy',
+				String(source.apiKey ?? ''),
+				{ headers: requestInit.headers }
+			).init.headers;
+			requestInit.redirect = 'error';
 		}
 
-		if (config.credentials) {
+		if (config.credentials && !useProxy) {
 			requestInit.credentials = config.credentials;
 		}
+		if (useProxy) requestInit.credentials = 'omit';
 
 		if (config.transport === MCPTransportType.WEBSOCKET) {
 			if (useProxy) {
@@ -389,7 +462,9 @@ export class MCPService {
 			const url = new URL(config.url);
 
 			if (import.meta.env.DEV) {
-				console.log(`[MCPService] Creating WebSocket transport for ${url.href}`);
+				console.log(
+					`[MCPService] Creating WebSocket transport for ${sanitizeDiagnosticUrl(url.href)}`
+				);
 			}
 
 			return {
@@ -410,12 +485,16 @@ export class MCPService {
 		);
 
 		if (useProxy && import.meta.env.DEV) {
-			console.log(`[MCPService] Using CORS proxy for ${config.url} -> ${url.href}`);
+			console.log(
+				`[MCPService] Using CORS proxy for ${sanitizeDiagnosticUrl(config.url)} -> ${sanitizeDiagnosticUrl(url.href)}`
+			);
 		}
 
 		try {
 			if (import.meta.env.DEV) {
-				console.log(`[MCPService] Creating StreamableHTTP transport for ${url.href}`);
+				console.log(
+					`[MCPService] Creating StreamableHTTP transport for ${sanitizeDiagnosticUrl(url.href)}`
+				);
 			}
 
 			return {

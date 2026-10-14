@@ -56,7 +56,7 @@ describe('ChatService resumable streams', () => {
 		expect(streamIdentity).toBeTruthy();
 		const replayRequest = new URL(String(fetchMock.mock.calls[1][0]), 'http://localhost');
 		expect(fetchMock.mock.calls[1][1]?.method).toBe('GET');
-		expect(replayRequest.pathname).toBe('/v1/stream');
+		expect(replayRequest.pathname).toBe('/__llampart/api/llama-server/v1/stream');
 		expect(replayRequest.searchParams.get('conv_id')).toBe(streamIdentity);
 		expect(replayRequest.searchParams.get('from')).toBe(String(encoder.encode(firstEvent).length));
 		expect(completed).toBe('ż');

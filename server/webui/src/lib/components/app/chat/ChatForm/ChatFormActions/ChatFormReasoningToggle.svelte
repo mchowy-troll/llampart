@@ -15,6 +15,7 @@
 		supportsThinking
 	} from '$lib/stores/models.svelte';
 	import { isRouterMode } from '$lib/stores/server.svelte';
+	import { config } from '$lib/stores/settings.svelte';
 	import { chatStore } from '$lib/stores/chat.svelte';
 	import { activeMessages, conversationsStore } from '$lib/stores/conversations.svelte';
 	import type { DatabaseMessage, ReasoningEffortLevel } from '$lib/types';
@@ -29,12 +30,28 @@
 	let currentEffort = $derived(conversationsStore.getReasoningEffort());
 	let isOff = $derived(!thinkingEnabled);
 	let subOpen = $state(false);
+	let nativeReasoning = $derived(config().apiProvider === 'llama-server');
+	let levels = $derived(
+		nativeReasoning
+			? REASONING_EFFORT_LEVELS
+			: REASONING_EFFORT_LEVELS.filter(
+					(level) =>
+						level.isOff ||
+						(level.value !== ReasoningEffort.MAX &&
+							(!modelsStore.capabilitySnapshot?.features.reasoning_effort?.values ||
+								modelsStore.capabilitySnapshot.features.reasoning_effort.values.includes(
+									level.value
+								)))
+				)
+	);
 
 	let conversationModel = $derived(
 		chatStore.getConversationModel(activeMessages() as DatabaseMessage[])
 	);
 
 	let modelSupportsThinkingFromMessages = $derived.by(() => {
+		if (!nativeReasoning)
+			return modelsStore.capabilitySnapshot?.features.reasoning?.state !== 'unsupported';
 		const modelId = isRouterMode() ? modelsStore.selectedModelName || conversationModel : null;
 		if (!modelId) return false;
 
@@ -133,7 +150,7 @@
 								{t('chat.reasoningEffortTitle')}
 							</p>
 
-							{#each REASONING_EFFORT_LEVELS as level (level.value)}
+							{#each levels as level (level.value)}
 								{@const selected = isSelected(level)}
 
 								<button
@@ -157,7 +174,7 @@
 									<span
 										class="justify-self-start text-xs whitespace-nowrap text-muted-foreground/80"
 									>
-										{#if !level.isOff}
+										{#if !level.isOff && nativeReasoning}
 											{getTokenLabel(level)}
 										{/if}
 									</span>

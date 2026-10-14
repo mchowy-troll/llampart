@@ -27,7 +27,7 @@
 		"test:unit": "vitest --project=unit",
 		"validate:test-discovery": "node scripts/validate-test-discovery.mjs",
 		"cleanup": "rm -rf .svelte-kit build node_modules",
-		"dev:vite": "NODE_OPTIONS=\"--insecure-http-parser\" vite dev --host 0.0.0.0",
+		"dev:vite": "node node_modules/vite/bin/vite.js dev --host 0.0.0.0",
 		"hooks:install": "bash scripts/install-git-hooks.sh"
 	},
 	"devDependencies": {
@@ -74,6 +74,7 @@
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.31.0",
+		"@noble/hashes": "2.4.0",
 		"highlight.js": "^11.11.1",
 		"lowlight": "^3.3.0",
 		"pdfjs-dist": "^6.2.108",

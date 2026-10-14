@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
-INSTALLER_VERSION="0.2.2"
+INSTALLER_VERSION="0.2.3"
 APP_NAME="llampart"
 REPO_OWNER="mchowy-troll"
 REPO_NAME="llampart"
@@ -1001,6 +1001,96 @@ generate_caddy_config() {
 
 :${LLAMPART_PORT} {
     root * ${CURRENT_SYMLINK}
+
+    map {header.X-Llampart-Host} {llampart_host} {
+        - ${BACKEND_HOST}
+        0.0.0.0 127.0.0.1
+        default {header.X-Llampart-Host}
+    }
+    map {header.X-Llampart-Port} {llampart_port} {
+        0 ${BACKEND_PORT}
+        default {header.X-Llampart-Port}
+    }
+EOF_CADDY
+  cat <<'EOF_GATEWAY'
+    # Trusted-LAN dynamic gateway, NOT an SSRF/DNS-rebinding firewall.
+    map {header.X-Llampart-Prefix} {llampart_prefix} {
+        - ""
+        default {header.X-Llampart-Prefix}
+    }
+    handle /__llampart/api/* {
+        route {
+            @denied_client not remote_ip private_ranges
+            respond @denied_client "Gateway is restricted to the trusted LAN" 403
+            @cross_site expression {header.Sec-Fetch-Site} != "" && {header.Sec-Fetch-Site} != "same-origin"
+            respond @cross_site "Cross-origin gateway request denied" 403
+            @bad_origin expression {header.Origin} != "" && {header.Origin} != {scheme} + "://" + {hostport}
+            respond @bad_origin "Cross-origin gateway request denied" 403
+            @endpoint <<CEL
+                ({method} == "GET" && {http.request.uri}.split("?")[0].matches("^/__llampart/api/(llama-server|openai-compatible|vllm)/v1/models$"))
+                || ({method} == "POST" && {http.request.uri}.split("?")[0].matches("^/__llampart/api/(llama-server|openai-compatible|vllm)/v1/chat/completions$"))
+                || ({method} == "POST" && {http.request.uri}.split("?")[0].matches("^/__llampart/api/(openai-compatible|vllm)/v1/responses$"))
+                || ({method} == "GET" && {http.request.uri}.split("?")[0].matches("^/__llampart/api/vllm/(metrics|version)$"))
+                || ({method} == "GET" && {http.request.uri}.split("?")[0].matches("^/__llampart/api/llama-server/(props|models|slots|tools)$"))
+                || ({method} == "POST" && {http.request.uri}.split("?")[0].matches("^/__llampart/api/llama-server/(models/(load|unload)|v1/streams/lookup|tools)$"))
+                || (({method} == "GET" || {method} == "DELETE") && {http.request.uri}.split("?")[0] == "/__llampart/api/llama-server/v1/stream")
+                || (({method} == "GET" || {method} == "POST" || {method} == "DELETE" || {method} == "OPTIONS" || {method} == "HEAD") && {http.request.uri}.split("?")[0] == "/__llampart/api/llama-server/cors-proxy")
+                CEL
+            handle @endpoint {
+                route {
+                    @metadata <<CEL
+                        {header.X-Llampart-Gateway} == "1"
+                        && ({header.X-Llampart-Scheme} == "http" || {header.X-Llampart-Scheme} == "https")
+                        && ({header.X-Llampart-Prefix} == "-" || ({header.X-Llampart-Prefix}.matches("^(/([A-Za-z0-9_~.!$&'()+,;=@-]|%[0-9a-fA-F]{2})+)+$") && !{header.X-Llampart-Prefix}.matches("(^|/)\\.{1,2}(/|$)|(?i)%(0[0-9a-f]|1[0-9a-f]|20|23|25|2e|2f|3f|5c|7f)")))
+                        && (({header.X-Llampart-Host} == "-" && {header.X-Llampart-Port} == "0" && {header.X-Llampart-Scheme} == "http" && {header.X-Llampart-Prefix} == "-" && {path}.startsWith("/__llampart/api/llama-server/"))
+                        || ({header.X-Llampart-Port}.matches("^[1-9][0-9]{0,4}$") && int({header.X-Llampart-Port}) <= 65535
+                        && (({header.X-Llampart-Host}.matches("^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\\.?$")
+                        && (!{header.X-Llampart-Host}.matches("^[0-9.]+$") || {header.X-Llampart-Host}.matches("^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$")))
+                        || {header.X-Llampart-Host}.matches("^\\[(([0-9a-f]{1,4}:){7}[0-9a-f]{1,4}|([0-9a-f]{1,4}:){1,7}:|([0-9a-f]{1,4}:){1,6}:[0-9a-f]{1,4}|([0-9a-f]{1,4}:){1,5}(:[0-9a-f]{1,4}){1,2}|([0-9a-f]{1,4}:){1,4}(:[0-9a-f]{1,4}){1,3}|([0-9a-f]{1,4}:){1,3}(:[0-9a-f]{1,4}){1,4}|([0-9a-f]{1,4}:){1,2}(:[0-9a-f]{1,4}){1,5}|[0-9a-f]{1,4}:((:[0-9a-f]{1,4}){1,6})|:((:[0-9a-f]{1,4}){1,7}|:))\\]$"))
+                        && {header.X-Llampart-Host}.size() <= 253))
+                        CEL
+                    handle @metadata {
+                        route {
+                            uri path_regexp ^/__llampart/api/(llama-server|openai-compatible|vllm) ""
+                            rewrite {llampart_prefix}{path}
+                            @https header X-Llampart-Scheme https
+                            handle @https {
+                                reverse_proxy {llampart_host}:{llampart_port} {
+                                    header_up Host {http.reverse_proxy.upstream.hostport}
+                                    header_up -X-Llampart-*
+                                    header_up -Cookie
+                                    transport http {
+                                        tls
+                                        tls_server_name {http.reverse_proxy.upstream.host}
+                                    }
+                                }
+                            }
+                            handle {
+                                reverse_proxy {llampart_host}:{llampart_port} {
+                                    header_up Host {http.reverse_proxy.upstream.hostport}
+                                    header_up -X-Llampart-*
+                                    header_up -Cookie
+                                }
+                            }
+                        }
+                    }
+                    respond "Invalid gateway metadata" 400
+                }
+            }
+            respond "Gateway endpoint or method not allowed" 405
+        }
+    }
+    # A transport failure must not emit a request object containing custom MCP
+    # credentials into Caddy's default error log. Upstream HTTP errors themselves
+    # remain ordinary proxy responses with their original status/body/headers.
+    # Do not enable global debug/log_credentials when using credentialed proxies.
+    handle_errors {
+        @gateway_error path /__llampart/api/*
+        respond @gateway_error "Gateway upstream transport failed" {http.error.status_code}
+        respond "" {http.error.status_code}
+    }
+EOF_GATEWAY
+  cat <<EOF_CADDY
 
     @llampart_api path /props /models /models/* /slots /slots/* /cors-proxy /tools /tools/* /v1/*
     reverse_proxy @llampart_api ${BACKEND_HOST}:${BACKEND_PORT}

@@ -1,5 +1,4 @@
 import { apiFetchWithParams } from '$lib/utils/api-fetch';
-import { buildProviderEndpointUrl } from '$lib/services/providers';
 import type { ProviderConnectionContext } from '$lib/types/provider';
 
 export class PropsService {
@@ -29,11 +28,11 @@ export class PropsService {
 			params.autoload = 'false';
 		}
 
-		return apiFetchWithParams<ApiLlamaCppServerProps>(
-			buildProviderEndpointUrl(context.serverBaseUrl, '/props'),
-			params,
-			{ authOnly: true, apiKey: context.apiKey }
-		);
+		return apiFetchWithParams<ApiLlamaCppServerProps>('/props', params, {
+			context,
+			authOnly: true,
+			apiKey: context.apiKey
+		});
 	}
 
 	/**
@@ -56,10 +55,11 @@ export class PropsService {
 			params.autoload = 'false';
 		}
 
-		return apiFetchWithParams<ApiLlamaCppServerProps>(
-			buildProviderEndpointUrl(context.serverBaseUrl, '/props'),
-			params,
-			{ authOnly: true, apiKey: context.apiKey, signal }
-		);
+		return apiFetchWithParams<ApiLlamaCppServerProps>('/props', params, {
+			context,
+			authOnly: true,
+			apiKey: context.apiKey,
+			signal
+		});
 	}
 }

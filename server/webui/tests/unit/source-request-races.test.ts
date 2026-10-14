@@ -80,9 +80,12 @@ describe('source-bound model requests', () => {
 		const request = ModelsService.list(sourceA);
 
 		expect(fetchMock).toHaveBeenCalledWith(
-			'https://a.example.test/v1/models',
+			'/__llampart/api/openai-compatible/v1/models',
 			expect.objectContaining({
-				headers: expect.objectContaining({ Authorization: 'Bearer key-a' })
+				headers: expect.objectContaining({
+					Authorization: 'Bearer key-a',
+					'X-Llampart-Host': 'a.example.test'
+				})
 			})
 		);
 
@@ -118,7 +121,10 @@ describe('source-bound model requests', () => {
 		requestA.resolve(modelList('model-a'));
 		await fetchA;
 
-		expect(contexts).toEqual([sourceA, sourceB]);
+		expect(contexts).toEqual([
+			{ ...sourceA, protocol: 'chat-completions' },
+			{ ...sourceB, protocol: 'chat-completions' }
+		]);
 		expect(modelsStore.models.map((model) => model.id)).toEqual(['model-b']);
 		expect(modelsStore.selectedModelId).toBe('model-b');
 		expect(modelsStore.error).toBeNull();
@@ -170,9 +176,12 @@ describe('source-bound server props requests', () => {
 		await PropsService.fetch(sourceA);
 
 		expect(fetchMock).toHaveBeenCalledWith(
-			'https://a.example.test/props?autoload=false',
+			'/__llampart/api/llama-server/props?autoload=false',
 			expect.objectContaining({
-				headers: expect.objectContaining({ Authorization: 'Bearer key-a' })
+				headers: expect.objectContaining({
+					Authorization: 'Bearer key-a',
+					'X-Llampart-Host': 'a.example.test'
+				})
 			})
 		);
 	});

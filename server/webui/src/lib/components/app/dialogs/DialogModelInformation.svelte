@@ -19,24 +19,29 @@
 
 	let { open = $bindable(), onOpenChange, modelId = null }: Props = $props();
 
-	let isRouter = $derived(serverStore.isRouterMode);
+	let supportsNativeProps = $derived(modelsStore.supportsModelProps);
+	let isRouter = $derived(supportsNativeProps && serverStore.isRouterMode);
 
 	// per-model props fetched from the child process
 	let routerModelProps = $state<ApiLlamaCppServerProps | null>(null);
 	let isLoadingRouterProps = $state(false);
 
 	// in router mode use per-model props, otherwise use global props
-	let serverProps = $derived(isRouter && modelId ? routerModelProps : serverStore.props);
+	let serverProps = $derived(
+		supportsNativeProps ? (isRouter && modelId ? routerModelProps : serverStore.props) : null
+	);
 
-	let modelName = $derived(isRouter && modelId ? modelId : modelsStore.singleModelName);
+	let modelName = $derived(
+		(isRouter || !supportsNativeProps) && modelId ? modelId : modelsStore.singleModelName
+	);
 	let models = $derived(modelOptions());
 	let isLoadingModels = $derived(modelsLoading());
 
-	// in router mode, find the model option matching modelId
-	// in single mode, use the first model as before
+	// Select the exact requested model for routers and compatible providers.
+	// Native single-model mode keeps its original first-model behavior.
 	let firstModel = $derived.by(() => {
-		if (isRouter && modelId) {
-			return models.find((m) => m.model === modelId) ?? null;
+		if (modelId && (isRouter || !supportsNativeProps)) {
+			return models.find((m) => m.model === modelId || m.id === modelId) ?? null;
 		}
 		return models[0] ?? null;
 	});
@@ -160,8 +165,8 @@
 					<div class="flex items-center justify-center py-8">
 						<div class="text-sm text-muted-foreground">{t('dialogs.loadingModelInformation')}</div>
 					</div>
-				{:else if firstModel}
-					{@const modelMeta = firstModel.meta}
+				{:else if firstModel || modelName}
+					{@const modelMeta = firstModel?.meta}
 
 					{#if serverProps}
 						<div class="llampart-model-info-grid">
@@ -353,6 +358,38 @@
 									</div>
 								</details>
 							{/if}
+						</div>
+					{:else}
+						<div class="llampart-model-info-details">
+							<Table.Root>
+								<Table.Header>
+									<Table.Row>
+										<Table.Head class="w-[10rem]">{t('dialogs.modelLabel')}</Table.Head>
+										<Table.Head>
+											<div class="inline-flex items-center gap-2">
+												<span class="break-all">{modelName}</span>
+												<ActionIconCopyToClipboard
+													text={modelName || ''}
+													canCopy={!!modelName}
+													ariaLabel={t('dialogs.copyModelNameToClipboard')}
+												/>
+											</div>
+										</Table.Head>
+									</Table.Row>
+								</Table.Header>
+								<Table.Body>
+									<Table.Row>
+										<Table.Cell class="h-10 align-middle font-medium"
+											>{t('dialogs.contextSizeLabel')}</Table.Cell
+										>
+										<Table.Cell
+											>{firstModel?.contextSize !== undefined
+												? `${formatNumber(firstModel.contextSize)} tokens`
+												: t('common.notAvailable')}</Table.Cell
+										>
+									</Table.Row>
+								</Table.Body>
+							</Table.Root>
 						</div>
 					{/if}
 				{:else if !isLoadingModels}

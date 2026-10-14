@@ -6,16 +6,15 @@ import {
 } from '$lib/constants/api-providers';
 import type { ProviderCapabilities } from '$lib/types/provider';
 
-type ProviderCapabilitySettings = {
-	disableOpenAiCompatibleTools?: unknown;
-};
 import { llamaServerProvider } from './llama-server.provider';
 import { openAiCompatibleProvider } from './openai-compatible.provider';
+import { vllmProvider } from './vllm.provider';
 import type { ApiProviderAdapter } from './provider.types';
 
 export const API_PROVIDER_REGISTRY = {
 	[API_PROVIDER_IDS.LLAMA_SERVER]: llamaServerProvider,
-	[API_PROVIDER_IDS.OPENAI_COMPATIBLE]: openAiCompatibleProvider
+	[API_PROVIDER_IDS.OPENAI_COMPATIBLE]: openAiCompatibleProvider,
+	[API_PROVIDER_IDS.VLLM]: vllmProvider
 } as const satisfies Record<ApiProviderId, ApiProviderAdapter>;
 
 export function getApiProvider(providerId?: string | null): ApiProviderAdapter {
@@ -23,18 +22,6 @@ export function getApiProvider(providerId?: string | null): ApiProviderAdapter {
 	return API_PROVIDER_REGISTRY[normalizedProviderId];
 }
 
-export function getApiProviderCapabilities(
-	providerId?: string | null,
-	settings?: ProviderCapabilitySettings
-): ProviderCapabilities {
-	const provider = getApiProvider(providerId);
-
-	if (
-		provider.id === API_PROVIDER_IDS.OPENAI_COMPATIBLE &&
-		settings?.disableOpenAiCompatibleTools === true
-	) {
-		return { ...provider.capabilities, supportsOpenAiToolCalls: false };
-	}
-
-	return provider.capabilities;
+export function getApiProviderCapabilities(providerId?: string | null): ProviderCapabilities {
+	return getApiProvider(providerId).capabilities;
 }

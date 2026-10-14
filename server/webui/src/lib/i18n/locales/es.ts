@@ -164,8 +164,12 @@ export const es: TranslationDictionary = {
 		apiKey: 'API Key',
 		fieldServerAddress: 'Dirección del servidor',
 		fieldApiProvider: 'Proveedor API',
+		sourceBackend: 'Informado por el backend; — significa no disponible',
+		sourceBrowser:
+			'Medición del navegador, incluye transporte, no es tiempo de generación del backend',
+		capabilityUnknown:
+			'Compatibilidad backend/modelo desconocida. El valor explícito es experimental.',
 		fieldApiKey: 'Clave API',
-		fieldDisableOpenAiCompatibleTools: 'Desactivar MCP y Tools para OpenAI-compatible',
 		fieldSystemMessage: 'Mensaje del sistema',
 		fieldPasteLongTextToFileLength: 'Longitud para convertir texto pegado largo en archivo',
 		fieldSendMessageOnEnter: 'Enviar mensaje con Intro',
@@ -244,7 +248,6 @@ export const es: TranslationDictionary = {
 		fieldStripThinkingFromMessageHistory: 'Eliminar Reasoning del historial de mensajes',
 		fieldCustomJson: 'JSON personalizado',
 		groupConnection: 'Conexión',
-		groupOpenAiCompatibleOptions: 'Opciones OpenAI-compatible',
 		groupSystemMessage: 'Mensaje del sistema',
 		groupInterface: 'Interfaz',
 		groupApplicationBackground: 'Fondo de la aplicación',
@@ -359,14 +362,9 @@ export const es: TranslationDictionary = {
 			noConversationsToDelete: 'No hay conversaciones para eliminar'
 		},
 		info: {
-			apiProvider: `Elige el proveedor de API que debe usar llampart.`,
-			serverBaseUrl: 'URL de llama-server.',
-			apiKey: `Clave API opcional si llama-server se inició con --api-key.`,
-			llamaServerBaseUrl: 'URL de llama-server.',
-			llamaServerApiKey: `Clave API opcional si llama-server se inició con --api-key.`,
-			openAiCompatibleBaseUrl: `Dirección del servidor OpenAI-compatible - por ejemplo LM Studio, Ollama u otro endpoint que admita /v1/models y /v1/chat/completions.`,
-			openAiCompatibleApiKey: 'Clave API requerida por el servidor OpenAI-compatible seleccionado.',
-			disableOpenAiCompatibleTools: 'Oculta las herramientas y MCP al backend de OpenAI.',
+			apiProvider: 'Elige el proveedor de API.',
+			serverBaseUrl: 'Dirección del servidor al que quieres conectarte.',
+			apiKey: 'Clave API, si el servidor la requiere.',
 			systemMessage: 'El mensaje inicial que define cómo debe comportarse el modelo.',
 			showSystemMessage: 'Mostrar el mensaje del sistema al inicio de cada conversación.',
 			theme:
@@ -473,6 +471,10 @@ export const es: TranslationDictionary = {
 		}
 	},
 	server: {
+		modelDiscoveryFailed:
+			'No se pudo obtener la lista de modelos. Comprueba la conexión al servidor.',
+		invalidModelDiscovery: 'El servidor devolvió una lista de modelos no válida.',
+		connectionFailedSafe: 'No se pudo conectar al servidor. Comprueba la dirección y la clave API.',
 		connectingToServer: 'Conectando al servidor',
 		connecting: 'Conectando...',
 		connectionError: 'Error de conexión',
@@ -571,6 +573,7 @@ export const es: TranslationDictionary = {
 		welcomeScreenWithFileDropZone: 'Pantalla de bienvenida con zona para soltar archivos'
 	},
 	messages: {
+		statsClientApproximate: 'Medición aproximada del cliente basada en el contador de tokens.',
 		regenerate: 'Regenerar',
 		forkConversation: 'Bifurcar conversación',
 		deleteMessageTitle: 'Eliminar mensaje',

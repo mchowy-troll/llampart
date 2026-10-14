@@ -20,7 +20,11 @@ for (const [key, value] of Object.entries(SETTING_CONFIG_DEFAULT)) {
 }
 
 Object.assign(knownSettingsShape, {
-	apiProvider: z.enum([API_PROVIDER_IDS.LLAMA_SERVER, API_PROVIDER_IDS.OPENAI_COMPATIBLE]),
+	apiProvider: z.enum([
+		API_PROVIDER_IDS.LLAMA_SERVER,
+		API_PROVIDER_IDS.OPENAI_COMPATIBLE,
+		API_PROVIDER_IDS.VLLM
+	]),
 	theme: z.enum(Object.keys(THEME_REGISTRY) as [string, ...string[]]),
 	interfaceLanguage: z.enum(['en', 'pl', 'de', 'fr', 'it', 'es']),
 	uiScale: z.enum(['90', '100', '110']),
@@ -112,7 +116,14 @@ export function parseSettingsConfig(
 	const input = readObject(value);
 	const validInput: Record<string, SettingsConfigValue> = {};
 	for (const [key, candidate] of Object.entries(input)) {
-		if (key === SETTINGS_STORAGE_VERSION_KEY) continue;
+		// Obsolete manual protocol choices must not select a protocol or survive migration.
+		if (
+			key === SETTINGS_STORAGE_VERSION_KEY ||
+			key === 'openAiCompatibleProtocol' ||
+			key === 'vllmProtocol' ||
+			key === 'disableOpenAiCompatibleTools'
+		)
+			continue;
 		const schema = knownSettingsShape[key] ?? primitiveSettingSchema;
 		const result = schema.safeParse(candidate);
 		if (result.success) validInput[key] = result.data;

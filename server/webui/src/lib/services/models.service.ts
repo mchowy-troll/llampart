@@ -1,7 +1,6 @@
 import { ServerModelStatus } from '$lib/enums';
 import { apiFetch, apiPost } from '$lib/utils/api-fetch';
 import { getApiProvider } from '$lib/services/providers';
-import { buildProviderEndpointUrl } from '$lib/services/providers/provider-url';
 import type { ParsedModelId } from '$lib/types/models';
 import type { ProviderConnectionContext } from '$lib/types/provider';
 import {
@@ -52,10 +51,11 @@ export class ModelsService {
 		context: ProviderConnectionContext,
 		signal?: AbortSignal
 	): Promise<ApiRouterModelsListResponse> {
-		return apiFetch<ApiRouterModelsListResponse>(
-			buildProviderEndpointUrl(context.serverBaseUrl, API_MODELS.LIST),
-			{ apiKey: context.apiKey, signal }
-		);
+		return apiFetch<ApiRouterModelsListResponse>(API_MODELS.LIST, {
+			context,
+			apiKey: context.apiKey,
+			signal
+		});
 	}
 
 	/**
@@ -86,11 +86,11 @@ export class ModelsService {
 			payload.extra_args = extraArgs;
 		}
 
-		return apiPost<ApiRouterModelsLoadResponse>(
-			buildProviderEndpointUrl(context.serverBaseUrl, API_MODELS.LOAD),
-			payload,
-			{ apiKey: context.apiKey, signal }
-		);
+		return apiPost<ApiRouterModelsLoadResponse>(API_MODELS.LOAD, payload, {
+			context,
+			apiKey: context.apiKey,
+			signal
+		});
 	}
 
 	/**
@@ -107,9 +107,9 @@ export class ModelsService {
 		signal?: AbortSignal
 	): Promise<ApiRouterModelsUnloadResponse> {
 		return apiPost<ApiRouterModelsUnloadResponse>(
-			buildProviderEndpointUrl(context.serverBaseUrl, API_MODELS.UNLOAD),
+			API_MODELS.UNLOAD,
 			{ model: modelId },
-			{ apiKey: context.apiKey, signal }
+			{ context, apiKey: context.apiKey, signal }
 		);
 	}
 

@@ -30,7 +30,7 @@ describe('provider-aware connection validation', () => {
 		expect(result.ok).toBe(true);
 		expect(result.provider).toBe(API_PROVIDER_IDS.LLAMA_SERVER);
 		expect(fetchMock).toHaveBeenCalledWith(
-			'http://127.0.0.1:8080/props',
+			'/__llampart/api/llama-server/props',
 			expect.objectContaining({
 				headers: expect.objectContaining({
 					Accept: 'application/json'
@@ -75,7 +75,7 @@ describe('provider-aware connection validation', () => {
 		expect(result.ok).toBe(true);
 		expect(result.provider).toBe(API_PROVIDER_IDS.OPENAI_COMPATIBLE);
 		expect(fetchMock).toHaveBeenCalledWith(
-			'https://api.example.test/v1/models',
+			'/__llampart/api/openai-compatible/v1/models',
 			expect.objectContaining({
 				headers: expect.objectContaining({
 					Accept: 'application/json',

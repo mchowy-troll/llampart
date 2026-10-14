@@ -9,7 +9,12 @@ import type {
 	SettingsFieldType
 } from '$lib/enums';
 import type { Icon } from '@lucide/svelte';
-import type { ProviderCapabilityKey, ProviderRequestContext } from '$lib/types/provider';
+import type {
+	ProviderCapabilityKey,
+	ProviderRequestContext,
+	ProviderProtocol,
+	ProviderChatCompletionStreamEvent
+} from '$lib/types/provider';
 import type { ApiProviderId } from '$lib/constants/api-providers';
 import type { ApiChatCompletionToolCall } from './api';
 import type { InterfaceLanguage } from '$lib/i18n/types';
@@ -17,6 +22,7 @@ import type { ConversationTimestampFormat } from '$lib/utils/conversation-timest
 import type { ColorMode } from '$lib/enums/ui';
 
 export interface ChatStreamCheckpoint {
+	providerContinuation?: import('./provider').ProviderContinuation;
 	content: string;
 	reasoningContent: string;
 	toolCalls: ApiChatCompletionToolCall[];
@@ -96,6 +102,24 @@ export interface SettingsFieldGroup {
 }
 
 export interface SettingsChatServiceOptions {
+	protocol?: ProviderProtocol;
+	max_completion_tokens?: number;
+	seed?: number;
+	stop?: string | string[];
+	tool_choice?: 'none' | 'auto' | 'required' | { type: 'function'; function: { name: string } };
+	parallel_tool_calls?: boolean;
+	response_format?: Record<string, unknown>;
+	reasoning_effort?: string;
+	min_tokens?: number;
+	stop_token_ids?: number[];
+	ignore_eos?: boolean;
+	skip_special_tokens?: boolean;
+	truncate_prompt_tokens?: number;
+	structured_outputs?: Record<string, unknown>;
+	chat_template_kwargs?: Record<string, unknown>;
+	include_reasoning?: boolean;
+	instructions?: string;
+	onProviderResult?: (result: ProviderChatCompletionStreamEvent) => void;
 	stream?: boolean;
 	assistantMessageId?: string;
 	providerRequestContext?: ProviderRequestContext;
@@ -152,7 +176,8 @@ export interface SettingsChatServiceOptions {
 		response: string,
 		reasoningContent?: string,
 		timings?: ChatMessageTimings,
-		toolCalls?: string
+		toolCalls?: string,
+		providerContinuation?: import('./provider').ProviderContinuation
 	) => void;
 	onError?: (error: Error) => void | Promise<void>;
 }

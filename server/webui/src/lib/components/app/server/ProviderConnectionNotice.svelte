@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { connectionErrorMessage } from '$lib/utils/connection-error-message';
 	import { AlertTriangle, RefreshCw } from '@lucide/svelte';
 	import * as Alert from '$lib/components/ui/alert';
 	import { t } from '$lib/i18n';
@@ -29,7 +30,7 @@
 			</button>
 		</Alert.Title>
 		<Alert.Description>
-			{errorMessage || t('server.connectionErrorTryAgain')}
+			{connectionErrorMessage(errorMessage)}
 		</Alert.Description>
 	</Alert.Root>
 {/if}
