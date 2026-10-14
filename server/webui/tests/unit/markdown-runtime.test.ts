@@ -24,6 +24,33 @@ describe('markdown-runtime', () => {
 		expect(html).toContain('katex-mathml');
 	});
 
+	it('keeps untrusted LaTeX links and HTML extensions disabled with a polluted prototype', async () => {
+		const originalTrust = Object.getOwnPropertyDescriptor(Object.prototype, 'trust');
+		Object.defineProperty(Object.prototype, 'trust', {
+			configurable: true,
+			writable: true,
+			value: true
+		});
+
+		try {
+			const html = await renderMarkdown(
+				String.raw`$\href{https://untrusted.test/}{link} + \htmlClass{untrusted-class}{x} + \includegraphics{https://untrusted.test/image.png}$`
+			);
+
+			expect(html).toContain('katex-mathml');
+			expect(html).not.toContain('katex-error');
+			expect(html).not.toContain('<a ');
+			expect(html).not.toContain('<img ');
+			expect(html).not.toMatch(/class="[^"]*untrusted-class/);
+		} finally {
+			if (originalTrust) {
+				Object.defineProperty(Object.prototype, 'trust', originalTrust);
+			} else {
+				Reflect.deleteProperty(Object.prototype, 'trust');
+			}
+		}
+	});
+
 	it('leaves math source as text when math is disabled', async () => {
 		const html = await renderMarkdown('Euler: $e^{i\\pi} + 1 = 0$.', true);
 
