@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { ChevronDown, Loader2, Package } from '@lucide/svelte';
+	import { Loader2, Package } from '@lucide/svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { cn } from '$lib/components/ui/utils';
@@ -290,7 +290,7 @@
 			<DropdownMenu.Root bind:open={isOpen} onOpenChange={handleOpenChange}>
 				<DropdownMenu.Trigger
 					class={cn(
-						`llampart-model-selector-trigger inline-grid cursor-pointer grid-cols-[1fr_auto_1fr] items-center gap-1.5 rounded-sm bg-muted-foreground/10 px-1.5 py-1 text-xs transition hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60`,
+						`llampart-model-selector-trigger llampart-composer-model-button inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary p-0 text-primary-foreground transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60`,
 						!isCurrentModelInCache && shouldShowUnavailableCurrentModel
 							? 'bg-red-400/10 !text-red-400 hover:bg-red-400/20 hover:text-red-400'
 							: forceForegroundText
@@ -300,22 +300,18 @@
 									: 'text-muted-foreground',
 						isOpen ? 'text-foreground' : ''
 					)}
-					style="max-width: min(calc(100cqw - 9rem), 20rem)"
+					aria-label={selectedOption?.model ?? t('models.selectModel')}
+					aria-busy={updating || isLoadingModel}
 					disabled={disabled || updating}
 				>
-					<Package class="h-3.5 w-3.5" />
-
 					{#if selectedOption}
 						<Tooltip.Root>
 							<Tooltip.Trigger>
 								<!-- prevent another nested button element -->
 								{#snippet child({ props })}
-									<ModelId
-										modelId={selectedOption.model}
-										class="min-w-0 overflow-hidden"
-										showOrgName
-										{...props}
-									/>
+									<span class="inline-flex h-8 w-8 items-center justify-center" {...props}>
+										<Package class="h-3.5 w-3.5" />
+									</span>
 								{/snippet}
 							</Tooltip.Trigger>
 
@@ -324,13 +320,7 @@
 							</Tooltip.Content>
 						</Tooltip.Root>
 					{:else}
-						<span class="min-w-0 font-normal">{t('models.selectModel')}</span>
-					{/if}
-
-					{#if updating || isLoadingModel}
-						<Loader2 class="llampart-model-trigger-loading-icon h-3 w-3.5 animate-spin" />
-					{:else}
-						<ChevronDown class="h-3 w-3.5" />
+						<Package class="h-3.5 w-3.5" />
 					{/if}
 				</DropdownMenu.Trigger>
 
@@ -410,7 +400,7 @@
 		{:else}
 			<button
 				class={cn(
-					`inline-flex cursor-pointer items-center gap-1.5 rounded-sm bg-muted-foreground/10 px-1.5 py-1 text-xs transition hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60`,
+					`llampart-model-selector-trigger llampart-composer-model-button inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary p-0 text-primary-foreground transition hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60`,
 					!isCurrentModelInCache
 						? 'bg-red-400/10 !text-red-400 hover:bg-red-400/20 hover:text-red-400'
 						: forceForegroundText
@@ -420,23 +410,19 @@
 								: 'text-muted-foreground',
 					isOpen ? 'text-foreground' : ''
 				)}
-				style="max-width: min(calc(100cqw - 6.5rem), 32rem)"
+				aria-label={selectedOption?.model ?? t('models.currentModel')}
+				aria-busy={updating}
 				onclick={() => handleOpenChange(true)}
 				disabled={disabled || updating}
 			>
-				<Package class="h-3.5 w-3.5" />
-
 				{#if selectedOption}
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							<!-- prevent another nested button element -->
 							{#snippet child({ props })}
-								<ModelId
-									modelId={selectedOption.model}
-									class="min-w-0 overflow-hidden"
-									showOrgName
-									{...props}
-								/>
+								<span class="inline-flex h-8 w-8 items-center justify-center" {...props}>
+									<Package class="h-3.5 w-3.5" />
+								</span>
 							{/snippet}
 						</Tooltip.Trigger>
 
@@ -444,10 +430,8 @@
 							<p class="font-mono">{selectedOption.model}</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
-				{/if}
-
-				{#if updating}
-					<Loader2 class="llampart-model-trigger-loading-icon h-3 w-3.5 animate-spin" />
+				{:else}
+					<Package class="h-3.5 w-3.5" />
 				{/if}
 			</button>
 		{/if}

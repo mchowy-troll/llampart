@@ -7,9 +7,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			groupFrostedGlassWallpaper: 'Wallpaper',
 			frostedGlassWallpaperDescription:
 				'Choose one of 5 built-in wallpapers or a custom wallpaper stored locally in this browser.',
-			frostedGlassWallpaperMilk: 'Milky wallpaper',
-			frostedGlassWallpaperSofteningDescription:
-				'Adds subtle blur and a milky layer only to the wallpaper background. It does not blur text or the fade above the composer.',
+			frostedGlassMilkiness: 'Glass milkiness',
+			frostedGlassOpaque: 'Disable transparency',
 			frostedGlassWallpaper01: 'Frosted Glass 01',
 			frostedGlassWallpaper02: 'Frosted Glass 02',
 			frostedGlassWallpaper03: 'Frosted Glass 03',
@@ -30,8 +29,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			info: {
 				frostedGlassWallpaper:
 					"Selected Frosted Glass wallpaper. Built-in wallpapers are shipped with llampart; custom wallpaper data is stored only in this browser's localStorage.",
-				frostedGlassWallpaperMilk:
-					'Adds subtle blur and a milky layer only to the wallpaper background.'
+				frostedGlassMilkiness: 'Adjust glass surfaces. 50% preserves the original material.',
+				frostedGlassOpaque: 'Use opaque accent-tinted surfaces and remember the glass milkiness.'
 			}
 		}
 	},
@@ -41,9 +40,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			groupFrostedGlassWallpaper: 'Tapeta',
 			frostedGlassWallpaperDescription:
 				'Wybierz jedną z 5 wbudowanych tapet albo własną tapetę zapisaną lokalnie w tej przeglądarce.',
-			frostedGlassWallpaperMilk: 'Mleczna tapeta',
-			frostedGlassWallpaperSofteningDescription:
-				'Dodaje delikatne rozmycie i mleczną warstwę tylko do tła tapety. Nie rozmywa tekstu ani zanikania nad composerem.',
+			frostedGlassMilkiness: 'Mleczność szkła',
+			frostedGlassOpaque: 'Wyłącz przezroczystość',
 			frostedGlassWallpaper01: 'Frosted Glass 01',
 			frostedGlassWallpaper02: 'Frosted Glass 02',
 			frostedGlassWallpaper03: 'Frosted Glass 03',
@@ -64,8 +62,9 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			info: {
 				frostedGlassWallpaper:
 					'Wybrana tapeta Frosted Glass. Wbudowane tapety są dostarczane z llampart; własna tapeta jest zapisana tylko w localStorage tej przeglądarki.',
-				frostedGlassWallpaperMilk:
-					'Dodaje delikatne rozmycie i mleczną warstwę tylko do tła tapety.'
+				frostedGlassMilkiness: 'Reguluje powierzchnie szkła. 50% zachowuje dotychczasowy materiał.',
+				frostedGlassOpaque:
+					'Nieprzezroczyste powierzchnie z akcentowym zabarwieniem. Zachowuje poziom mleczności.'
 			}
 		}
 	},
@@ -75,9 +74,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			groupFrostedGlassWallpaper: 'Hintergrundbild',
 			frostedGlassWallpaperDescription:
 				'Wählen Sie eines von 5 integrierten Hintergrundbildern oder ein eigenes Hintergrundbild, das lokal in diesem Browser gespeichert wird.',
-			frostedGlassWallpaperMilk: 'Milchige Tapete',
-			frostedGlassWallpaperSofteningDescription:
-				'Fügt nur dem Hintergrundbild eine dezente Unschärfe und milchige Ebene hinzu. Text und Fade über dem Composer werden nicht verwischt.',
+			frostedGlassMilkiness: 'Milchigkeit des Glases',
+			frostedGlassOpaque: 'Transparenz deaktivieren',
 			frostedGlassWallpaper01: 'Frosted Glass 01',
 			frostedGlassWallpaper02: 'Frosted Glass 02',
 			frostedGlassWallpaper03: 'Frosted Glass 03',
@@ -98,8 +96,9 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			info: {
 				frostedGlassWallpaper:
 					'Ausgewähltes Frosted-Glass-Hintergrundbild. Integrierte Hintergrundbilder werden mit llampart ausgeliefert; eigene Hintergrunddaten werden nur im localStorage dieses Browsers gespeichert.',
-				frostedGlassWallpaperMilk:
-					'Fügt nur dem Hintergrundbild eine dezente Unschärfe und milchige Ebene hinzu.'
+				frostedGlassMilkiness: 'Regelt Glasflächen. 50% bewahrt das ursprüngliche Material.',
+				frostedGlassOpaque:
+					'Undurchsichtige, akzentfarbige Flächen. Die Milchigkeit bleibt gespeichert.'
 			}
 		}
 	},
@@ -109,9 +108,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			groupFrostedGlassWallpaper: 'Fond d’écran',
 			frostedGlassWallpaperDescription:
 				'Choisissez l’un des 5 fonds intégrés ou un fond personnalisé enregistré localement dans ce navigateur.',
-			frostedGlassWallpaperMilk: 'Fond laiteux',
-			frostedGlassWallpaperSofteningDescription:
-				'Ajoute un léger flou et un voile laiteux uniquement au fond d’écran. Le texte et le fondu au-dessus du composer ne sont pas floutés.',
+			frostedGlassMilkiness: 'Opalescence du verre',
+			frostedGlassOpaque: 'Désactiver la transparence',
 			frostedGlassWallpaper01: 'Frosted Glass 01',
 			frostedGlassWallpaper02: 'Frosted Glass 02',
 			frostedGlassWallpaper03: 'Frosted Glass 03',
@@ -132,8 +130,9 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			info: {
 				frostedGlassWallpaper:
 					'Fond d’écran Frosted Glass sélectionné. Les fonds intégrés sont fournis avec llampart ; le fond personnalisé est stocké uniquement dans le localStorage de ce navigateur.',
-				frostedGlassWallpaperMilk:
-					'Ajoute un léger flou et un voile laiteux uniquement au fond d’écran.'
+				frostedGlassMilkiness: 'Règle les surfaces vitrées. 50% conserve le matériau original.',
+				frostedGlassOpaque:
+					'Surfaces opaques teintées de la couleur d’accent. L’opalescence est mémorisée.'
 			}
 		}
 	},
@@ -143,9 +142,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			groupFrostedGlassWallpaper: 'Sfondo',
 			frostedGlassWallpaperDescription:
 				'Scegli uno dei 5 sfondi integrati o uno sfondo personalizzato salvato localmente in questo browser.',
-			frostedGlassWallpaperMilk: 'Sfondo lattiginoso',
-			frostedGlassWallpaperSofteningDescription:
-				'Aggiunge una lieve sfocatura e un velo lattiginoso solo allo sfondo. Non sfoca il testo né la dissolvenza sopra il composer.',
+			frostedGlassMilkiness: 'Opacità lattiginosa del vetro',
+			frostedGlassOpaque: 'Disattiva trasparenza',
 			frostedGlassWallpaper01: 'Frosted Glass 01',
 			frostedGlassWallpaper02: 'Frosted Glass 02',
 			frostedGlassWallpaper03: 'Frosted Glass 03',
@@ -166,8 +164,9 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			info: {
 				frostedGlassWallpaper:
 					'Sfondo Frosted Glass selezionato. Gli sfondi integrati sono inclusi con llampart; lo sfondo personalizzato viene salvato solo nel localStorage di questo browser.',
-				frostedGlassWallpaperMilk:
-					'Aggiunge una lieve sfocatura e un velo lattiginoso solo allo sfondo.'
+				frostedGlassMilkiness: 'Regola le superfici in vetro. 50% conserva il materiale originale.',
+				frostedGlassOpaque:
+					'Superfici opache colorate con l’accento. Il livello lattiginoso viene ricordato.'
 			}
 		}
 	},
@@ -177,9 +176,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			groupFrostedGlassWallpaper: 'Fondo de pantalla',
 			frostedGlassWallpaperDescription:
 				'Elige uno de los 5 fondos integrados o un fondo personalizado guardado localmente en este navegador.',
-			frostedGlassWallpaperMilk: 'Fondo lechoso',
-			frostedGlassWallpaperSofteningDescription:
-				'Añade un desenfoque sutil y una capa lechosa solo al fondo. No desenfoca el texto ni el fundido sobre el compositor.',
+			frostedGlassMilkiness: 'Opacidad lechosa del cristal',
+			frostedGlassOpaque: 'Desactivar transparencia',
 			frostedGlassWallpaper01: 'Frosted Glass 01',
 			frostedGlassWallpaper02: 'Frosted Glass 02',
 			frostedGlassWallpaper03: 'Frosted Glass 03',
@@ -200,7 +198,10 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			info: {
 				frostedGlassWallpaper:
 					'Fondo Frosted Glass seleccionado. Los fondos integrados se incluyen con llampart; el fondo personalizado se guarda solo en el localStorage de este navegador.',
-				frostedGlassWallpaperMilk: 'Añade un desenfoque sutil y una capa lechosa solo al fondo.'
+				frostedGlassMilkiness:
+					'Ajusta las superficies de cristal. 50% conserva el material original.',
+				frostedGlassOpaque:
+					'Superficies opacas teñidas con el acento. Se recuerda el nivel lechoso.'
 			}
 		}
 	}

@@ -11,7 +11,10 @@ import {
 	serializeSettingsStorage,
 	validateSettingsPatch
 } from '$lib/utils/settings-schema';
-import { importApplicationSettings } from '$lib/utils/settings-import-export';
+import {
+	exportApplicationSettings,
+	importApplicationSettings
+} from '$lib/utils/settings-import-export';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 
@@ -27,6 +30,134 @@ beforeEach(() => {
 });
 
 describe('settings runtime schema', () => {
+	it('resets appearance through the actual store to canonical defaults', () => {
+		const before = { ...settingsStore.config };
+		try {
+			settingsStore.updateMultipleConfig({
+				fontFamily: 'dm-serif-display',
+				fontVariant: '700',
+				uiScale: '110',
+				frostedGlassMilkiness: 12,
+				frostedGlassOpaque: true
+			});
+			expect(settingsStore.config.fontVariant).toBe('400');
+			settingsStore.resetConfig();
+			expect(settingsStore.config).toMatchObject({
+				fontFamily: 'default',
+				fontVariant: '400',
+				uiScale: '100',
+				frostedGlassMilkiness: 50,
+				frostedGlassOpaque: false
+			});
+			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject({
+				fontFamily: 'default',
+				fontVariant: '400'
+			});
+		} finally {
+			settingsStore.config = before;
+		}
+	});
+	it.each([
+		{ fontFamily: 'merriweather', fontVariant: '700' },
+		{ fontFamily: 'frank-ruhl-libre', fontVariant: '600' },
+		{ fontFamily: 'dm-serif-display', fontVariant: '400' }
+	])('exports and imports $fontFamily appearance without losing saved milkiness', async (font) => {
+		const appearance = {
+			...font,
+			uiScale: '95',
+			frostedGlassMilkiness: 27,
+			frostedGlassOpaque: true,
+			frostedGlassWallpaper: 'frosted-glass-01'
+		};
+		storage.set(
+			CONFIG_LOCALSTORAGE_KEY,
+			serializeSettingsStorage({ ...SETTING_CONFIG_DEFAULT, ...appearance })
+		);
+		let exported: Blob | undefined;
+		const createUrl = vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
+			exported = blob as Blob;
+			return 'blob:appearance-test';
+		});
+		const revokeUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+		vi.stubGlobal('document', {
+			createElement: () => ({ click: vi.fn() }),
+			body: { appendChild: vi.fn(), removeChild: vi.fn() }
+		});
+		try {
+			exportApplicationSettings();
+			const text = await exported!.text();
+			expect(JSON.parse(text).settings).toMatchObject(appearance);
+			storage.clear();
+			importApplicationSettings(text);
+			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject(appearance);
+		} finally {
+			createUrl.mockRestore();
+			revokeUrl.mockRestore();
+			vi.unstubAllGlobals();
+		}
+	});
+	it.each(['inter', 'open-sans', 'instrument-serif', 'unknown-retired-font'])(
+		'migrates %s independently through storage, strict parsing, import and export',
+		async (fontFamily) => {
+			const legacy = {
+				fontFamily,
+				fontVariant: '400-italic',
+				uiScale: '105',
+				frostedGlassMilkiness: 23,
+				frostedGlassWallpaperMilky: true,
+				systemMessage: 'Keep my prompt',
+				temperature: 0.35
+			};
+			const expected = {
+				fontFamily: 'default',
+				fontVariant: '400',
+				uiScale: '105',
+				frostedGlassMilkiness: 23,
+				systemMessage: 'Keep my prompt',
+				temperature: 0.35
+			};
+			expect(parseSettingsConfig(legacy, { rejectInvalidKnown: true })).toMatchObject(expected);
+			storage.set(CONFIG_LOCALSTORAGE_KEY, JSON.stringify(legacy));
+			expect(parseSettingsStorage(JSON.stringify(legacy))).toMatchObject(expected);
+			let blob: Blob | undefined;
+			const create = vi.spyOn(URL, 'createObjectURL').mockImplementation((value) => {
+				blob = value as Blob;
+				return 'blob:test';
+			});
+			const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+			vi.stubGlobal('document', {
+				createElement: () => ({ click: vi.fn() }),
+				body: { appendChild: vi.fn(), removeChild: vi.fn() }
+			});
+			try {
+				exportApplicationSettings();
+				expect(JSON.parse(await blob!.text()).settings).toMatchObject(expected);
+				importApplicationSettings(
+					JSON.stringify({ type: 'llampart-settings-export', formatVersion: 1, settings: legacy })
+				);
+				const stored = JSON.parse(storage.get(CONFIG_LOCALSTORAGE_KEY)!);
+				expect(stored).toMatchObject(expected);
+				expect(stored).not.toHaveProperty('frostedGlassWallpaperMilky');
+			} finally {
+				create.mockRestore();
+				revoke.mockRestore();
+				vi.unstubAllGlobals();
+			}
+		}
+	);
+
+	it.each(['400-italic', '999', '300', '800'])(
+		'normalizes unsupported base weight %s without dropping other values',
+		(fontVariant) => {
+			expect(
+				parseSettingsConfig({ fontFamily: 'dm-serif-display', fontVariant, uiScale: '95' })
+			).toMatchObject({ fontFamily: 'dm-serif-display', fontVariant: '400', uiScale: '95' });
+			expect(validateSettingsPatch({ fontFamily: 'dm-serif-display', fontVariant })).toMatchObject({
+				fontFamily: 'dm-serif-display',
+				fontVariant: '400'
+			});
+		}
+	);
 	it('validates known keys while retaining flat primitive extension keys', () => {
 		const parsed = parseSettingsConfig({
 			showThoughtInProgress: 'true',

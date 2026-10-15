@@ -1,4 +1,24 @@
 /* llampart Frosted Glass sidebar initial pass */
+html[data-theme='frosted-glass'].has-frosted-glass-theme.has-frosted-glass-opaque
+	.conversation-item:not(.conversation-item-selected) {
+	border-color: rgb(120 120 120 / 0.3);
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme.has-frosted-glass-opaque
+	.conversation-item:not(.conversation-item-selected):is(:hover, :focus-visible) {
+	border-color: rgb(100 100 100 / 0.55);
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme.has-frosted-glass-opaque
+	.conversation-item[data-active='true']:not(.conversation-item-selected) {
+	border-color: var(--llampart-sidebar-selection-accent);
+	background: color-mix(
+		in oklch,
+		var(--llampart-sidebar-selection-accent) 8%,
+		var(--llampart-glass-white-200)
+	);
+}
+
 html[data-theme='frosted-glass'].has-frosted-glass-theme [data-slot='sidebar-wrapper'] {
 	background: transparent;
 	overflow: visible;
@@ -42,16 +62,20 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	z-index: 1;
 	overflow: visible;
 	border-right: 1px solid rgb(255 255 255 / 0.28);
-	background-color: rgba(255, 255, 255, 0.14);
-	background-image: linear-gradient(0deg, rgb(255 255 255 / 0.13), rgb(255 255 255 / 0.13));
+	background-color: var(--llampart-glass-white-140, rgba(255, 255, 255, 0.14));
+	background-image: linear-gradient(
+		0deg,
+		var(--llampart-glass-white-130, rgb(255 255 255 / 0.13)),
+		var(--llampart-glass-white-130, rgb(255 255 255 / 0.13))
+	);
 	background-clip: border-box;
 	box-shadow:
 		0 18px 52px rgb(15 23 42 / 0.14),
 		0 4px 18px rgb(15 23 42 / 0.08),
 		inset -1px 0 0 rgb(255 255 255 / 0.24),
 		inset 1px 0 0 rgb(255 255 255 / 0.16);
-	-webkit-backdrop-filter: blur(18px) saturate(116%);
-	backdrop-filter: blur(18px) saturate(116%);
+	-webkit-backdrop-filter: var(--llampart-glass-filter-18-116, blur(18px) saturate(116%));
+	backdrop-filter: var(--llampart-glass-filter-18-116, blur(18px) saturate(116%));
 	transition:
 		box-shadow 200ms ease,
 		border-color 200ms ease;
@@ -112,19 +136,19 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme [data-slot='sidebar-gro
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-item {
 	border-color: rgba(255, 255, 255, 0.12);
-	background: rgba(255, 255, 255, 0.14);
+	background: var(--llampart-glass-white-140, rgba(255, 255, 255, 0.14));
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.1),
 		0 1px 2px rgba(0, 0, 0, 0.03),
 		0 3px 8px rgba(0, 0, 0, 0.025);
-	-webkit-backdrop-filter: blur(18px) saturate(116%);
-	backdrop-filter: blur(18px) saturate(116%);
+	-webkit-backdrop-filter: var(--llampart-glass-filter-18-116, blur(18px) saturate(116%));
+	backdrop-filter: var(--llampart-glass-filter-18-116, blur(18px) saturate(116%));
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.conversation-item:is(:hover, :focus-visible) {
 	border-color: rgba(255, 255, 255, 0.12);
-	background: rgba(255, 255, 255, 0.18);
+	background: var(--llampart-glass-white-180, rgba(255, 255, 255, 0.18));
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.1),
 		0 1px 2px rgba(0, 0, 0, 0.03),
@@ -134,7 +158,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-item.bg-accent\/45,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-item[class*='bg-accent'] {
 	border-color: rgba(255, 255, 255, 0.12);
-	background: rgba(255, 255, 255, 0.2);
+	background: var(--llampart-glass-white-200, rgba(255, 255, 255, 0.2));
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.1),
 		0 1px 2px rgba(0, 0, 0, 0.03),
@@ -143,10 +167,10 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-item[clas
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-timestamp-badge {
 	border-color: rgb(255 255 255 / 0.24);
-	background: rgb(255 255 255 / 0.18);
+	background: var(--llampart-glass-white-180, rgb(255 255 255 / 0.18));
 	box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22);
-	-webkit-backdrop-filter: blur(12px) saturate(130%);
-	backdrop-filter: blur(12px) saturate(130%);
+	-webkit-backdrop-filter: var(--llampart-glass-filter-12-130, blur(12px) saturate(130%));
+	backdrop-filter: var(--llampart-glass-filter-12-130, blur(12px) saturate(130%));
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-timestamp-divider {
@@ -207,8 +231,12 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 		visibility: visible;
 		opacity: 1 !important;
 		border: 1px solid var(--llampart-frosted-surface-border);
-		background-color: rgba(255, 255, 255, 0.14);
-		background-image: linear-gradient(0deg, rgb(255 255 255 / 0.13), rgb(255 255 255 / 0.13));
+		background-color: var(--llampart-glass-white-140, rgba(255, 255, 255, 0.14));
+		background-image: linear-gradient(
+			0deg,
+			var(--llampart-glass-white-130, rgb(255 255 255 / 0.13)),
+			var(--llampart-glass-white-130, rgb(255 255 255 / 0.13))
+		);
 		background-clip: border-box;
 		box-shadow: var(--llampart-frosted-surface-shadow);
 		transition:
@@ -216,8 +244,8 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 			border-color 180ms ease,
 			box-shadow 180ms ease;
 		will-change: auto;
-		-webkit-backdrop-filter: blur(18px) saturate(116%);
-		backdrop-filter: blur(18px) saturate(116%);
+		-webkit-backdrop-filter: var(--llampart-glass-filter-18-116, blur(18px) saturate(116%));
+		backdrop-filter: var(--llampart-glass-filter-18-116, blur(18px) saturate(116%));
 	}
 
 	html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -446,14 +474,17 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-heade
 
 /* llampart-sidebar-action-search-input-frosted-surface */
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-action-search-input {
-	background: rgba(255, 255, 255, 0.2) !important;
-	background-color: rgba(255, 255, 255, 0.2) !important;
+	background: var(--llampart-glass-white-200, rgba(255, 255, 255, 0.2)) !important;
+	background-color: var(--llampart-glass-white-200, rgba(255, 255, 255, 0.2)) !important;
 	border-color: rgba(255, 255, 255, 0.34) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.26),
 		0 1px 2px rgba(0, 0, 0, 0.05) !important;
-	backdrop-filter: blur(24px) saturate(135%) !important;
-	-webkit-backdrop-filter: blur(24px) saturate(135%) !important;
+	backdrop-filter: var(--llampart-glass-filter-24-135, blur(24px) saturate(135%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-24-135,
+		blur(24px) saturate(135%)
+	) !important;
 }
 
 /* Frosted Glass sidebar frame surface values are owned by src/app.css shared surface primitives. */
@@ -504,9 +535,12 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-v-tri
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-v-trigger-closed:hover,
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-sidebar-v-trigger-closed:focus-visible {
-	background: rgba(255, 255, 255, 0.23) !important;
-	backdrop-filter: blur(14px) saturate(128%) !important;
-	-webkit-backdrop-filter: blur(14px) saturate(128%) !important;
+	background: var(--llampart-glass-white-230, rgba(255, 255, 255, 0.23)) !important;
+	backdrop-filter: var(--llampart-glass-filter-14-128, blur(14px) saturate(128%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-14-128,
+		blur(14px) saturate(128%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-v-trigger-open,

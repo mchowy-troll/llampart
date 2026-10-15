@@ -104,13 +104,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	min-height: 2.2rem !important;
 	border-radius: var(--llampart-frosted-glass-composer-radius) !important;
 	border: 1px solid rgba(255, 255, 255, 0.48) !important;
-	background: rgba(255, 255, 255, 0.64) !important;
+	background: var(--llampart-glass-white-640, rgba(255, 255, 255, 0.64)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.28),
 		0 1px 2px rgba(0, 0, 0, 0.022) !important;
 	color: #111111 !important;
-	-webkit-backdrop-filter: blur(16px) saturate(124%) !important;
-	backdrop-filter: blur(16px) saturate(124%) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-16-124,
+		blur(16px) saturate(124%)
+	) !important;
+	backdrop-filter: var(--llampart-glass-filter-16-124, blur(16px) saturate(124%)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -160,7 +163,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 		.llampart-model-selector-sheet [role='option'][aria-selected='true'],
 		.llampart-mcp-server-item:hover
 	) {
-	background: rgba(255, 255, 255, 0.42) !important;
+	background: var(--llampart-glass-white-420, rgba(255, 255, 255, 0.42)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -250,12 +253,15 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-chat-input-frame
 	[data-slot='button']:not(.llampart-composer-bare-action) {
 	border: 1px solid rgba(255, 255, 255, 0.2) !important;
-	background: rgba(255, 255, 255, 0.2) !important;
+	background: var(--llampart-glass-white-200, rgba(255, 255, 255, 0.2)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.18),
 		0 1px 2px rgba(0, 0, 0, 0.045) !important;
-	backdrop-filter: blur(10px) saturate(110%) !important;
-	-webkit-backdrop-filter: blur(10px) saturate(110%) !important;
+	backdrop-filter: var(--llampart-glass-filter-10-110, blur(10px) saturate(110%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-10-110,
+		blur(10px) saturate(110%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -267,7 +273,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-chat-input-frame
 	[data-slot='button']:not(.llampart-composer-bare-action):hover {
-	background: rgba(255, 255, 255, 0.28) !important;
+	background: var(--llampart-glass-white-280, rgba(255, 255, 255, 0.28)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -297,7 +303,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-chat-input-frame
 	[data-slot='badge'],
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-chat-input-frame .badge {
-	background: rgba(255, 255, 255, 0.22) !important;
+	background: var(--llampart-glass-white-220, rgba(255, 255, 255, 0.22)) !important;
 	border-color: rgba(255, 255, 255, 0.2) !important;
 	box-shadow: none !important;
 }
@@ -307,8 +313,8 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-chat-input-fr
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-chat-input-frame
 	.llampart-composer-stop-action:hover {
-	background: rgba(255, 255, 255, 0.34) !important;
-	background-color: rgba(255, 255, 255, 0.34) !important;
+	background: var(--llampart-glass-white-340, rgba(255, 255, 255, 0.34)) !important;
+	background-color: var(--llampart-glass-white-340, rgba(255, 255, 255, 0.34)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -336,14 +342,17 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme [data-slot='popover-con
 html[data-theme='frosted-glass'].has-frosted-glass-theme [data-slot='select-content'],
 html[data-theme='frosted-glass'].has-frosted-glass-theme [data-slot='sheet-content'] {
 	border: 1px solid rgba(255, 255, 255, 0.2) !important;
-	background: rgba(255, 255, 255, 0.18) !important;
+	background: var(--llampart-glass-white-180, rgba(255, 255, 255, 0.18)) !important;
 	color: #000000 !important;
 	box-shadow:
 		0 1px 2px rgba(0, 0, 0, 0.06),
 		0 4px 12px rgba(0, 0, 0, 0.055),
 		0 16px 32px rgba(0, 0, 0, 0.045) !important;
-	backdrop-filter: blur(18px) saturate(116%) !important;
-	-webkit-backdrop-filter: blur(18px) saturate(116%) !important;
+	backdrop-filter: var(--llampart-glass-filter-18-116, blur(18px) saturate(116%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-18-116,
+		blur(18px) saturate(116%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme [data-slot='dropdown-menu-content'] *,
@@ -362,7 +371,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	[data-slot='select-content']
 	[data-highlighted] {
-	background: rgba(255, 255, 255, 0.22) !important;
+	background: var(--llampart-glass-white-220, rgba(255, 255, 255, 0.22)) !important;
 }
 
 /* ChatFormActionSubmit.svelte */
@@ -392,7 +401,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-composer-neutral-action-button:focus-visible,
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-composer-neutral-action-button[data-state='open'] {
-	background: rgba(255, 255, 255, 0.54) !important;
+	background: var(--llampart-glass-white-540, rgba(255, 255, 255, 0.54)) !important;
 	border-color: transparent !important;
 	color: rgba(17, 17, 17, 0.62) !important;
 	opacity: 1 !important;
@@ -456,13 +465,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-chat-input-frame {
 	border: 1px solid var(--llampart-frosted-surface-border) !important;
 	border-radius: var(--llampart-frosted-glass-composer-radius) !important;
-	background: rgba(255, 255, 255, 0.34) !important;
+	background: var(--llampart-glass-white-340, rgba(255, 255, 255, 0.34)) !important;
 	box-shadow:
 		0 1px 2px rgba(0, 0, 0, 0.04),
 		0 8px 26px rgba(0, 0, 0, 0.036),
 		0 20px 48px rgba(0, 0, 0, 0.028) !important;
-	backdrop-filter: blur(28px) saturate(132%) !important;
-	-webkit-backdrop-filter: blur(28px) saturate(132%) !important;
+	backdrop-filter: var(--llampart-glass-filter-28-132, blur(28px) saturate(132%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-28-132,
+		blur(28px) saturate(132%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-composer-plus-trigger,
@@ -514,19 +526,22 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	justify-content: center !important;
 	overflow: hidden !important;
 	border: 1px solid var(--llampart-frosted-surface-border) !important;
-	background: rgba(255, 255, 255, 0.58) !important;
+	background: var(--llampart-glass-white-580, rgba(255, 255, 255, 0.58)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.24),
 		0 1px 2px rgba(0, 0, 0, 0.028) !important;
 	color: #111111 !important;
-	backdrop-filter: blur(14px) saturate(124%) !important;
-	-webkit-backdrop-filter: blur(14px) saturate(124%) !important;
+	backdrop-filter: var(--llampart-glass-filter-14-124, blur(14px) saturate(124%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-14-124,
+		blur(14px) saturate(124%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-composer-action-button:hover,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .file-upload-button:hover,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-model-selector-trigger:hover {
-	background: rgba(255, 255, 255, 0.66) !important;
+	background: var(--llampart-glass-white-660, rgba(255, 255, 255, 0.66)) !important;
 }
 
 /* Round composer actions keep equal surfaces through their independent parameters. */
@@ -563,7 +578,18 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	button.llampart-reasoning-trigger,
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-chat-input-frame
+	button.llampart-composer-model-button,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	button.llampart-composer-model-button:is(:hover, :focus-visible, :active, [data-state='open']),
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
 	button.llampart-reasoning-trigger:is(:hover, :focus-visible, :active, [data-state='open']) {
+	width: 2rem !important;
+	height: 2rem !important;
+	min-width: 2rem !important;
+	padding: 0 !important;
+	border-radius: 9999px !important;
 	border: 0 !important;
 	border-color: transparent !important;
 	background: var(--llampart-composer-reasoning-background) !important;
@@ -615,12 +641,15 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-composer-swit
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-composer-switch[data-slot='switch'] {
 	border: 1px solid rgba(255, 255, 255, 0.34) !important;
-	background: rgba(255, 255, 255, 0.18) !important;
+	background: var(--llampart-glass-white-180, rgba(255, 255, 255, 0.18)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.2),
 		0 1px 2px rgba(0, 0, 0, 0.024) !important;
-	backdrop-filter: blur(16px) saturate(126%) !important;
-	-webkit-backdrop-filter: blur(16px) saturate(126%) !important;
+	backdrop-filter: var(--llampart-glass-filter-16-126, blur(16px) saturate(126%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-16-126,
+		blur(16px) saturate(126%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -713,8 +742,8 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	border: 0 !important;
 	outline: 0 !important;
 	border-radius: 9999px !important;
-	background: rgba(137, 148, 146, 0.29) !important;
-	background-color: rgba(137, 148, 146, 0.29) !important;
+	background: var(--llampart-glass-grey-290, rgba(137, 148, 146, 0.29)) !important;
+	background-color: var(--llampart-glass-grey-290, rgba(137, 148, 146, 0.29)) !important;
 	background-image: none !important;
 	color: #111111 !important;
 	opacity: 1 !important;
@@ -728,8 +757,8 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	--tw-ring-shadow: 0 0 #0000 !important;
 	--tw-shadow: 0 0 #0000 !important;
 	--tw-shadow-colored: 0 0 #0000 !important;
-	backdrop-filter: blur(8px) saturate(104%) !important;
-	-webkit-backdrop-filter: blur(8px) saturate(104%) !important;
+	backdrop-filter: var(--llampart-glass-filter-8-104, blur(8px) saturate(104%)) !important;
+	-webkit-backdrop-filter: var(--llampart-glass-filter-8-104, blur(8px) saturate(104%)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -778,8 +807,8 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.file-upload-button.llampart-composer-action-button:active {
 	border: 0 !important;
 	outline: 0 !important;
-	background: rgba(137, 148, 146, 0.34) !important;
-	background-color: rgba(137, 148, 146, 0.34) !important;
+	background: var(--llampart-glass-grey-340, rgba(137, 148, 146, 0.34)) !important;
+	background-color: var(--llampart-glass-grey-340, rgba(137, 148, 146, 0.34)) !important;
 	background-image: none !important;
 	box-shadow: none !important;
 	filter: none !important;
@@ -931,18 +960,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme.has-frosted-glass-wallp
 	background-size: cover;
 	background-repeat: no-repeat;
 	transform-origin: center bottom;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme.has-frosted-glass-wallpaper-milk
-	.llampart-composer-fade-curtain::after {
-	content: '';
-	position: absolute;
-	inset: 0;
-	z-index: 1;
-	pointer-events: none;
-	background:
-		linear-gradient(180deg, rgb(255 255 255 / 0.19), rgb(255 255 255 / 0.12)),
-		linear-gradient(0deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.12));
 }
 
 /* ModelsSelector.svelte */

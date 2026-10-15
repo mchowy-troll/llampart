@@ -20,13 +20,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachment-ma
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-attachment-thumbnail-image-readonly {
 	border: 1px solid rgba(255, 255, 255, 0.18) !important;
-	background: rgba(255, 255, 255, 0.12) !important;
+	background: var(--llampart-glass-white-120, rgba(255, 255, 255, 0.12)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.14),
 		0 1px 2px rgba(0, 0, 0, 0.05),
 		0 4px 10px rgba(0, 0, 0, 0.04) !important;
-	backdrop-filter: blur(14px) saturate(110%) !important;
-	-webkit-backdrop-filter: blur(14px) saturate(110%) !important;
+	backdrop-filter: var(--llampart-glass-filter-14-110, blur(14px) saturate(110%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-14-110,
+		blur(14px) saturate(110%)
+	) !important;
 }
 /* /llampart-block-b-image-thumbnail-polish */
 
@@ -73,11 +76,11 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
    Inner attachment list panel is intentionally lighter than the dialog shell in Frosted Glass. */
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-attachments-view-all-panel {
 	border: 1px solid rgba(255, 255, 255, 0.18);
-	background: rgba(255, 255, 255, 0.1);
-	background-color: rgba(255, 255, 255, 0.1);
+	background: var(--llampart-glass-white-100, rgba(255, 255, 255, 0.1));
+	background-color: var(--llampart-glass-white-100, rgba(255, 255, 255, 0.1));
 	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-	backdrop-filter: blur(10px) saturate(108%);
-	-webkit-backdrop-filter: blur(10px) saturate(108%);
+	backdrop-filter: var(--llampart-glass-filter-10-108, blur(10px) saturate(108%));
+	-webkit-backdrop-filter: var(--llampart-glass-filter-10-108, blur(10px) saturate(108%));
 }
 /* /llampart-attachments-view-all-panel-surface */
 

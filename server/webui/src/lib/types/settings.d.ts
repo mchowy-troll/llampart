@@ -82,6 +82,10 @@ export interface SettingsFieldConfig {
 	cluster?: SettingsFieldCluster;
 	hideHelp?: boolean;
 	options?: Array<{ value: string; label: string; icon?: typeof Icon }>;
+	min?: number;
+	max?: number;
+	step?: number;
+	unit?: string;
 	requiredProviderCapabilities?: ProviderCapabilityKey[];
 	visibleForProviders?: ApiProviderId[];
 	visibleWhen?: (config: SettingsConfigType) => boolean;

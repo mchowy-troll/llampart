@@ -59,7 +59,33 @@ export function normalizeCustomFrostedGlassWallpaperSrc(src: unknown): string | 
 	return trimmed;
 }
 
+let wallpaperPreview: { src: string | undefined; changed: boolean } | undefined;
+
+export function getCustomWallpaperPreviewSession(): unknown {
+	return wallpaperPreview;
+}
+
+export function beginWallpaperSettingsPreview(): { commit: () => void; cancel: () => void } {
+	const draft = { src: getCustomFrostedGlassWallpaperSrc(), changed: false };
+	wallpaperPreview = draft;
+	return {
+		commit: () => {
+			if (wallpaperPreview !== draft) return;
+			wallpaperPreview = undefined;
+			if (!draft.changed) return;
+			if (draft.src) setCustomFrostedGlassWallpaperSrc(draft.src);
+			else clearCustomFrostedGlassWallpaperSrc();
+		},
+		cancel: () => {
+			if (wallpaperPreview !== draft) return;
+			wallpaperPreview = undefined;
+			notifyCustomFrostedGlassWallpaperChange();
+		}
+	};
+}
+
 export function getCustomFrostedGlassWallpaperSrc(): string | undefined {
+	if (wallpaperPreview) return wallpaperPreview.src;
 	try {
 		if (typeof globalThis.localStorage === 'undefined') return undefined;
 
@@ -90,6 +116,12 @@ function notifyCustomFrostedGlassWallpaperChange(): void {
 export function setCustomFrostedGlassWallpaperSrc(src: string): boolean {
 	const normalized = normalizeCustomFrostedGlassWallpaperSrc(src);
 	if (!normalized) return false;
+	if (wallpaperPreview) {
+		wallpaperPreview.src = normalized;
+		wallpaperPreview.changed = true;
+		notifyCustomFrostedGlassWallpaperChange();
+		return true;
+	}
 
 	try {
 		if (typeof globalThis.localStorage === 'undefined') return false;
@@ -119,6 +151,12 @@ export function setCustomFrostedGlassWallpaperSrc(src: string): boolean {
 }
 
 export function clearCustomFrostedGlassWallpaperSrc(): void {
+	if (wallpaperPreview) {
+		wallpaperPreview.src = undefined;
+		wallpaperPreview.changed = true;
+		notifyCustomFrostedGlassWallpaperChange();
+		return;
+	}
 	try {
 		clearStoredCustomWallpaperData();
 	} catch {

@@ -29,6 +29,7 @@
 	import { setChatSettingsDialogContext } from '$lib/contexts';
 	import { getThemeDefinition } from '$lib/themes/registry';
 	import { applyTheme } from '$lib/themes/runtime';
+	import { applyTypography, normalizeUiScalePreset } from '$lib/utils/typography';
 	import {
 		providerConnectionStatus,
 		providerConnectionStore
@@ -58,15 +59,9 @@
 
 	let chatSettingsDialogOpen = $state(false);
 	let chatSettingsDialogInitialSection = $state<SettingsSectionTitle | undefined>(undefined);
-	let activeTheme = $derived(getThemeDefinition(config().theme));
+	let activeTheme = $derived(getThemeDefinition(settingsStore.appearanceConfig.theme));
 	let themeRuntimeRevision = $state(0);
-	let uiScalePreset = $derived(normalizeUiScalePreset(config().uiScale));
-
-	function normalizeUiScalePreset(value: unknown): '90' | '100' | '110' {
-		const preset = String(value ?? '100');
-
-		return preset === '90' || preset === '110' ? preset : '100';
-	}
+	let uiScalePreset = $derived(normalizeUiScalePreset(settingsStore.appearanceConfig.uiScale));
 
 	$effect(() => {
 		if (!browser) return;
@@ -97,8 +92,17 @@
 
 	$effect(() => {
 		if (!browser) return;
+		return applyTypography(document.documentElement, settingsStore.appearanceConfig);
+	});
 
-		return applyTheme(document.documentElement, config(), themeRuntimeRevision);
+	$effect(() => {
+		if (!browser) return;
+
+		return applyTheme(
+			document.documentElement,
+			settingsStore.appearanceConfig,
+			themeRuntimeRevision
+		);
 	});
 
 	setChatSettingsDialogContext({

@@ -9,6 +9,8 @@ export const SETTINGS_KEYS = {
 	THEME: 'theme',
 	INTERFACE_LANGUAGE: 'interfaceLanguage',
 	UI_SCALE: 'uiScale',
+	FONT_FAMILY: 'fontFamily',
+	FONT_VARIANT: 'fontVariant',
 	API_PROVIDER: 'apiProvider',
 	SERVER_BASE_URL: 'serverBaseUrl',
 	API_KEY: 'apiKey',

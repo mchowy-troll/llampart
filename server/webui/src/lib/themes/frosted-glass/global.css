@@ -37,41 +37,9 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme [data-llampart-new-chat
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-new-chat-subtitle {
 	color: #3d3d3d !important;
 }
-/* llampart-frosted-glass-wallpaper-milk-fullscreen-layer */
-html[data-theme='frosted-glass'].has-frosted-glass-theme.has-frosted-glass-wallpaper-milk
-	#llampart-theme-preload-background {
-	position: fixed;
-	inset: 0;
-	overflow: hidden;
-	isolation: isolate;
-	background-color: var(--background);
-	background-image: none !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme.has-frosted-glass-wallpaper-milk
-	#llampart-theme-preload-background::before {
-	content: '';
-	position: fixed;
-	inset: 0;
-	z-index: 0;
-	pointer-events: none;
-	background-image: var(--llampart-theme-wallpaper);
-	background-position: center;
-	background-size: cover;
-	background-repeat: no-repeat;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme.has-frosted-glass-wallpaper-milk
-	#llampart-theme-preload-background::after {
-	content: '';
-	position: fixed;
-	inset: 0;
-	z-index: 1;
-	pointer-events: none;
-	background:
-		linear-gradient(180deg, rgb(255 255 255 / 0.19), rgb(255 255 255 / 0.12)),
-		linear-gradient(0deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.12));
-}
+/* The wallpaper is rendered directly, without a global milk overlay.
+   The legacy wallpaper-milk class is retained ONLY by the protected composer
+   fade layers in composer.css; it no longer styles the page background. */
 /* llampart-frosted-glass-shared-checkbox-checked-state */
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	[data-slot='checkbox'][data-state='checked'],

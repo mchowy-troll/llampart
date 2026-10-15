@@ -33,10 +33,7 @@
 					document.documentElement.dataset.theme = 'frosted-glass';
 					document.documentElement.classList.add('has-frosted-glass-theme');
 					document.documentElement.classList.add('light');
-					document.documentElement.classList.toggle(
-						'has-frosted-glass-wallpaper-milk',
-						Boolean(config.frostedGlassWallpaperMilky ?? true)
-					);
+					document.documentElement.classList.add('has-frosted-glass-wallpaper-milk');
 					document.documentElement.style.setProperty(
 						'--llampart-theme-wallpaper',
 						`url("/wallpapers/frosted-glass/${wallpaper}.jpg")`

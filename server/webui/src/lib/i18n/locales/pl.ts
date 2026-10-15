@@ -179,6 +179,10 @@ export const pl: TranslationDictionary = {
 		fieldUseLLMToGenerateConversationTitle: 'Używaj LLM do generowania tytułu rozmowy',
 		fieldLLMTitleGenerationPrompt: 'Prompt generowania tytułu rozmowy przez LLM',
 		fieldUiScale: 'Skala interfejsu',
+		groupTypography: 'Typografia',
+		fieldFontFamily: 'Rodzina czcionek',
+		fieldFontVariant: 'Odmiana czcionki',
+		fontDefault: 'Domyślna',
 		defaultPrefix: 'Domyślnie:',
 		resetToDefault: 'Przywróć domyślne',
 		selected: 'Wybrano',
@@ -367,8 +371,9 @@ export const pl: TranslationDictionary = {
 				'Wybierz styl interfejsu. Frosted Glass używa własnych wbudowanych tapet i efektów szkła.',
 			interfaceLanguage:
 				'Wybierz język interfejsu. Przy pierwszym uruchomieniu domyślny jest angielski.',
-			uiScale:
-				'Dostosuj desktopową skalę interfejsu na bazie automatycznego responsywnego ustawienia.',
+			uiScale: 'Skala interfejsu desktopowego, od 90% do 110% co 5%.',
+			fontFamily: 'Lokalna czcionka interfejsu. Domyślna zachowuje dotychczasową typografię.',
+			fontVariant: 'Rzeczywista grubość bazowa. Wyróżnienia i czcionki kodu pozostają zachowane.',
 			pasteLongTextToFileLen:
 				'Przy wklejaniu długiego tekstu zostanie on zamieniony na plik. Tą wartością sterujesz długością. Wartość 0 wyłącza to zachowanie.',
 			copyTextAttachmentsAsPlainText:

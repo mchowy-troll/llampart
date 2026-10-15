@@ -133,7 +133,7 @@ export function importApplicationSettings(fileText: string): void {
 		if (!EXPORTABLE_CONFIG_KEY_SET.has(key)) continue;
 		candidateSettings[key] = value;
 	}
-	const importedSettings = validateSettingsPatch(candidateSettings);
+	const importedSettings = validateSettingsPatch(candidateSettings, currentConfig);
 	const importedOverrides = Array.isArray(parsed.userOverrides)
 		? parsed.userOverrides.filter(
 				(key): key is string => typeof key === 'string' && EXPORTABLE_CONFIG_KEY_SET.has(key)

@@ -43,7 +43,7 @@ import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers'
 import type { ApiProviderId } from '$lib/constants/api-providers';
 import { ParameterSyncService } from '$lib/services/parameter-sync.service';
 import { serverStore } from '$lib/stores/server.svelte';
-import { normalizeThemeId } from '$lib/themes/registry';
+import { normalizeThemeId, THEME_REGISTRY } from '$lib/themes/registry';
 import { configToParameterRecord, getConfigValue, setConfigValue } from '$lib/utils/config-helpers';
 import { normalizeFloatingPoint } from '$lib/utils/precision';
 import {
@@ -65,6 +65,65 @@ class SettingsStore {
 	config = $state<SettingsConfigType>({ ...SETTING_CONFIG_DEFAULT });
 	isInitialized = $state(false);
 	userOverrides = new SvelteSet<string>();
+	private preview = $state<Partial<SettingsConfigType>>({});
+	private previewSession: symbol | undefined;
+	private previewResources: { commit: () => void; cancel: () => void }[] = [];
+
+	/** Only the appearance runtime reads this overlay. Persistence always uses config. */
+	get appearanceConfig(): SettingsConfigType {
+		return { ...this.config, ...validateSettingsPatch(this.preview, this.config) };
+	}
+
+	beginPreview(): symbol {
+		this.cancelPreview();
+		this.previewSession = Symbol('settings-preview');
+		this.previewResources = Object.values(THEME_REGISTRY).flatMap((theme) =>
+			theme.beginSettingsPreview ? [theme.beginSettingsPreview()] : []
+		);
+		return this.previewSession;
+	}
+
+	isPreviewCurrent(session: symbol): boolean {
+		return this.previewSession === session;
+	}
+
+	updatePreview(session: symbol, updates: Partial<SettingsConfigType>): void {
+		if (!this.isPreviewCurrent(session)) return;
+		const appearanceKeys = [
+			'theme',
+			'uiScale',
+			'fontFamily',
+			'fontVariant',
+			...Object.keys(THEME_REGISTRY).flatMap((id) =>
+				Object.keys(THEME_REGISTRY[id as keyof typeof THEME_REGISTRY].configDefaults)
+			)
+		];
+		const patch = Object.fromEntries(
+			Object.entries(updates).filter(([key]) => appearanceKeys.includes(key))
+		);
+		this.preview = {
+			...this.preview,
+			...validateSettingsPatch(patch, this.appearanceConfig)
+		};
+	}
+
+	commitPreview(session: symbol, updates: Partial<SettingsConfigType>): boolean {
+		if (!this.isPreviewCurrent(session)) return false;
+		// Validate the entire form before changing any state or theme-owned assets.
+		const patch = validateSettingsPatch(updates, this.config);
+		this.updateMultipleConfig(patch);
+		for (const resource of this.previewResources) resource.commit();
+		this.cancelPreview(session);
+		return true;
+	}
+
+	cancelPreview(session?: symbol): void {
+		if (session !== undefined && !this.isPreviewCurrent(session)) return;
+		for (const resource of this.previewResources) resource.cancel();
+		this.previewResources = [];
+		this.preview = {};
+		this.previewSession = undefined;
+	}
 
 	/**
 	 *
@@ -167,6 +226,7 @@ class SettingsStore {
 	 */
 	initialize() {
 		try {
+			this.cancelPreview();
 			this.loadConfig();
 			this.isInitialized = true;
 		} catch (error) {
@@ -219,13 +279,16 @@ class SettingsStore {
 	 * @param value - The new value for the configuration key
 	 */
 	updateConfig<K extends keyof SettingsConfigType>(key: K, value: SettingsConfigType[K]): void {
-		const updates = validateSettingsPatch({ [key]: value }) as Partial<SettingsConfigType>;
+		const updates = validateSettingsPatch(
+			{ [key]: value },
+			this.config
+		) as Partial<SettingsConfigType>;
 		if (!(key in updates)) throw new Error(`Unknown setting ${String(key)}`);
 		const validatedValue = updates[key];
 		this.config = this.withSyncedProviderConnection(
 			{
 				...this.config,
-				[key]: validatedValue
+				...updates
 			} as SettingsConfigType,
 			new Set([key as string])
 		);
@@ -254,7 +317,10 @@ class SettingsStore {
 	 * @param updates - Object containing the configuration updates
 	 */
 	updateMultipleConfig(updates: Partial<SettingsConfigType>) {
-		const validatedUpdates = validateSettingsPatch(updates) as Partial<SettingsConfigType>;
+		const validatedUpdates = validateSettingsPatch(
+			updates,
+			this.config
+		) as Partial<SettingsConfigType>;
 		this.config = this.withSyncedProviderConnection(
 			{
 				...this.config,
@@ -315,6 +381,7 @@ class SettingsStore {
 	 * Reset configuration to defaults
 	 */
 	resetConfig() {
+		this.cancelPreview();
 		this.config = validateSettingsPatch(SETTING_CONFIG_DEFAULT) as SettingsConfigType;
 		this.saveConfig();
 	}
@@ -331,8 +398,10 @@ class SettingsStore {
 	 */
 	resetParameterToServerDefault(key: string): void {
 		const webuiSettings = serverStore.webuiSettings;
-		const validatedWebuiSettings = webuiSettings ? validateSettingsPatch(webuiSettings) : {};
-		const serverDefaults = validateSettingsPatch(this.getServerDefaults());
+		const validatedWebuiSettings = webuiSettings
+			? validateSettingsPatch(webuiSettings, this.config)
+			: {};
+		const serverDefaults = validateSettingsPatch(this.getServerDefaults(), this.config);
 		let resetValue: SettingsConfigValue;
 		let hasResetValue = false;
 
@@ -353,7 +422,7 @@ class SettingsStore {
 		}
 
 		if (hasResetValue) {
-			const updates = validateSettingsPatch({ [key]: resetValue });
+			const updates = validateSettingsPatch({ [key]: resetValue }, this.config);
 			this.config = { ...this.config, ...updates } as SettingsConfigType;
 		}
 
@@ -375,8 +444,10 @@ class SettingsStore {
 	 */
 	syncWithServerDefaults(): void {
 		const webuiSettings = serverStore.webuiSettings;
-		const validatedWebuiSettings = webuiSettings ? validateSettingsPatch(webuiSettings) : {};
-		const propsDefaults = validateSettingsPatch(this.getServerDefaults());
+		const validatedWebuiSettings = webuiSettings
+			? validateSettingsPatch(webuiSettings, this.config)
+			: {};
+		const propsDefaults = validateSettingsPatch(this.getServerDefaults(), this.config);
 		if (Object.keys(propsDefaults).length === 0) return;
 
 		for (const [key, propsValue] of Object.entries(propsDefaults)) {
@@ -411,8 +482,10 @@ class SettingsStore {
 	 */
 	forceSyncWithServerDefaults(): void {
 		const webuiSettings = serverStore.webuiSettings;
-		const validatedWebuiSettings = webuiSettings ? validateSettingsPatch(webuiSettings) : {};
-		const propsDefaults = validateSettingsPatch(this.getServerDefaults());
+		const validatedWebuiSettings = webuiSettings
+			? validateSettingsPatch(webuiSettings, this.config)
+			: {};
+		const propsDefaults = validateSettingsPatch(this.getServerDefaults(), this.config);
 		const nextConfig = { ...this.config };
 
 		for (const key of ParameterSyncService.getSyncableParameterKeys()) {
@@ -433,7 +506,9 @@ class SettingsStore {
 			this.userOverrides.delete(key);
 		}
 
-		this.config = nextConfig;
+		const normalizedConfig = validateSettingsPatch(nextConfig, this.config);
+		this.cancelPreview();
+		this.config = { ...nextConfig, ...normalizedConfig };
 		this.saveConfig();
 	}
 

@@ -1,0 +1,161 @@
+/* Local faces: Latin + Latin Extended, upright and genuine italic.
+   Sources and OFL licenses are retained in static/fonts/. */
+@font-face {
+	font-family: 'Llampart Merriweather';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 300 900;
+	src: url('/fonts/merriweather-latin-ext-wght-normal.woff2') format('woff2');
+	unicode-range:
+		U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+		U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+		U+A720-A7FF;
+}
+@font-face {
+	font-family: 'Llampart Merriweather';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 300 900;
+	src: url('/fonts/merriweather-latin-wght-normal.woff2') format('woff2');
+	unicode-range:
+		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: 'Llampart Merriweather';
+	font-style: italic;
+	font-display: swap;
+	font-weight: 300 900;
+	src: url('/fonts/merriweather-latin-ext-wght-italic.woff2') format('woff2');
+	unicode-range:
+		U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+		U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+		U+A720-A7FF;
+}
+@font-face {
+	font-family: 'Llampart Merriweather';
+	font-style: italic;
+	font-display: swap;
+	font-weight: 300 900;
+	src: url('/fonts/merriweather-latin-wght-italic.woff2') format('woff2');
+	unicode-range:
+		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: 'Llampart DM Serif Display';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 400;
+	src: url('/fonts/dm-serif-display-latin-ext-400-normal.woff2') format('woff2');
+	unicode-range:
+		U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+		U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+		U+A720-A7FF;
+}
+@font-face {
+	font-family: 'Llampart DM Serif Display';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 400;
+	src: url('/fonts/dm-serif-display-latin-400-normal.woff2') format('woff2');
+	unicode-range:
+		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: 'Llampart DM Serif Display';
+	font-style: italic;
+	font-display: swap;
+	font-weight: 400;
+	src: url('/fonts/dm-serif-display-latin-ext-400-italic.woff2') format('woff2');
+	unicode-range:
+		U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+		U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+		U+A720-A7FF;
+}
+@font-face {
+	font-family: 'Llampart DM Serif Display';
+	font-style: italic;
+	font-display: swap;
+	font-weight: 400;
+	src: url('/fonts/dm-serif-display-latin-400-italic.woff2') format('woff2');
+	unicode-range:
+		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Frank Ruhl Libre ships only upright outlines; no fictional italic face. */
+@font-face {
+	font-family: 'Llampart Frank Ruhl Libre';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 300 900;
+	src: url('/fonts/frank-ruhl-libre-latin-ext-wght-normal.woff2') format('woff2');
+	unicode-range:
+		U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+		U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+		U+A720-A7FF;
+}
+@font-face {
+	font-family: 'Llampart Frank Ruhl Libre';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 300 900;
+	src: url('/fonts/frank-ruhl-libre-latin-wght-normal.woff2') format('woff2');
+	unicode-range:
+		U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Opt-in only. Default typography and the monospace/KaTeX families stay intact. */
+html[data-llampart-font] body {
+	font-family: var(--llampart-font-family), ui-sans-serif, system-ui, sans-serif;
+	font-weight: var(--llampart-font-weight);
+	font-style: var(--llampart-font-style, normal);
+}
+html[data-llampart-font] .font-sans {
+	font-family: var(--llampart-font-family), ui-sans-serif, system-ui, sans-serif;
+}
+html[data-llampart-font] :where(code, pre, kbd, samp, .font-mono) {
+	/* A heavier UI base must not make technical text heavier by inheritance. */
+	font-weight: 400;
+	font-style: normal;
+}
+html[data-llampart-font='dm-serif-display'] body {
+	font-synthesis: none;
+}
+html[data-llampart-font='dm-serif-display'] :where(code, pre, kbd, samp, .font-mono, .katex) {
+	font-synthesis: initial;
+}
+/* This family has no bold outlines; use genuine italic for semantic emphasis. */
+html[data-llampart-font='dm-serif-display']
+	:where(strong, b):not(:is(.font-mono *, code *, pre *, .katex *)) {
+	font-style: italic;
+}
+@layer llampart-typography {
+	/* Layered important rules supersede legacy fixed-weight label rules only
+	   when a local family is selected. Monospace and mathematical text opt out. */
+	html[data-llampart-font]
+		:where(.font-normal):not(:is(code, pre, kbd, samp, .font-mono, .font-mono *, .katex *)) {
+		font-weight: var(--llampart-font-weight) !important;
+		font-variation-settings: normal !important;
+	}
+	html[data-llampart-font]
+		:where(.font-medium):not(:is(code, pre, kbd, samp, .font-mono, .font-mono *, .katex *)) {
+		font-weight: var(--llampart-font-medium) !important;
+		font-variation-settings: normal !important;
+	}
+	html[data-llampart-font]
+		:where(.font-semibold):not(:is(code, pre, kbd, samp, .font-mono, .font-mono *, .katex *)) {
+		font-weight: var(--llampart-font-semibold) !important;
+		font-variation-settings: normal !important;
+	}
+	html[data-llampart-font]
+		:where(.font-bold, strong, b, h1, h2, h3, h4, h5, h6):not(
+			:is(code, pre, kbd, samp, .font-mono, .font-mono *, .katex *)
+		) {
+		font-weight: var(--llampart-font-bold) !important;
+		font-variation-settings: normal !important;
+	}
+}

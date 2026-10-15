@@ -14,6 +14,11 @@
 		setCustomFrostedGlassWallpaperSrc
 	} from './wallpapers';
 	import { t } from '$lib/i18n';
+	import { onMount, onDestroy } from 'svelte';
+	import {
+		CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT,
+		getCustomWallpaperPreviewSession
+	} from './wallpapers';
 
 	interface Props {
 		selectedWallpaper: string;
@@ -31,6 +36,17 @@
 	let customWallpaperSrc = $derived(getCustomFrostedGlassWallpaperSrc());
 	let isCustomWallpaperSelected = $derived(selectedWallpaper === CUSTOM_FROSTED_GLASS_WALLPAPER_ID);
 	let wallpaperValidationDialog = $state<WallpaperValidationDialog | undefined>(undefined);
+	let mounted = true;
+	onDestroy(() => {
+		mounted = false;
+	});
+	onMount(() => {
+		const refresh = () => {
+			customWallpaperSrc = getCustomFrostedGlassWallpaperSrc();
+		};
+		window.addEventListener(CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT, refresh);
+		return () => window.removeEventListener(CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT, refresh);
+	});
 
 	function readFileAsDataUrl(file: File): Promise<string> {
 		return new Promise((resolve, reject) => {
@@ -123,8 +139,10 @@
 			return;
 		}
 
+		const session = getCustomWallpaperPreviewSession();
 		try {
 			const src = await readFileAsDataUrl(file);
+			if (!mounted || session !== getCustomWallpaperPreviewSession()) return;
 			const saved = setCustomFrostedGlassWallpaperSrc(src);
 
 			if (!saved) {

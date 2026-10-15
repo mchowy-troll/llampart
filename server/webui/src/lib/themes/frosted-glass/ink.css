@@ -1,0 +1,14 @@
+/* Important declarations in a named layer outrank legacy unlayered glow rules.
+   Only ink is affected: material shadows, masks, blur and focus rings are untouched. */
+@layer llampart-glass-ink {
+	html[data-theme='frosted-glass'].has-frosted-glass-theme body,
+	html[data-theme='frosted-glass'].has-frosted-glass-theme body *,
+	html[data-theme='frosted-glass'].has-frosted-glass-theme input::placeholder,
+	html[data-theme='frosted-glass'].has-frosted-glass-theme textarea::placeholder {
+		text-shadow: none !important;
+	}
+	html[data-theme='frosted-glass'].has-frosted-glass-theme svg,
+	html[data-theme='frosted-glass'].has-frosted-glass-theme svg * {
+		filter: none !important;
+	}
+}

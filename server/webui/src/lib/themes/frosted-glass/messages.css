@@ -39,7 +39,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	body
 	.llampart-assistant-message-edit-card.llampart-assistant-message-edit-card {
-	max-width: 57.6rem;
+	max-width: var(--llampart-chat-message-max-width);
 	border: 1px solid var(--llampart-frosted-message-surface-border);
 	border-radius: 0.75rem;
 	padding: 1.5rem 1.5rem 1rem;
@@ -76,13 +76,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme body .llampart-message-edit-textarea {
 	border: 1px solid rgba(255, 255, 255, 0.2) !important;
-	background: rgba(255, 255, 255, 0.12) !important;
-	background-color: rgba(255, 255, 255, 0.12) !important;
+	background: var(--llampart-glass-white-120, rgba(255, 255, 255, 0.12)) !important;
+	background-color: var(--llampart-glass-white-120, rgba(255, 255, 255, 0.12)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.12),
 		0 1px 2px rgba(0, 0, 0, 0.035) !important;
-	-webkit-backdrop-filter: blur(10px) saturate(108%) !important;
-	backdrop-filter: blur(10px) saturate(108%) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-10-108,
+		blur(10px) saturate(108%)
+	) !important;
+	backdrop-filter: var(--llampart-glass-filter-10-108, blur(10px) saturate(108%)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme body .llampart-message-edit-controls {
@@ -114,15 +117,18 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	:is(button, [data-slot='button']) {
 	border: 1px solid rgba(255, 255, 255, 0.2) !important;
 	border-radius: 0.75rem !important;
-	background: rgba(255, 255, 255, 0.2) !important;
-	background-color: rgba(255, 255, 255, 0.2) !important;
+	background: var(--llampart-glass-white-200, rgba(255, 255, 255, 0.2)) !important;
+	background-color: var(--llampart-glass-white-200, rgba(255, 255, 255, 0.2)) !important;
 	color: #000000 !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.18),
 		0 1px 2px rgba(0, 0, 0, 0.045) !important;
 	text-shadow: none !important;
-	-webkit-backdrop-filter: blur(10px) saturate(110%) !important;
-	backdrop-filter: blur(10px) saturate(110%) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-10-110,
+		blur(10px) saturate(110%)
+	) !important;
+	backdrop-filter: var(--llampart-glass-filter-10-110, blur(10px) saturate(110%)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -151,13 +157,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	body
 	.llampart-message-edit-save-only-switch[data-slot='switch'] {
 	border: 1px solid rgba(255, 255, 255, 0.22) !important;
-	background: rgba(255, 255, 255, 0.2) !important;
-	background-color: rgba(255, 255, 255, 0.2) !important;
+	background: var(--llampart-glass-white-200, rgba(255, 255, 255, 0.2)) !important;
+	background-color: var(--llampart-glass-white-200, rgba(255, 255, 255, 0.2)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.16),
 		0 1px 2px rgba(0, 0, 0, 0.04) !important;
-	-webkit-backdrop-filter: blur(10px) saturate(108%) !important;
-	backdrop-filter: blur(10px) saturate(108%) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-10-108,
+		blur(10px) saturate(108%)
+	) !important;
+	backdrop-filter: var(--llampart-glass-filter-10-108, blur(10px) saturate(108%)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -179,14 +188,17 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	body
 	.llampart-message-edit-branch-checkbox[data-slot='checkbox'] {
 	border: 1px solid rgba(255, 255, 255, 0.24) !important;
-	background: rgba(255, 255, 255, 0.18) !important;
-	background-color: rgba(255, 255, 255, 0.18) !important;
+	background: var(--llampart-glass-white-180, rgba(255, 255, 255, 0.18)) !important;
+	background-color: var(--llampart-glass-white-180, rgba(255, 255, 255, 0.18)) !important;
 	color: #000000 !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.14),
 		0 1px 2px rgba(0, 0, 0, 0.04) !important;
-	-webkit-backdrop-filter: blur(10px) saturate(108%) !important;
-	backdrop-filter: blur(10px) saturate(108%) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-10-108,
+		blur(10px) saturate(108%)
+	) !important;
+	backdrop-filter: var(--llampart-glass-filter-10-108, blur(10px) saturate(108%)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -201,8 +213,8 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	:is(.agentic-content.llampart-assistant-message, .llampart-system-message-card) {
 	background-image: linear-gradient(
 		0deg,
-		rgb(255 255 255 / 0.13),
-		rgb(255 255 255 / 0.13)
+		var(--llampart-glass-white-130, rgb(255 255 255 / 0.13)),
+		var(--llampart-glass-white-130, rgb(255 255 255 / 0.13))
 	) !important;
 	background-clip: border-box;
 }
@@ -299,14 +311,17 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-agentic-panel
 	.mt-3.rounded-md.border {
-	background: rgba(255, 255, 255, 0.11) !important;
+	background: var(--llampart-glass-white-110, rgba(255, 255, 255, 0.11)) !important;
 	border: 1px solid rgba(255, 255, 255, 0.12) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.1),
 		0 1px 2px rgba(0, 0, 0, 0.03),
 		0 3px 8px rgba(0, 0, 0, 0.025) !important;
-	backdrop-filter: blur(10px) saturate(104%) !important;
-	-webkit-backdrop-filter: blur(10px) saturate(104%) !important;
+	backdrop-filter: var(--llampart-glass-filter-10-104, blur(10px) saturate(104%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-10-104,
+		blur(10px) saturate(104%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -373,13 +388,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-footer-slot {
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-turn {
 	border: 1.5px dashed rgba(255, 255, 255, 0.28) !important;
-	background: rgba(255, 255, 255, 0.08) !important;
+	background: var(--llampart-glass-white-80, rgba(255, 255, 255, 0.08)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.1),
 		0 1px 2px rgba(0, 0, 0, 0.03),
 		0 3px 8px rgba(0, 0, 0, 0.025) !important;
-	backdrop-filter: blur(10px) saturate(106%) !important;
-	-webkit-backdrop-filter: blur(10px) saturate(106%) !important;
+	backdrop-filter: var(--llampart-glass-filter-10-106, blur(10px) saturate(106%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-10-106,
+		blur(10px) saturate(106%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-turn:hover {
@@ -387,14 +405,14 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-turn:hover {
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-turn-label {
-	background: rgba(255, 255, 255, 0.72) !important;
+	background: var(--llampart-glass-white-720, rgba(255, 255, 255, 0.72)) !important;
 	border: 1px solid rgba(255, 255, 255, 0.42) !important;
 	border-radius: 0.5rem;
 	color: #7a7a7a !important;
 	text-shadow: none !important;
 	box-shadow: none !important;
-	backdrop-filter: blur(8px) saturate(108%) !important;
-	-webkit-backdrop-filter: blur(8px) saturate(108%) !important;
+	backdrop-filter: var(--llampart-glass-filter-8-108, blur(8px) saturate(108%)) !important;
+	-webkit-backdrop-filter: var(--llampart-glass-filter-8-108, blur(8px) saturate(108%)) !important;
 }
 
 /* llampart-frosted-glass-agentic-turn-regular-text */
@@ -436,13 +454,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-turn svg * {
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-turn-label {
-	background: rgba(255, 255, 255, 0.16) !important;
+	background: var(--llampart-glass-white-160, rgba(255, 255, 255, 0.16)) !important;
 	border-color: rgba(255, 255, 255, 0.18) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.12),
 		0 1px 2px rgba(0, 0, 0, 0.035) !important;
-	backdrop-filter: blur(10px) saturate(108%) !important;
-	-webkit-backdrop-filter: blur(10px) saturate(108%) !important;
+	backdrop-filter: var(--llampart-glass-filter-10-108, blur(10px) saturate(108%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-10-108,
+		blur(10px) saturate(108%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .turn-stats {
@@ -491,13 +512,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .turn-stats {
 /* llampart-frosted-glass-agentic-label-stronger-blur */
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-turn-label {
-	background: rgba(255, 255, 255, 0.34) !important;
+	background: var(--llampart-glass-white-340, rgba(255, 255, 255, 0.34)) !important;
 	border-color: rgba(255, 255, 255, 0.24) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.2),
 		0 1px 4px rgba(0, 0, 0, 0.04) !important;
-	backdrop-filter: blur(24px) saturate(122%) !important;
-	-webkit-backdrop-filter: blur(24px) saturate(122%) !important;
+	backdrop-filter: var(--llampart-glass-filter-24-122, blur(24px) saturate(122%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-24-122,
+		blur(24px) saturate(122%)
+	) !important;
 }
 
 /* llampart-agentic-turn-label-match-system-prompt-and-reasoning */
@@ -517,13 +541,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-turn-label {
 	padding: 0.125rem 0.5rem !important;
 	border: 1px solid rgba(255, 255, 255, 0.26) !important;
 	border-radius: 0.75rem !important;
-	background: rgba(255, 255, 255, 0.28) !important;
+	background: var(--llampart-glass-white-280, rgba(255, 255, 255, 0.28)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.18),
 		0 1px 2px rgba(0, 0, 0, 0.05),
 		0 4px 10px rgba(0, 0, 0, 0.04) !important;
-	backdrop-filter: blur(14px) saturate(108%) !important;
-	-webkit-backdrop-filter: blur(14px) saturate(108%) !important;
+	backdrop-filter: var(--llampart-glass-filter-14-108, blur(14px) saturate(108%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-14-108,
+		blur(14px) saturate(108%)
+	) !important;
 	font-size: 0.7rem !important;
 	line-height: 1rem !important;
 	font-weight: 400 !important;
@@ -623,13 +650,13 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.assistant-message-footer
 	.stats-view-button-active {
-	background: rgba(255, 255, 255, 0.16) !important;
+	background: var(--llampart-glass-white-160, rgba(255, 255, 255, 0.16)) !important;
 	border-color: rgba(255, 255, 255, 0.16) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.14),
 		0 1px 2px rgba(0, 0, 0, 0.05) !important;
-	backdrop-filter: blur(10px) saturate(115%);
-	-webkit-backdrop-filter: blur(10px) saturate(115%);
+	backdrop-filter: var(--llampart-glass-filter-10-115, blur(10px) saturate(115%));
+	-webkit-backdrop-filter: var(--llampart-glass-filter-10-115, blur(10px) saturate(115%));
 }
 
 /* llampart-frosted-footer-final-tuning */
@@ -711,13 +738,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.assistant-message-footer
 	.stats-view-button-active {
-	background: rgba(255, 255, 255, 0.16) !important;
+	background: var(--llampart-glass-white-160, rgba(255, 255, 255, 0.16)) !important;
 	border-color: rgba(255, 255, 255, 0.16) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.14),
 		0 1px 2px rgba(0, 0, 0, 0.05) !important;
-	backdrop-filter: blur(10px) saturate(115%) !important;
-	-webkit-backdrop-filter: blur(10px) saturate(115%) !important;
+	backdrop-filter: var(--llampart-glass-filter-10-115, blur(10px) saturate(115%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-10-115,
+		blur(10px) saturate(115%)
+	) !important;
 }
 
 /* llampart-assistant-footer-lower-insets-regular-weight */
@@ -1042,12 +1072,12 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-chat-message-statistics
 	.stats-view-button-active {
 	border-color: rgba(255, 255, 255, 0.26) !important;
-	background: rgba(255, 255, 255, 0.34) !important;
+	background: var(--llampart-glass-white-340, rgba(255, 255, 255, 0.34)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.2),
 		0 1px 2px rgba(0, 0, 0, 0.035) !important;
-	backdrop-filter: blur(9px) saturate(108%) !important;
-	-webkit-backdrop-filter: blur(9px) saturate(108%) !important;
+	backdrop-filter: var(--llampart-glass-filter-9-108, blur(9px) saturate(108%)) !important;
+	-webkit-backdrop-filter: var(--llampart-glass-filter-9-108, blur(9px) saturate(108%)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-chat-message-statistics svg,
@@ -1144,13 +1174,13 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-chat-message-statistics
 	.stats-view-button:focus-visible {
 	border-color: rgba(255, 255, 255, 0.26) !important;
-	background: rgba(255, 255, 255, 0.34) !important;
-	background-color: rgba(255, 255, 255, 0.34) !important;
+	background: var(--llampart-glass-white-340, rgba(255, 255, 255, 0.34)) !important;
+	background-color: var(--llampart-glass-white-340, rgba(255, 255, 255, 0.34)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.2),
 		0 1px 2px rgba(0, 0, 0, 0.035) !important;
-	backdrop-filter: blur(9px) saturate(108%) !important;
-	-webkit-backdrop-filter: blur(9px) saturate(108%) !important;
+	backdrop-filter: var(--llampart-glass-filter-9-108, blur(9px) saturate(108%)) !important;
+	-webkit-backdrop-filter: var(--llampart-glass-filter-9-108, blur(9px) saturate(108%)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -1215,15 +1245,18 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 /* ChatMessageSystem */
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-card {
 	border: 1px solid rgba(255, 255, 255, 0.13) !important;
-	background: rgba(255, 255, 255, 0.075) !important;
+	background: var(--llampart-glass-white-75, rgba(255, 255, 255, 0.075)) !important;
 	box-shadow:
 		0 1px 2px rgba(0, 0, 0, 0.045),
 		0 2px 4px rgba(0, 0, 0, 0.04),
 		0 4px 8px rgba(0, 0, 0, 0.035),
 		0 8px 16px rgba(0, 0, 0, 0.032),
 		0 16px 32px rgba(0, 0, 0, 0.028) !important;
-	backdrop-filter: blur(14px) saturate(108%) !important;
-	-webkit-backdrop-filter: blur(14px) saturate(108%) !important;
+	backdrop-filter: var(--llampart-glass-filter-14-108, blur(14px) saturate(108%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-14-108,
+		blur(14px) saturate(108%)
+	) !important;
 	padding-bottom: 0.625rem !important;
 }
 
@@ -1248,11 +1281,14 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-messag
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-expand-label,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-collapse-button {
-	background: rgba(255, 255, 255, 0.14) !important;
+	background: var(--llampart-glass-white-140, rgba(255, 255, 255, 0.14)) !important;
 	border: 1px solid rgba(255, 255, 255, 0.16) !important;
 	box-shadow: none !important;
-	backdrop-filter: blur(10px) saturate(110%) !important;
-	-webkit-backdrop-filter: blur(10px) saturate(110%) !important;
+	backdrop-filter: var(--llampart-glass-filter-10-110, blur(10px) saturate(110%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-10-110,
+		blur(10px) saturate(110%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-footer {
@@ -1481,13 +1517,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-messag
 	padding: 0.125rem 0.5rem !important;
 	border: 1px solid rgba(255, 255, 255, 0.26) !important;
 	border-radius: 0.75rem !important;
-	background: rgba(255, 255, 255, 0.28) !important;
+	background: var(--llampart-glass-white-280, rgba(255, 255, 255, 0.28)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.18),
 		0 1px 2px rgba(0, 0, 0, 0.05),
 		0 4px 10px rgba(0, 0, 0, 0.04) !important;
-	backdrop-filter: blur(14px) saturate(108%) !important;
-	-webkit-backdrop-filter: blur(14px) saturate(108%) !important;
+	backdrop-filter: var(--llampart-glass-filter-14-108, blur(14px) saturate(108%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-14-108,
+		blur(14px) saturate(108%)
+	) !important;
 	font-size: 0.7rem !important;
 	line-height: 1rem !important;
 	font-weight: 400 !important;
@@ -1503,11 +1542,11 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-messag
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-card {
 	border: 1px solid rgba(255, 255, 255, 0.19) !important;
-	background-color: rgba(255, 255, 255, 0.14) !important;
+	background-color: var(--llampart-glass-white-140, rgba(255, 255, 255, 0.14)) !important;
 	background-image: linear-gradient(
 		0deg,
-		rgb(255 255 255 / 0.13),
-		rgb(255 255 255 / 0.13)
+		var(--llampart-glass-white-130, rgb(255 255 255 / 0.13)),
+		var(--llampart-glass-white-130, rgb(255 255 255 / 0.13))
 	) !important;
 	background-clip: border-box;
 	box-shadow:
@@ -1517,8 +1556,11 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-messag
 		0 8px 16px rgba(0, 0, 0, 0.045),
 		0 16px 32px rgba(0, 0, 0, 0.04),
 		0 32px 64px rgba(0, 0, 0, 0.035) !important;
-	backdrop-filter: blur(18px) saturate(116%) !important;
-	-webkit-backdrop-filter: blur(18px) saturate(116%) !important;
+	backdrop-filter: var(--llampart-glass-filter-18-116, blur(18px) saturate(116%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-18-116,
+		blur(18px) saturate(116%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-card,
@@ -1561,12 +1603,12 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-message-label {
-	background: rgba(255, 255, 255, 0.72) !important;
+	background: var(--llampart-glass-white-720, rgba(255, 255, 255, 0.72)) !important;
 	border-color: rgba(255, 255, 255, 0.42) !important;
 	color: #7a7a7a !important;
 	text-shadow: none !important;
-	backdrop-filter: blur(8px) saturate(108%) !important;
-	-webkit-backdrop-filter: blur(8px) saturate(108%) !important;
+	backdrop-filter: var(--llampart-glass-filter-8-108, blur(8px) saturate(108%)) !important;
+	-webkit-backdrop-filter: var(--llampart-glass-filter-8-108, blur(8px) saturate(108%)) !important;
 }
 
 /* llampart-frosted-glass-system-radius-match-llm */
@@ -1585,13 +1627,16 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-messag
 	padding: 0.125rem 0.5rem !important;
 	border: 1px solid rgba(255, 255, 255, 0.26) !important;
 	border-radius: 0.75rem !important;
-	background: rgba(255, 255, 255, 0.28) !important;
+	background: var(--llampart-glass-white-280, rgba(255, 255, 255, 0.28)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.18),
 		0 1px 2px rgba(0, 0, 0, 0.05),
 		0 4px 10px rgba(0, 0, 0, 0.04) !important;
-	backdrop-filter: blur(14px) saturate(108%) !important;
-	-webkit-backdrop-filter: blur(14px) saturate(108%) !important;
+	backdrop-filter: var(--llampart-glass-filter-14-108, blur(14px) saturate(108%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-14-108,
+		blur(14px) saturate(108%)
+	) !important;
 	font-size: 0.7rem !important;
 	line-height: 1rem !important;
 	font-weight: 400 !important;
@@ -1994,7 +2039,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-user-message-
 /* ChatMessageActionCardPermissionRequest */
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-tool-permission-card {
 	border: 1px solid rgba(255, 255, 255, 0.18) !important;
-	background: rgba(255, 255, 255, 0.14) !important;
+	background: var(--llampart-glass-white-140, rgba(255, 255, 255, 0.14)) !important;
 	box-shadow:
 		0 1px 2px rgba(0, 0, 0, 0.06),
 		0 2px 4px rgba(0, 0, 0, 0.055),
@@ -2002,8 +2047,11 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-tool-permissi
 		0 8px 16px rgba(0, 0, 0, 0.045),
 		0 16px 32px rgba(0, 0, 0, 0.04),
 		0 32px 64px rgba(0, 0, 0, 0.035) !important;
-	backdrop-filter: blur(18px) saturate(116%) !important;
-	-webkit-backdrop-filter: blur(18px) saturate(116%) !important;
+	backdrop-filter: var(--llampart-glass-filter-18-116, blur(18px) saturate(116%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-18-116,
+		blur(18px) saturate(116%)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-tool-permission-card,
@@ -2022,12 +2070,15 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-tool-permission-card
 	.llampart-tool-permission-allow-action {
 	border: 1px solid rgba(255, 255, 255, 0.2) !important;
-	background: rgba(255, 255, 255, 0.18) !important;
+	background: var(--llampart-glass-white-180, rgba(255, 255, 255, 0.18)) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.14),
 		0 1px 2px rgba(0, 0, 0, 0.05) !important;
-	backdrop-filter: blur(12px) saturate(114%) !important;
-	-webkit-backdrop-filter: blur(12px) saturate(114%) !important;
+	backdrop-filter: var(--llampart-glass-filter-12-114, blur(12px) saturate(114%)) !important;
+	-webkit-backdrop-filter: var(
+		--llampart-glass-filter-12-114,
+		blur(12px) saturate(114%)
+	) !important;
 	color: #000000 !important;
 }
 

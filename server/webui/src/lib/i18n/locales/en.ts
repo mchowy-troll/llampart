@@ -180,6 +180,10 @@ export const en: TranslationDictionary = {
 		fieldUseLLMToGenerateConversationTitle: 'Use LLM to generate conversation title',
 		fieldLLMTitleGenerationPrompt: 'LLM title generation prompt',
 		fieldUiScale: 'UI scale',
+		groupTypography: 'Typography',
+		fieldFontFamily: 'Font family',
+		fieldFontVariant: 'Font variant',
+		fontDefault: 'Default',
 		defaultPrefix: 'Default:',
 		resetToDefault: 'Reset to default',
 		selected: 'Selected',
@@ -367,6 +371,8 @@ export const en: TranslationDictionary = {
 			interfaceLanguage:
 				'Choose the interface language. English is the default language on first launch.',
 			uiScale: 'Adjust the desktop interface scale based on the automatic responsive setting.',
+			fontFamily: 'Local interface font. Default keeps the existing typography.',
+			fontVariant: 'Real base weight. Emphasis and code fonts are preserved.',
 			pasteLongTextToFileLen:
 				'When pasting long text, it will be converted into a file. Set the value to control the length. Value 0 disables this behavior.',
 			copyTextAttachmentsAsPlainText:

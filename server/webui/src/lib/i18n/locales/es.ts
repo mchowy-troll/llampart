@@ -182,6 +182,10 @@ export const es: TranslationDictionary = {
 		fieldUseLLMToGenerateConversationTitle: 'Usar el LLM para generar el título de la conversación',
 		fieldLLMTitleGenerationPrompt: 'Prompt de generación de título con LLM',
 		fieldUiScale: 'Escala de la interfaz',
+		groupTypography: 'Tipografía',
+		fieldFontFamily: 'Familia de fuentes',
+		fieldFontVariant: 'Variante de fuente',
+		fontDefault: 'Predeterminada',
 		defaultPrefix: 'Por defecto:',
 		resetToDefault: 'Restablecer por defecto',
 		selected: 'Seleccionado',
@@ -371,8 +375,9 @@ export const es: TranslationDictionary = {
 				'Elige el estilo de la interfaz. Frosted Glass usa fondos integrados propios y efectos de vidrio.',
 			interfaceLanguage:
 				'Elige el idioma de la interfaz. El inglés es el idioma predeterminado en el primer inicio.',
-			uiScale:
-				'Ajusta la escala de la interfaz de escritorio según el ajuste responsivo automático.',
+			uiScale: 'Escala de la interfaz de escritorio del 90% al 110%, en pasos del 5%.',
+			fontFamily: 'Fuente local. Predeterminada conserva la tipografía actual.',
+			fontVariant: 'Peso base real. Se conservan el énfasis y las fuentes de código.',
 			pasteLongTextToFileLen:
 				'Al pegar texto largo, se convertirá en un archivo. Ajusta el valor para controlar la longitud. El valor 0 desactiva este comportamiento.',
 			copyTextAttachmentsAsPlainText:

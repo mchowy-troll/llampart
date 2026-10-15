@@ -395,6 +395,24 @@
 					</Label>
 				</div>
 			{/if}
+		{:else if field.type === SettingsFieldType.RANGE}
+			<div class="flex items-center justify-between gap-2">
+				<Label for={field.key}>{getFieldLabel(field, labelOverride)}</Label>
+				<output for={field.key} class="text-sm tabular-nums"
+					>{localConfig[field.key]}{field.unit}</output
+				>
+			</div>
+			<input
+				id={field.key}
+				type="range"
+				class="h-8 w-full cursor-pointer accent-foreground"
+				min={field.min}
+				max={field.max}
+				step={field.step}
+				value={Number(localConfig[field.key])}
+				oninput={(event) => onConfigChange(field.key, event.currentTarget.value)}
+				aria-valuetext={`${localConfig[field.key]}${field.unit ?? ''}`}
+			/>
 		{:else if field.type === SettingsFieldType.SELECT}
 			{@const selectedOption = field.options?.find(
 				(opt: { value: string; label: string; icon?: Component }) =>
@@ -434,6 +452,7 @@
 			>
 				<div class="relative w-full">
 					<Select.Trigger
+						id={field.key}
 						class="w-full shadow-none focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0"
 					>
 						<div class="flex items-center gap-2">

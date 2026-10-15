@@ -137,6 +137,7 @@
 		? 'border-border bg-accent/45 text-accent-foreground'
 		: ''} {selectionMode && selectionChecked ? 'conversation-item-selected' : ''}"
 	data-conversation-selection-id={conversation.id}
+	data-active={isActive ? 'true' : undefined}
 	role="button"
 	tabindex="0"
 	aria-pressed={selectionMode ? selectionChecked : undefined}

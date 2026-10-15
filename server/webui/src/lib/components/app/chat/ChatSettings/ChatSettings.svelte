@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getFontVariants, normalizeFontVariant } from '$lib/utils/typography';
 	import { connectionErrorMessage } from '$lib/utils/connection-error-message';
 	import {
 		Settings,
@@ -37,6 +38,7 @@
 	} from '$lib/constants/api-providers';
 	import { SettingsFieldType } from '$lib/enums/settings';
 	import type { Component } from 'svelte';
+	import { onDestroy, untrack } from 'svelte';
 	import type { ProviderCapabilityKey } from '$lib/types/provider';
 	import { t } from '$lib/i18n';
 	import { CAPABILITY_FEATURES } from '$lib/services/providers/provider-capabilities';
@@ -48,9 +50,10 @@
 	interface Props {
 		onSave?: () => void;
 		initialSection?: SettingsSectionTitle;
+		active?: boolean;
 	}
 
-	let { onSave, initialSection }: Props = $props();
+	let { onSave, initialSection, active = true }: Props = $props();
 	const INTERFACE_LANGUAGE_OPTIONS = [
 		{ value: 'en', label: 'English' },
 		{ value: 'pl', label: 'Polski' },
@@ -64,12 +67,6 @@
 		label: t(option.labelKey)
 	}));
 	const API_PROVIDER_SELECT_OPTIONS = API_PROVIDER_OPTIONS.map((option) => ({ ...option }));
-
-	const UI_SCALE_OPTIONS = [
-		{ value: '90', label: '90%' },
-		{ value: '100', label: '100%' },
-		{ value: '110', label: '110%' }
-	];
 
 	const CONVERSATION_TIMESTAMP_FORMAT_OPTIONS = [
 		{ value: 'ddmmyyyy24', label: '31.01.2026 20:00' },
@@ -179,25 +176,56 @@
 					fullWidth: true,
 					fields: [
 						{
-							key: SETTINGS_KEYS.THEME,
+							key: SETTINGS_KEYS.INTERFACE_LANGUAGE,
 							order: 1,
+							label: t('settings.fieldInterfaceLanguage'),
+							type: SettingsFieldType.SELECT,
+							options: INTERFACE_LANGUAGE_OPTIONS
+						},
+						{
+							key: SETTINGS_KEYS.THEME,
+							order: 2,
 							label: t('settings.fieldTheme'),
 							type: SettingsFieldType.SELECT,
 							options: THEME_OPTIONS
 						},
 						{
 							key: SETTINGS_KEYS.UI_SCALE,
-							order: 2,
+							order: 3,
 							label: t('settings.fieldUiScale'),
+							type: SettingsFieldType.RANGE,
+							min: 90,
+							max: 110,
+							step: 5,
+							unit: '%'
+						}
+					]
+				},
+				{
+					id: 'typography',
+					title: t('settings.groupTypography'),
+					layout: 'two-column',
+					fullWidth: true,
+					fields: [
+						{
+							key: SETTINGS_KEYS.FONT_FAMILY,
+							order: 1,
+							label: t('settings.fieldFontFamily'),
 							type: SettingsFieldType.SELECT,
-							options: UI_SCALE_OPTIONS
+							options: [
+								{ value: 'default', label: t('settings.fontDefault') },
+								{ value: 'merriweather', label: 'Merriweather' },
+								{ value: 'frank-ruhl-libre', label: 'Frank Ruhl Libre' },
+								{ value: 'dm-serif-display', label: 'DM Serif Display' }
+							]
 						},
 						{
-							key: SETTINGS_KEYS.INTERFACE_LANGUAGE,
-							order: 3,
-							label: t('settings.fieldInterfaceLanguage'),
+							key: SETTINGS_KEYS.FONT_VARIANT,
+							order: 2,
+							label: t('settings.fieldFontVariant'),
 							type: SettingsFieldType.SELECT,
-							options: INTERFACE_LANGUAGE_OPTIONS
+							options: getFontVariants('merriweather'),
+							visibleWhen: (config: SettingsConfigType) => config.fontFamily !== 'default'
 						}
 					]
 				},
@@ -700,6 +728,23 @@
 		initialSection ?? SETTINGS_SECTION_TITLES.GENERAL
 	);
 	let localConfig: SettingsConfigType = $state({ ...config() });
+	let previewSession: symbol | undefined;
+	let formRevision = 0;
+
+	function cancelPreview() {
+		formRevision += 1;
+		if (previewSession) settingsStore.cancelPreview(previewSession);
+		previewSession = undefined;
+	}
+
+	$effect(() => {
+		const isActive = active;
+		untrack(() => {
+			if (isActive) reset();
+			else cancelPreview();
+		});
+	});
+	onDestroy(cancelPreview);
 	let ThemeSettingsPanel = $derived(getThemeSettingsPanel(localConfig.theme));
 	let activeConnectionKeys = $derived(getConnectionKeys(localConfig.apiProvider));
 	let providerCapabilities = $derived(
@@ -773,6 +818,11 @@
 			.filter((field) => supportsVisibleForProviders(field.visibleForProviders))
 			.filter((field) => supportsRequiredCapabilities(field.requiredProviderCapabilities))
 			.filter((field) => field.visibleWhen?.(localConfig) ?? true)
+			.map((field) =>
+				field.key === SETTINGS_KEYS.FONT_VARIANT
+					? { ...field, options: getFontVariants(localConfig.fontFamily) }
+					: field
+			)
 			.map(getProviderScopedField);
 	}
 
@@ -832,11 +882,15 @@
 	}
 
 	function handleThemeChange(newTheme: string) {
-		localConfig.theme = newTheme;
+		handleConfigChange(SETTINGS_KEYS.THEME, newTheme);
 	}
 
-	function handleConfigChange(key: string, value: string | boolean) {
+	function handleConfigChange(key: string, value: string | boolean | number) {
+		formRevision += 1;
 		const nextConfig = { ...localConfig, [key]: value };
+		if (key === SETTINGS_KEYS.FONT_FAMILY || key === SETTINGS_KEYS.FONT_VARIANT) {
+			nextConfig.fontVariant = normalizeFontVariant(nextConfig.fontFamily, nextConfig.fontVariant);
+		}
 
 		if (key === SETTINGS_KEYS.API_PROVIDER) {
 			const nextConnectionKeys = getConnectionKeys(value);
@@ -854,10 +908,16 @@
 		}
 
 		localConfig = nextConfig;
+		if (previewSession) {
+			settingsStore.updatePreview(previewSession, {
+				[key]: nextConfig[key],
+				...(key === SETTINGS_KEYS.FONT_FAMILY ? { fontVariant: nextConfig.fontVariant } : {})
+			});
+		}
 	}
 
 	function handleReset() {
-		localConfig = { ...config() };
+		reset();
 	}
 
 	function showSettingsWarning(
@@ -870,6 +930,9 @@
 	}
 
 	async function handleSave() {
+		const session = previewSession;
+		if (!active || !session || !settingsStore.isPreviewCurrent(session)) return;
+		const revision = ++formRevision;
 		if (localConfig.custom && typeof localConfig.custom === 'string' && localConfig.custom.trim()) {
 			try {
 				JSON.parse(localConfig.custom);
@@ -911,6 +974,8 @@
 			String(processedConfig[providerConnectionKeys.apiKey] || ''),
 			String(processedConfig.apiProvider || '')
 		);
+		// Closing, resetting, editing or starting another save invalidates this result.
+		if (!active || revision !== formRevision || !settingsStore.isPreviewCurrent(session)) return;
 
 		if (!connectionValidation.ok) {
 			showSettingsWarning(
@@ -925,7 +990,8 @@
 		}
 
 		try {
-			settingsStore.updateMultipleConfig(processedConfig);
+			if (!settingsStore.commitPreview(session, processedConfig)) return;
+			previewSession = undefined;
 		} catch (error) {
 			showSettingsWarning(error instanceof Error ? error.message : t('settings.enterValidNumber'));
 			return;
@@ -934,7 +1000,9 @@
 	}
 
 	export function reset() {
+		cancelPreview();
 		localConfig = { ...config() };
+		if (active) previewSession = settingsStore.beginPreview();
 	}
 </script>
 

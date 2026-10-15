@@ -5,7 +5,7 @@ import FrostedGlassSettingsPanel from './frosted-glass/SettingsPanel.svelte';
 
 type ThemeSettingsPanel = Component<{
 	config: SettingsConfigType;
-	onConfigChange: (key: string, value: string | boolean) => void;
+	onConfigChange: (key: string, value: string | boolean | number) => void;
 }>;
 
 const THEME_SETTINGS_PANELS: Partial<Record<ColorMode, ThemeSettingsPanel>> = {

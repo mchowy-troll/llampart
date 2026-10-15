@@ -441,7 +441,7 @@
 		gap: 0.5rem;
 		width: 100%;
 		min-width: 0;
-		max-width: 57.6rem;
+		max-width: var(--llampart-chat-message-max-width);
 		border: 1px solid var(--llampart-assistant-message-border-color);
 		border-radius: 0.75rem;
 		padding: 1rem;

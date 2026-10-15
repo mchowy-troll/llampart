@@ -20,6 +20,8 @@ export interface ThemeDefinition {
 	ownedClasses: readonly string[];
 	ownedStyleProperties: readonly string[];
 	runtimeRefreshEvents?: readonly string[];
+	/** Stage theme-owned assets alongside the settings form, without persisting previews. */
+	beginSettingsPreview?: () => { commit: () => void; cancel: () => void };
 	motion: ThemeMotionProfile;
 	configDefaults: Readonly<Record<string, SettingsConfigValue>>;
 	configInfo: Readonly<Record<string, string>>;

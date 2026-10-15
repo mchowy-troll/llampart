@@ -178,6 +178,10 @@ export const it: TranslationDictionary = {
 		fieldUseLLMToGenerateConversationTitle: 'Usa l’LLM per generare il titolo della conversazione',
 		fieldLLMTitleGenerationPrompt: 'Prompt per la generazione del titolo con LLM',
 		fieldUiScale: 'Scala interfaccia',
+		groupTypography: 'Tipografia',
+		fieldFontFamily: 'Famiglia di caratteri',
+		fieldFontVariant: 'Variante del carattere',
+		fontDefault: 'Predefinita',
 		defaultPrefix: 'Predefinito:',
 		resetToDefault: 'Ripristina predefiniti',
 		selected: 'Selezionato',
@@ -365,8 +369,9 @@ export const it: TranslationDictionary = {
 			theme: "Scegli il tema colore dell'interfaccia. Puoi usare Sistema, Chiaro o Scuro.",
 			interfaceLanguage:
 				"L'inglese è la lingua predefinita al primo avvio. Qui puoi scegliere la lingua dell'interfaccia.",
-			uiScale:
-				'Regola la scala dell’interfaccia desktop in base all’impostazione responsiva automatica.',
+			uiScale: 'Scala dell’interfaccia desktop dal 90% al 110%, a passi del 5%.',
+			fontFamily: 'Carattere locale. Predefinita conserva la tipografia attuale.',
+			fontVariant: 'Peso di base reale. Enfasi e caratteri del codice restano invariati.',
 			pasteLongTextToFileLen:
 				'Quando incolli un testo lungo, verrà convertito in un file. Questo valore controlla la lunghezza. Il valore 0 disabilita questo comportamento.',
 			copyTextAttachmentsAsPlainText:

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeFontFamily, normalizeFontVariant } from '$lib/utils/typography';
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
 import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
 import { THEME_REGISTRY } from '$lib/themes/registry';
@@ -27,7 +28,11 @@ Object.assign(knownSettingsShape, {
 	]),
 	theme: z.enum(Object.keys(THEME_REGISTRY) as [string, ...string[]]),
 	interfaceLanguage: z.enum(['en', 'pl', 'de', 'fr', 'it', 'es']),
-	uiScale: z.enum(['90', '100', '110']),
+	uiScale: z.enum(['90', '95', '100', '105', '110']),
+	// Retired/unknown font IDs migrate independently, never invalidating other settings.
+	fontFamily: z.string().transform(normalizeFontFamily),
+	fontVariant: z.union([z.string(), z.number().finite()]).transform(String),
+	frostedGlassMilkiness: z.number().int().min(0).max(100),
 	conversationTimestampFormat: z.enum(['ddmmyyyy24', 'mmddyyyy12']),
 	agenticMaxTurns: z.number().int().min(1),
 	agenticMaxToolPreviewLines: z.number().int().min(1),
@@ -116,12 +121,13 @@ export function parseSettingsConfig(
 	const input = readObject(value);
 	const validInput: Record<string, SettingsConfigValue> = {};
 	for (const [key, candidate] of Object.entries(input)) {
-		// Obsolete manual protocol choices must not select a protocol or survive migration.
+		// Retired settings must not affect the runtime or survive migration.
 		if (
 			key === SETTINGS_STORAGE_VERSION_KEY ||
 			key === 'openAiCompatibleProtocol' ||
 			key === 'vllmProtocol' ||
-			key === 'disableOpenAiCompatibleTools'
+			key === 'disableOpenAiCompatibleTools' ||
+			key === 'frostedGlassWallpaperMilky'
 		)
 			continue;
 		const schema = knownSettingsShape[key] ?? primitiveSettingSchema;
@@ -132,7 +138,12 @@ export function parseSettingsConfig(
 		}
 	}
 
-	return settingsSchema.parse({ ...SETTING_CONFIG_DEFAULT, ...validInput }) as SettingsConfigType;
+	const config = settingsSchema.parse({
+		...SETTING_CONFIG_DEFAULT,
+		...validInput
+	}) as SettingsConfigType;
+	config.fontVariant = normalizeFontVariant(config.fontFamily, config.fontVariant);
+	return config;
 }
 
 export function parseSettingsStorage(raw: string | null): SettingsConfigType {
@@ -146,7 +157,13 @@ export function parseSettingsStorage(raw: string | null): SettingsConfigType {
 }
 
 export function serializeSettingsStorage(config: SettingsConfigType): string {
-	return JSON.stringify({ [SETTINGS_STORAGE_VERSION_KEY]: SETTINGS_STORAGE_VERSION, ...config });
+	const fontFamily = normalizeFontFamily(config.fontFamily);
+	return JSON.stringify({
+		[SETTINGS_STORAGE_VERSION_KEY]: SETTINGS_STORAGE_VERSION,
+		...config,
+		fontFamily,
+		fontVariant: normalizeFontVariant(fontFamily, config.fontVariant)
+	});
 }
 
 export function parseUserOverrides(raw: string | null): string[] {
@@ -165,7 +182,10 @@ export function parseUserOverrides(raw: string | null): string[] {
 	}
 }
 
-export function validateSettingsPatch(value: unknown): Record<string, SettingsConfigValue> {
+export function validateSettingsPatch(
+	value: unknown,
+	current: Record<string, unknown> = SETTING_CONFIG_DEFAULT
+): Record<string, SettingsConfigValue> {
 	const input = readObject(value);
 	const result: Record<string, SettingsConfigValue> = {};
 	for (const [key, candidate] of Object.entries(input)) {
@@ -174,6 +194,10 @@ export function validateSettingsPatch(value: unknown): Record<string, SettingsCo
 		const parsed = schema.safeParse(candidate);
 		if (!parsed.success) throw new Error(`Invalid value for setting ${key}`);
 		result[key] = parsed.data;
+	}
+	if ('fontFamily' in result || 'fontVariant' in result) {
+		const family = normalizeFontFamily(result.fontFamily ?? current.fontFamily);
+		result.fontVariant = normalizeFontVariant(family, result.fontVariant ?? current.fontVariant);
 	}
 	return result;
 }

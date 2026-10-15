@@ -8,6 +8,7 @@ import { createServer, type ViteDevServer } from 'vite';
 
 let server: ViteDevServer;
 let baseUrl: string;
+let viteCacheDir: string;
 const chromiumExecutable = [
 	process.env.LLAMPART_CHROMIUM_PATH,
 	'/usr/bin/chromium',
@@ -111,8 +112,11 @@ async function runScenario<T>(scenario: string): Promise<T> {
 
 describeWithChromium('DatabaseService integrity on IndexedDB', () => {
 	beforeAll(async () => {
+		// Never replace the optimizer cache used by a running application dev server.
+		viteCacheDir = await mkdtemp(resolve(tmpdir(), 'llampart-indexeddb-vite-'));
 		server = await createServer({
 			configFile: false,
+			cacheDir: viteCacheDir,
 			logLevel: 'error',
 			optimizeDeps: { include: ['dexie'], noDiscovery: true },
 			resolve: { alias: { $lib: resolve(process.cwd(), 'src/lib') } },
@@ -124,7 +128,16 @@ describeWithChromium('DatabaseService integrity on IndexedDB', () => {
 	}, 30_000);
 
 	afterAll(async () => {
-		await server?.close();
+		try {
+			await server?.close();
+		} finally {
+			if (viteCacheDir) await rm(viteCacheDir, { recursive: true, force: true });
+		}
+	});
+
+	it('isolates its optimizer cache from the application dev server', () => {
+		expect(server.config.cacheDir).toBe(viteCacheDir);
+		expect(server.config.cacheDir).not.toBe(resolve(process.cwd(), 'node_modules/.vite'));
 	});
 
 	it('rejects message ID collisions without changing the existing conversation', async () => {
