@@ -1,6 +1,7 @@
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
 import { getApiProvider } from '$lib/services/providers';
-import { MessageRole } from '$lib/enums';
+import { MessageRole, ReasoningEffort } from '$lib/enums';
+import type { SettingsChatServiceOptions } from '$lib/types/settings';
 import { describe, expect, it } from 'vitest';
 
 const baseInput = {
@@ -18,6 +19,102 @@ const baseInput = {
 };
 
 describe('provider-owned chat completions', () => {
+	const llamaBody = (options: SettingsChatServiceOptions) =>
+		JSON.parse(
+			String(
+				getApiProvider('llama-server').buildChatCompletionRequest({
+					...baseInput,
+					serverBaseUrl: 'http://localhost:8080',
+					options
+				}).init.body
+			)
+		);
+
+	it.each([ReasoningEffort.LOW, ReasoningEffort.MEDIUM, ReasoningEffort.HIGH, ReasoningEffort.MAX])(
+		'sends native effort %s without toggle or token budgets even if thinking was disabled',
+		(effort) => {
+			const body = llamaBody({
+				llamaReasoningControl: 'effort',
+				reasoningEffort: effort,
+				enableThinking: false
+			});
+			expect(body.chat_template_kwargs).toEqual({
+				reasoning_effort: effort === 'max' ? 'high' : effort
+			});
+			expect(body).not.toHaveProperty('thinking_budget_tokens');
+			expect(body).not.toHaveProperty('reasoning_effort');
+			expect(body).not.toHaveProperty('enable_thinking');
+			expect(body.reasoning_control).toBe(true);
+			expect(body.reasoning_format).toBe('auto');
+		}
+	);
+	it.each([true, false])('sends toggle %s independently of the stored effort', (enabled) => {
+		const body = llamaBody({
+			llamaReasoningControl: 'toggle',
+			enableThinking: enabled,
+			reasoningEffort: ReasoningEffort.MAX
+		});
+		expect(body.chat_template_kwargs).toEqual({ enable_thinking: enabled });
+		for (const key of ['thinking_budget_tokens', 'reasoning_effort', 'enable_thinking'])
+			expect(body).not.toHaveProperty(key);
+	});
+	it('does not manufacture controls when no template control was detected', () => {
+		const body = llamaBody({ enableThinking: true, reasoningEffort: ReasoningEffort.HIGH });
+		for (const key of [
+			'chat_template_kwargs',
+			'thinking_budget_tokens',
+			'reasoning_effort',
+			'enable_thinking'
+		])
+			expect(body).not.toHaveProperty(key);
+		expect(llamaBody({ llamaReasoningControl: 'effort' }).chat_template_kwargs).toEqual({
+			reasoning_effort: 'medium'
+		});
+	});
+	it.each(['effort', 'toggle'] as const)('merges unrelated Custom JSON with %s control', (mode) => {
+		const body = llamaBody({
+			llamaReasoningControl: mode,
+			enableThinking: true,
+			custom: '{"chat_template_kwargs":{"date":"today"},"vendor_flag":1}'
+		});
+		expect(body.chat_template_kwargs).toEqual({
+			date: 'today',
+			...(mode === 'effort' ? { reasoning_effort: 'medium' } : { enable_thinking: true })
+		});
+		expect(body.vendor_flag).toBe(1);
+		expect(body).not.toHaveProperty('thinking_budget_tokens');
+	});
+	it.each(['effort', 'toggle'] as const)(
+		'rejects conflicting custom controls for %s before building a request',
+		(mode) => {
+			for (const key of [
+				'reasoning_effort',
+				'enable_thinking',
+				'thinking_budget_tokens',
+				'thinking_budget'
+			]) {
+				for (const custom of [{ [key]: false }, { chat_template_kwargs: { [key]: 'high' } }]) {
+					expect(() =>
+						llamaBody({ llamaReasoningControl: mode, custom: JSON.stringify(custom) })
+					).toThrow(/Reasoning control conflict/);
+				}
+			}
+			expect(() =>
+				llamaBody({ llamaReasoningControl: mode, custom: '{"chat_template_kwargs":null}' })
+			).toThrow(/Reasoning control conflict/);
+		}
+	);
+	it('preserves explicit custom controls in none mode and the reasoning parsing contracts', () => {
+		const body = llamaBody({
+			llamaReasoningControl: 'none',
+			custom: '{"chat_template_kwargs":{"enable_thinking":true}}',
+			disableReasoningParsing: true,
+			excludeReasoningFromContext: true
+		});
+		expect(body.chat_template_kwargs).toEqual({ enable_thinking: true });
+		expect(body.reasoning_control).toBe(true);
+		expect(body.reasoning_format).toBe('none');
+	});
 	it('builds OpenAI-compatible chat URLs without duplicating /v1', () => {
 		const provider = getApiProvider(API_PROVIDER_IDS.OPENAI_COMPATIBLE);
 		const request = provider.buildChatCompletionRequest({

@@ -4,8 +4,9 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { buttonVariants } from '$lib/components/ui/button';
 	import { cn } from '$lib/components/ui/utils';
-	import { REASONING_EFFORT_LEVELS, REASONING_EFFORT_TOKENS } from '$lib/constants';
-	import { MessageRole, ReasoningEffort } from '$lib/enums';
+	import { REASONING_EFFORT_LEVELS } from '$lib/constants';
+	import { ReasoningEffort } from '$lib/enums';
+	import { effectiveLlamaReasoningEffort } from '$lib/utils/chat-template-thinking-detector';
 	import { t } from '$lib/i18n';
 	import {
 		checkModelSupportsThinking,
@@ -26,14 +27,27 @@
 
 	let { class: className = '' }: Props = $props();
 
-	let thinkingEnabled = $derived(conversationsStore.getThinkingEnabled());
-	let currentEffort = $derived(conversationsStore.getReasoningEffort());
+	let nativeReasoning = $derived(config().apiProvider === 'llama-server');
+	let conversationModel = $derived(
+		chatStore.getConversationModel(activeMessages() as DatabaseMessage[])
+	);
+	let controlModel = $derived(modelsStore.selectedModelName || conversationModel);
+	let control = $derived(nativeReasoning ? modelsStore.getReasoningControl(controlModel) : 'none');
+	let thinkingEnabled = $derived(control === 'effort' || conversationsStore.getThinkingEnabled());
+	let currentEffort = $derived(
+		nativeReasoning
+			? effectiveLlamaReasoningEffort(conversationsStore.getReasoningEffort())
+			: conversationsStore.getReasoningEffort()
+	);
 	let isOff = $derived(!thinkingEnabled);
 	let subOpen = $state(false);
-	let nativeReasoning = $derived(config().apiProvider === 'llama-server');
-	let levels = $derived(
+	let levels: ReasoningEffortLevel[] = $derived(
 		nativeReasoning
-			? REASONING_EFFORT_LEVELS
+			? control === 'toggle'
+				? [{ value: 'off', isOff: true }, { value: ReasoningEffort.HIGH }]
+				: REASONING_EFFORT_LEVELS.filter(
+						(level) => !level.isOff && level.value !== ReasoningEffort.MAX
+					)
 			: REASONING_EFFORT_LEVELS.filter(
 					(level) =>
 						level.isOff ||
@@ -45,58 +59,52 @@
 				)
 	);
 
-	let conversationModel = $derived(
-		chatStore.getConversationModel(activeMessages() as DatabaseMessage[])
-	);
-
-	let modelSupportsThinkingFromMessages = $derived.by(() => {
-		if (!nativeReasoning)
-			return modelsStore.capabilitySnapshot?.features.reasoning?.state !== 'unsupported';
-		const modelId = isRouterMode() ? modelsStore.selectedModelName || conversationModel : null;
-		if (!modelId) return false;
-
-		return conversationsStore.activeMessages.some(
-			(message: DatabaseMessage) =>
-				message.role === MessageRole.ASSISTANT &&
-				message.model === modelId &&
-				!!message.reasoningContent
-		);
+	$effect(() => {
+		if (nativeReasoning && isRouterMode() && controlModel) {
+			// Loaded state changes may make model-specific props available later.
+			loadedModelIds();
+			void modelsStore.fetchModelProps(controlModel);
+		}
+	});
+	$effect(() => {
+		void controlModel;
+		void control;
+		subOpen = false;
 	});
 
 	let modelSupportsThinking = $derived.by(() => {
+		if (nativeReasoning) return control !== 'none';
 		loadedModelIds();
 		propsCacheVersion();
+		const providerSupportsThinking =
+			modelsStore.capabilitySnapshot?.features.reasoning?.state !== 'unsupported';
 
 		if (isRouterMode()) {
 			const modelId = modelsStore.selectedModelName || conversationModel;
-			return checkModelSupportsThinking(modelId ?? '') || modelSupportsThinkingFromMessages;
+			return checkModelSupportsThinking(modelId ?? '') || providerSupportsThinking;
 		}
 
-		return supportsThinking() || modelSupportsThinkingFromMessages;
+		return supportsThinking() || providerSupportsThinking;
 	});
 
 	let tooltipText = $derived(
-		thinkingEnabled
-			? `${getLevelLabel({ value: currentEffort })} ${t('chat.reasoningLabel')}`
-			: t('chat.reasoningDisabledTooltip')
+		control === 'toggle' && thinkingEnabled
+			? t('chat.reasoningLabel')
+			: thinkingEnabled
+				? `${getLevelLabel({ value: currentEffort })} ${t('chat.reasoningLabel')}`
+				: t('chat.reasoningDisabledTooltip')
 	);
 
 	function isSelected(item: ReasoningEffortLevel): boolean {
 		if (item.isOff) return isOff;
+		if (control === 'toggle') return thinkingEnabled;
 		return thinkingEnabled && currentEffort === item.value;
 	}
 
 	function getLevelLabel(item: ReasoningEffortLevel): string {
 		if (item.isOff) return t('chat.reasoningEffort.off');
+		if (control === 'toggle') return t('chat.reasoningEnabled');
 		return t(`chat.reasoningEffort.${item.value}`);
-	}
-
-	function getTokenLabel(item: ReasoningEffortLevel): string {
-		if (item.isOff) return '';
-		const value = item.value as ReasoningEffort;
-		const tokens = REASONING_EFFORT_TOKENS[value];
-		if (tokens === -1) return t('chat.reasoningUnlimited');
-		return `${t('chat.reasoningMaxTokensPrefix')} ${tokens.toLocaleString()} ${t('chat.reasoningMaxTokensSuffix')}`;
 	}
 
 	function handleSelection(item: ReasoningEffortLevel) {
@@ -104,7 +112,8 @@
 			conversationsStore.setThinkingEnabled(false);
 		} else {
 			conversationsStore.setThinkingEnabled(true);
-			conversationsStore.setReasoningEffort(item.value as ReasoningEffort);
+			if (control !== 'toggle')
+				conversationsStore.setReasoningEffort(item.value as ReasoningEffort);
 		}
 		subOpen = false;
 	}
@@ -147,51 +156,52 @@
 							<p
 								class="my-1 px-3 py-2 text-[13px] font-semibold text-muted-foreground/75 select-none"
 							>
-								{t('chat.reasoningEffortTitle')}
+								{t(control === 'toggle' ? 'chat.reasoningLabel' : 'chat.reasoningEffortTitle')}
 							</p>
 
 							{#each levels as level (level.value)}
 								{@const selected = isSelected(level)}
 
-								<button
-									type="button"
-									class={[
-										'llampart-reasoning-effort-option grid w-full cursor-pointer grid-cols-[1.25rem_minmax(7.5rem,1fr)_11.25rem_1.25rem] items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-normal transition hover:bg-accent/35 hover:text-accent-foreground focus-visible:bg-accent/35 focus-visible:text-accent-foreground focus:outline-none',
-										selected ? 'bg-accent/45 text-accent-foreground' : 'text-popover-foreground'
-									]}
-									role="option"
-									aria-selected={selected}
-									onclick={() => handleSelection(level)}
-								>
-									<span class="flex h-4 w-4 items-center justify-center">
-										{#if selected}
-											<Check class="h-3.5 w-3.5 shrink-0" />
-										{/if}
-									</span>
+								<DropdownMenu.Item onSelect={() => handleSelection(level)}>
+									{#snippet child({ props })}
+										<button
+											{...props}
+											type="button"
+											class={[
+												'llampart-reasoning-effort-option grid w-full cursor-pointer grid-cols-[1.25rem_minmax(7.5rem,1fr)_11.25rem_1.25rem] items-center gap-3 rounded-md px-3 py-2.5 text-left text-sm font-normal transition hover:bg-accent/35 hover:text-accent-foreground focus-visible:bg-accent/35 focus-visible:text-accent-foreground focus:outline-none',
+												selected ? 'bg-accent/45 text-accent-foreground' : 'text-popover-foreground'
+											]}
+											role="menuitemradio"
+											aria-checked={selected}
+										>
+											<span class="flex h-4 w-4 items-center justify-center">
+												{#if selected}
+													<Check class="h-3.5 w-3.5 shrink-0" />
+												{/if}
+											</span>
 
-									<span class="min-w-0 whitespace-nowrap">{getLevelLabel(level)}</span>
+											<span class="min-w-0 whitespace-nowrap">{getLevelLabel(level)}</span>
 
-									<span
-										class="justify-self-start text-xs whitespace-nowrap text-muted-foreground/80"
-									>
-										{#if !level.isOff && nativeReasoning}
-											{getTokenLabel(level)}
-										{/if}
-									</span>
+											<span
+												class="justify-self-start text-xs whitespace-nowrap text-muted-foreground/80"
+											>
+											</span>
 
-									<span class="flex h-4 w-4 items-center justify-center justify-self-end">
-										{#if level.hasInfo}
-											<Tooltip.Root>
-												<Tooltip.Trigger>
-													<Info class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-												</Tooltip.Trigger>
-												<Tooltip.Content side="left">
-													<p>{t('chat.reasoningMaxInfo')}</p>
-												</Tooltip.Content>
-											</Tooltip.Root>
-										{/if}
-									</span>
-								</button>
+											<span class="flex h-4 w-4 items-center justify-center justify-self-end">
+												{#if level.hasInfo}
+													<Tooltip.Root>
+														<Tooltip.Trigger>
+															<Info class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+														</Tooltip.Trigger>
+														<Tooltip.Content side="left">
+															<p>{t('chat.reasoningMaxInfo')}</p>
+														</Tooltip.Content>
+													</Tooltip.Root>
+												{/if}
+											</span>
+										</button>
+									{/snippet}
+								</DropdownMenu.Item>
 							{/each}
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>

@@ -279,6 +279,41 @@ describeWithChromium('DatabaseService integrity on IndexedDB', () => {
 		expect(result.after).toEqual(result.before);
 	}, 30_000);
 
+	it('removes only a pending assistant leaf and preserves newer branches and meaningful data', async () => {
+		const result = await runScenario<{
+			removed: { parentId: string };
+			afterRemoval: { conversations: DatabaseConversation[]; messages: DatabaseMessage[] };
+			newer: DatabaseMessage;
+			afterNewer: { conversations: DatabaseConversation[]; messages: DatabaseMessage[] };
+			protectedResults: Array<{ result: unknown; before: unknown; after: unknown }>;
+		}>('pending-assistant-cleanup');
+		expect(result.removed.parentId).toBe('user');
+		expect(result.afterRemoval.messages.map((message) => message.id)).toEqual(['root', 'user']);
+		expect(result.afterRemoval.messages.find((message) => message.id === 'user')?.children).toEqual(
+			[]
+		);
+		expect(result.afterRemoval.conversations[0].currNode).toBe('user');
+		expect(result.afterNewer.conversations[0].currNode).toBe(result.newer.id);
+		expect(result.afterNewer.messages.find((message) => message.id === 'user')?.children).toEqual([
+			result.newer.id
+		]);
+		expect(result.afterNewer.messages.find((message) => message.id === result.newer.id)).toEqual(
+			result.newer
+		);
+		for (const item of result.protectedResults) {
+			expect(item.result).toBeNull();
+			expect(item.after).toEqual(item.before);
+		}
+	}, 30_000);
+
+	it('rolls back pending assistant cleanup if IndexedDB rejects the deletion', async () => {
+		const result = await runScenario<{ error: string; before: unknown; after: unknown }>(
+			'pending-assistant-rollback'
+		);
+		expect(result.error).toContain('injected pending delete failure');
+		expect(result.after).toEqual(result.before);
+	}, 30_000);
+
 	it('keeps a failed migration pending and retries it without duplicate graph edges', async () => {
 		const result = await runScenario<{
 			before: unknown;

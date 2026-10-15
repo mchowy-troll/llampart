@@ -138,6 +138,8 @@ export interface SettingsChatServiceOptions {
 	// Enable model thinking/reasoning via chat_template_kwargs
 	enableThinking?: boolean;
 	reasoningEffort?: ReasoningEffort;
+	// Request-local llama-server template control, bound to the frozen model/source.
+	llamaReasoningControl?: import('$lib/utils/chat-template-thinking-detector').LlamaReasoningControl;
 	tools?: OpenAIToolDefinition[];
 	// Generation parameters
 	temperature?: number;

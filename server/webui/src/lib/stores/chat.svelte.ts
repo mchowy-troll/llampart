@@ -21,7 +21,7 @@ import { agenticStore } from '$lib/stores/agentic.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { contextSize, isRouterMode } from '$lib/stores/server.svelte';
 import { selectedModelName, modelsStore } from '$lib/stores/models.svelte';
-import { isAbortError } from '$lib/utils/abort';
+import { isAbortError, withAbortSignal } from '$lib/utils/abort';
 import {
 	filterByLeafNodeId,
 	findDescendantMessages,
@@ -583,6 +583,52 @@ class ChatStore {
 		}
 	}
 
+	private async cancelPendingAssistant(
+		assistant: DatabaseMessage,
+		controller: AbortController
+	): Promise<void> {
+		const convId = assistant.convId;
+		try {
+			const removed = assistant.parent
+				? await DatabaseService.deleteEmptyAssistantMessage(convId, assistant.id, assistant.parent)
+				: null;
+			if (!removed) return;
+			const repair = (conversation: DatabaseConversation): DatabaseConversation => ({
+				...conversation,
+				currNode: conversation.currNode === assistant.id ? removed.parentId : conversation.currNode,
+				lastModified: Math.max(conversation.lastModified, removed.lastModified)
+			});
+			if (conversationsStore.activeConversation?.id === convId) {
+				conversationsStore.activeMessages = conversationsStore.activeMessages
+					.filter((message) => message.id !== assistant.id)
+					.map((message) =>
+						message.children.includes(assistant.id)
+							? {
+									...message,
+									children: message.children.filter((id: string) => id !== assistant.id)
+								}
+							: message
+					);
+				conversationsStore.activeConversation = repair(conversationsStore.activeConversation);
+			}
+			conversationsStore.conversations = conversationsStore.conversations.map((conversation) =>
+				conversation.id === convId ? repair(conversation) : conversation
+			);
+		} catch (error) {
+			console.error('Failed to remove cancelled pending assistant:', error);
+		} finally {
+			// Never clear loading/streaming owned by a replacement request (even in the same chat).
+			if (this.abortControllers.get(convId) === controller) {
+				this.abortControllers.delete(convId);
+				this.setChatLoading(convId, false);
+				this.clearChatStreaming(convId);
+				this.setChatReasoning(convId, false);
+				this.setProcessingState(convId, null);
+				if (conversationsStore.activeConversation?.id === convId) this.setStreamingActive(false);
+			}
+		}
+	}
+
 	private async streamChatCompletion(
 		allMessages: DatabaseMessage[],
 		assistantMessage: DatabaseMessage,
@@ -592,6 +638,10 @@ class ChatStore {
 		firstUserMessageContent?: string
 	): Promise<void> {
 		let effectiveModel = modelOverride;
+		const providerRequestContext = ChatService.createProviderRequestContext();
+		const apiOptions = this.getApiOptions();
+		const abortController = new AbortController();
+		this.abortControllers.set(assistantMessage.convId, abortController);
 
 		if (isRouterMode() && !effectiveModel) {
 			const conversationModel = this.getConversationModel(allMessages);
@@ -599,12 +649,28 @@ class ChatStore {
 		}
 
 		if (isRouterMode() && effectiveModel) {
-			if (!modelsStore.getModelProps(effectiveModel))
-				await modelsStore.fetchModelProps(effectiveModel);
+			try {
+				if (!modelsStore.getModelProps(effectiveModel))
+					await withAbortSignal(
+						modelsStore.fetchModelProps(effectiveModel),
+						abortController.signal
+					);
+			} catch (error) {
+				if (!isAbortError(error)) throw error;
+			}
+		}
+		if (
+			abortController.signal.aborted ||
+			!ChatService.isProviderRequestContextCurrent(providerRequestContext)
+		) {
+			await this.cancelPendingAssistant(assistantMessage, abortController);
+			return;
+		}
+		if (providerRequestContext.providerId === 'llama-server') {
+			apiOptions.llamaReasoningControl = modelsStore.getReasoningControl(effectiveModel ?? null);
 		}
 
 		const frozenModel = effectiveModel ? normalizeModelName(effectiveModel) : null;
-		const providerRequestContext = ChatService.createProviderRequestContext();
 		const shouldPreEncode =
 			getApiProvider(providerRequestContext.providerId).capabilities.supportsPreEncode &&
 			Boolean(config().preEncodeConversation);
@@ -683,7 +749,6 @@ class ChatStore {
 
 		this.setStreamingActive(true);
 		this.setActiveProcessingConversation(convId);
-		const abortController = this.getOrCreateAbortController(convId);
 
 		const streamCallbacks: ChatStreamCallbacks = {
 			onChunk: (chunk: string) => {
@@ -915,7 +980,7 @@ class ChatStore {
 				conversationId: convId,
 				messages: allMessages,
 				options: {
-					...this.getApiOptions(),
+					...apiOptions,
 					...(frozenModel ? { model: frozenModel } : {}),
 					assistantMessageId: assistantMessage.id,
 					providerRequestContext
@@ -937,7 +1002,7 @@ class ChatStore {
 		await ChatService.sendMessage(
 			allMessages,
 			{
-				...this.getApiOptions(),
+				...apiOptions,
 				...(frozenModel ? { model: frozenModel } : {}),
 				assistantMessageId: assistantMessage.id,
 				providerRequestContext,

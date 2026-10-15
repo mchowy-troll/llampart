@@ -36,6 +36,7 @@ class ServerStore {
 	role = $state<ServerRole | null>(null);
 	private fetchPromise: Promise<void> | null = null;
 	private requestGeneration = 0;
+	private propsContext = $state<ProviderConnectionContext | null>(null);
 
 	/**
 	 *
@@ -65,6 +66,17 @@ class ServerStore {
 
 	get isModelMode(): boolean {
 		return this.role === ServerRole.MODEL;
+	}
+
+	get hasCurrentProps(): boolean {
+		const current = this.currentRequestContext();
+		return (
+			!!this.props &&
+			(!this.propsContext ||
+				(this.propsContext.providerId === current.providerId &&
+					this.propsContext.serverBaseUrl === current.serverBaseUrl &&
+					this.propsContext.apiKey === current.apiKey))
+		);
 	}
 
 	/**
@@ -97,9 +109,17 @@ class ServerStore {
 		const fetchPromise = (async () => {
 			try {
 				const props = await PropsService.fetch(requestContext);
-				if (generation !== this.requestGeneration) return;
+				const current = this.currentRequestContext();
+				if (
+					generation !== this.requestGeneration ||
+					requestContext.providerId !== current.providerId ||
+					requestContext.serverBaseUrl !== current.serverBaseUrl ||
+					requestContext.apiKey !== current.apiKey
+				)
+					return;
 
 				this.props = props;
+				this.propsContext = requestContext;
 				this.error = null;
 				this.detectRole(props);
 			} catch (error) {
@@ -149,6 +169,7 @@ class ServerStore {
 	clear(): void {
 		this.requestGeneration++;
 		this.props = null;
+		this.propsContext = null;
 		this.error = null;
 		this.loading = false;
 		this.role = null;

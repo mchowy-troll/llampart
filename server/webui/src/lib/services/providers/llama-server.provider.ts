@@ -1,8 +1,8 @@
 import { API_CHAT, API_MODELS } from '$lib/constants/api-endpoints';
 import { API_PROVIDER_IDS, API_PROVIDER_LABELS } from '$lib/constants/api-providers';
 import { LLAMA_SERVER_PROVIDER_CAPABILITIES } from '$lib/constants/provider-capabilities';
-import { REASONING_EFFORT_TOKENS } from '$lib/constants/reasoning-effort-tokens';
-import { ReasoningEffort, ReasoningFormat } from '$lib/enums';
+import { effectiveLlamaReasoningEffort } from '$lib/utils/chat-template-thinking-detector';
+import { ReasoningFormat } from '$lib/enums';
 import { t } from '$lib/i18n';
 import type {
 	ApiChatCompletionRequest,
@@ -156,7 +156,8 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 		disableReasoningParsing,
 		excludeReasoningFromContext,
 		enableThinking,
-		reasoningEffort
+		reasoningEffort,
+		llamaReasoningControl = 'none'
 	} = options;
 
 	const requestBody: ApiChatCompletionRequest = {
@@ -185,23 +186,12 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 		? ReasoningFormat.NONE
 		: ReasoningFormat.AUTO;
 
-	const requestedReasoningEffort = Object.values(ReasoningEffort).includes(
-		reasoningEffort as ReasoningEffort
-	)
-		? (reasoningEffort as ReasoningEffort)
-		: undefined;
-
-	const reasoningBudgetTokens =
-		enableThinking && requestedReasoningEffort
-			? REASONING_EFFORT_TOKENS[requestedReasoningEffort]
-			: -1;
-
-	requestBody.chat_template_kwargs = {
-		...(requestBody.chat_template_kwargs ?? {}),
-		enable_thinking: enableThinking ?? false
-	};
-
-	if (reasoningBudgetTokens >= 0) requestBody.thinking_budget_tokens = reasoningBudgetTokens;
+	const automaticKwargs =
+		llamaReasoningControl === 'effort'
+			? { reasoning_effort: effectiveLlamaReasoningEffort(reasoningEffort) }
+			: llamaReasoningControl === 'toggle'
+				? { enable_thinking: enableThinking ?? false }
+				: {};
 
 	requestBody.reasoning_control = true;
 
@@ -258,8 +248,33 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 					`Custom parameters cannot override protected chat request keys: ${collisions.join(', ')}`
 				);
 			}
+			if (llamaReasoningControl !== 'none') {
+				const params = customParams as Record<string, unknown>;
+				const kwargs = params.chat_template_kwargs;
+				if (
+					kwargs !== undefined &&
+					(!kwargs || typeof kwargs !== 'object' || Array.isArray(kwargs))
+				) {
+					throw new Error(t('chat.reasoningCustomConflict'));
+				}
+				// Explicit controls/budgets of either mechanism could contradict the menu.
+				const keys = [
+					'reasoning_effort',
+					'enable_thinking',
+					'thinking_budget_tokens',
+					'thinking_budget'
+				];
+				if (
+					keys.some((key) => Object.hasOwn(params, key) || (kwargs && Object.hasOwn(kwargs, key)))
+				) {
+					throw new Error(t('chat.reasoningCustomConflict'));
+				}
+			}
 			Object.assign(requestBody, customParams);
 		}
+	}
+	if (llamaReasoningControl !== 'none') {
+		requestBody.chat_template_kwargs = { ...requestBody.chat_template_kwargs, ...automaticKwargs };
 	}
 
 	return requestBody;

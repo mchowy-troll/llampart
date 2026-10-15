@@ -353,6 +353,92 @@ async function failedAssistantCleanup() {
 	return { beforeTimestamp, after: await snapshot(['failed-stream']) };
 }
 
+async function pendingAssistantCleanup() {
+	const id = 'pending';
+	await DatabaseService.importConversations([
+		{
+			conv: conversation(id, 'old'),
+			messages: [
+				message(id, 'root', null, ['user'], 'root', 'system'),
+				message(id, 'user', 'root', ['old']),
+				message(id, 'old', 'user', [], 'text', 'assistant', '')
+			]
+		}
+	]);
+	const removed = await DatabaseService.deleteEmptyAssistantMessage(id, 'old', 'user');
+	const afterRemoval = await snapshot([id]);
+	const old = await DatabaseService.createMessageBranch(
+		message(id, 'ignored', 'user', [], 'text', 'assistant', ''),
+		'user'
+	);
+	const newer = await DatabaseService.createMessageBranch(
+		message(id, 'ignored', 'user', [], 'text', 'assistant', 'new response'),
+		'user'
+	);
+	await DatabaseService.deleteEmptyAssistantMessage(id, old.id, 'user');
+	const afterNewer = await snapshot([id]);
+	const protections: Array<Partial<DatabaseMessage>> = [
+		{ content: 'already completed' },
+		{ reasoningContent: 'reasoning' },
+		{ toolCalls: '[{}]' },
+		{ extra: [{ type: 'text', name: 'file', content: 'data' } as DatabaseMessageExtra] },
+		{ completionId: 'in-flight' },
+		{ model: 'already-started' },
+		{ timings: {} as ChatMessageTimings },
+		{ role: 'user' },
+		{ thinking: 'legacy reasoning' }
+	];
+	const protectedResults = [];
+	for (const update of protections) {
+		const item = await DatabaseService.createMessageBranch(
+			{ ...message(id, 'ignored', 'user', [], 'text', 'assistant', ''), ...update },
+			'user'
+		);
+		const before = await snapshot([id]);
+		const result = await DatabaseService.deleteEmptyAssistantMessage(id, item.id, 'user');
+		protectedResults.push({ result, before, after: await snapshot([id]) });
+	}
+	const ancestor = await DatabaseService.createMessageBranch(
+		message(id, 'ignored', 'user', [], 'text', 'assistant', ''),
+		'user'
+	);
+	await DatabaseService.createMessageBranch(
+		message(id, 'ignored', ancestor.id, [], 'text', 'user', 'new question'),
+		ancestor.id
+	);
+	const before = await snapshot([id]);
+	const result = await DatabaseService.deleteEmptyAssistantMessage(id, ancestor.id, 'user');
+	protectedResults.push({ result, before, after: await snapshot([id]) });
+	return { removed, afterRemoval, newer, afterNewer, protectedResults };
+}
+
+async function pendingAssistantRollback() {
+	await DatabaseService.importConversations([
+		{
+			conv: conversation('pending-rollback', 'assistant'),
+			messages: [
+				message('pending-rollback', 'root', null, ['user'], 'root', 'system'),
+				message('pending-rollback', 'user', 'root', ['assistant']),
+				message('pending-rollback', 'assistant', 'user', [], 'text', 'assistant', '')
+			]
+		}
+	]);
+	const before = await snapshot(['pending-rollback']);
+	const originalDelete = IDBObjectStore.prototype.delete;
+	let error: string | null;
+	try {
+		IDBObjectStore.prototype.delete = function () {
+			throw new Error('injected pending delete failure');
+		};
+		error = await captureError(() =>
+			DatabaseService.deleteEmptyAssistantMessage('pending-rollback', 'assistant', 'user')
+		);
+	} finally {
+		IDBObjectStore.prototype.delete = originalDelete;
+	}
+	return { error, before, after: await snapshot(['pending-rollback']) };
+}
+
 async function cascadingDeleteRollback() {
 	await DatabaseService.importConversations([
 		{
@@ -480,6 +566,8 @@ const scenarios: Record<string, () => Promise<unknown>> = {
 	'conversation-envelope-import': conversationEnvelopeImport,
 	'legacy-v182-import': legacyV182Import,
 	'failed-assistant-cleanup': failedAssistantCleanup,
+	'pending-assistant-cleanup': pendingAssistantCleanup,
+	'pending-assistant-rollback': pendingAssistantRollback,
 	'cascading-delete-rollback': cascadingDeleteRollback,
 	'migration-retry': migrationRetry
 };

@@ -541,6 +541,9 @@ export const pl: TranslationDictionary = {
 		stopRecording: 'Zatrzymaj nagrywanie',
 		reasoningEffortTitle: 'Wysiłek Reasoning',
 		reasoningLabel: 'Reasoning',
+		reasoningEnabled: 'Włączone',
+		reasoningCustomConflict:
+			'Konflikt sterowania Reasoning: usuń parametry reasoning z Custom JSON lub wybierz model bez automatycznego sterowania. Żądanie nie zostało wysłane.',
 		reasoningConfigureHint: 'Kliknij, aby skonfigurować.',
 		reasoningDisabledTooltip: 'Reasoning wyłączone',
 		reasoningEffort: {

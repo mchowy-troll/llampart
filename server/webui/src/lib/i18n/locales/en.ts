@@ -535,6 +535,9 @@ export const en: TranslationDictionary = {
 		stopRecording: 'Stop recording',
 		reasoningEffortTitle: 'Reasoning effort',
 		reasoningLabel: 'Reasoning',
+		reasoningEnabled: 'Enabled',
+		reasoningCustomConflict:
+			'Reasoning control conflict: remove reasoning parameters from Custom JSON or select a model without automatic controls. The request was not sent.',
 		reasoningConfigureHint: 'Click to configure.',
 		reasoningDisabledTooltip: 'Disabled Reasoning',
 		reasoningEffort: {

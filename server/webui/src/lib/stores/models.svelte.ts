@@ -12,6 +12,8 @@ import { TTLCache } from '$lib/utils/cache-ttl';
 import { getModelContextSize } from '$lib/utils/model-information';
 import {
 	detectThinkingSupport,
+	detectReasoningControl,
+	type LlamaReasoningControl,
 	detectThinkingSupportWithReason
 } from '$lib/utils/chat-template-thinking-detector';
 import { throwIfAborted } from '$lib/utils/abort';
@@ -413,6 +415,16 @@ class ModelsStore {
 	// Thinking Support Detection
 	//
 
+	getReasoningControl(modelId: string | null = this.selectedModelName): LlamaReasoningControl {
+		// Cache reads must invalidate the menu even if props have no modalities.
+		void this.propsCacheVersion;
+		if (this.currentProviderId !== API_PROVIDER_IDS.LLAMA_SERVER || !serverStore.hasCurrentProps)
+			return 'none';
+		if (!serverStore.isRouterMode) return detectReasoningControl(serverStore.props?.chat_template);
+		if (!modelId) return 'none';
+		return detectReasoningControl(this.getModelProps(modelId)?.chat_template);
+	}
+
 	/**
 	 * Whether the selected model's chat template supports thinking/reasoning controls.
 	 */
@@ -703,6 +715,7 @@ class ModelsStore {
 	 */
 	async fetchModelProps(modelId: string): Promise<ApiLlamaCppServerProps | null> {
 		if (!this.supportsModelProps) return null;
+		const generation = this.requestGeneration;
 		const context = this.currentRequestContext();
 		const sourceKey = this.getModelListSourceKey(context);
 		const cacheKey = this.getSourceModelKey(context, modelId);
@@ -721,8 +734,10 @@ class ModelsStore {
 		const request = (async () => {
 			try {
 				const props = await PropsService.fetchForModel(context, modelId);
-				if (sourceKey !== this.modelListSourceKey) return null;
+				if (generation !== this.requestGeneration || sourceKey !== this.modelListSourceKey)
+					return null;
 				this.modelPropsCache.set(cacheKey, props);
+				this.propsCacheVersion++;
 				return props;
 			} catch (error) {
 				console.warn(`Failed to fetch props for model ${modelId}:`, error);
@@ -1148,6 +1163,7 @@ class ModelsStore {
 		this.modelMetadata = {};
 		this.saveCurrentSelectionForSource();
 		this.requestGeneration++;
+		this.modelPropsRequests.clear();
 		for (const controller of this.operationControllers.values()) controller.abort();
 		this.operationControllers.clear();
 		this.models = [];

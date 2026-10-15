@@ -548,6 +548,9 @@ export const es: TranslationDictionary = {
 		stopRecording: 'Detener grabación',
 		reasoningEffortTitle: 'Esfuerzo de razonamiento',
 		reasoningLabel: 'Razonamiento',
+		reasoningEnabled: 'Activado',
+		reasoningCustomConflict:
+			'Conflicto de control de razonamiento: elimina los parámetros de razonamiento de Custom JSON o selecciona un modelo sin control automático. La solicitud no se ha enviado.',
 		reasoningConfigureHint: 'Haz clic para configurar.',
 		reasoningDisabledTooltip: 'Razonamiento desactivado',
 		reasoningEffort: {

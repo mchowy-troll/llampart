@@ -641,6 +641,58 @@ export class DatabaseService {
 		});
 	}
 
+	/** Remove only an unused assistant leaf, never a completed response or a newer branch. */
+	static async deleteEmptyAssistantMessage(
+		conversationId: string,
+		messageId: string,
+		expectedParent: string
+	): Promise<{ parentId: string; lastModified: number } | null> {
+		return db.transaction('rw', [db.conversations, db.messages], async () => {
+			const conversation = await db.conversations.get(conversationId);
+			const message = await db.messages.get(messageId);
+			if (
+				!conversation ||
+				!message ||
+				message.convId !== conversationId ||
+				message.parent !== expectedParent ||
+				message.role !== MessageRole.ASSISTANT ||
+				message.type !== 'text' ||
+				message.content ||
+				message.reasoningContent ||
+				message.thinking ||
+				message.toolCalls ||
+				message.toolCallId ||
+				message.extra?.length ||
+				message.children.length ||
+				message.completionId ||
+				message.model ||
+				message.timings ||
+				message.providerContinuation ||
+				(await db.messages.where('parent').equals(messageId).count())
+			)
+				return null;
+
+			const parent = await requireOwnedMessage(conversationId, expectedParent);
+			const lastModified = nextLastModified(conversation);
+			await requireUpdated(
+				await db.messages.update(parent.id, {
+					children: parent.children.filter((id: string) => id !== messageId)
+				}),
+				`Parent message ${parent.id}`
+			);
+			await db.messages.delete(messageId);
+			await requireUpdated(
+				await db.conversations.update(conversationId, {
+					// A newer request/navigation may already own currNode.
+					...(conversation.currNode === messageId ? { currNode: parent.id } : {}),
+					lastModified
+				}),
+				`Conversation ${conversationId}`
+			);
+			return { parentId: parent.id, lastModified };
+		});
+	}
+
 	/**
 	 * Deletes a message and all its descendant messages (cascading deletion).
 	 * This removes the entire branch starting from the specified message.

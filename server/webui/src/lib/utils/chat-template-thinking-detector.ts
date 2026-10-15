@@ -1,40 +1,70 @@
-/**
- * Detects whether a model chat template exposes thinking/reasoning controls.
- * Adapted from llama.cpp llama-ui b9585; kept as a focused utility for model capability detection.
- */
-const THINKING_KWARG_VARS = ['enable_thinking', 'reasoning_effort', 'thinking_budget'];
+import { ReasoningEffort } from '$lib/enums';
 
-const THINKING_TEMPLATE_PATTERNS = [
-	/\{%-?\s*if\s+\(?\s*\w*enable[\s_]+\w*(thinking|think|reasoning)/i,
-	/\{%-?\s*if\s+\w*(thinking|reasoning)\s*(is not|==|!=)/i,
-	/\{%-?\s*if\s+ns\.enable_thinking/i,
-	/enable_thinking/i,
-	/reasoning_effort/i,
-	/thinking_budget/i
-];
+export type LlamaReasoningControl = 'effort' | 'toggle' | 'none';
+
+/** Historical conversation values are interpreted, never migrated or rewritten. */
+export function effectiveLlamaReasoningEffort(value?: string): ReasoningEffort {
+	if (value === ReasoningEffort.MAX) return ReasoningEffort.HIGH;
+	return value === ReasoningEffort.LOW || value === ReasoningEffort.HIGH
+		? value
+		: ReasoningEffort.MEDIUM;
+}
+
+/**
+ * Deliberately conservative Jinja heuristic, not a parser or model-name registry.
+ * Only executable tags count. Defined checks/default assignments alone do not
+ * establish level control; require a level comparison or rendering the value.
+ */
+export function detectReasoningControl(template?: string | null): LlamaReasoningControl {
+	if (!template) return 'none';
+	const executable = template
+		.replace(/\{#[\s\S]*?#\}/g, '')
+		.replace(/\{%-?\s*raw\s*-?%\}[\s\S]*?\{%-?\s*endraw\s*-?%\}/g, '');
+	let toggle = false;
+	// Quoted delimiters (e.g. an example '{{ reasoning_effort }}') are literals.
+	for (const tag of executable.matchAll(
+		/\{({|%)-?((?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|(?!(?:%\}|\}\}))[\s\S])*?)-?(?:%|})\}/g
+	)) {
+		const code = tag[2];
+		const unquoted = code.replace(/'(?:(?:\\.)|[^'\\])*'|"(?:(?:\\.)|[^"\\])*"/g, '""');
+		const reads = (variable: string, source = unquoted) =>
+			new RegExp(`(?<![\\w.])${variable}\\b(?!\\s*=(?!=))`).test(source);
+		const condition = /^\s*(?:if|elif)\b/.test(unquoted);
+		const withoutDefined = unquoted.replace(
+			/\b(?:reasoning_effort|enable_thinking)\s+is\s+(?:not\s+)?defined\b/g,
+			''
+		);
+		if (reads('reasoning_effort', withoutDefined)) {
+			if (
+				tag[1] === '{' ||
+				(condition &&
+					reads('reasoning_effort', withoutDefined) &&
+					/\breasoning_effort\s*(?:==|!=|in\b)\s*(?:['"](?:low|medium|high)['"]|\[[^\]]*['"](?:low|medium|high)['"])/.test(
+						code
+					))
+			) {
+				return 'effort';
+			}
+		}
+		if (reads('enable_thinking', withoutDefined) && (condition || tag[1] === '{')) toggle = true;
+	}
+	return toggle ? 'toggle' : 'none';
+}
 
 export function detectThinkingSupport(chatTemplate?: string | null): boolean {
-	if (!chatTemplate) return false;
-	return THINKING_TEMPLATE_PATTERNS.some((pattern) => pattern.test(chatTemplate));
+	return detectReasoningControl(chatTemplate) !== 'none';
 }
 
 export function detectThinkingSupportWithReason(chatTemplate?: string | null): {
 	supported: boolean;
 	reason: string;
 } {
-	if (!chatTemplate) return { supported: false, reason: 'No chat template available' };
-
-	for (const variable of THINKING_KWARG_VARS) {
-		if (chatTemplate.includes(variable)) {
-			return { supported: true, reason: `Template references ${variable}` };
-		}
-	}
-
-	for (const pattern of THINKING_TEMPLATE_PATTERNS) {
-		if (pattern.test(chatTemplate)) {
-			return { supported: true, reason: `Template matches ${pattern.source}` };
-		}
-	}
-
-	return { supported: false, reason: 'No thinking control markers found in chat template' };
+	const control = detectReasoningControl(chatTemplate);
+	return {
+		supported: control !== 'none',
+		reason:
+			control === 'none'
+				? 'No confirmed reasoning control in chat template'
+				: `Template exposes ${control} control`
+	};
 }
