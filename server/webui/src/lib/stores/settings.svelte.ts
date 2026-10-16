@@ -32,6 +32,7 @@
  */
 
 import { browser } from '$app/environment';
+import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
 import { SvelteSet } from 'svelte/reactivity';
 import {
 	CONFIG_LOCALSTORAGE_KEY,
@@ -467,6 +468,8 @@ class SettingsStore {
 		// so write them for non-overridden keys
 		if (webuiSettings) {
 			for (const [key, value] of Object.entries(validatedWebuiSettings)) {
+				// Response rules belong to the user, not the currently connected provider.
+				if (RESPONSE_PREFERENCES.some((preference) => preference.key === key)) continue;
 				if (!this.userOverrides.has(key) && value !== undefined) {
 					setConfigValue(this.config, key, this.normalizeConfigValue(key, value));
 				}
@@ -507,6 +510,12 @@ class SettingsStore {
 			this.userOverrides.delete(key);
 		}
 
+		// Global user-owned preferences are not provider sampling defaults.
+		// Include them in the existing confirmed Reset without making them server-syncable.
+		for (const { key } of RESPONSE_PREFERENCES) {
+			nextConfig[key] = SETTING_CONFIG_DEFAULT[key];
+			this.userOverrides.delete(key);
+		}
 		const normalizedConfig = validateSettingsPatch(nextConfig, this.config);
 		this.cancelPreview();
 		this.config = { ...nextConfig, ...normalizedConfig };

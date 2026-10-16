@@ -15,6 +15,8 @@
 	import ChatSettingsImportExportTab from '$lib/components/app/chat/ChatSettings/ChatSettingsImportExportTab.svelte';
 	import ChatSettingsToolsTab from '$lib/components/app/chat/ChatSettings/ChatSettingsToolsTab.svelte';
 	import ChatSettingsFields from '$lib/components/app/chat/ChatSettings/ChatSettingsFields.svelte';
+	import ResponsePreferencesPreview from './ResponsePreferencesPreview.svelte';
+	import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
 	import McpLogo from '$lib/components/app/mcp/McpLogo.svelte';
 	import McpServersSettings from '$lib/components/app/mcp/McpServersSettings.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
@@ -161,6 +163,82 @@
 						}
 					],
 					fullWidth: true
+				},
+				{
+					id: 'response-preferences',
+					title: t('settings.groupResponsePreferences'),
+					description: t('settings.responsePreferencesDescription'),
+					fullWidth: true,
+					subgroups: [
+						{
+							id: 'formatting',
+							title: t('settings.responsePreferencesFormatting'),
+							keys: RESPONSE_PREFERENCES.slice(0, 4).map(({ key }) => key)
+						},
+						{
+							id: 'style',
+							title: t('settings.responsePreferencesStyle'),
+							keys: RESPONSE_PREFERENCES.slice(4).map(({ key }) => key)
+						}
+					],
+					fields: [
+						{
+							key: SETTINGS_KEYS.RESPONSE_PREF_NO_HEADINGS,
+							order: 1,
+							label: t('settings.responsePrefNoHeadings'),
+							help: t('settings.responsePrefNoHeadingsHelp'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.RESPONSE_PREF_TABLES,
+							order: 2,
+							label: t('settings.responsePrefTables'),
+							help: t('settings.responsePrefTablesHelp'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.RESPONSE_PREF_CHARTS,
+							order: 3,
+							label: t('settings.responsePrefCharts'),
+							help: t('settings.responsePrefChartsHelp'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.RESPONSE_PREF_NO_DECORATIONS,
+							order: 4,
+							label: t('settings.responsePrefNoDecorations'),
+							help: t('settings.responsePrefNoDecorationsHelp'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.RESPONSE_PREF_CONCISE,
+							order: 5,
+							label: t('settings.responsePrefConcise'),
+							help: t('settings.responsePrefConciseHelp'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.RESPONSE_PREF_EXAMPLES,
+							order: 6,
+							label: t('settings.responsePrefExamples'),
+							help: t('settings.responsePrefExamplesHelp'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.RESPONSE_PREF_STEPS,
+							order: 7,
+							label: t('settings.responsePrefSteps'),
+							help: t('settings.responsePrefStepsHelp'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.RESPONSE_PREF_USER_LANGUAGE,
+							order: 8,
+							label: t('settings.responsePrefUserLanguage'),
+							help: t('settings.responsePrefUserLanguageHelp'),
+							type: SettingsFieldType.CHECKBOX
+						}
+					]
 				}
 			]
 		},
@@ -1075,6 +1153,7 @@
 										fields={group.fields}
 										layout={group.layout}
 										fillMode={group.fillMode}
+										subgroups={group.subgroups}
 										{localConfig}
 										onConfigChange={handleConfigChange}
 										onThemeChange={handleThemeChange}
@@ -1103,10 +1182,14 @@
 										fields={group.fields}
 										layout={group.layout}
 										fillMode={group.fillMode}
+										subgroups={group.subgroups}
 										{localConfig}
 										onConfigChange={handleConfigChange}
 										onThemeChange={handleThemeChange}
 									/>
+									{#if group.id === 'response-preferences'}
+										<ResponsePreferencesPreview {localConfig} />
+									{/if}
 								</section>
 							{/if}
 						{/each}

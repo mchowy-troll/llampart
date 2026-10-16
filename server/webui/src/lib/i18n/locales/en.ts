@@ -262,6 +262,34 @@ export const en: TranslationDictionary = {
 		fieldCustomJson: 'Custom JSON',
 		groupConnection: 'Connection',
 		groupSystemMessage: 'System message',
+		groupResponsePreferences: 'Response preferences',
+		responsePreferencesDescription:
+			'Choose response formatting and style rules. llampart automatically adds them to the system instructions.',
+		responsePreferencesFormatting: 'Formatting and visualizations',
+		responsePreferencesStyle: 'Response style',
+		responsePreferencesPreview: 'Show added instructions',
+		responsePreferencesEmpty: 'No active preferences — no additional instructions will be added.',
+		responsePrefNoHeadings: 'No Markdown headings',
+		responsePrefNoHeadingsHelp:
+			'Bold section titles instead of headings. Preserve code and literal quotations.',
+		responsePrefTables: 'Use tables',
+		responsePrefTablesHelp:
+			'Tables for comparisons and structured data, not simple sentences or procedures.',
+		responsePrefCharts: 'Use charts',
+		responsePrefChartsHelp:
+			'Native charts for meaningful comparisons, trends, and distributions. Never invent data.',
+		responsePrefNoDecorations: 'No emoji or decorations',
+		responsePrefNoDecorationsHelp:
+			'No decorative symbols. Preserve language characters, mathematics, code, and quotations.',
+		responsePrefConcise: 'Concise answers',
+		responsePrefConciseHelp: 'Omit filler and repetition while keeping essential information.',
+		responsePrefExamples: 'Practical examples',
+		responsePrefExamplesHelp: 'Concrete examples for complex topics, only when useful.',
+		responsePrefSteps: 'Step-by-step instructions',
+		responsePrefStepsHelp: 'Numbered steps for procedures, in execution order.',
+		responsePrefUserLanguage: "User's language",
+		responsePrefUserLanguageHelp:
+			'Use the language of the latest message unless the user explicitly requests another.',
 		groupInterface: 'Interface',
 		groupApplicationBackground: 'Application background',
 		backgroundImageDescription: 'Choose a local image used as the app background on this browser.',

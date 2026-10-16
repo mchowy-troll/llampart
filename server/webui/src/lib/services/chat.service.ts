@@ -1,5 +1,5 @@
 import { t } from '$lib/i18n';
-import { withChartInstructions } from '$lib/markdown/chart-instructions';
+import { withChatInstructions } from '$lib/utils/response-preferences';
 import { VllmLiveStatistics } from '$lib/utils/vllm-live-statistics';
 import { getApiProvider } from '$lib/services/providers';
 import type { ApiProviderAdapter } from '$lib/services/providers/provider.types';
@@ -148,7 +148,7 @@ export class ChatService {
 
 					return ChatService.convertDbMessageToApiChatMessageData(dbMsg);
 				} else {
-					return msg as ApiChatMessageData;
+					return { ...msg } as ApiChatMessageData;
 				}
 			})
 			.filter((msg) => {
@@ -162,7 +162,10 @@ export class ChatService {
 				return true;
 			});
 
-		if (conversationId) normalizedMessages = withChartInstructions(normalizedMessages);
+		// config() is committed state, never the Settings draft/appearance overlay.
+		// Auxiliary requests (including title generation) have no conversationId.
+		if (conversationId)
+			normalizedMessages = withChatInstructions(normalizedMessages, { ...config() });
 
 		// Filter out image attachments if the model doesn't support vision
 		if (
@@ -446,8 +449,9 @@ export class ChatService {
 				return true;
 			});
 
+		const requestMessages = withChatInstructions(normalizedMessages, { ...config() });
 		const requestBody: Record<string, unknown> = {
-			messages: withChartInstructions(normalizedMessages).map((msg: ApiChatMessageData) => {
+			messages: requestMessages.map((msg: ApiChatMessageData) => {
 				const mapped: Record<string, unknown> = {
 					role: msg.role,
 					content: excludeReasoning ? ChatService.stripReasoningContent(msg.content) : msg.content,

@@ -24,6 +24,7 @@
 		fields: SettingsFieldConfig[];
 		layout?: SettingsFieldGroupLayout;
 		fillMode?: SettingsFieldGroupFillMode;
+		subgroups?: SettingsFieldGroup['subgroups'];
 		localConfig: SettingsConfigType;
 		onConfigChange: (key: string, value: string | boolean) => void;
 		onThemeChange?: (theme: string) => void;
@@ -33,6 +34,7 @@
 		fields,
 		layout = 'default',
 		fillMode = 'column',
+		subgroups,
 		localConfig,
 		onConfigChange,
 		onThemeChange
@@ -508,6 +510,9 @@
 					checked={Boolean(localConfig[field.key])}
 					onCheckedChange={(checked) => onConfigChange(field.key, Boolean(checked))}
 					class="mt-1"
+					aria-describedby={getFieldHelp(field, helpOverride, hideHelp)
+						? `${field.key}-help`
+						: undefined}
 				/>
 
 				<div class="min-w-0 space-y-1">
@@ -523,7 +528,10 @@
 					</label>
 
 					{#if getFieldHelp(field, helpOverride, hideHelp)}
-						<p class="max-w-full whitespace-pre-line text-xs break-words text-muted-foreground">
+						<p
+							id={`${field.key}-help`}
+							class="max-w-full whitespace-pre-line text-xs break-words text-muted-foreground"
+						>
 							{@html getFieldHelp(field, helpOverride, hideHelp)}
 						</p>
 					{/if}
@@ -533,7 +541,18 @@
 	</div>
 {/snippet}
 
-{#if isSidebarGroup}
+{#if subgroups?.length}
+	<div class="settings-subgroups grid gap-6">
+		{#each subgroups as subgroup (subgroup.id)}
+			<fieldset class="min-w-0 space-y-5">
+				<legend class="mb-4 text-sm font-semibold">{subgroup.title}</legend>
+				{#each orderedFields.filter( (field) => subgroup.keys.includes(field.key) ) as field (field.key)}
+					{@render renderField(field)}
+				{/each}
+			</fieldset>
+		{/each}
+	</div>
+{:else if isSidebarGroup}
 	<div class="grid gap-x-5 gap-y-4 lg:grid-cols-2">
 		<div class="space-y-4">
 			{#each fieldsWithoutCluster as field, fieldIndex (field.key)}
@@ -593,3 +612,9 @@
 		{/each}
 	</div>
 {/if}
+
+<style>
+	.settings-subgroups {
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+	}
+</style>

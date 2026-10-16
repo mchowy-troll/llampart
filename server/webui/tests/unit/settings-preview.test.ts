@@ -3,6 +3,10 @@ import { CONFIG_LOCALSTORAGE_KEY, SETTING_CONFIG_DEFAULT } from '$lib/constants'
 import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import {
+	RESPONSE_PREFERENCES,
+	buildResponsePreferenceInstructions
+} from '$lib/utils/response-preferences';
+import {
 	exportApplicationSettings,
 	importApplicationSettings
 } from '$lib/utils/settings-import-export';
@@ -57,6 +61,71 @@ afterEach(() => {
 });
 
 describe('settings preview through the real store', () => {
+	it('does not inherit response preferences from provider UI defaults', () => {
+		serverStore.props = {
+			ui_settings: { responsePrefCharts: true, responsePrefTables: false }
+		} as unknown as ApiLlamaCppServerProps;
+		settingsStore.updateMultipleConfig({ responsePrefTables: true });
+		settingsStore.syncWithServerDefaults();
+		expect(config()).toMatchObject({ responsePrefCharts: false, responsePrefTables: true });
+		settingsStore.forceSyncWithServerDefaults();
+		expect(config()).toMatchObject({ responsePrefCharts: false, responsePrefTables: false });
+	});
+	it('keeps response preferences draft-only until Save, supports Cancel, reload and Reset', () => {
+		const all = Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }) => [key, true]));
+		const before = new Map(storage);
+		const session = settingsStore.beginPreview();
+		settingsStore.updatePreview(session, all);
+		expect(buildResponsePreferenceInstructions(config())).toBe('');
+		expect(storage).toEqual(before);
+		settingsStore.cancelPreview(session);
+		expect(buildResponsePreferenceInstructions(config())).toBe('');
+		const saved = settingsStore.beginPreview();
+		expect(settingsStore.commitPreview(saved, all)).toBe(true);
+		expect(config()).toMatchObject(all);
+		settingsStore.initialize();
+		expect(config()).toMatchObject(all);
+		settingsStore.forceSyncWithServerDefaults();
+		for (const { key } of RESPONSE_PREFERENCES) expect(config()[key]).toBe(false);
+	});
+
+	it('exports/imports all eight committed preferences, rejects malformed imports atomically', async () => {
+		const all = Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }) => [key, true]));
+		settingsStore.updateMultipleConfig(all);
+		let exported: Blob | undefined;
+		const create = vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
+			exported = blob as Blob;
+			return 'blob:response-preferences';
+		});
+		const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+		vi.stubGlobal('document', {
+			createElement: () => ({ click: vi.fn() }),
+			body: { appendChild: vi.fn(), removeChild: vi.fn() }
+		});
+		try {
+			exportApplicationSettings();
+			const text = await exported!.text();
+			expect(JSON.parse(text).settings).toMatchObject(all);
+			settingsStore.resetConfig();
+			importApplicationSettings(text);
+			settingsStore.initialize();
+			expect(config()).toMatchObject(all);
+			const before = new Map(storage);
+			expect(() =>
+				importApplicationSettings(
+					JSON.stringify({
+						type: 'llampart-settings-export',
+						formatVersion: 1,
+						settings: { responsePrefTables: 'yes' }
+					})
+				)
+			).toThrow('responsePrefTables');
+			expect(storage).toEqual(before);
+		} finally {
+			create.mockRestore();
+			revoke.mockRestore();
+		}
+	});
 	it('keeps server-default synchronization stable instead of replacing its reactive dependency', () => {
 		serverStore.props = {
 			default_generation_settings: { params: { temperature: 0.8, top_p: 0.95 } },

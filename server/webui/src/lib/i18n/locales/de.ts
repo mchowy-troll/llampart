@@ -262,6 +262,36 @@ export const de: TranslationDictionary = {
 		fieldCustomJson: 'Benutzerdefiniertes JSON',
 		groupConnection: 'Verbindung',
 		groupSystemMessage: 'Systemnachricht',
+		groupResponsePreferences: 'Antwortpräferenzen',
+		responsePreferencesDescription:
+			'Wählen Sie Regeln für Format und Stil der Antworten. llampart fügt sie automatisch den Systemanweisungen hinzu.',
+		responsePreferencesFormatting: 'Formatierung und Visualisierungen',
+		responsePreferencesStyle: 'Antwortstil',
+		responsePreferencesPreview: 'Hinzugefügte Anweisungen anzeigen',
+		responsePreferencesEmpty:
+			'Keine aktiven Präferenzen — es werden keine zusätzlichen Anweisungen hinzugefügt.',
+		responsePrefNoHeadings: 'Keine Markdown-Überschriften',
+		responsePrefNoHeadingsHelp:
+			'Fette Abschnittstitel statt Überschriften. Code und wörtliche Zitate bleiben erhalten.',
+		responsePrefTables: 'Tabellen verwenden',
+		responsePrefTablesHelp:
+			'Tabellen für Vergleiche und strukturierte Daten, nicht für einfache Sätze oder Abläufe.',
+		responsePrefCharts: 'Diagramme verwenden',
+		responsePrefChartsHelp:
+			'Native Diagramme für sinnvolle Vergleiche, Trends und Verteilungen. Keine erfundenen Daten.',
+		responsePrefNoDecorations: 'Keine Emojis oder Verzierungen',
+		responsePrefNoDecorationsHelp:
+			'Keine dekorativen Symbole. Sprachzeichen, Mathematik, Code und Zitate bleiben erhalten.',
+		responsePrefConcise: 'Kurze Antworten',
+		responsePrefConciseHelp:
+			'Keine Floskeln oder Wiederholungen; wichtige Informationen bleiben erhalten.',
+		responsePrefExamples: 'Praktische Beispiele',
+		responsePrefExamplesHelp: 'Konkrete Beispiele bei komplexen Themen, nur wenn hilfreich.',
+		responsePrefSteps: 'Schritt-für-Schritt-Anleitungen',
+		responsePrefStepsHelp: 'Nummerierte Schritte für Abläufe, in Ausführungsreihenfolge.',
+		responsePrefUserLanguage: 'Sprache des Nutzers',
+		responsePrefUserLanguageHelp:
+			'Sprache der letzten Nachricht, sofern nicht ausdrücklich eine andere gewünscht wird.',
 		groupInterface: 'Oberfläche',
 		groupApplicationBackground: 'App-Hintergrund',
 		backgroundImageDescription:

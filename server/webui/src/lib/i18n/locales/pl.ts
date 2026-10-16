@@ -261,6 +261,37 @@ export const pl: TranslationDictionary = {
 		fieldCustomJson: 'Własny JSON',
 		groupConnection: 'Połączenie',
 		groupSystemMessage: 'Wiadomość systemowa',
+		groupResponsePreferences: 'Preferencje odpowiedzi',
+		responsePreferencesDescription:
+			'Wybierz zasady formatowania i stylu odpowiedzi. llampart automatycznie dołącza je do instrukcji systemowych.',
+		responsePreferencesFormatting: 'Formatowanie i wizualizacje',
+		responsePreferencesStyle: 'Styl odpowiedzi',
+		responsePreferencesPreview: 'Pokaż dodawane instrukcje',
+		responsePreferencesEmpty:
+			'Brak aktywnych preferencji — żadne dodatkowe instrukcje nie zostaną dodane.',
+		responsePrefNoHeadings: 'Bez nagłówków Markdown',
+		responsePrefNoHeadingsHelp:
+			'Pogrubione tytuły zamiast nagłówków. Kod i dosłowne cytaty pozostają bez zmian.',
+		responsePrefTables: 'Używaj tabel',
+		responsePrefTablesHelp:
+			'Porównania i uporządkowane dane w tabelach, nie proste zdania ani procedury.',
+		responsePrefCharts: 'Używaj wykresów',
+		responsePrefChartsHelp:
+			'Natywne wykresy dla sensownych porównań, trendów i rozkładów. Bez zmyślonych danych.',
+		responsePrefNoDecorations: 'Bez emoji i ozdobników',
+		responsePrefNoDecorationsHelp:
+			'Bez dekoracyjnych symboli. Zachowaj znaki językowe, matematykę, kod i cytaty.',
+		responsePrefConcise: 'Zwięzłe odpowiedzi',
+		responsePrefConciseHelp:
+			'Bez zbędnych wstępów i powtórzeń, z zachowaniem istotnych informacji.',
+		responsePrefExamples: 'Praktyczne przykłady',
+		responsePrefExamplesHelp:
+			'Konkretne przykłady przy złożonych tematach, tylko gdy są przydatne.',
+		responsePrefSteps: 'Instrukcje krok po kroku',
+		responsePrefStepsHelp: 'Procedury w numerowanych krokach, w kolejności wykonania.',
+		responsePrefUserLanguage: 'Język użytkownika',
+		responsePrefUserLanguageHelp:
+			'Język ostatniej wiadomości, chyba że użytkownik wyraźnie poprosi o inny.',
 		groupInterface: 'Interfejs',
 		groupApplicationBackground: 'Tło aplikacji',
 		backgroundImageDescription:

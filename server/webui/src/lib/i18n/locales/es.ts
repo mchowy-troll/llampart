@@ -264,6 +264,36 @@ export const es: TranslationDictionary = {
 		fieldCustomJson: 'JSON personalizado',
 		groupConnection: 'Conexión',
 		groupSystemMessage: 'Mensaje del sistema',
+		groupResponsePreferences: 'Preferencias de respuesta',
+		responsePreferencesDescription:
+			'Elige las reglas de formato y estilo de las respuestas. llampart las añade automáticamente a las instrucciones del sistema.',
+		responsePreferencesFormatting: 'Formato y visualizaciones',
+		responsePreferencesStyle: 'Estilo de respuesta',
+		responsePreferencesPreview: 'Mostrar las instrucciones añadidas',
+		responsePreferencesEmpty:
+			'No hay preferencias activas — no se añadirán instrucciones adicionales.',
+		responsePrefNoHeadings: 'Sin encabezados Markdown',
+		responsePrefNoHeadingsHelp:
+			'Títulos de sección en negrita. Se conservan el código y las citas literales.',
+		responsePrefTables: 'Usar tablas',
+		responsePrefTablesHelp:
+			'Tablas para comparaciones y datos estructurados, no para frases simples o procedimientos.',
+		responsePrefCharts: 'Usar gráficos',
+		responsePrefChartsHelp:
+			'Gráficos nativos para comparaciones, tendencias y distribuciones significativas. Sin inventar datos.',
+		responsePrefNoDecorations: 'Sin emojis ni adornos',
+		responsePrefNoDecorationsHelp:
+			'Sin símbolos decorativos. Conservar caracteres lingüísticos, matemáticas, código y citas.',
+		responsePrefConcise: 'Respuestas concisas',
+		responsePrefConciseHelp:
+			'Sin introducciones innecesarias ni repeticiones, manteniendo la información esencial.',
+		responsePrefExamples: 'Ejemplos prácticos',
+		responsePrefExamplesHelp: 'Ejemplos concretos para temas complejos, solo cuando sean útiles.',
+		responsePrefSteps: 'Instrucciones paso a paso',
+		responsePrefStepsHelp: 'Pasos numerados para procedimientos, en orden de ejecución.',
+		responsePrefUserLanguage: 'Idioma del usuario',
+		responsePrefUserLanguageHelp:
+			'El idioma del último mensaje, salvo petición explícita de otro idioma.',
 		groupInterface: 'Interfaz',
 		groupApplicationBackground: 'Fondo de la aplicación',
 		backgroundImageDescription:

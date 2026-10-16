@@ -264,6 +264,37 @@ export const fr: TranslationDictionary = {
 		fieldCustomJson: 'JSON personnalisé',
 		groupConnection: 'Connexion',
 		groupSystemMessage: 'Message système',
+		groupResponsePreferences: 'Préférences de réponse',
+		responsePreferencesDescription:
+			'Choisissez les règles de présentation et de style des réponses. llampart les ajoute automatiquement aux instructions système.',
+		responsePreferencesFormatting: 'Présentation et visualisations',
+		responsePreferencesStyle: 'Style de réponse',
+		responsePreferencesPreview: 'Afficher les instructions ajoutées',
+		responsePreferencesEmpty:
+			'Aucune préférence active — aucune instruction supplémentaire ne sera ajoutée.',
+		responsePrefNoHeadings: 'Sans titres Markdown',
+		responsePrefNoHeadingsHelp:
+			'Titres de section en gras. Le code et les citations littérales sont conservés.',
+		responsePrefTables: 'Utiliser des tableaux',
+		responsePrefTablesHelp:
+			'Tableaux pour les comparaisons et données structurées, pas pour les phrases simples ou procédures.',
+		responsePrefCharts: 'Utiliser des graphiques',
+		responsePrefChartsHelp:
+			'Graphiques natifs pour les comparaisons, tendances et distributions pertinentes. Aucune donnée inventée.',
+		responsePrefNoDecorations: 'Sans emoji ni décorations',
+		responsePrefNoDecorationsHelp:
+			'Sans symboles décoratifs. Conserver les caractères linguistiques, les mathématiques, le code et les citations.',
+		responsePrefConcise: 'Réponses concises',
+		responsePrefConciseHelp:
+			'Sans introductions superflues ni répétitions, en gardant les informations essentielles.',
+		responsePrefExamples: 'Exemples pratiques',
+		responsePrefExamplesHelp:
+			'Des exemples concrets pour les sujets complexes, uniquement si utiles.',
+		responsePrefSteps: 'Instructions étape par étape',
+		responsePrefStepsHelp: 'Étapes numérotées pour les procédures, dans leur ordre d’exécution.',
+		responsePrefUserLanguage: 'Langue de l’utilisateur',
+		responsePrefUserLanguageHelp:
+			'La langue du dernier message, sauf demande explicite d’une autre langue.',
 		groupInterface: 'Interface',
 		groupApplicationBackground: 'Arrière-plan de l’application',
 		backgroundImageDescription:

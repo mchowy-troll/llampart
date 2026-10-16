@@ -260,6 +260,36 @@ export const it: TranslationDictionary = {
 		fieldCustomJson: 'JSON personalizzato',
 		groupConnection: 'Connessione',
 		groupSystemMessage: 'Messaggio di sistema',
+		groupResponsePreferences: 'Preferenze di risposta',
+		responsePreferencesDescription:
+			'Scegli le regole di formattazione e stile delle risposte. llampart le aggiunge automaticamente alle istruzioni di sistema.',
+		responsePreferencesFormatting: 'Formattazione e visualizzazioni',
+		responsePreferencesStyle: 'Stile delle risposte',
+		responsePreferencesPreview: 'Mostra le istruzioni aggiunte',
+		responsePreferencesEmpty:
+			'Nessuna preferenza attiva — non verranno aggiunte istruzioni supplementari.',
+		responsePrefNoHeadings: 'Senza titoli Markdown',
+		responsePrefNoHeadingsHelp:
+			'Titoli di sezione in grassetto. Codice e citazioni letterali restano invariati.',
+		responsePrefTables: 'Usa tabelle',
+		responsePrefTablesHelp:
+			'Tabelle per confronti e dati strutturati, non per frasi semplici o procedure.',
+		responsePrefCharts: 'Usa grafici',
+		responsePrefChartsHelp:
+			'Grafici nativi per confronti, tendenze e distribuzioni significativi. Non inventare dati.',
+		responsePrefNoDecorations: 'Senza emoji o decorazioni',
+		responsePrefNoDecorationsHelp:
+			'Niente simboli decorativi. Conserva caratteri linguistici, matematica, codice e citazioni.',
+		responsePrefConcise: 'Risposte concise',
+		responsePrefConciseHelp:
+			'Senza introduzioni superflue o ripetizioni, mantenendo le informazioni essenziali.',
+		responsePrefExamples: 'Esempi pratici',
+		responsePrefExamplesHelp: 'Esempi concreti per argomenti complessi, solo quando utili.',
+		responsePrefSteps: 'Istruzioni passo dopo passo',
+		responsePrefStepsHelp: 'Passaggi numerati per le procedure, in ordine di esecuzione.',
+		responsePrefUserLanguage: 'Lingua dell’utente',
+		responsePrefUserLanguageHelp:
+			'La lingua dell’ultimo messaggio, salvo richiesta esplicita di un’altra lingua.',
 		groupInterface: 'Interfaccia',
 		groupApplicationBackground: "Sfondo dell'app",
 		backgroundImageDescription:

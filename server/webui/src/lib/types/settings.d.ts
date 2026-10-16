@@ -20,6 +20,7 @@ import type { ApiChatCompletionToolCall } from './api';
 import type { InterfaceLanguage } from '$lib/i18n/types';
 import type { ConversationTimestampFormat } from '$lib/utils/conversation-timestamp';
 import type { ColorMode } from '$lib/enums/ui';
+import type { ResponsePreferenceKey } from '$lib/utils/response-preferences';
 
 export interface ChatStreamCheckpoint {
 	providerContinuation?: import('./provider').ProviderContinuation;
@@ -101,6 +102,7 @@ export interface SettingsFieldGroup {
 	framed?: boolean;
 	layout?: SettingsFieldGroupLayout;
 	fillMode?: SettingsFieldGroupFillMode;
+	subgroups?: { id: string; title: string; keys: string[] }[];
 	requiredProviderCapabilities?: ProviderCapabilityKey[];
 	visibleForProviders?: ApiProviderId[];
 }
@@ -213,9 +215,10 @@ export type KnownSettingsConfig = Omit<
 	conversationTimestampFormat: ConversationTimestampFormat;
 };
 
-export type SettingsConfigType = KnownSettingsConfig & {
-	[key: string]: SettingsConfigValue;
-};
+export type SettingsConfigType = KnownSettingsConfig &
+	Record<ResponsePreferenceKey, boolean> & {
+		[key: string]: SettingsConfigValue;
+	};
 
 /**
  * Parameter synchronization types for server defaults and user overrides
