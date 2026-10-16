@@ -300,7 +300,7 @@
 		border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
 		border-radius: 0.375rem;
 		box-shadow: none;
-		font-size: 0.7rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.7);
 		line-height: 1rem;
 		font-weight: 500;
 		color: var(--muted-foreground);

@@ -141,8 +141,11 @@ or new JSON options are introduced. The existing schema has **no stacked mode**.
   and tooltip fade respect `prefers-reduced-motion`. There is no chart entry/replay
   animation on streaming append, glow or text shadow.
 
-All text inherits the active interface family, weights and rem scale, with
+All text inherits the active interface family, weights and text-size unit, with
 synthetic font faces disabled. No chart code lists supported font families.
+Explicit pixel font sizes affect text, not chart geometry; the default retains
+the existing responsive rem baseline. Local static faces are embedded by actual
+used weight/style, rather than truncating a whole-family list of faces.
 
 ## Exports
 

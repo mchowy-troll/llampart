@@ -400,7 +400,7 @@
 	}
 	.chart-actions :global(button) {
 		font: inherit;
-		font-size: 0.75rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
 		padding: 0.25rem 0.4rem;
 		height: 1.75rem;
 		text-shadow: none;
@@ -413,7 +413,7 @@
 		height: 20rem;
 		min-width: 0;
 		margin: 1rem;
-		font-size: 0.75rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
 	}
 	.chart-plot :global(text) {
 		font-family: inherit;
@@ -475,7 +475,7 @@
 		gap: 0.4rem;
 		max-width: 100%;
 		font: inherit;
-		font-size: 0.8rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.8);
 		text-align: left;
 		overflow-wrap: anywhere;
 		cursor: pointer;
@@ -499,7 +499,7 @@
 	}
 	.chart-export-error {
 		padding: 0 1rem 1rem;
-		font-size: 0.875rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
 	}
 	:global(.llampart-chart-tooltip-root) {
 		z-index: 999999 !important;
@@ -518,7 +518,7 @@
 		border: 1px solid var(--border);
 		border-radius: 0.5rem;
 		font-family: inherit;
-		font-size: 0.8rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.8);
 		line-height: 1.6;
 		text-shadow: none;
 	}

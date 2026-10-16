@@ -1,10 +1,17 @@
 import { readFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import { SETTING_CONFIG_DEFAULT } from '$lib/constants';
 import { materialAlpha, resolveGlassMaterials } from '$lib/themes/frosted-glass/materials';
 import { frostedGlassTheme } from '$lib/themes/frosted-glass';
 import { getThemeOptions } from '$lib/themes/registry';
-import { applyTypography, getFontVariants, normalizeUiScalePreset } from '$lib/utils/typography';
+import {
+	applyTypography,
+	FONT_FAMILIES,
+	FONT_SIZES,
+	getFontVariants,
+	normalizeUiScalePreset
+} from '$lib/utils/typography';
 import {
 	averageWallpaperColor,
 	FALLBACK_WALLPAPER_ACCENT,
@@ -107,7 +114,7 @@ describe('appearance settings and material palette', () => {
 		const patch = {
 			frostedGlassMilkiness: 37,
 			frostedGlassOpaque: true,
-			fontFamily: 'dm-serif-display',
+			fontFamily: 'crimson-text',
 			fontVariant: '400',
 			uiScale: '105'
 		};
@@ -146,6 +153,27 @@ describe('local typography', () => {
 		expect(values.size).toBe(0);
 		expect(root.dataset).toEqual({});
 	});
+	it('scales fixed-pixel captions relative to rem and updates on resize without changing root size', () => {
+		const { root, values } = rootFixture();
+		let rem = '12px';
+		const addEventListener = vi.fn(),
+			removeEventListener = vi.fn();
+		vi.stubGlobal('window', { addEventListener, removeEventListener });
+		vi.stubGlobal('getComputedStyle', () => ({ fontSize: rem }));
+		try {
+			const cleanup = applyTypography(root, { ...defaults, fontSize: '18' });
+			expect(values.get('--llampart-fixed-text-scale')).toBe('1.5');
+			rem = '16px';
+			addEventListener.mock.calls[0][1]();
+			expect(values.get('--llampart-fixed-text-scale')).toBe('1.125');
+			expect(values.get('--llampart-text-unit')).toBe('18px');
+			cleanup();
+			expect(removeEventListener).toHaveBeenCalledWith('resize', addEventListener.mock.calls[0][1]);
+			expect(values.size).toBe(0);
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
 
 	it.each(['merriweather', 'frank-ruhl-libre'])(
 		'uses real %s weights with hierarchy and cleans up',
@@ -170,23 +198,36 @@ describe('local typography', () => {
 		}
 	);
 
-	it('limits DM Serif Display to base weight 400, with real italic reserved for semantic emphasis', () => {
-		expect(getFontVariants('dm-serif-display').map((item) => item.value)).toEqual(['400']);
-		for (const fontVariant of ['400', '700', '400-italic']) {
+	it('offers only real new-family weights and normalizes unsupported Crimson weights', () => {
+		expect(Object.keys(FONT_FAMILIES)).toEqual([
+			'default',
+			'merriweather',
+			'frank-ruhl-libre',
+			'crimson-text',
+			'libre-caslon-condensed',
+			'fira-sans'
+		]);
+		expect(getFontVariants('crimson-text').map((item) => item.value)).toEqual([
+			'400',
+			'600',
+			'700'
+		]);
+		for (const fontVariant of ['400', '500', '400-italic']) {
 			const { root, values } = rootFixture();
 			const cleanup = applyTypography(root, {
 				...defaults,
-				fontFamily: 'dm-serif-display',
+				fontFamily: 'crimson-text',
 				fontVariant
 			});
-			for (const weight of ['weight', 'medium', 'semibold', 'bold'])
-				expect(values.get(`--llampart-font-${weight}`)).toBe('400');
+			expect(values.get('--llampart-font-weight')).toBe('400');
+			expect(values.get('--llampart-font-medium')).toBe('600');
+			expect(values.get('--llampart-font-bold')).toBe('700');
 			expect(values.get('--llampart-font-style')).toBe('normal');
 			cleanup();
 			expect(values.size).toBe(0);
 		}
 		expect(
-			parseSettingsConfig({ fontFamily: 'dm-serif-display', fontVariant: '700' }).fontVariant
+			parseSettingsConfig({ fontFamily: 'crimson-text', fontVariant: '500' }).fontVariant
 		).toBe('400');
 		expect(
 			parseSettingsConfig({ fontFamily: 'merriweather', fontVariant: '400-italic' }).fontVariant
@@ -340,22 +381,55 @@ describe('local typography', () => {
 				expect(value).toContain('var(--llampart-frosted-glass-accent)');
 	});
 
-	it('ships ten real local WOFF2 faces and OFL licenses without runtime CDN CSS', () => {
+	it('ships real local WOFF2 faces and OFL licenses without runtime CDN CSS', () => {
 		const dir = new URL('../../static/fonts/', import.meta.url);
 		const files = readdirSync(dir).filter((name) => name.endsWith('.woff2'));
-		expect(files).toHaveLength(10);
-		const css = readFileSync(
-			new URL('../../src/lib/styles/typography.css', import.meta.url),
-			'utf8'
-		);
+		expect(files).toHaveLength(38);
+		const css =
+			readFileSync(new URL('../../src/lib/styles/typography.css', import.meta.url), 'utf8') +
+			readFileSync(new URL('../../src/lib/styles/local-fonts.css', import.meta.url), 'utf8');
 		expect(css).not.toMatch(/https?:|@import/);
 		for (const file of files) {
 			expect(readFileSync(new URL(file, dir)).subarray(0, 4).toString()).toBe('wOF2');
 			expect(css).toContain(`/fonts/${file}`);
 		}
-		for (const family of ['merriweather', 'frank-ruhl-libre', 'dm-serif-display'])
+		const sources = JSON.parse(readFileSync(new URL('sources.json', dir), 'utf8')) as {
+			file: string;
+			bytes: number;
+			sha256: string;
+			url: string;
+		}[];
+		expect(sources).toHaveLength(32);
+		for (const source of sources) {
+			const data = readFileSync(new URL(source.file, dir));
+			expect(data.length).toBe(source.bytes);
+			expect(createHash('sha256').update(data).digest('hex')).toBe(source.sha256);
+			expect(source.url).toMatch(/^https:\/\/fonts.gstatic.com\//);
+		}
+		for (const family of Object.keys(FONT_FAMILIES).filter((id) => id !== 'default'))
 			expect(readFileSync(new URL(`${family}-OFL.txt`, dir), 'utf8')).toMatch(
 				/SIL OPEN FONT LICENSE Version 1.1/i
 			);
 	});
+	it.each(FONT_SIZES)('applies %s px without touching root rem or family', (fontSize) => {
+		const { root, values } = rootFixture();
+		const cleanup = applyTypography(root, { ...defaults, fontSize });
+		expect(values.get('--llampart-text-unit')).toBe(`${fontSize}px`);
+		expect(values.size).toBe(1);
+		cleanup();
+		expect(values.size).toBe(0);
+		expect(parseSettingsStorage(serializeSettingsStorage({ ...defaults, fontSize })).fontSize).toBe(
+			fontSize
+		);
+	});
+	it.each(['11', '21', '100', '105', '16px', 16, NaN])(
+		'rejects invalid font size %s and falls back on storage load',
+		(fontSize) => {
+			expect(() => validateSettingsPatch({ fontSize })).toThrow();
+			expect(parseSettingsConfig({ fontSize, temperature: 0.3 })).toMatchObject({
+				fontSize: 'default',
+				temperature: 0.3
+			});
+		}
+	);
 });

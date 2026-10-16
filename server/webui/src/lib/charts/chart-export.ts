@@ -21,7 +21,7 @@ export async function chartSvg(frame: HTMLElement, plot: HTMLElement): Promise<s
 	svg.style.setProperty('font-synthesis', 'none');
 	const defs = document.createElementNS(NS, 'defs');
 	const fonts = document.createElementNS(NS, 'style');
-	fonts.textContent = await embeddedSvgFonts(style.fontFamily);
+	fonts.textContent = await embeddedSvgFonts(style.fontFamily, frame);
 	defs.append(fonts);
 	svg.append(defs);
 	const background = document.createElementNS(NS, 'rect');

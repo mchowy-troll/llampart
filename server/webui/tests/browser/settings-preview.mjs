@@ -33,6 +33,7 @@ const initial = {
 	uiScale: '100',
 	fontFamily: 'default',
 	fontVariant: '400',
+	fontSize: 'default',
 	frostedGlassWallpaper: 'frosted-glass-02',
 	frostedGlassMilkiness: 50,
 	frostedGlassOpaque: false
@@ -88,6 +89,8 @@ async function preview() {
 	await page.locator('#uiScale').fill('110');
 	await select('fontFamily', 'Merriweather');
 	await select('fontVariant', 'Bold — 700');
+	await select('fontSize', '18 px');
+	await page.waitForFunction(() => getComputedStyle(document.body).fontSize === '18px');
 	await page.getByRole('button', { name: 'Frosted Glass 05', exact: true }).click();
 	await page.locator('#frostedGlassMilkiness').fill('17');
 	await page.getByLabel('Wyłącz przezroczystość', { exact: true }).check();
@@ -134,6 +137,12 @@ try {
 		await close(method);
 		await page.waitForFunction(() => document.documentElement.dataset.llampartUiScale === '100');
 		assert.equal(await page.locator('html').getAttribute('data-llampart-font'), null);
+		assert.equal(
+			await page
+				.locator('html')
+				.evaluate((el) => el.style.getPropertyValue('--llampart-text-unit')),
+			''
+		);
 		assert.equal(
 			await page
 				.locator('html')
@@ -241,6 +250,13 @@ try {
 	await page.getByRole('button', { name: 'Przywróć domyślne', exact: true }).click();
 	await page.waitForFunction(() => document.documentElement.dataset.llampartUiScale === '100');
 	assert.equal(await page.locator('#uiScale').inputValue(), '100');
+	assert.equal(
+		await page
+			.locator('#fontSize')
+			.textContent()
+			.then((s) => s.trim()),
+		'Domyślna'
+	);
 	await close();
 	assert.equal(await scale(), '100');
 	console.log('PASS E: confirmed reset clears the previous preview');
@@ -255,16 +271,19 @@ try {
 	assert.equal(committed.uiScale, '110');
 	assert.equal(committed.fontFamily, 'merriweather');
 	assert.equal(committed.fontVariant, '700');
+	assert.equal(committed.fontSize, '18');
 	assert.equal(committed.frostedGlassMilkiness, 17);
 	assert.equal(committed.frostedGlassOpaque, true);
 	await page.reload();
 	await page.waitForSelector('textarea');
 	await page.waitForFunction(() => document.documentElement.dataset.llampartUiScale === '110');
 	assert.equal(await page.locator('html').getAttribute('data-llampart-font'), 'merriweather');
+	assert.equal(await page.locator('body').evaluate((el) => getComputedStyle(el).fontSize), '18px');
 	await open();
 	await appearance();
 	assert.equal(await page.locator('#uiScale').inputValue(), '110');
-	await select('fontFamily', 'DM Serif Display');
+	await select('fontVariant', 'Medium — 500');
+	await select('fontFamily', 'Crimson Text');
 	assert.match(await page.locator('#fontVariant').textContent(), /400/);
 	await save();
 	await dialog.waitFor({ state: 'hidden' });

@@ -1205,7 +1205,7 @@
 		gap: 0.5rem;
 		margin: 0.5rem 0;
 		color: hsl(var(--muted-foreground));
-		font-size: 0.875rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
 		line-height: 1.35;
 	}
 
@@ -1337,7 +1337,7 @@
 	}
 
 	.table-preview-title {
-		font-size: 1rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 1);
 		font-weight: 600;
 	}
 
@@ -1361,7 +1361,7 @@
 		overflow-x: visible;
 		border-radius: 0;
 		border: none;
-		font-size: 0.875rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
 	}
 
 	/* Base typography styles */
@@ -1376,40 +1376,40 @@
 
 	/* Headers with consistent spacing */
 	div :global(h1) {
-		font-size: 1.875rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 1.875);
 		font-weight: 700;
 		line-height: 1.2;
 		margin: 1.5rem 0 0.75rem 0;
 	}
 
 	div :global(h2) {
-		font-size: 1.5rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 1.5);
 		font-weight: 600;
 		line-height: 1.3;
 		margin: 1.25rem 0 0.5rem 0;
 	}
 
 	div :global(h3) {
-		font-size: 1.25rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 1.25);
 		font-weight: 600;
 		margin: 1.5rem 0 0.5rem 0;
 		line-height: 1.4;
 	}
 
 	div :global(h4) {
-		font-size: 1.125rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 1.125);
 		font-weight: 600;
 		margin: 0.75rem 0 0.25rem 0;
 	}
 
 	div :global(h5) {
-		font-size: 1rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 1);
 		font-weight: 600;
 		margin: 0.5rem 0 0.25rem 0;
 	}
 
 	div :global(h6) {
-		font-size: 0.875rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
 		font-weight: 600;
 		margin: 0.5rem 0 0.25rem 0;
 	}
@@ -1434,7 +1434,7 @@
 		color: var(--muted-foreground);
 		padding: 0.125rem 0.375rem;
 		border-radius: 0.375rem;
-		font-size: 0.875rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
 		font-family:
 			ui-monospace, SFMono-Regular, 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
 			'Liberation Mono', Menlo, monospace;
@@ -1633,7 +1633,7 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 1rem 1rem 0.75rem;
-		font-size: 0.875rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
 		position: relative;
 		top: 0;
 		left: 0;
@@ -1650,7 +1650,7 @@
 			ui-monospace, SFMono-Regular, 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
 			'Liberation Mono', Menlo, monospace;
 		text-transform: uppercase;
-		font-size: 0.75rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
 		letter-spacing: 0.05em;
 	}
 
@@ -1702,7 +1702,7 @@
 		margin: 0;
 		border-radius: 0;
 		border: none;
-		font-size: 0.875rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
 	}
 
 	/* Mentions and hashtags */
@@ -1767,7 +1767,7 @@
 		position: absolute;
 		top: -0.5rem;
 		left: 0.5rem;
-		font-size: 3rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 3);
 		color: var(--muted-foreground);
 		font-family: serif;
 		line-height: 1;
@@ -2066,19 +2066,19 @@
 	/* Responsive adjustments */
 	@media (max-width: 640px) {
 		div :global(h1) {
-			font-size: 1.5rem;
+			font-size: calc(var(--llampart-text-unit, 1rem) * 1.5);
 		}
 
 		div :global(h2) {
-			font-size: 1.25rem;
+			font-size: calc(var(--llampart-text-unit, 1rem) * 1.25);
 		}
 
 		div :global(h3) {
-			font-size: 1.125rem;
+			font-size: calc(var(--llampart-text-unit, 1rem) * 1.125);
 		}
 
 		div :global(table) {
-			font-size: 0.875rem;
+			font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
 			min-width: max-content;
 		}
 
@@ -2119,7 +2119,7 @@
 	}
 
 	div :global(.image-error-text) {
-		font-size: 0.875rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
 	}
 
 	div :global(.image-error-link) {
@@ -2127,7 +2127,7 @@
 		align-items: center;
 		gap: 0.375rem;
 		padding: 0.5rem 1rem;
-		font-size: 0.875rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
 		font-weight: 500;
 		color: var(--primary);
 		background: var(--background);
@@ -2271,7 +2271,7 @@
 		box-shadow: none;
 		filter: none;
 		font-family: inherit;
-		font-size: 0.75rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
 		font-weight: 500;
 		line-height: 1rem;
 		letter-spacing: 0;

@@ -193,6 +193,7 @@ export const fr: TranslationDictionary = {
 		groupTypography: 'Typographie',
 		fieldFontFamily: 'Famille de police',
 		fieldFontVariant: 'Variante de police',
+		fieldFontSize: 'Taille de police',
 		fontDefault: 'Par défaut',
 		defaultPrefix: 'Par défaut :',
 		resetToDefault: 'Réinitialiser par défaut',
@@ -389,6 +390,8 @@ export const fr: TranslationDictionary = {
 			uiScale: 'Échelle de l’interface de bureau : 90% à 110%, par pas de 5%.',
 			fontFamily: 'Police locale. Le choix par défaut conserve la typographie actuelle.',
 			fontVariant: 'Graisse de base réelle. Les emphases et polices de code sont conservées.',
+			fontSize:
+				'Taille de base du texte en px, indépendante de l’échelle de l’interface. Par défaut, conserve la taille adaptative existante.',
 			pasteLongTextToFileLen:
 				"Lors du collage d'un long texte, celui-ci sera converti en fichier. Cette valeur permet de contrôler la longueur. La valeur 0 désactive ce comportement.",
 			copyTextAttachmentsAsPlainText:

@@ -94,6 +94,7 @@ class SettingsStore {
 			'uiScale',
 			'fontFamily',
 			'fontVariant',
+			'fontSize',
 			...Object.keys(THEME_REGISTRY).flatMap((id) =>
 				Object.keys(THEME_REGISTRY[id as keyof typeof THEME_REGISTRY].configDefaults)
 			)

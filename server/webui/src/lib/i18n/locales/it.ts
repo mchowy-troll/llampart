@@ -191,6 +191,7 @@ export const it: TranslationDictionary = {
 		groupTypography: 'Tipografia',
 		fieldFontFamily: 'Famiglia di caratteri',
 		fieldFontVariant: 'Variante del carattere',
+		fieldFontSize: 'Dimensione del carattere',
 		fontDefault: 'Predefinita',
 		defaultPrefix: 'Predefinito:',
 		resetToDefault: 'Ripristina predefiniti',
@@ -382,6 +383,8 @@ export const it: TranslationDictionary = {
 			uiScale: 'Scala dell’interfaccia desktop dal 90% al 110%, a passi del 5%.',
 			fontFamily: 'Carattere locale. Predefinita conserva la tipografia attuale.',
 			fontVariant: 'Peso di base reale. Enfasi e caratteri del codice restano invariati.',
+			fontSize:
+				'Dimensione base del testo in px, indipendente dalla scala dell’interfaccia. Predefinita mantiene la dimensione adattiva esistente.',
 			pasteLongTextToFileLen:
 				'Quando incolli un testo lungo, verrà convertito in un file. Questo valore controlla la lunghezza. Il valore 0 disabilita questo comportamento.',
 			copyTextAttachmentsAsPlainText:

@@ -193,6 +193,7 @@ export const de: TranslationDictionary = {
 		groupTypography: 'Typografie',
 		fieldFontFamily: 'Schriftfamilie',
 		fieldFontVariant: 'Schriftvariante',
+		fieldFontSize: 'Schriftgröße',
 		fontDefault: 'Standard',
 		defaultPrefix: 'Standard:',
 		resetToDefault: 'Auf Standard zurücksetzen',
@@ -386,6 +387,8 @@ export const de: TranslationDictionary = {
 			uiScale: 'Skaliert die Desktop-Oberfläche von 90% bis 110% in 5%-Schritten.',
 			fontFamily: 'Lokale Schrift. Standard bewahrt die bisherige Typografie.',
 			fontVariant: 'Echte Grundstärke. Hervorhebungen und Code-Schriften bleiben erhalten.',
+			fontSize:
+				'Basisschriftgröße in px, unabhängig von der Oberflächenskalierung. Standard behält die bisherige responsive Größe bei.',
 			pasteLongTextToFileLen:
 				'Beim Einfügen von langem Text wird dieser in eine Datei umgewandelt. Mit diesem Wert steuern Sie die Länge. Wert 0 deaktiviert dieses Verhalten.',
 			copyTextAttachmentsAsPlainText:

@@ -34,8 +34,9 @@ describe('settings runtime schema', () => {
 		const before = { ...settingsStore.config };
 		try {
 			settingsStore.updateMultipleConfig({
-				fontFamily: 'dm-serif-display',
-				fontVariant: '700',
+				fontFamily: 'crimson-text',
+				fontVariant: '500',
+				fontSize: '20',
 				uiScale: '110',
 				frostedGlassMilkiness: 12,
 				frostedGlassOpaque: true
@@ -44,6 +45,7 @@ describe('settings runtime schema', () => {
 			settingsStore.resetConfig();
 			expect(settingsStore.config).toMatchObject({
 				fontFamily: 'default',
+				fontSize: 'default',
 				fontVariant: '400',
 				uiScale: '100',
 				frostedGlassMilkiness: 50,
@@ -60,10 +62,13 @@ describe('settings runtime schema', () => {
 	it.each([
 		{ fontFamily: 'merriweather', fontVariant: '700' },
 		{ fontFamily: 'frank-ruhl-libre', fontVariant: '600' },
-		{ fontFamily: 'dm-serif-display', fontVariant: '400' }
+		{ fontFamily: 'crimson-text', fontVariant: '600' },
+		{ fontFamily: 'libre-caslon-condensed', fontVariant: '500' },
+		{ fontFamily: 'fira-sans', fontVariant: '700' }
 	])('exports and imports $fontFamily appearance without losing saved milkiness', async (font) => {
 		const appearance = {
 			...font,
+			fontSize: '18',
 			uiScale: '95',
 			frostedGlassMilkiness: 27,
 			frostedGlassOpaque: true,
@@ -96,7 +101,7 @@ describe('settings runtime schema', () => {
 			vi.unstubAllGlobals();
 		}
 	});
-	it.each(['inter', 'open-sans', 'instrument-serif', 'unknown-retired-font'])(
+	it.each(['dm-serif-display', 'inter', 'open-sans', 'instrument-serif', 'unknown-retired-font'])(
 		'migrates %s independently through storage, strict parsing, import and export',
 		async (fontFamily) => {
 			const legacy = {
@@ -150,10 +155,10 @@ describe('settings runtime schema', () => {
 		'normalizes unsupported base weight %s without dropping other values',
 		(fontVariant) => {
 			expect(
-				parseSettingsConfig({ fontFamily: 'dm-serif-display', fontVariant, uiScale: '95' })
-			).toMatchObject({ fontFamily: 'dm-serif-display', fontVariant: '400', uiScale: '95' });
-			expect(validateSettingsPatch({ fontFamily: 'dm-serif-display', fontVariant })).toMatchObject({
-				fontFamily: 'dm-serif-display',
+				parseSettingsConfig({ fontFamily: 'crimson-text', fontVariant, uiScale: '95' })
+			).toMatchObject({ fontFamily: 'crimson-text', fontVariant: '400', uiScale: '95' });
+			expect(validateSettingsPatch({ fontFamily: 'crimson-text', fontVariant })).toMatchObject({
+				fontFamily: 'crimson-text',
 				fontVariant: '400'
 			});
 		}

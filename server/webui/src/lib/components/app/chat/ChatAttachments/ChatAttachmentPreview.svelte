@@ -361,7 +361,7 @@
 	}
 
 	.llampart-attachment-markdown-preview {
-		font-size: 0.9375rem;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.9375);
 		line-height: 1.6;
 	}
 

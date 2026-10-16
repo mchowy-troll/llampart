@@ -107,7 +107,7 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	font-size: 1rem;
+	font-size: calc(var(--llampart-text-unit, 1rem) * 1);
 	font-weight: 600;
 	line-height: 1.25;
 }
@@ -115,7 +115,7 @@
 .llampart-attachment-preview-dialog-description {
 	margin: 0.125rem 0 0;
 	color: var(--muted-foreground);
-	font-size: 0.75rem;
+	font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
 	line-height: 1.2;
 }
 
@@ -199,7 +199,7 @@
 	max-height: 3rem !important;
 	flex: 0 0 3rem !important;
 	padding-inline: 0.25rem !important;
-	font-size: 0.8125rem !important;
+	font-size: calc(var(--llampart-text-unit, 1rem) * 0.8125) !important;
 	font-weight: 700 !important;
 	line-height: 1 !important;
 	letter-spacing: -0.045em !important;

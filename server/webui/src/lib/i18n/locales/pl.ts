@@ -192,6 +192,7 @@ export const pl: TranslationDictionary = {
 		groupTypography: 'Typografia',
 		fieldFontFamily: 'Rodzina czcionek',
 		fieldFontVariant: 'Odmiana czcionki',
+		fieldFontSize: 'Wielkość czcionki',
 		fontDefault: 'Domyślna',
 		defaultPrefix: 'Domyślnie:',
 		resetToDefault: 'Przywróć domyślne',
@@ -384,6 +385,8 @@ export const pl: TranslationDictionary = {
 			uiScale: 'Skala interfejsu desktopowego, od 90% do 110% co 5%.',
 			fontFamily: 'Lokalna czcionka interfejsu. Domyślna zachowuje dotychczasową typografię.',
 			fontVariant: 'Rzeczywista grubość bazowa. Wyróżnienia i czcionki kodu pozostają zachowane.',
+			fontSize:
+				'Bazowy rozmiar tekstu w px, niezależny od skali interfejsu. Domyślna zachowuje dotychczasowy responsywny rozmiar.',
 			pasteLongTextToFileLen:
 				'Przy wklejaniu długiego tekstu zostanie on zamieniony na plik. Tą wartością sterujesz długością. Wartość 0 wyłącza to zachowanie.',
 			copyTextAttachmentsAsPlainText:

@@ -193,6 +193,7 @@ export const en: TranslationDictionary = {
 		groupTypography: 'Typography',
 		fieldFontFamily: 'Font family',
 		fieldFontVariant: 'Font variant',
+		fieldFontSize: 'Font size',
 		fontDefault: 'Default',
 		defaultPrefix: 'Default:',
 		resetToDefault: 'Reset to default',
@@ -383,6 +384,8 @@ export const en: TranslationDictionary = {
 			uiScale: 'Adjust the desktop interface scale based on the automatic responsive setting.',
 			fontFamily: 'Local interface font. Default keeps the existing typography.',
 			fontVariant: 'Real base weight. Emphasis and code fonts are preserved.',
+			fontSize:
+				'Base text size in px, independent of interface scale. Default preserves the existing responsive size.',
 			pasteLongTextToFileLen:
 				'When pasting long text, it will be converted into a file. Set the value to control the length. Value 0 disables this behavior.',
 			copyTextAttachmentsAsPlainText:

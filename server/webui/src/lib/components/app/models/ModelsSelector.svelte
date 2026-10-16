@@ -453,7 +453,7 @@
 	/* llampart-model-selector-badge-rem-scale */
 	:global(.llampart-model-selector-trigger span[class*='text-[10px]']),
 	:global(.llampart-model-selector-option span[class*='text-[10px]']) {
-		font-size: 0.625rem !important;
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.625) !important;
 		line-height: 0.85rem !important;
 		padding: 0 0.22rem !important;
 		border-radius: 0.34rem !important;

@@ -551,7 +551,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .agentic-turn-label {
 		--llampart-glass-filter-14-108,
 		blur(14px) saturate(108%)
 	) !important;
-	font-size: 0.7rem !important;
+	font-size: calc(var(--llampart-text-unit, 1rem) * 0.7) !important;
 	line-height: 1rem !important;
 	font-weight: 400 !important;
 	font-variation-settings: 'wght' 400 !important;
@@ -1527,7 +1527,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-messag
 		--llampart-glass-filter-14-108,
 		blur(14px) saturate(108%)
 	) !important;
-	font-size: 0.7rem !important;
+	font-size: calc(var(--llampart-text-unit, 1rem) * 0.7) !important;
 	line-height: 1rem !important;
 	font-weight: 400 !important;
 	font-variation-settings: 'wght' 400 !important;
@@ -1637,7 +1637,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-system-messag
 		--llampart-glass-filter-14-108,
 		blur(14px) saturate(108%)
 	) !important;
-	font-size: 0.7rem !important;
+	font-size: calc(var(--llampart-text-unit, 1rem) * 0.7) !important;
 	line-height: 1rem !important;
 	font-weight: 400 !important;
 	font-variation-settings: 'wght' 400 !important;

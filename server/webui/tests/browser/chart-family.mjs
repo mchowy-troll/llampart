@@ -604,7 +604,7 @@ try {
 	);
 	await open();
 	await page.locator('#fontFamily').click();
-	await page.getByRole('option', { name: 'DM Serif Display', exact: true }).click();
+	await page.getByRole('option', { name: 'Crimson Text', exact: true }).click();
 	await page.locator('#uiScale').fill('110');
 	await save();
 	await page.setViewportSize({ width: 390, height: 844 });

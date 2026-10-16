@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { normalizeFontFamily, normalizeFontVariant } from '$lib/utils/typography';
+import { FONT_SIZES, normalizeFontFamily, normalizeFontVariant } from '$lib/utils/typography';
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
 import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
 import { THEME_REGISTRY } from '$lib/themes/registry';
@@ -32,6 +32,7 @@ Object.assign(knownSettingsShape, {
 	// Retired/unknown font IDs migrate independently, never invalidating other settings.
 	fontFamily: z.string().transform(normalizeFontFamily),
 	fontVariant: z.union([z.string(), z.number().finite()]).transform(String),
+	fontSize: z.enum(['default', ...FONT_SIZES]),
 	frostedGlassMilkiness: z.number().int().min(0).max(100),
 	conversationTimestampFormat: z.enum(['ddmmyyyy24', 'mmddyyyy12']),
 	agenticMaxTurns: z.number().int().min(1),

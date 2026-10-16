@@ -1,0 +1,342 @@
+[
+  {
+    "file": "crimson-text-latin-ext-400-italic.woff2",
+    "bytes": 20800,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlpogwHKFkZgtmSR3NB0oRJfajhfK_Zt3Q.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "italic",
+    "weight": "400",
+    "axes": {},
+    "sha256": "3b96a1dbe5bfe3ed5d979d564d5805f21e0df532149b04805e75972fd1f85502"
+  },
+  {
+    "file": "crimson-text-latin-400-italic.woff2",
+    "bytes": 26052,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlpogwHKFkZgtmSR3NB0oRJfajhRK_Y.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "italic",
+    "weight": "400",
+    "axes": {},
+    "sha256": "ded83489adaeec098ee0d639252e72be7de219f759b939ba4b2e606e5e68b272"
+  },
+  {
+    "file": "crimson-text-latin-ext-600-italic.woff2",
+    "bytes": 21036,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlprgwHKFkZgtmSR3NB0oRJfajCOD-Nc_LV_fg.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "italic",
+    "weight": "600",
+    "axes": {},
+    "sha256": "558e160a98c3abc741747a4f397ce92cd7d2d5f8514c0d4c46d1892cc2127143"
+  },
+  {
+    "file": "crimson-text-latin-600-italic.woff2",
+    "bytes": 26064,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlprgwHKFkZgtmSR3NB0oRJfajCOD-NS_LU.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "italic",
+    "weight": "600",
+    "axes": {},
+    "sha256": "4eb08529198bb4e02dfefb6ce4df6ce56d80cc7ad06ab12453e453e995f700ad"
+  },
+  {
+    "file": "crimson-text-latin-ext-700-italic.woff2",
+    "bytes": 21060,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlprgwHKFkZgtmSR3NB0oRJfajDqDuNc_LV_fg.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "italic",
+    "weight": "700",
+    "axes": {},
+    "sha256": "1e1fdcad65b76544f0b7e7c63d1b8d0764442015156c83b0416e19223c673909"
+  },
+  {
+    "file": "crimson-text-latin-700-italic.woff2",
+    "bytes": 26612,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlprgwHKFkZgtmSR3NB0oRJfajDqDuNS_LU.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "italic",
+    "weight": "700",
+    "axes": {},
+    "sha256": "b6034f862c66e4325fc0f87448e0fe0479fe23070b3971f7c52caac207e44d45"
+  },
+  {
+    "file": "crimson-text-latin-ext-400-normal.woff2",
+    "bytes": 20212,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlp2gwHKFkZgtmSR3NB0oRJfYQhTM_I.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "normal",
+    "weight": "400",
+    "axes": {},
+    "sha256": "9a0af7542e58cbc60a7556c502238e1bb7577937d63aa09e2a50c963aef2231a"
+  },
+  {
+    "file": "crimson-text-latin-400-normal.woff2",
+    "bytes": 25184,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlp2gwHKFkZgtmSR3NB0oRJfbwhT.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "normal",
+    "weight": "400",
+    "axes": {},
+    "sha256": "538c7067580f457dd3dd98ebaabeb19405c12bdd01674d3db8fd9948ee73c862"
+  },
+  {
+    "file": "crimson-text-latin-ext-600-normal.woff2",
+    "bytes": 21260,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlppgwHKFkZgtmSR3NB0oRJXsCxGAtNQ5LE.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "normal",
+    "weight": "600",
+    "axes": {},
+    "sha256": "966f88e13093064bb45470bfb9088a207a396147fcc2f7bcf4defb007ac15627"
+  },
+  {
+    "file": "crimson-text-latin-600-normal.woff2",
+    "bytes": 26012,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlppgwHKFkZgtmSR3NB0oRJXsCxGDNNQ.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "normal",
+    "weight": "600",
+    "axes": {},
+    "sha256": "e2ca4f57a77f4db70d61c4d16e748545ce2000e0252be1f67fa1c964040f9b9b"
+  },
+  {
+    "file": "crimson-text-latin-ext-700-normal.woff2",
+    "bytes": 20832,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlppgwHKFkZgtmSR3NB0oRJX1C1GAtNQ5LE.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "normal",
+    "weight": "700",
+    "axes": {},
+    "sha256": "7c2a04722ae73dce91224185b4c06cea1c442f093d70ee58d1a6311f78df60cb"
+  },
+  {
+    "file": "crimson-text-latin-700-normal.woff2",
+    "bytes": 25540,
+    "url": "https://fonts.gstatic.com/s/crimsontext/v19/wlppgwHKFkZgtmSR3NB0oRJX1C1GDNNQ.woff2",
+    "version": "Version 1.100; ttfautohint (v1.8.4)",
+    "style": "normal",
+    "weight": "700",
+    "axes": {},
+    "sha256": "60b9b9640fc716abd752df41f38ad81052f4905e42be2ff3c1f78e851863aee0"
+  },
+  {
+    "file": "libre-caslon-condensed-latin-ext-wght-italic.woff2",
+    "bytes": 22552,
+    "url": "https://fonts.gstatic.com/s/librecasloncondensed/v3/flUrRrasxYEyVwtcWIsbLunUPow3bHNaxvyEX60aaUaCNQU.woff2",
+    "version": "Version 2.000",
+    "style": "italic",
+    "weight": "400 700",
+    "axes": {
+      "wght": [
+        400.0,
+        700.0
+      ]
+    },
+    "sha256": "9c09435d3a2f605d5904c6949e058eebe6a9543219ce982b452e451052bc0445"
+  },
+  {
+    "file": "libre-caslon-condensed-latin-wght-italic.woff2",
+    "bytes": 41760,
+    "url": "https://fonts.gstatic.com/s/librecasloncondensed/v3/flUrRrasxYEyVwtcWIsbLunUPow3bHNaxvyEX60aZ0aC.woff2",
+    "version": "Version 2.000",
+    "style": "italic",
+    "weight": "400 700",
+    "axes": {
+      "wght": [
+        400.0,
+        700.0
+      ]
+    },
+    "sha256": "04ac42614d1e356cde5b101ebce1947cc548ae02984165816d6be75f25ff1001"
+  },
+  {
+    "file": "libre-caslon-condensed-latin-ext-wght-normal.woff2",
+    "bytes": 21752,
+    "url": "https://fonts.gstatic.com/s/librecasloncondensed/v3/flUpRrasxYEyVwtcWIsbLunUPow3bHNaxvyEX6YqZV6G.woff2",
+    "version": "Version 2.000",
+    "style": "normal",
+    "weight": "400 700",
+    "axes": {
+      "wght": [
+        400.0,
+        700.0
+      ]
+    },
+    "sha256": "479bbf7cb672eed7ac37d3d997803471bfac9ec88840dbc65ed285d589495537"
+  },
+  {
+    "file": "libre-caslon-condensed-latin-wght-normal.woff2",
+    "bytes": 38456,
+    "url": "https://fonts.gstatic.com/s/librecasloncondensed/v3/flUpRrasxYEyVwtcWIsbLunUPow3bHNaxvyEX6gqZQ.woff2",
+    "version": "Version 2.000",
+    "style": "normal",
+    "weight": "400 700",
+    "axes": {
+      "wght": [
+        400.0,
+        700.0
+      ]
+    },
+    "sha256": "9b75669747335d32e437a7f1b4d300fe62e96df6339e445bd5f8814f374cf740"
+  },
+  {
+    "file": "fira-sans-latin-ext-400-italic.woff2",
+    "bytes": 47532,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9C4kDNxMZdWfMOD5VvkrjHYTLHdQ.woff2",
+    "version": "Version 4.203",
+    "style": "italic",
+    "weight": "400",
+    "axes": {},
+    "sha256": "80c7aba0ffe7e6b8333db3bead58b787b6221670052b309d58aebf7cc565f4e6"
+  },
+  {
+    "file": "fira-sans-latin-400-italic.woff2",
+    "bytes": 24908,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9C4kDNxMZdWfMOD5VvkrjJYTI.woff2",
+    "version": "Version 4.203",
+    "style": "italic",
+    "weight": "400",
+    "axes": {},
+    "sha256": "455e296f048c1d5f813bc278bf06e48d5963e68cef81100c28da5bfc29bd0fad"
+  },
+  {
+    "file": "fira-sans-latin-ext-500-italic.woff2",
+    "bytes": 48380,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9f4kDNxMZdWfMOD5VvkrA6Qif2VFn2lg.woff2",
+    "version": "Version 4.203",
+    "style": "italic",
+    "weight": "500",
+    "axes": {},
+    "sha256": "e788bb881590f5e4c8d748c8cdcf78022dcc17e69d871701f7afe18ed2540bb9"
+  },
+  {
+    "file": "fira-sans-latin-500-italic.woff2",
+    "bytes": 24864,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9f4kDNxMZdWfMOD5VvkrA6Qif4VFk.woff2",
+    "version": "Version 4.203",
+    "style": "italic",
+    "weight": "500",
+    "axes": {},
+    "sha256": "69c64c29a44f275df0800b2b98917598014ad3973e7e391775d6d840c0fa2c5d"
+  },
+  {
+    "file": "fira-sans-latin-ext-600-italic.woff2",
+    "bytes": 51772,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9f4kDNxMZdWfMOD5VvkrAWRSf2VFn2lg.woff2",
+    "version": "Version 4.203",
+    "style": "italic",
+    "weight": "600",
+    "axes": {},
+    "sha256": "0313574983d876eb03371fc9037d85f6443caf0e86b2235a438bcb2efc644c15"
+  },
+  {
+    "file": "fira-sans-latin-600-italic.woff2",
+    "bytes": 25952,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9f4kDNxMZdWfMOD5VvkrAWRSf4VFk.woff2",
+    "version": "Version 4.203",
+    "style": "italic",
+    "weight": "600",
+    "axes": {},
+    "sha256": "8a7f34ebcfb853114e5a9e89291e11714dc6d7c4082f52c434b29ea9a44316fb"
+  },
+  {
+    "file": "fira-sans-latin-ext-700-italic.woff2",
+    "bytes": 52112,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9f4kDNxMZdWfMOD5VvkrByRCf2VFn2lg.woff2",
+    "version": "Version 4.203",
+    "style": "italic",
+    "weight": "700",
+    "axes": {},
+    "sha256": "b7e29281c3c791e7dbbb850633594d4f82a8b83ecc08f0cfaeed5f2e00cbf54a"
+  },
+  {
+    "file": "fira-sans-latin-700-italic.woff2",
+    "bytes": 26112,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9f4kDNxMZdWfMOD5VvkrByRCf4VFk.woff2",
+    "version": "Version 4.203",
+    "style": "italic",
+    "weight": "700",
+    "axes": {},
+    "sha256": "f1602cdc43705c82f64cbaa7ea448a5533f2292f60355c71c84ffb0c1d720b01"
+  },
+  {
+    "file": "fira-sans-latin-ext-400-normal.woff2",
+    "bytes": 46400,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9E4kDNxMZdWfMOD5VvmYjLeTY.woff2",
+    "version": "Version 4.203",
+    "style": "normal",
+    "weight": "400",
+    "axes": {},
+    "sha256": "ed4d0b738d93612b44310bf3f2993d2ce220da28f064c2cdda37b2fcbc23662c"
+  },
+  {
+    "file": "fira-sans-latin-400-normal.woff2",
+    "bytes": 23872,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9E4kDNxMZdWfMOD5Vvl4jL.woff2",
+    "version": "Version 4.203",
+    "style": "normal",
+    "weight": "400",
+    "axes": {},
+    "sha256": "3e38d8c01fe97529fbf0a086bf958d724b723ca7fc8be77b4ba5745f6259b6ca"
+  },
+  {
+    "file": "fira-sans-latin-ext-500-normal.woff2",
+    "bytes": 46996,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2",
+    "version": "Version 4.203",
+    "style": "normal",
+    "weight": "500",
+    "axes": {},
+    "sha256": "630d057d726045ae9b9d5063573862180659d9ce614a5d8ae5418ec799caea15"
+  },
+  {
+    "file": "fira-sans-latin-500-normal.woff2",
+    "bytes": 24056,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2",
+    "version": "Version 4.203",
+    "style": "normal",
+    "weight": "500",
+    "axes": {},
+    "sha256": "88d3e420adee3fa99ae50c15b123e3c9a07ce0ec0c03a01bd6bdd5232822da28"
+  },
+  {
+    "file": "fira-sans-latin-ext-600-normal.woff2",
+    "bytes": 50268,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnSKzeSBf6TF0.woff2",
+    "version": "Version 4.203",
+    "style": "normal",
+    "weight": "600",
+    "axes": {},
+    "sha256": "8d1b17f77319ceb145549c9489dedc66b117ac2124cd72d0a4559ada43022510"
+  },
+  {
+    "file": "fira-sans-latin-600-normal.woff2",
+    "bytes": 24844,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnSKzeRhf6.woff2",
+    "version": "Version 4.203",
+    "style": "normal",
+    "weight": "600",
+    "axes": {},
+    "sha256": "55e09735e30d8492afac5d59ac433c6b367bb7dd00c46e157cfe95c9fb29e833"
+  },
+  {
+    "file": "fira-sans-latin-ext-700-normal.woff2",
+    "bytes": 50368,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnLK3eSBf6TF0.woff2",
+    "version": "Version 4.203",
+    "style": "normal",
+    "weight": "700",
+    "axes": {},
+    "sha256": "9ff55b176e58ac7e0e6c3115858c7120d532957105fde0ca82d47a1e895db730"
+  },
+  {
+    "file": "fira-sans-latin-700-normal.woff2",
+    "bytes": 25012,
+    "url": "https://fonts.gstatic.com/s/firasans/v18/va9B4kDNxMZdWfMOD5VnLK3eRhf6.woff2",
+    "version": "Version 4.203",
+    "style": "normal",
+    "weight": "700",
+    "axes": {},
+    "sha256": "c753d7153cac2cfeb877264d18f11197ca672d3e04ba1472154a54777a4e354d"
+  }
+]

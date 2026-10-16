@@ -455,13 +455,13 @@
 						id={field.key}
 						class="w-full shadow-none focus-visible:border-input focus-visible:ring-0 focus-visible:ring-offset-0"
 					>
-						<div class="flex items-center gap-2">
+						<div class="flex min-w-0 items-center gap-2">
 							{#if selectedOption?.icon}
 								{@const IconComponent = selectedOption.icon}
 								<IconComponent class="h-4 w-4" />
 							{/if}
 
-							{selectedOption?.label || t('settings.select')}
+							<span class="truncate">{selectedOption?.label || t('settings.select')}</span>
 						</div>
 					</Select.Trigger>
 					{#if isCustomRealTime}

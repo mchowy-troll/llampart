@@ -41,6 +41,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## Local typefaces
+
+Merriweather, Frank Ruhl Libre, Crimson Text, Libre Caslon Condensed and Fira Sans
+are bundled locally under the SIL Open Font License 1.1. Their license
+texts, source/version records and WOFF2 inventory are in `server/webui/static/fonts/`.
+See that directory's `README.md` and `sources.json`; no runtime font CDN is used.
+
 ## npm dependencies
 
 The Web UI uses npm packages listed in:

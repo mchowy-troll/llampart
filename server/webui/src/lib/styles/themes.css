@@ -62,7 +62,7 @@
 		transparent
 	);
 	--llampart-composer-processing-stats-text-shadow: none;
-	--llampart-composer-processing-stats-font-size: 0.8125rem;
+	--llampart-composer-processing-stats-font-size: calc(var(--llampart-text-unit, 1rem) * 0.8125);
 	--llampart-composer-processing-stats-font-size-sm: 0.75rem;
 	--llampart-composer-processing-stats-line-height: 1.125rem;
 	--llampart-composer-processing-stats-font-weight: 400;

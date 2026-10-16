@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getFontVariants, normalizeFontVariant } from '$lib/utils/typography';
+	import { FONT_SIZES, getFontVariants, normalizeFontVariant } from '$lib/utils/typography';
 	import { connectionErrorMessage } from '$lib/utils/connection-error-message';
 	import {
 		Settings,
@@ -204,7 +204,8 @@
 				{
 					id: 'typography',
 					title: t('settings.groupTypography'),
-					layout: 'two-column',
+					layout: 'three-column',
+					fillMode: 'row',
 					fullWidth: true,
 					fields: [
 						{
@@ -216,7 +217,9 @@
 								{ value: 'default', label: t('settings.fontDefault') },
 								{ value: 'merriweather', label: 'Merriweather' },
 								{ value: 'frank-ruhl-libre', label: 'Frank Ruhl Libre' },
-								{ value: 'dm-serif-display', label: 'DM Serif Display' }
+								{ value: 'crimson-text', label: 'Crimson Text' },
+								{ value: 'libre-caslon-condensed', label: 'Libre Caslon Condensed' },
+								{ value: 'fira-sans', label: 'Fira Sans' }
 							]
 						},
 						{
@@ -224,8 +227,17 @@
 							order: 2,
 							label: t('settings.fieldFontVariant'),
 							type: SettingsFieldType.SELECT,
-							options: getFontVariants('merriweather'),
-							visibleWhen: (config: SettingsConfigType) => config.fontFamily !== 'default'
+							options: getFontVariants('merriweather')
+						},
+						{
+							key: SETTINGS_KEYS.FONT_SIZE,
+							order: 3,
+							label: t('settings.fieldFontSize'),
+							type: SettingsFieldType.SELECT,
+							options: [
+								{ value: 'default', label: t('settings.fontDefault') },
+								...FONT_SIZES.map((value) => ({ value, label: `${value} px` }))
+							]
 						}
 					]
 				},
@@ -820,7 +832,13 @@
 			.filter((field) => field.visibleWhen?.(localConfig) ?? true)
 			.map((field) =>
 				field.key === SETTINGS_KEYS.FONT_VARIANT
-					? { ...field, options: getFontVariants(localConfig.fontFamily) }
+					? {
+							...field,
+							options:
+								localConfig.fontFamily === 'default'
+									? getFontVariants('merriweather').slice(0, 1)
+									: getFontVariants(localConfig.fontFamily)
+						}
 					: field
 			)
 			.map(getProviderScopedField);
@@ -1064,6 +1082,7 @@
 								</div>
 							{:else}
 								<section
+									data-settings-group={group.id}
 									class={['rounded-2xl border border-border bg-background p-4', groupSpanClass]
 										.filter(Boolean)
 										.join(' ')}
@@ -1127,3 +1146,14 @@
 		</AlertDialog.Footer>
 	</AlertDialog.Content>
 </AlertDialog.Root>
+
+<style>
+	/* Use the existing row-fill renderer; fit columns to the actual panel width,
+	   not the window (a tablet's settings panel is much narrower than its viewport). */
+	section[data-settings-group='typography'] > :global(.grid) {
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+	}
+	section[data-settings-group='typography'] > :global(.grid > div) {
+		min-width: 0;
+	}
+</style>

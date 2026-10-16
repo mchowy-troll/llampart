@@ -1,8 +1,8 @@
-Copyright 2014 - 2017 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name 'Source'. Copyright 2019 Google LLC. DMSerifDisplay-Italic.ttf: Copyright 2014 - 2017 Adobe Systems Incorporated (http://www.adobe.com/), with Reserved Font Name 'Source'. Copyright 2019 Google LLC.
+Copyright 2023 The Libre Caslon Condensed Project Authors (https://github.com/ertekinno/libre-caslon-condensed)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
-http://scripts.sil.org/OFL
+https://openfontlicense.org
 
 
 -----------------------------------------------------------

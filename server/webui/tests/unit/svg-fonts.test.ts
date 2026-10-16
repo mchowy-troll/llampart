@@ -1,0 +1,72 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { embeddedSvgFonts } from '$lib/utils/svg-fonts';
+
+class Face {
+	style: {
+		fontFamily: string;
+		fontStyle: string;
+		fontWeight: string;
+		cssText: string;
+		getPropertyValue: (key: string) => string;
+	};
+	parentStyleSheet = { href: 'http://localhost/app.css' };
+	constructor(weight: string, style: string, subset: string) {
+		const url = `/fonts/test-${subset}-${weight}-${style}.woff2`;
+		this.style = {
+			fontFamily: 'Test Font',
+			fontStyle: style,
+			fontWeight: weight,
+			cssText: `font-family:"Test Font";font-style:${style};font-weight:${weight};src:url("${url}")`,
+			getPropertyValue: () => `url("${url}")`
+		};
+	}
+}
+afterEach(() => vi.unstubAllGlobals());
+function fixture(rules: Face[], weight = '700', style = 'normal', bytes = 4) {
+	vi.stubGlobal('CSSFontFaceRule', Face);
+	vi.stubGlobal('document', { styleSheets: [{ cssRules: rules }], baseURI: 'http://localhost/' });
+	vi.stubGlobal('location', { origin: 'http://localhost' });
+	vi.stubGlobal('getComputedStyle', () => ({ fontWeight: weight, fontStyle: style }));
+	const fetch = vi.fn(async () => ({
+		ok: true,
+		arrayBuffer: async () => new Uint8Array(bytes).buffer
+	}));
+	vi.stubGlobal('fetch', fetch);
+	return { fetch, source: { querySelectorAll: () => [] } as unknown as HTMLElement };
+}
+describe('local chart font embedding', () => {
+	it('does not let sixteen static faces displace used upright weights', async () => {
+		const rules = ['italic', 'normal'].flatMap((style) =>
+			['400', '500', '600', '700'].flatMap((weight) =>
+				['latin', 'latin-ext'].map((subset) => new Face(weight, style, subset))
+			)
+		);
+		const { fetch, source } = fixture(rules);
+		const css = await embeddedSvgFonts('"Test Font",sans-serif', source);
+		expect(fetch).toHaveBeenCalledTimes(2);
+		expect(css.match(/@font-face/g)).toHaveLength(2);
+		expect(css).toContain('data:font/woff2;base64,');
+		expect(css).toContain('font-weight:700');
+		expect(css).not.toContain('italic');
+	});
+	it('matches variable weight ranges', async () => {
+		const { fetch, source } = fixture([new Face('400 700', 'normal', 'latin')], '600');
+		await embeddedSvgFonts('Test Font', source);
+		expect(fetch).toHaveBeenCalledOnce();
+	});
+	it('keeps the 12 face and 4 MiB limits', async () => {
+		let { source } = fixture(
+			Array.from({ length: 13 }, (_, i) => new Face('700', 'normal', String(i)))
+		);
+		await expect(embeddedSvgFonts('Test Font', source)).rejects.toThrow(
+			'Font face embedding limit'
+		);
+		({ source } = fixture(
+			[new Face('700', 'normal', 'latin')],
+			'700',
+			'normal',
+			4 * 1024 * 1024 + 1
+		));
+		await expect(embeddedSvgFonts('Test Font', source)).rejects.toThrow('Font embedding limit');
+	});
+});

@@ -128,7 +128,7 @@
 				justify-content: space-between;
 				gap: 0.75rem;
 				padding: 0.75rem 1rem;
-				font-size: 0.875rem;
+				font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
 				font-weight: 600;
 				list-style: none;
 			}

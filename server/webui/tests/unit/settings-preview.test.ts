@@ -60,20 +60,20 @@ describe('settings preview through the real store', () => {
 	it('keeps server-default synchronization stable instead of replacing its reactive dependency', () => {
 		serverStore.props = {
 			default_generation_settings: { params: { temperature: 0.8, top_p: 0.95 } },
-			ui_settings: { fontFamily: 'dm-serif-display', fontVariant: '700' }
+			ui_settings: { fontFamily: 'crimson-text', fontVariant: '500' }
 		} as unknown as ApiLlamaCppServerProps;
 		const committed = settingsStore.config;
 		const session = settingsStore.beginPreview();
 		settingsStore.updatePreview(session, { uiScale: '110' });
 		settingsStore.syncWithServerDefaults();
 		expect(settingsStore.config).toBe(committed);
-		expect(config()).toMatchObject({ fontFamily: 'dm-serif-display', fontVariant: '400' });
+		expect(config()).toMatchObject({ fontFamily: 'crimson-text', fontVariant: '400' });
 		settingsStore.syncWithServerDefaults();
 		expect(settingsStore.config).toBe(committed);
 		expect(settingsStore.appearanceConfig.uiScale).toBe('110');
 		expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject({
 			uiScale: '100',
-			fontFamily: 'dm-serif-display',
+			fontFamily: 'crimson-text',
 			fontVariant: '400'
 		});
 	});
@@ -86,8 +86,9 @@ describe('settings preview through the real store', () => {
 		const appearance = {
 			theme: 'frosted-glass',
 			uiScale: '110',
-			fontFamily: 'dm-serif-display',
-			fontVariant: '700',
+			fontFamily: 'crimson-text',
+			fontVariant: '500',
+			fontSize: '20',
 			frostedGlassWallpaper: 'frosted-glass-05',
 			frostedGlassMilkiness: 12,
 			frostedGlassOpaque: true
@@ -105,7 +106,8 @@ describe('settings preview through the real store', () => {
 		settingsStore.updatePreview(session, {
 			uiScale: '110',
 			fontFamily: 'merriweather',
-			fontVariant: '700'
+			fontVariant: '700',
+			fontSize: '18'
 		});
 		settingsStore.updateConfig('showMessageStats', !config().showMessageStats);
 		settingsStore.updateMultipleConfig({ keepStatsVisible: true });
@@ -113,6 +115,7 @@ describe('settings preview through the real store', () => {
 		expect(saved).toMatchObject({
 			uiScale: '100',
 			fontFamily: 'default',
+			fontSize: 'default',
 			fontVariant: '400',
 			keepStatsVisible: true
 		});
@@ -129,6 +132,7 @@ describe('settings preview through the real store', () => {
 		const patch = {
 			uiScale: '105',
 			fontFamily: 'frank-ruhl-libre',
+			fontSize: '16',
 			fontVariant: '600',
 			keepStatsVisible: true
 		};
@@ -193,7 +197,7 @@ describe('settings preview through the real store', () => {
 	it('exports only committed configuration while a different font is previewed', async () => {
 		settingsStore.updateMultipleConfig({ fontFamily: 'merriweather', fontVariant: '700' });
 		const session = settingsStore.beginPreview();
-		settingsStore.updatePreview(session, { fontFamily: 'dm-serif-display' });
+		settingsStore.updatePreview(session, { fontFamily: 'crimson-text', fontSize: '19' });
 		let exported: Blob | undefined;
 		const create = vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
 			exported = blob as Blob;
@@ -226,14 +230,14 @@ describe('contextual font normalization through store entry points', () => {
 		expect(parseSettingsStorage(serializeSettingsStorage(config()))).toMatchObject(expected);
 	}
 
-	it('normalizes variant-only and combined DM Serif Display patches before assigning state', () => {
-		settingsStore.updateConfig('fontFamily', 'dm-serif-display');
-		settingsStore.updateConfig('fontVariant', '700');
-		expectFont('dm-serif-display', '400');
-		settingsStore.updateMultipleConfig({ fontVariant: '700' });
-		expectFont('dm-serif-display', '400');
-		settingsStore.updateMultipleConfig({ fontFamily: 'dm-serif-display', fontVariant: '700' });
-		expectFont('dm-serif-display', '400');
+	it('normalizes unsupported Crimson Text weights before assigning state', () => {
+		settingsStore.updateConfig('fontFamily', 'crimson-text');
+		settingsStore.updateConfig('fontVariant', '500');
+		expectFont('crimson-text', '400');
+		settingsStore.updateMultipleConfig({ fontVariant: '500' });
+		expectFont('crimson-text', '400');
+		settingsStore.updateMultipleConfig({ fontFamily: 'crimson-text', fontVariant: '500' });
+		expectFont('crimson-text', '400');
 	});
 
 	it('preserves supported weights, including family-only changes', () => {
@@ -243,14 +247,14 @@ describe('contextual font normalization through store entry points', () => {
 		expectFont('frank-ruhl-libre', '700');
 		settingsStore.updateConfig('fontVariant', '600');
 		expectFont('frank-ruhl-libre', '600');
-		settingsStore.updateConfig('fontFamily', 'dm-serif-display');
-		expectFont('dm-serif-display', '400');
+		settingsStore.updateConfig('fontFamily', 'crimson-text');
+		expectFont('crimson-text', '600');
 	});
 
 	it('uses the supplied effective family for standalone patches and previews', () => {
-		expect(
-			validateSettingsPatch({ fontVariant: '700' }, { fontFamily: 'dm-serif-display' })
-		).toEqual({ fontVariant: '400' });
+		expect(validateSettingsPatch({ fontVariant: '500' }, { fontFamily: 'crimson-text' })).toEqual({
+			fontVariant: '400'
+		});
 		expect(
 			validateSettingsPatch(
 				{ fontFamily: 'frank-ruhl-libre' },
@@ -258,8 +262,8 @@ describe('contextual font normalization through store entry points', () => {
 			)
 		).toMatchObject({ fontVariant: '700' });
 		const session = settingsStore.beginPreview();
-		settingsStore.updatePreview(session, { fontFamily: 'dm-serif-display' });
-		settingsStore.updatePreview(session, { fontVariant: '700' });
+		settingsStore.updatePreview(session, { fontFamily: 'crimson-text' });
+		settingsStore.updatePreview(session, { fontVariant: '500' });
 		expect(settingsStore.appearanceConfig.fontVariant).toBe('400');
 	});
 
@@ -270,22 +274,22 @@ describe('contextual font normalization through store entry points', () => {
 			);
 			settingsStore.initialize();
 		};
-		settingsStore.updateConfig('fontFamily', 'dm-serif-display');
-		importPatch({ fontVariant: '700' });
-		expectFont('dm-serif-display', '400');
+		settingsStore.updateConfig('fontFamily', 'crimson-text');
+		importPatch({ fontVariant: '500' });
+		expectFont('crimson-text', '400');
 		importPatch({ fontFamily: 'merriweather', fontVariant: '700' });
 		importPatch({ fontFamily: 'frank-ruhl-libre' });
 		expectFont('frank-ruhl-libre', '700');
 	});
 
-	it.each(['inter', 'open-sans', 'instrument-serif', 'unknown'])(
+	it.each(['dm-serif-display', 'inter', 'open-sans', 'instrument-serif', 'unknown'])(
 		'migrates %s and rejects invalid types atomically',
 		(family) => {
 			expect(parseSettingsConfig({ fontFamily: family, fontVariant: '700' }).fontFamily).toBe(
 				'default'
 			);
 			settingsStore.updateMultipleConfig({ fontFamily: family, fontVariant: '700' });
-			expectFont('default', '700');
+			expectFont('default', '400');
 			const before = { ...config() };
 			const saved = new Map(storage);
 			expect(() => settingsStore.updateConfig('fontVariant', NaN as unknown as string)).toThrow(

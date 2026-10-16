@@ -1,6 +1,10 @@
 /** Discover the active local faces from CSSOM; no second font registry. */
-export async function embeddedSvgFonts(families: string): Promise<string> {
+export async function embeddedSvgFonts(families: string, source: HTMLElement): Promise<string> {
 	const names = families.split(',').map((name) => name.trim().replace(/^["']|["']$/g, ''));
+	const used = [source, ...Array.from(source.querySelectorAll('*'))].map((node) => {
+		const style = getComputedStyle(node);
+		return { weight: Number(style.fontWeight), style: style.fontStyle };
+	});
 	const rules: CSSFontFaceRule[] = [];
 	function collect(list: CSSRuleList) {
 		for (const rule of Array.from(list)) {
@@ -21,7 +25,19 @@ export async function embeddedSvgFonts(families: string): Promise<string> {
 	}
 	let totalBytes = 0;
 	const embedded = [];
-	for (const rule of rules.slice(0, 12)) {
+	// A static family has separate files per weight. Keep the existing limits,
+	// but do not let unused italic faces displace the actual upright chart faces.
+	const needed = rules.filter((rule) => {
+		const weights = rule.style.fontWeight.split(/\s+/).map(Number);
+		return used.some(
+			(face) =>
+				face.style === rule.style.fontStyle &&
+				face.weight >= weights[0] &&
+				face.weight <= (weights[1] ?? weights[0])
+		);
+	});
+	if (needed.length > 12) throw new Error('Font face embedding limit');
+	for (const rule of needed) {
 		const copy = rule.style.cssText;
 		const match = /url\(["']?([^"')]+)["']?\)/.exec(rule.style.getPropertyValue('src'));
 		if (!match) continue;

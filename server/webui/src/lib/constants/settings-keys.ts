@@ -11,6 +11,7 @@ export const SETTINGS_KEYS = {
 	UI_SCALE: 'uiScale',
 	FONT_FAMILY: 'fontFamily',
 	FONT_VARIANT: 'fontVariant',
+	FONT_SIZE: 'fontSize',
 	API_PROVIDER: 'apiProvider',
 	SERVER_BASE_URL: 'serverBaseUrl',
 	API_KEY: 'apiKey',
