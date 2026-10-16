@@ -67,9 +67,19 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 
 /* Frosted Glass surfaces for generated content blocks. */
 html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chart-tooltip
+	.chart-tooltip-content {
+	background: var(--llampart-glass-white-880, rgba(255, 255, 255, 0.88));
+	border-color: rgba(255, 255, 255, 0.4);
+	backdrop-filter: var(--llampart-glass-filter-10-104, blur(10px) saturate(104%));
+	-webkit-backdrop-filter: var(--llampart-glass-filter-10-104, blur(10px) saturate(104%));
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-markdown-content
 	.code-block-wrapper,
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-markdown-content .table-block {
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-markdown-content .table-block,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-chart-frame {
 	background: var(--llampart-glass-white-110, rgba(255, 255, 255, 0.11)) !important;
 	border: 1px solid rgba(255, 255, 255, 0.12) !important;
 	box-shadow:

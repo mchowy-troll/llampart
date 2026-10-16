@@ -41,6 +41,7 @@
 		"@tailwindcss/forms": "^0.5.9",
 		"@tailwindcss/typography": "^0.5.15",
 		"@tailwindcss/vite": "^4.3.1",
+		"@types/d3-shape": "3.1.8",
 		"@types/hast": "3.0.4",
 		"@types/mdast": "^4.0.4",
 		"@types/node": "^24",
@@ -75,7 +76,9 @@
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.31.0",
 		"@noble/hashes": "2.4.0",
+		"d3-shape": "3.2.0",
 		"highlight.js": "^11.11.1",
+		"layerchart": "^2.8.0",
 		"lowlight": "^3.3.0",
 		"pdfjs-dist": "^6.2.108",
 		"rehype-highlight": "^7.0.2",

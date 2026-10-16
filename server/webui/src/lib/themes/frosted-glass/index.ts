@@ -9,6 +9,7 @@ import {
 } from './wallpapers';
 import { GLASS_STYLE_PROPERTIES, resolveGlassMaterials } from './materials';
 import { resolveWallpaperAccent, WALLPAPER_ACCENT_EVENT } from './wallpaper-accent';
+import { CHART_STYLE_PROPERTIES, resolveChartPalette } from './chart-palette';
 
 export const frostedGlassTheme = {
 	id: ColorMode.FROSTED_GLASS,
@@ -24,6 +25,7 @@ export const frostedGlassTheme = {
 	ownedStyleProperties: [
 		'--llampart-theme-wallpaper',
 		'--llampart-frosted-glass-accent',
+		...CHART_STYLE_PROPERTIES,
 		...GLASS_STYLE_PROPERTIES
 	],
 	runtimeRefreshEvents: [CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT, WALLPAPER_ACCENT_EVENT],
@@ -36,6 +38,7 @@ export const frostedGlassTheme = {
 	configInfo: FROSTED_GLASS_CONFIG_INFO,
 	resolveRuntime: (config, revision) => {
 		const wallpaper = getFrostedGlassWallpaper(config.frostedGlassWallpaper, revision);
+		const accent = resolveWallpaperAccent(wallpaper);
 
 		return {
 			// This legacy class now enables ONLY the protected composer fade layers.
@@ -45,8 +48,9 @@ export const frostedGlassTheme = {
 				...(config.frostedGlassOpaque ? ['has-frosted-glass-opaque'] : [])
 			],
 			styles: {
+				...resolveChartPalette(),
 				...resolveGlassMaterials(config),
-				'--llampart-frosted-glass-accent': resolveWallpaperAccent(wallpaper),
+				'--llampart-frosted-glass-accent': accent,
 				'--llampart-theme-wallpaper': `url("${wallpaper.src}")`
 			}
 		};

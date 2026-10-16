@@ -1,6 +1,16 @@
 import type { TranslationDictionary } from '$lib/i18n/types';
 
 export const pl: TranslationDictionary = {
+	charts: {
+		title: 'Wykres',
+		preparing: 'Przygotowywanie wykresu…',
+		invalid: 'Nieprawidłowe dane wykresu — oryginalny JSON',
+		export: 'Eksportuj wykres jako',
+		exportError: 'Nie udało się wyeksportować wykresu. Spróbuj ponownie.',
+		legend: 'Legenda wykresu — przełącz serie',
+		value: 'Wartość',
+		share: 'Udział'
+	},
 	common: {
 		saveSettings: 'Zapisz ustawienia',
 		save: 'Zapisz',

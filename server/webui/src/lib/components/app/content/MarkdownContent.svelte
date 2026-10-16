@@ -21,6 +21,7 @@
 	import type { MarkdownProcessor } from '$lib/markdown/markdown-runtime';
 	import {
 		detectIncompleteMathBlock,
+		detectIncompleteChartBlock,
 		type IncompleteMathBlock
 	} from '$lib/markdown/markdown-streaming-policy';
 	import {
@@ -49,6 +50,16 @@
 	import { fadeInView } from '$lib/actions/fade-in-view.svelte';
 	import { t } from '$lib/i18n';
 	import { portalToBody } from '$lib/utils/portal-to-body';
+	import ChartBlock from './ChartBlock.svelte';
+	import {
+		CHART_LANGUAGE,
+		MAX_MESSAGE_CHARTS,
+		preprocessChartMarkdown,
+		withoutClosedChartFences,
+		isChartNode,
+		isClosedChartNode
+	} from '$lib/markdown/chart-blocks';
+	import type { ChartResult } from '$lib/charts/chart-schema';
 
 	interface Props {
 		attachments?: DatabaseMessageExtra[];
@@ -56,20 +67,28 @@
 		class?: string;
 		disableMath?: boolean;
 		inheritTypography?: boolean;
+		allowCharts?: boolean;
+		isStreaming?: boolean;
+		chartLimit?: number;
 	}
 
-	interface MarkdownBlock {
+	type MarkdownBlock = {
 		id: string;
-		html: string;
 		contentHash?: string;
-	}
+	} & (
+		| { kind: 'html'; html: string }
+		| { kind: 'chart'; chart: { result: ChartResult; source: string } }
+	);
 
 	let {
 		content,
 		attachments,
 		class: className = '',
 		disableMath = false,
-		inheritTypography = false
+		inheritTypography = false,
+		allowCharts = false,
+		isStreaming = false,
+		chartLimit = MAX_MESSAGE_CHARTS
 	}: Props = $props();
 
 	let containerRef = $state<HTMLDivElement>();
@@ -103,7 +122,9 @@
 	// Per-instance transform cache, avoids re-transforming stable blocks during streaming
 	// Garbage collected when component is destroyed (on conversation change)
 	const transformCache = new SvelteMap<string, string>();
+	const chartCache = new SvelteMap<string, ChartResult>();
 	let previousContent = '';
+	let previousChartPolicy = '';
 
 	const themeStyleId = `highlight-theme-${(window.idxThemeStyle = (window.idxThemeStyle ?? 0) + 1)}`;
 
@@ -262,7 +283,9 @@
 			return [];
 		}
 
-		const normalizedPrefix = preprocessLaTeX(prefixMarkdown);
+		const normalizedPrefix = allowCharts
+			? preprocessChartMarkdown(prefixMarkdown, preprocessLaTeX)
+			: preprocessLaTeX(prefixMarkdown);
 		const processorInstance = await createProcessor(prefixMarkdown);
 		const ast = processorInstance.parse(normalizedPrefix) as MdastRoot;
 		const mdastChildren = (ast as { children?: unknown[] }).children ?? [];
@@ -287,16 +310,40 @@
 				}
 			}
 
-			const { html, hash } = await transformMdastNode(processorInstance, child, index);
-			const id = getHastNodeId(
-				{ position: (child as { position?: unknown }).position } as HastRootContent,
-				index
+			nextBlocks.push(
+				await renderBlock(processorInstance, child, index, normalizedPrefix, nextBlocks)
 			);
-
-			nextBlocks.push({ id, html, contentHash: hash });
 		}
 
 		return nextBlocks;
+	}
+
+	async function renderBlock(
+		processor: MarkdownProcessor,
+		node: unknown,
+		index: number,
+		markdown: string,
+		preceding: MarkdownBlock[]
+	): Promise<MarkdownBlock> {
+		const hash = getMdastNodeHash(node, index);
+		const id = getHastNodeId(
+			{ position: (node as { position?: unknown }).position } as HastRootContent,
+			index
+		);
+		if (allowCharts && isChartNode(node) && isClosedChartNode(node, markdown)) {
+			const source = node.value;
+			let result = chartCache.get(source);
+			if (preceding.filter((block) => block.kind === 'chart').length >= chartLimit)
+				result = { success: false };
+			if (!result) {
+				const { parseChart } = await import('$lib/charts/chart-schema');
+				result = parseChart(source);
+				chartCache.set(source, result);
+			}
+			return { kind: 'chart', id, contentHash: hash, chart: { result, source } };
+		}
+		const { html } = await transformMdastNode(processor, node, index);
+		return { kind: 'html', id, html, contentHash: hash };
 	}
 
 	async function renderMarkdownCodeBlock(
@@ -589,9 +636,18 @@
 	 * @param markdown - The raw markdown string to process
 	 */
 	async function processMarkdown(markdown: string) {
+		const chartPolicy = `${allowCharts}:${chartLimit}`;
+		if (chartPolicy !== previousChartPolicy) {
+			previousContent = '';
+			previousChartPolicy = chartPolicy;
+		}
 		// Early exit if content unchanged (can happen with rapid coalescing)
-		if (markdown === previousContent) {
+		if (markdown && markdown === previousContent) {
 			return;
+		}
+		if (!isAppendMode(markdown)) {
+			transformCache.clear();
+			chartCache.clear();
 		}
 
 		if (!markdown) {
@@ -606,7 +662,9 @@
 		}
 
 		// Check for incomplete code block at the end of content
-		const incompleteBlock = detectIncompleteCodeBlock(markdown);
+		const incompleteBlock =
+			(allowCharts ? detectIncompleteChartBlock(markdown) : null) ??
+			detectIncompleteCodeBlock(markdown);
 
 		if (incompleteBlock) {
 			// Process only the prefix (content before the incomplete code block).
@@ -617,12 +675,15 @@
 			unstableBlockHtml = '';
 			incompleteMathBlock = null;
 			incompleteCodeBlock = incompleteBlock;
-			await updateStreamingHighlightedHtml(incompleteBlock);
+			if (allowCharts && incompleteBlock.language === CHART_LANGUAGE) streamingHighlightedHtml = '';
+			else await updateStreamingHighlightedHtml(incompleteBlock);
 
 			return;
 		}
 
-		const pendingMathBlock = disableMath ? null : detectIncompleteMathBlock(markdown);
+		const pendingMathBlock = disableMath
+			? null
+			: detectIncompleteMathBlock(allowCharts ? withoutClosedChartFences(markdown) : markdown);
 
 		if (pendingMathBlock) {
 			const prefixMarkdown = markdown.slice(0, pendingMathBlock.openingIndex);
@@ -642,11 +703,18 @@
 		incompleteMathBlock = null;
 		streamingHighlightedHtml = '';
 
-		const normalized = preprocessLaTeX(markdown);
+		const normalized = allowCharts
+			? preprocessChartMarkdown(markdown, preprocessLaTeX)
+			: preprocessLaTeX(markdown);
 		const processorInstance = await createProcessor(markdown);
 		const ast = processorInstance.parse(normalized) as MdastRoot;
 		const mdastChildren = (ast as { children?: unknown[] }).children ?? [];
-		const stableCount = Math.max(mdastChildren.length - 1, 0);
+		const last = mdastChildren.at(-1);
+		// A closed chart is stable immediately, even before any following paragraph.
+		const stableCount =
+			allowCharts && isChartNode(last) && isClosedChartNode(last, normalized)
+				? mdastChildren.length
+				: Math.max(mdastChildren.length - 1, 0);
 		const nextBlocks: MarkdownBlock[] = [];
 
 		// Check if we're in append mode for cache reuse
@@ -668,13 +736,7 @@
 			}
 
 			// Transform this block (with caching)
-			const { html, hash } = await transformMdastNode(processorInstance, child, index);
-			const id = getHastNodeId(
-				{ position: (child as { position?: unknown }).position } as HastRootContent,
-				index
-			);
-
-			nextBlocks.push({ id, html, contentHash: hash });
+			nextBlocks.push(await renderBlock(processorInstance, child, index, normalized, nextBlocks));
 		}
 
 		let unstableHtml = '';
@@ -688,6 +750,11 @@
 
 		renderedBlocks = nextBlocks;
 		previousContent = markdown;
+		const activeSources = new Set(
+			nextBlocks.flatMap((block) => (block.kind === 'chart' ? [block.chart.source] : []))
+		);
+		for (const source of chartCache.keys())
+			if (!activeSources.has(source)) chartCache.delete(source);
 		await tick(); // Force DOM sync before updating unstable HTML block
 		unstableBlockHtml = unstableHtml;
 	}
@@ -892,6 +959,8 @@
 	});
 
 	$effect(() => {
+		void allowCharts;
+		void chartLimit;
 		updateRenderedBlocks(content);
 	});
 
@@ -930,6 +999,8 @@
 	});
 
 	onDestroy(() => {
+		pendingMarkdown = null;
+		chartCache.clear();
 		cleanupEventListeners();
 		cleanupHighlightTheme();
 		streamingAutoScroll.destroy();
@@ -944,8 +1015,12 @@
 >
 	{#each renderedBlocks as block (block.id)}
 		<div class="markdown-block" data-block-id={block.id} use:fadeInView={{ skipIfVisible: true }}>
-			<!-- eslint-disable-next-line no-at-html-tags -->
-			{@html block.html}
+			{#if block.kind === 'chart'}
+				<ChartBlock result={block.chart.result} source={block.chart.source} />
+			{:else}
+				<!-- eslint-disable-next-line no-at-html-tags -->
+				{@html block.html}
+			{/if}
 		</div>
 	{/each}
 
@@ -978,7 +1053,13 @@
 		</div>
 	{/if}
 
-	{#if incompleteCodeBlock}
+	{#if incompleteCodeBlock && allowCharts && incompleteCodeBlock.language === CHART_LANGUAGE}
+		{#if isStreaming}
+			<div class="llampart-inline-processing-status" role="status">{t('charts.preparing')}</div>
+		{:else}
+			<ChartBlock result={{ success: false }} source={incompleteCodeBlock.code} />
+		{/if}
+	{:else if incompleteCodeBlock}
 		<div class="code-block-wrapper streaming-code-block relative">
 			<div class="code-block-header">
 				<span class="code-language">{incompleteCodeBlock.language || 'text'}</span>

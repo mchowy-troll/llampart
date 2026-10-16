@@ -2,6 +2,7 @@
 	import ChatMessageStatistics from '$lib/components/app/chat/ChatMessages/ChatMessageStatistics.svelte';
 	import CollapsibleContentBlock from '$lib/components/app/content/CollapsibleContentBlock.svelte';
 	import MarkdownContent from '$lib/components/app/content/MarkdownContent.svelte';
+	import { MAX_MESSAGE_CHARTS, scanChartFences } from '$lib/markdown/chart-blocks';
 	import SyntaxHighlightedCode from '$lib/components/app/content/SyntaxHighlightedCode.svelte';
 	import ChatMessageActionCardPermissionRequest from '$lib/components/app/chat/ChatMessages/ChatMessageActions/ChatMessageActionCard/ChatMessageActionCardPermissionRequest.svelte';
 	import { config } from '$lib/stores/settings.svelte';
@@ -207,6 +208,16 @@
 		<div class="agentic-text">
 			<MarkdownContent
 				class="llampart-assistant-markdown"
+				allowCharts
+				{isStreaming}
+				chartLimit={Math.max(
+					0,
+					MAX_MESSAGE_CHARTS -
+						sectionsParsed
+							.slice(0, index)
+							.filter((section) => section.type === AgenticSectionType.TEXT)
+							.reduce((count, section) => count + scanChartFences(section.content).count, 0)
+				)}
 				content={section.content}
 				attachments={message?.extra}
 			/>

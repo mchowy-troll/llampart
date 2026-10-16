@@ -1,6 +1,16 @@
 import type { TranslationDictionary } from '../types';
 
 export const fr: TranslationDictionary = {
+	charts: {
+		title: 'Graphique',
+		preparing: 'Préparation du graphique…',
+		invalid: 'Données de graphique invalides — JSON original',
+		export: 'Exporter le graphique en',
+		exportError: 'Impossible d’exporter ce graphique. Réessayez.',
+		legend: 'Légende du graphique — activer les séries',
+		value: 'Valeur',
+		share: 'Part'
+	},
 	common: {
 		saveSettings: 'Enregistrer les paramètres',
 		save: 'Enregistrer',

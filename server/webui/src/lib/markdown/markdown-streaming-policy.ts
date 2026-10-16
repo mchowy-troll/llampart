@@ -7,6 +7,13 @@
  * should show a neutral pending state for the current unstable tail.
  */
 import { CODE_BLOCK_REGEXP } from '$lib/constants/latex-protection';
+import type { IncompleteCodeBlock } from '$lib/utils/code';
+import { scanChartFences } from './chart-blocks';
+
+/** A small fence scanner; unlike the legacy code helper it accepts hyphenated info strings. */
+export function detectIncompleteChartBlock(markdown: string): IncompleteCodeBlock | null {
+	return scanChartFences(markdown).pending;
+}
 
 export type IncompleteMathDelimiter = '$$' | '\\[';
 

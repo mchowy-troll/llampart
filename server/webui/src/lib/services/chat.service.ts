@@ -1,4 +1,5 @@
 import { t } from '$lib/i18n';
+import { withChartInstructions } from '$lib/markdown/chart-instructions';
 import { VllmLiveStatistics } from '$lib/utils/vllm-live-statistics';
 import { getApiProvider } from '$lib/services/providers';
 import type { ApiProviderAdapter } from '$lib/services/providers/provider.types';
@@ -140,7 +141,7 @@ export class ChatService {
 			onTimings
 		} = effectiveOptions;
 
-		const normalizedMessages: ApiChatMessageData[] = messages
+		let normalizedMessages: ApiChatMessageData[] = messages
 			.map((msg) => {
 				if ('id' in msg && 'convId' in msg && 'timestamp' in msg) {
 					const dbMsg = msg as DatabaseMessage & { extra?: DatabaseMessageExtra[] };
@@ -160,6 +161,8 @@ export class ChatService {
 
 				return true;
 			});
+
+		if (conversationId) normalizedMessages = withChartInstructions(normalizedMessages);
 
 		// Filter out image attachments if the model doesn't support vision
 		if (
@@ -444,7 +447,7 @@ export class ChatService {
 			});
 
 		const requestBody: Record<string, unknown> = {
-			messages: normalizedMessages.map((msg: ApiChatMessageData) => {
+			messages: withChartInstructions(normalizedMessages).map((msg: ApiChatMessageData) => {
 				const mapped: Record<string, unknown> = {
 					role: msg.role,
 					content: excludeReasoning ? ChatService.stripReasoningContent(msg.content) : msg.content,
