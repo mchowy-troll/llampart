@@ -54,6 +54,8 @@ export const en: TranslationDictionary = {
 		previewMarkdown: 'Preview Markdown',
 		tablePreview: 'Preview table',
 		copyTable: 'Copy table',
+		exportTableCsv: 'Download table as CSV',
+		failedToExportTable: 'Failed to download table as CSV',
 		tableCopiedToClipboard: 'Table copied to clipboard',
 		failedToCopyTable: 'Failed to copy table',
 		removeFile: 'Remove file',

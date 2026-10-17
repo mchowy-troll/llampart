@@ -4,6 +4,7 @@ import {
 	TABLE_BLOCK_CLASS,
 	TABLE_CELL_CONTENT_CLASS,
 	TABLE_COPY_BUTTON_CLASS,
+	TABLE_CSV_BUTTON_CLASS,
 	TABLE_PREVIEW_BUTTON_CLASS,
 	TABLE_WRAPPER_CLASS
 } from '$lib/markdown/markdown-presentation';
@@ -131,6 +132,19 @@ function createTableCopyButton(): Element {
 	};
 }
 
+function createTableCsvButton(): Element {
+	return {
+		type: 'element',
+		tagName: 'button',
+		properties: {
+			type: 'button',
+			className: [TABLE_CSV_BUTTON_CLASS],
+			ariaLabel: ''
+		},
+		children: [{ type: 'text', value: 'CSV' }]
+	};
+}
+
 function createTablePreviewButton(): Element {
 	return {
 		type: 'element',
@@ -156,7 +170,7 @@ function createTableBlock(table: Element): Element {
 				type: 'element',
 				tagName: 'div',
 				properties: { className: [TABLE_ACTIONS_CLASS] },
-				children: [createTableCopyButton(), createTablePreviewButton()]
+				children: [createTableCsvButton(), createTableCopyButton(), createTablePreviewButton()]
 			},
 			{
 				type: 'element',
@@ -208,7 +222,7 @@ function wrapTablesInChildren(parent: Root | Element, insideTableWrapper = false
 /**
  * Wraps markdown tables in a scroll container without modifying the table itself.
  *
- * The plugin adds table copy and preview buttons and wraps cell content in a span
+ * The plugin adds table copy, CSV and preview buttons and wraps cell content in a span
  * so CSS can cap readable cell content width reliably without relying on
  * max-width behavior of table cells. It is intentionally idempotent for tables
  * and cells that are already wrapped.

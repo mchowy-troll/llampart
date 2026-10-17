@@ -34,7 +34,8 @@
 	margin-left: auto;
 	gap: 0.125rem;
 }
-.visualization-actions button {
+.visualization-actions button,
+.table-csv-button {
 	font: inherit;
 	font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
 	padding: 0.25rem 0.4rem;

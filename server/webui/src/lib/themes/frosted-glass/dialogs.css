@@ -593,6 +593,32 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	-webkit-backdrop-filter: var(--llampart-frosted-preview-surface-backdrop-filter, none) !important;
 }
 /* /llampart-frosted-glass-solid-preview-parity-surfaces */
+
+/* Only actual table previews: keep the solid base, with a stronger header than the zebra. */
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-table-preview-dialog
+	.table-preview-wrapper
+	thead
+	th {
+	background: color-mix(
+		in srgb,
+		var(--llampart-frosted-glass-accent) 12%,
+		var(--llampart-frosted-preview-surface-background, var(--background))
+	) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-table-preview-dialog
+	.table-preview-wrapper
+	tr:nth-child(even)
+	td {
+	background: color-mix(
+		in srgb,
+		var(--llampart-frosted-glass-accent) 8.4%,
+		var(--llampart-frosted-preview-surface-background, var(--background))
+	) !important;
+}
+
 /* /llampart-frosted-glass-dialog-overlay-dim-parity */
 
 /* llampart-frosted-glass-solid-dialog-selector-exclusion */

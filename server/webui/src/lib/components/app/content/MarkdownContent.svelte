@@ -6,12 +6,17 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { buttonVariants } from '$lib/components/ui/button';
+	import './visualization-frame.css';
 	import {
 		escapeCodeHtml,
 		highlightCodeAsync,
 		loadHighlightThemeCss
 	} from '$lib/utils/syntax-highlighting';
 	import { copyCodeToClipboard, copyTableToClipboard } from '$lib/utils/clipboard';
+	import { toast } from 'svelte-sonner';
+	import { downloadChartBlob } from '$lib/charts/chart-csv';
+	import { tableCsv, tableCsvFilename } from '$lib/markdown/table-csv';
 	import { hasRenderableMath, preprocessLaTeX } from '$lib/utils/latex-protection';
 	import {
 		getMarkdownFallbackText,
@@ -118,6 +123,7 @@
 	let previewLanguage = $state('text');
 	let tablePreviewDialogOpen = $state(false);
 	let tablePreviewHtml = $state('');
+	let tablePreviewTrigger: HTMLButtonElement | null = null;
 	let markdownRenderedPreviewDialogOpen = $state(false);
 	let markdownRenderedPreviewHtml = $state('');
 	let tableTooltipOpen = $state(false);
@@ -165,6 +171,7 @@
 	 * Called on component destroy.
 	 */
 	function cleanupEventListeners() {
+		closeTableTooltip();
 		if (!containerRef) return;
 
 		const copyButtons = containerRef.querySelectorAll<HTMLButtonElement>(
@@ -178,6 +185,9 @@
 		);
 		const tableCopyButtons = containerRef.querySelectorAll<HTMLButtonElement>(
 			MARKDOWN_PRESENTATION_SELECTORS.tableCopyButton
+		);
+		const tableCsvButtons = containerRef.querySelectorAll<HTMLButtonElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.tableCsvButton
 		);
 
 		for (const button of copyButtons) {
@@ -196,15 +206,14 @@
 			button.removeEventListener('blur', handleTableTooltipBlur);
 		}
 
-		for (const button of tableCopyButtons) {
+		for (const button of [...tableCopyButtons, ...tableCsvButtons]) {
 			button.removeEventListener('click', handleTableCopyClick);
+			button.removeEventListener('click', handleTableCsvClick);
 			button.removeEventListener('pointerenter', handleTableTooltipEnter);
 			button.removeEventListener('pointerleave', handleTableTooltipLeave);
 			button.removeEventListener('focus', handleTableTooltipFocus);
 			button.removeEventListener('blur', handleTableTooltipBlur);
 		}
-
-		closeTableTooltip();
 	}
 
 	/**
@@ -564,7 +573,35 @@
 		}
 
 		tablePreviewHtml = table.outerHTML;
+		tablePreviewTrigger = target;
 		tablePreviewDialogOpen = true;
+	}
+
+	/** Read the selected live DOM at click time, including the latest streamed rows. */
+	function handleTableCsvClick(event: Event) {
+		event.preventDefault();
+		event.stopPropagation();
+		closeTableTooltip();
+		const target = event.currentTarget as HTMLButtonElement | null;
+		const tableBlock = target?.closest(MARKDOWN_PRESENTATION_SELECTORS.tableBlock);
+		const table = tableBlock?.querySelector<HTMLTableElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.tableWrapperTable
+		);
+		if (!table || !containerRef) return;
+		try {
+			const tables = Array.from(
+				containerRef.querySelectorAll<HTMLTableElement>(
+					MARKDOWN_PRESENTATION_SELECTORS.tableWrapperTable
+				)
+			);
+			downloadChartBlob(
+				new Blob([tableCsv(table)], { type: 'text/csv;charset=utf-8' }),
+				tableCsvFilename(tables.indexOf(table) + 1)
+			);
+		} catch (error) {
+			console.error('Table CSV export failed:', error);
+			toast.error(t('common.failedToExportTable'));
+		}
 	}
 
 	/** Copies only the selected table in spreadsheet-compatible formats. */
@@ -611,6 +648,15 @@
 	}
 
 	function handleTableTooltipViewportChange() {
+		// Keyboard focus may scroll a long table into view after the focus event.
+		// Keep that tooltip anchored rather than cancelling its pending timer.
+		if (
+			activeTableTooltipButton?.isConnected &&
+			document.activeElement === activeTableTooltipButton
+		) {
+			positionTableTooltip(activeTableTooltipButton);
+			return;
+		}
 		closeTableTooltip();
 	}
 
@@ -633,7 +679,9 @@
 
 			positionTableTooltip(button);
 			await tick();
-			tableTooltipOpen = true;
+			if (!destroyed && activeTableTooltipButton === button && button.isConnected) {
+				tableTooltipOpen = true;
+			}
 		}, 700);
 	}
 
@@ -887,6 +935,9 @@
 		const copyButtons = containerRef.querySelectorAll<HTMLButtonElement>(
 			MARKDOWN_PRESENTATION_SELECTORS.tableCopyButton
 		);
+		const csvButtons = containerRef.querySelectorAll<HTMLButtonElement>(
+			MARKDOWN_PRESENTATION_SELECTORS.tableCsvButton
+		);
 
 		for (const button of previewButtons) {
 			const label = t('common.tablePreview');
@@ -904,15 +955,20 @@
 			}
 		}
 
-		for (const button of copyButtons) {
-			const label = t('common.copyTable');
+		for (const button of [...copyButtons, ...csvButtons]) {
+			const isCsv = button.matches(MARKDOWN_PRESENTATION_SELECTORS.tableCsvButton);
+			if (isCsv) {
+				button.classList.add(...buttonVariants({ variant: 'ghost', size: 'sm' }).split(' '));
+				button.dataset.slot = 'button';
+			}
+			const label = isCsv ? t('common.exportTableCsv') : t('common.copyTable');
 			button.removeAttribute('title');
 			button.setAttribute('aria-label', label);
 			button.dataset.tableTooltip = label;
 
 			if (button.dataset.listenerBound !== 'true') {
 				button.dataset.listenerBound = 'true';
-				button.addEventListener('click', handleTableCopyClick);
+				button.addEventListener('click', isCsv ? handleTableCsvClick : handleTableCopyClick);
 				button.addEventListener('pointerenter', handleTableTooltipEnter);
 				button.addEventListener('pointerleave', handleTableTooltipLeave);
 				button.addEventListener('focus', handleTableTooltipFocus);
@@ -1192,7 +1248,14 @@
 
 <Dialog.Root open={tablePreviewDialogOpen} onOpenChange={handleTablePreviewDialogOpenChange}>
 	<Dialog.Content
-		class="table-preview-dialog-content z-[999999] flex !max-h-[80dvh] !w-[80vw] !max-w-[80vw] flex-col gap-0 overflow-hidden p-0"
+		class="table-preview-dialog-content llampart-table-preview-dialog z-[999999] flex !max-h-[80dvh] !w-[80vw] !max-w-[80vw] flex-col gap-0 overflow-hidden p-0"
+		onCloseAutoFocus={(event) => {
+			if (tablePreviewTrigger?.isConnected) {
+				event.preventDefault();
+				tablePreviewTrigger.focus();
+			}
+			tablePreviewTrigger = null;
+		}}
 	>
 		<div class="table-preview-dialog">
 			<div class="table-preview-header">
@@ -1913,7 +1976,8 @@
 	div :global(.table-block) {
 		position: relative;
 		min-height: var(--min-message-height);
-		max-height: var(--max-message-height);
+		height: auto;
+		max-height: none;
 		margin: 1.5rem 0;
 		overflow: hidden;
 		border: 1px solid color-mix(in oklch, var(--border) 30%, transparent);
@@ -1948,6 +2012,11 @@
 		transition: none;
 	}
 
+	/* Ghost styling comes from the shared Button primitive; export sizing is shared with charts. */
+	div :global(.table-csv-button) {
+		cursor: pointer;
+	}
+
 	div :global(.table-preview-button:hover),
 	div :global(.table-preview-button:focus-visible),
 	div :global(.table-copy-button:hover),
@@ -1977,8 +2046,11 @@
 
 	div :global(.table-wrapper) {
 		max-width: 100%;
-		max-height: calc(var(--max-message-height) - 3rem);
-		overflow: auto;
+		height: auto;
+		max-height: none;
+		overflow-x: auto;
+		/* With auto height there is no vertical scroll range, even though visible computes to auto. */
+		overflow-y: visible;
 		margin: 3rem 0 0;
 		padding: 0 1rem 1rem;
 		border: none;
@@ -1986,11 +2058,6 @@
 		scrollbar-width: thin;
 		scrollbar-color: transparent transparent;
 		-webkit-overflow-scrolling: touch;
-	}
-
-	.full-height-code-blocks :global(.table-block),
-	.full-height-code-blocks :global(.table-wrapper) {
-		max-height: none;
 	}
 
 	div :global(.table-wrapper table) {
@@ -2040,6 +2107,7 @@
 		overflow-wrap: break-word;
 	}
 
+	div :global(blockquote .table-csv-button),
 	div :global(blockquote .table-preview-button),
 	div :global(blockquote .table-preview-button *),
 	div :global(blockquote .table-copy-button),

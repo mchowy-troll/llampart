@@ -55,6 +55,8 @@ export const de: TranslationDictionary = {
 		previewMarkdown: 'Markdown-Vorschau',
 		tablePreview: 'Tabellenvorschau',
 		copyTable: 'Tabelle kopieren',
+		exportTableCsv: 'Tabelle als CSV herunterladen',
+		failedToExportTable: 'Tabelle konnte nicht als CSV heruntergeladen werden',
 		tableCopiedToClipboard: 'Tabelle in die Zwischenablage kopiert',
 		failedToCopyTable: 'Tabelle konnte nicht kopiert werden',
 		removeFile: 'Datei entfernen',

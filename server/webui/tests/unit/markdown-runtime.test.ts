@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createMarkdownProcessor } from '$lib/markdown/markdown-runtime';
+import { rehypeWrapTables } from '$lib/markdown/wrap-tables';
+import type { Root } from 'hast';
 
 async function renderMarkdown(markdown: string, disableMath = false) {
 	const processor = await createMarkdownProcessor({ disableMath });
@@ -83,12 +85,22 @@ $$`);
 		expect(katexHtml).not.toContain('dir="auto"');
 	});
 
-	it('adds copy and preview actions to tables', async () => {
+	it('adds exactly CSV → Copy → Preview and stays idempotent', async () => {
 		const markdown = '| Name | Value |\n| :--- | ---: |\n| A | 1 |';
-		const html = await renderMarkdown(markdown, true);
+		const processor = await createMarkdownProcessor({ disableMath: true });
+		const tree = (await processor.run(processor.parse(markdown))) as Root;
+		const html = processor.stringify(tree);
+		rehypeWrapTables()(tree);
+		expect(processor.stringify(tree)).toBe(html);
 
-		expect(html).toContain('class="table-copy-button"');
-		expect(html).toContain('class="table-preview-button"');
-		expect(html.indexOf('table-copy-button')).toBeLessThan(html.indexOf('table-preview-button'));
+		expect(html.match(/class="table-block"/g)).toHaveLength(1);
+		expect(html.match(/<button /g)).toHaveLength(3);
+		expect([...html.matchAll(/class="(table-[\w-]+-button)"/g)].map((match) => match[1])).toEqual([
+			'table-csv-button',
+			'table-copy-button',
+			'table-preview-button'
+		]);
+		expect(html).toContain('>CSV</button>');
+		expect(html.match(/class="table-cell-content"/g)).toHaveLength(4);
 	});
 });

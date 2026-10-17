@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { chartSchema } from '$lib/charts/chart-schema';
-import { chartCsv, chartFilename } from '$lib/charts/chart-csv';
+import { chartCsv, chartFilename, downloadChartBlob } from '$lib/charts/chart-csv';
 
 describe('chart CSV', () => {
 	it.each(['line', 'bar', 'area'])(
@@ -71,5 +71,64 @@ describe('chart CSV', () => {
 		expect(chartFilename('')).toBe('chart-chart');
 		expect(chartFilename('CON')).toBe('chart-CON');
 		expect(chartFilename('A'.repeat(200))).toHaveLength(76);
+	});
+	it('retains the pre-extraction byte contract, including numeric-looking string labels', () => {
+		const labels = [
+			'-12',
+			'-1.25',
+			'-1,25',
+			'\u034F=1',
+			'\uFE0F+cmd',
+			'=1',
+			'+1',
+			'@A',
+			' \t\u200B-1',
+			'a,"b"\nŁódź'
+		];
+		const spec = chartSchema.parse({
+			type: 'line',
+			xKey: 'x',
+			xLabel: '-12',
+			series: [{ key: 'y', label: '-1,25' }],
+			data: labels.map((x, index) => ({ x, y: -index / 7 }))
+		});
+		// Reference is the unchanged c509c656 serializer, deliberately independent of the helper.
+		const oldField = (value: string | number) => {
+			let text =
+				typeof value === 'number'
+					? String(value)
+					: value.replace(/^(?=[\s\p{Cc}\p{Cf}]*[=+@-])/u, "'");
+			if (/[",\r\n]/.test(text)) text = `"${text.replace(/"/g, '""')}"`;
+			return text;
+		};
+		const expected =
+			'\uFEFF' +
+			[['-12', '-1,25'], ...labels.map((x, index) => [x, -index / 7])]
+				.map((row) => row.map(oldField).join(','))
+				.join('\r\n') +
+			'\r\n';
+		expect(new TextEncoder().encode(chartCsv(spec))).toEqual(new TextEncoder().encode(expected));
+	});
+	it.each([false, true])('revokes the download URL even when link.click fails (%s)', (fails) => {
+		vi.useFakeTimers();
+		const click = vi.fn(() => {
+			if (fails) throw new Error('download failed');
+		});
+		const create = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:csv-test');
+		const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+		vi.stubGlobal('document', { createElement: () => ({ click }) });
+		try {
+			const download = () => downloadChartBlob(new Blob(['CSV']), 'table-1.csv');
+			if (fails) expect(download).toThrow('download failed');
+			else download();
+			expect(create).toHaveBeenCalledOnce();
+			expect(click).toHaveBeenCalledOnce();
+			vi.runAllTimers();
+			expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:csv-test');
+		} finally {
+			vi.restoreAllMocks();
+			vi.unstubAllGlobals();
+			vi.useRealTimers();
+		}
 	});
 });
