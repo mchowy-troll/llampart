@@ -22,6 +22,7 @@
 	import {
 		detectIncompleteMathBlock,
 		detectIncompleteChartBlock,
+		detectIncompleteMermaidBlock,
 		type IncompleteMathBlock
 	} from '$lib/markdown/markdown-streaming-policy';
 	import {
@@ -51,6 +52,16 @@
 	import { t } from '$lib/i18n';
 	import { portalToBody } from '$lib/utils/portal-to-body';
 	import ChartBlock from './ChartBlock.svelte';
+	import DiagramBlock from './DiagramBlock.svelte';
+	import { adjacentDiagramTitle } from '$lib/diagrams/diagram-title';
+	import {
+		MERMAID_LANGUAGE,
+		MAX_MESSAGE_DIAGRAMS,
+		preprocessMermaidMarkdown,
+		withoutClosedMermaidFences,
+		isMermaidNode,
+		isClosedMermaidNode
+	} from '$lib/markdown/mermaid-blocks';
 	import {
 		CHART_LANGUAGE,
 		MAX_MESSAGE_CHARTS,
@@ -70,6 +81,7 @@
 		allowCharts?: boolean;
 		isStreaming?: boolean;
 		chartLimit?: number;
+		diagramLimit?: number;
 	}
 
 	type MarkdownBlock = {
@@ -78,6 +90,7 @@
 	} & (
 		| { kind: 'html'; html: string }
 		| { kind: 'chart'; chart: { result: ChartResult; source: string } }
+		| { kind: 'diagram'; source: string; allowed: boolean; title?: string }
 	);
 
 	let {
@@ -88,7 +101,8 @@
 		inheritTypography = false,
 		allowCharts = false,
 		isStreaming = false,
-		chartLimit = MAX_MESSAGE_CHARTS
+		chartLimit = MAX_MESSAGE_CHARTS,
+		diagramLimit = MAX_MESSAGE_DIAGRAMS
 	}: Props = $props();
 
 	let containerRef = $state<HTMLDivElement>();
@@ -118,6 +132,8 @@
 
 	let pendingMarkdown: string | null = null;
 	let isProcessing = false;
+	let markdownRevision = 0;
+	let destroyed = false;
 
 	// Per-instance transform cache, avoids re-transforming stable blocks during streaming
 	// Garbage collected when component is destroyed (on conversation change)
@@ -283,9 +299,7 @@
 			return [];
 		}
 
-		const normalizedPrefix = allowCharts
-			? preprocessChartMarkdown(prefixMarkdown, preprocessLaTeX)
-			: preprocessLaTeX(prefixMarkdown);
+		const normalizedPrefix = normalizeMarkdown(prefixMarkdown);
 		const processorInstance = await createProcessor(prefixMarkdown);
 		const ast = processorInstance.parse(normalizedPrefix) as MdastRoot;
 		const mdastChildren = (ast as { children?: unknown[] }).children ?? [];
@@ -311,7 +325,14 @@
 			}
 
 			nextBlocks.push(
-				await renderBlock(processorInstance, child, index, normalizedPrefix, nextBlocks)
+				await renderBlock(
+					processorInstance,
+					child,
+					index,
+					normalizedPrefix,
+					nextBlocks,
+					mdastChildren[index - 1]
+				)
 			);
 		}
 
@@ -323,7 +344,8 @@
 		node: unknown,
 		index: number,
 		markdown: string,
-		preceding: MarkdownBlock[]
+		preceding: MarkdownBlock[],
+		previousNode?: unknown
 	): Promise<MarkdownBlock> {
 		const hash = getMdastNodeHash(node, index);
 		const id = getHastNodeId(
@@ -341,6 +363,16 @@
 				chartCache.set(source, result);
 			}
 			return { kind: 'chart', id, contentHash: hash, chart: { result, source } };
+		}
+		if (allowCharts && isMermaidNode(node) && isClosedMermaidNode(node, markdown)) {
+			return {
+				kind: 'diagram',
+				title: adjacentDiagramTitle(previousNode),
+				id,
+				contentHash: hash,
+				source: node.value,
+				allowed: preceding.filter((block) => block.kind === 'diagram').length < diagramLimit
+			};
 		}
 		const { html } = await transformMdastNode(processor, node, index);
 		return { kind: 'html', id, html, contentHash: hash };
@@ -624,9 +656,12 @@
 	function handleTableTooltipBlur(event: Event) {
 		const button = event.currentTarget as HTMLButtonElement;
 
-		if (!button.matches(':hover')) {
-			closeTableTooltip();
-		}
+		// Removing a focused table during Markdown reconciliation fires blur
+		// inside Svelte's render transaction. Keep the same tooltip behavior,
+		// but mutate its state after that transaction, not from DOM teardown.
+		queueMicrotask(() => {
+			if (activeTableTooltipButton === button && !button.matches(':hover')) closeTableTooltip();
+		});
 	}
 
 	/**
@@ -635,8 +670,16 @@
 	 * Incomplete code blocks are rendered using SyntaxHighlightedCode to maintain interactivity.
 	 * @param markdown - The raw markdown string to process
 	 */
-	async function processMarkdown(markdown: string) {
-		const chartPolicy = `${allowCharts}:${chartLimit}`;
+	function normalizeMarkdown(markdown: string) {
+		// Mermaid is code even in contexts not permitted to render it.
+		return preprocessMermaidMarkdown(markdown, (source) =>
+			allowCharts ? preprocessChartMarkdown(source, preprocessLaTeX) : preprocessLaTeX(source)
+		);
+	}
+
+	async function processMarkdown(markdown: string, revision: number) {
+		const current = () => !destroyed && revision === markdownRevision;
+		const chartPolicy = `${allowCharts}:${chartLimit}:${diagramLimit}`;
 		if (chartPolicy !== previousChartPolicy) {
 			previousContent = '';
 			previousChartPolicy = chartPolicy;
@@ -663,6 +706,7 @@
 
 		// Check for incomplete code block at the end of content
 		const incompleteBlock =
+			detectIncompleteMermaidBlock(markdown) ??
 			(allowCharts ? detectIncompleteChartBlock(markdown) : null) ??
 			detectIncompleteCodeBlock(markdown);
 
@@ -670,12 +714,15 @@
 			// Process only the prefix (content before the incomplete code block).
 			const prefixMarkdown = markdown.slice(0, incompleteBlock.openingIndex);
 
-			renderedBlocks = await renderStableMarkdownBlocks(prefixMarkdown);
+			const blocks = await renderStableMarkdownBlocks(prefixMarkdown);
+			if (!current()) return;
+			renderedBlocks = blocks;
 			previousContent = prefixMarkdown;
 			unstableBlockHtml = '';
 			incompleteMathBlock = null;
 			incompleteCodeBlock = incompleteBlock;
-			if (allowCharts && incompleteBlock.language === CHART_LANGUAGE) streamingHighlightedHtml = '';
+			if (allowCharts && [CHART_LANGUAGE, MERMAID_LANGUAGE].includes(incompleteBlock.language))
+				streamingHighlightedHtml = '';
 			else await updateStreamingHighlightedHtml(incompleteBlock);
 
 			return;
@@ -683,12 +730,16 @@
 
 		const pendingMathBlock = disableMath
 			? null
-			: detectIncompleteMathBlock(allowCharts ? withoutClosedChartFences(markdown) : markdown);
+			: detectIncompleteMathBlock(
+					withoutClosedMermaidFences(allowCharts ? withoutClosedChartFences(markdown) : markdown)
+				);
 
 		if (pendingMathBlock) {
 			const prefixMarkdown = markdown.slice(0, pendingMathBlock.openingIndex);
 
-			renderedBlocks = await renderStableMarkdownBlocks(prefixMarkdown);
+			const blocks = await renderStableMarkdownBlocks(prefixMarkdown);
+			if (!current()) return;
+			renderedBlocks = blocks;
 			previousContent = prefixMarkdown;
 			unstableBlockHtml = '';
 			incompleteCodeBlock = null;
@@ -703,16 +754,17 @@
 		incompleteMathBlock = null;
 		streamingHighlightedHtml = '';
 
-		const normalized = allowCharts
-			? preprocessChartMarkdown(markdown, preprocessLaTeX)
-			: preprocessLaTeX(markdown);
+		const normalized = normalizeMarkdown(markdown);
 		const processorInstance = await createProcessor(markdown);
+		if (!current()) return;
 		const ast = processorInstance.parse(normalized) as MdastRoot;
 		const mdastChildren = (ast as { children?: unknown[] }).children ?? [];
 		const last = mdastChildren.at(-1);
 		// A closed chart is stable immediately, even before any following paragraph.
 		const stableCount =
-			allowCharts && isChartNode(last) && isClosedChartNode(last, normalized)
+			allowCharts &&
+			((isChartNode(last) && isClosedChartNode(last, normalized)) ||
+				(isMermaidNode(last) && isClosedMermaidNode(last, normalized)))
 				? mdastChildren.length
 				: Math.max(mdastChildren.length - 1, 0);
 		const nextBlocks: MarkdownBlock[] = [];
@@ -736,7 +788,16 @@
 			}
 
 			// Transform this block (with caching)
-			nextBlocks.push(await renderBlock(processorInstance, child, index, normalized, nextBlocks));
+			nextBlocks.push(
+				await renderBlock(
+					processorInstance,
+					child,
+					index,
+					normalized,
+					nextBlocks,
+					mdastChildren[index - 1]
+				)
+			);
 		}
 
 		let unstableHtml = '';
@@ -748,6 +809,7 @@
 			unstableHtml = transformed.html;
 		}
 
+		if (!current()) return;
 		renderedBlocks = nextBlocks;
 		previousContent = markdown;
 		const activeSources = new Set(
@@ -756,6 +818,7 @@
 		for (const source of chartCache.keys())
 			if (!activeSources.has(source)) chartCache.delete(source);
 		await tick(); // Force DOM sync before updating unstable HTML block
+		if (!current()) return;
 		unstableBlockHtml = unstableHtml;
 	}
 
@@ -920,6 +983,7 @@
 	 * @param markdown - The markdown content to render
 	 */
 	async function updateRenderedBlocks(markdown: string) {
+		markdownRevision++;
 		pendingMarkdown = markdown;
 
 		if (isProcessing) {
@@ -928,15 +992,17 @@
 
 		isProcessing = true;
 		let processingMarkdown = markdown;
+		let processingRevision = markdownRevision;
 
 		try {
 			while (pendingMarkdown !== null) {
 				const nextMarkdown = pendingMarkdown;
 				pendingMarkdown = null;
 				processingMarkdown = nextMarkdown;
+				processingRevision = markdownRevision;
 				markdownFallbackText = '';
 
-				await processMarkdown(nextMarkdown);
+				await processMarkdown(nextMarkdown, markdownRevision);
 
 				// Yield to browser for paint. During this, new chunks coalesce
 				// into pendingMarkdown, so we always render the latest state.
@@ -946,11 +1012,14 @@
 			}
 		} catch (error) {
 			console.error('Failed to process markdown:', error);
-			renderedBlocks = [];
-			unstableBlockHtml = '';
-			markdownFallbackText = getMarkdownFallbackText(processingMarkdown);
+			if (!destroyed && processingRevision === markdownRevision) {
+				renderedBlocks = [];
+				unstableBlockHtml = '';
+				markdownFallbackText = getMarkdownFallbackText(processingMarkdown);
+			}
 		} finally {
 			isProcessing = false;
+			if (!destroyed && pendingMarkdown !== null) void updateRenderedBlocks(pendingMarkdown);
 		}
 	}
 
@@ -961,6 +1030,7 @@
 	$effect(() => {
 		void allowCharts;
 		void chartLimit;
+		void diagramLimit;
 		updateRenderedBlocks(content);
 	});
 
@@ -999,6 +1069,8 @@
 	});
 
 	onDestroy(() => {
+		destroyed = true;
+		markdownRevision++;
 		pendingMarkdown = null;
 		chartCache.clear();
 		cleanupEventListeners();
@@ -1017,6 +1089,8 @@
 		<div class="markdown-block" data-block-id={block.id} use:fadeInView={{ skipIfVisible: true }}>
 			{#if block.kind === 'chart'}
 				<ChartBlock result={block.chart.result} source={block.chart.source} />
+			{:else if block.kind === 'diagram'}
+				<DiagramBlock source={block.source} allowed={block.allowed} contextTitle={block.title} />
 			{:else}
 				<!-- eslint-disable-next-line no-at-html-tags -->
 				{@html block.html}
@@ -1053,7 +1127,13 @@
 		</div>
 	{/if}
 
-	{#if incompleteCodeBlock && allowCharts && incompleteCodeBlock.language === CHART_LANGUAGE}
+	{#if incompleteCodeBlock && allowCharts && incompleteCodeBlock.language === MERMAID_LANGUAGE}
+		{#if isStreaming}
+			<div class="llampart-inline-processing-status" role="status">{t('diagrams.preparing')}</div>
+		{:else}
+			<DiagramBlock source={incompleteCodeBlock.code} allowed={false} />
+		{/if}
+	{:else if incompleteCodeBlock && allowCharts && incompleteCodeBlock.language === CHART_LANGUAGE}
 		{#if isStreaming}
 			<div class="llampart-inline-processing-status" role="status">{t('charts.preparing')}</div>
 		{:else}

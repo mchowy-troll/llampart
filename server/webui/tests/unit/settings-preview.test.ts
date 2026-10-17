@@ -89,7 +89,7 @@ describe('settings preview through the real store', () => {
 		for (const { key } of RESPONSE_PREFERENCES) expect(config()[key]).toBe(false);
 	});
 
-	it('exports/imports all eight committed preferences, rejects malformed imports atomically', async () => {
+	it('exports/imports all nine committed preferences, rejects malformed imports atomically', async () => {
 		const all = Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }) => [key, true]));
 		settingsStore.updateMultipleConfig(all);
 		let exported: Blob | undefined;

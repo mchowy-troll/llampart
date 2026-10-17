@@ -79,7 +79,7 @@ the existing Markdown glass material. No library stylesheet or shadcn component
 set is installed.
 
 All four types share the exact fixed base palette owned by `chart-palette.ts`:
-`#0066FF`, `#00A3A3`, `#00C853`, `#AEEA00`, `#FF6D00`, `#FF1744`, `#D500F9`,
+`#00BEFF`, `#00A3A3`, `#00C853`, `#AEEA00`, `#FF6D00`, `#FF1744`, `#D500F9`,
 `#651FFF`, `#263238`. No wallpaper, surface, lightness or saturation adjustment is
 applied to these values. Line/Area/Bar use the first N colors in source series order
 (still at most five series), never sorted by height. Strokes, opaque marks, points,
@@ -150,10 +150,12 @@ used weight/style, rather than truncating a whole-family list of faces.
 ## Exports
 
 - **PNG**: current visible plot, title, description, axes and legend, 2× pixels,
-  opaque near-white print background. Tooltip/highlight overlays are excluded;
+  a genuinely transparent RGBA background. No component/glass surface is painted.
+  Tooltip/highlight overlays are excluded;
   graphic export forces base donut geometry and disables transient filters/motion.
 - **SVG**: LayerChart inlines computed SVG styling; llampart adds native SVG text
-  for the header and visible legend. CSS variables and gradient stops are resolved;
+  for the header and visible legend, without a whole-document backdrop.
+  CSS variables and gradient stops are resolved;
   paint server references are made local to the standalone SVG. Active same-origin
   font faces are discovered from CSSOM and embedded as data URLs (maximum 4 MiB,
   12 faces). No duplicate font registry, CDN, HTML foreignObject or export dependency.

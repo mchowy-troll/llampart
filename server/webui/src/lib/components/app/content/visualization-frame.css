@@ -1,0 +1,52 @@
+/* One frame/header language for statistical charts and Mermaid. Frosted Glass
+ * owns the material in content.css; these are shared structure/fallback styles. */
+.llampart-visualization-frame {
+	--llampart-visualization-body-space: 1rem;
+	min-width: 0;
+	max-width: 100%;
+	margin: 1.5rem 0;
+	border: 1px solid color-mix(in oklch, var(--border) 30%, transparent);
+	border-radius: 0.75rem;
+	background: var(--code-background);
+	box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+	color: var(--foreground);
+	font: inherit;
+	font-synthesis: none;
+	text-shadow: none;
+}
+.visualization-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding: 0.65rem 1rem;
+	border-bottom: 1px solid color-mix(in oklch, var(--border) 30%, transparent);
+}
+.visualization-title {
+	min-width: 0;
+	overflow-wrap: anywhere;
+	font-weight: var(--llampart-font-medium, 500);
+}
+.visualization-actions {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+	margin-left: auto;
+	gap: 0.125rem;
+}
+.visualization-actions button {
+	font: inherit;
+	font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
+	padding: 0.25rem 0.4rem;
+	height: 1.75rem;
+	text-shadow: none;
+}
+.visualization-actions .visualization-preview-action {
+	width: 1.75rem;
+	padding: 0.25rem;
+}
+@media (max-width: 480px) {
+	.visualization-header {
+		flex-wrap: wrap;
+	}
+}

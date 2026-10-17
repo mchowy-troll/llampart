@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
 import { parseSettingsConfig, validateSettingsPatch } from '$lib/utils/settings-schema';
 import { CHART_INSTRUCTIONS } from '$lib/markdown/chart-instructions';
+import { MERMAID_INSTRUCTIONS } from '$lib/markdown/mermaid-instructions';
 import {
 	RESPONSE_PREFERENCES,
 	buildResponsePreferenceInstructions,
@@ -14,8 +15,15 @@ import { getDictionary } from '$lib/i18n';
 const all = Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }) => [key, true]));
 
 describe('response preferences contract', () => {
-	it('defaults all eight off and preserves existing settings on upgrade', () => {
-		expect(RESPONSE_PREFERENCES).toHaveLength(8);
+	it('restricts diagram preferences to the four supported families', () => {
+		const instruction = buildResponsePreferenceInstructions({ responsePrefDiagrams: true });
+		expect(instruction).toContain('you MUST include a valid Mermaid diagram');
+		expect(instruction).toContain('Use only flowchart, stateDiagram-v2, mindmap, or gantt.');
+		expect(instruction).toContain('Never invent steps or relationships.');
+		expect(instruction).not.toMatch(/sequence|entity relationships?|\ber\b|erDiagram/i);
+	});
+	it('defaults all nine off and preserves existing settings on upgrade', () => {
+		expect(RESPONSE_PREFERENCES).toHaveLength(9);
 		const upgraded = parseSettingsConfig({
 			systemMessage: 'Manual',
 			fontSize: '20',
@@ -89,6 +97,7 @@ describe('response preferences contract', () => {
 		for (const responsePrefCharts of [false, true]) {
 			const text = String(withChatInstructions([], { responsePrefCharts })[0].content);
 			expect(text.split(CHART_INSTRUCTIONS)).toHaveLength(2);
+			expect(text.split(MERMAID_INSTRUCTIONS)).toHaveLength(2);
 			expect(text.includes(RESPONSE_PREFERENCES[2].instruction)).toBe(responsePrefCharts);
 			expect(text).not.toMatch(/\bpie\b/i);
 			expect(text).toContain('Supported types: line, area, bar, donut.');
@@ -97,6 +106,28 @@ describe('response preferences contract', () => {
 		expect(RESPONSE_PREFERENCES[2].instruction).toContain('MUST include');
 		expect(RESPONSE_PREFERENCES[2].instruction).not.toContain('"type"');
 	});
+	it('keeps the independent technical Mermaid contract before preferences and the manual prompt', () => {
+		for (const responsePrefDiagrams of [true, false]) {
+			const original: ApiChatMessageData[] = [
+				{ role: 'system', content: 'Manual' },
+				{ role: 'user', content: 'Hi' }
+			];
+			const settings = { responsePrefDiagrams };
+			const result = withChatInstructions(original, settings);
+			expect(result[0].content).toBe(
+				[
+					CHART_INSTRUCTIONS,
+					MERMAID_INSTRUCTIONS,
+					buildResponsePreferenceInstructions(settings),
+					'Manual'
+				]
+					.filter(Boolean)
+					.join('\n\n')
+			);
+			expect(withChatInstructions(result, settings)).toEqual(result);
+			expect(original[0].content).toBe('Manual');
+		}
+	});
 	it('scopes tables to structured facts and numbered steps to procedures', () => {
 		const text = buildResponsePreferenceInstructions({
 			responsePrefTables: true,
@@ -104,6 +135,26 @@ describe('response preferences contract', () => {
 		});
 		expect(text).toContain('Do not force tables for single sentences, procedures');
 		expect(text).toContain('For procedures and how-to tasks, you MUST provide numbered steps');
+	});
+	it('never truncates manual prompts quoting a chart contract outside the generated prefix', () => {
+		for (const messages of [
+			[
+				{
+					role: 'system',
+					content: `Keep these exact words.\n${CHART_INSTRUCTIONS}\nAnd this ending.`
+				}
+			],
+			[
+				{ role: 'system', content: 'First manual system message.' },
+				{ role: 'system', content: CHART_INSTRUCTIONS }
+			]
+		] as ApiChatMessageData[][]) {
+			const original = structuredClone(messages);
+			const result = withChatInstructions(messages, { responsePrefDiagrams: true });
+			expect(String(result[0].content).endsWith(String(messages[0].content))).toBe(true);
+			expect(withChatInstructions(result, { responsePrefDiagrams: true })).toEqual(result);
+			expect(messages).toEqual(original);
+		}
 	});
 	it.each(['en', 'pl', 'de', 'fr', 'it', 'es'] as const)(
 		'has translated UI in %s but a language-independent English contract',

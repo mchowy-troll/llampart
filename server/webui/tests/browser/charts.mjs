@@ -3,7 +3,8 @@
  * LLAMPART_TEST_PRODUCTION=1 skips dev-only store editing/streaming probes.
  */
 import assert from 'node:assert/strict';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { assertTransparentExport } from './export-transparency.mjs';
 
 const { chromium } = await import(process.env.LLAMPART_PLAYWRIGHT_MODULE);
 const artifacts = process.env.LLAMPART_TEST_ARTIFACTS || '/tmp/opencode/llampart-chart-browser';
@@ -19,6 +20,7 @@ const context = await browser.newContext({
 });
 const page = await context.newPage();
 const errors = [];
+const transparency = [];
 page.on('pageerror', (error) => errors.push(error.message));
 page.on('console', (event) => {
 	if (event.type() === 'error') console.error(event.text());
@@ -199,14 +201,90 @@ try {
 					.trim()
 			)
 		),
-		['#0066FF', '#00A3A3', '#00C853', '#AEEA00', '#FF6D00']
+		['#00BEFF', '#00A3A3', '#00C853', '#AEEA00', '#FF6D00']
 	);
 	await frames.first().locator('.chart-legend button').last().click();
 	assert.equal(
 		await frames.first().locator('.chart-legend button[aria-pressed="false"]').count(),
 		1
 	);
+	await frames.first().getByRole('button', { name: 'Podgląd wykresu', exact: true }).click();
+	const selectedPreview = page.locator('.chart-preview-dialog-content');
+	await selectedPreview.locator('svg[role="img"]').waitFor();
+	assert.equal(
+		await selectedPreview.locator('.chart-legend button[aria-pressed="false"]').count(),
+		1
+	);
+	await selectedPreview.locator('.chart-legend button').last().click();
+	assert.equal(
+		await selectedPreview.locator('.chart-legend button[aria-pressed="false"]').count(),
+		0
+	);
+	await page.keyboard.press('Escape');
+	assert.equal(
+		await frames.first().locator('.chart-legend button[aria-pressed="false"]').count(),
+		1
+	);
 	await frames.first().locator('.chart-legend button').last().click();
+	// Each native chart family uses the table Dialog, with the eye after exports.
+	for (let i = 0; i < specs.length; i++) {
+		const frame = frames.nth(i);
+		const eye = frame.getByRole('button', { name: 'Podgląd wykresu', exact: true });
+		assert(
+			await frame
+				.locator('.chart-actions button')
+				.last()
+				.evaluate((el) => el.classList.contains('visualization-preview-action'))
+		);
+		await eye.click();
+		const preview = page.locator('.chart-preview-dialog-content');
+		await preview.locator('svg[role="img"]').waitFor();
+		assert.equal(await preview.locator('.chart-live-preview').count(), 1);
+		assert.equal(await preview.locator('img,canvas').count(), 0);
+		const plot = preview.locator('.chart-plot');
+		if (specs[i].type === 'donut') {
+			const slice = preview.locator('.chart-slice').first();
+			const original = await slice.getAttribute('d');
+			await slice.hover({ force: true });
+			await page.waitForFunction(
+				(d) => document.querySelector('.chart-live-preview .chart-slice')?.getAttribute('d') !== d,
+				original
+			);
+		} else if (specs[i].type === 'bar') {
+			await preview.locator('.lc-bars-bar').first().hover({ force: true });
+		} else {
+			await plot.hover({ position: { x: 120, y: 100 } });
+		}
+		const tooltip = page.locator('.chart-preview-tooltip-root .llampart-chart-tooltip');
+		await tooltip.waitFor({ state: 'visible' });
+		await page.waitForFunction(() => {
+			let el = document.querySelector('.chart-preview-tooltip-root .llampart-chart-tooltip');
+			if (!el) return false;
+			while (el && el !== document.body) {
+				if (Number(getComputedStyle(el).opacity) < 0.99) return false;
+				el = el.parentElement;
+			}
+			return true;
+		});
+		if (specs[i].type === 'line' || specs[i].type === 'area')
+			assert((await preview.locator('.lc-highlight-point').count()) > 0);
+		assert((await tooltip.innerText()).length > 0);
+		assert.equal(
+			await page.evaluate(() => {
+				const ids = [...document.querySelectorAll('.llampart-chart-renderer [id]')].map(
+					(el) => el.id
+				);
+				return new Set(ids).size === ids.length;
+			}),
+			true
+		);
+		const box = await preview.boundingBox();
+		assert(box.width <= 1920 * 0.8 + 1 && box.height <= 1080 * 0.8 + 1);
+		await page.screenshot({ path: `${artifacts}/preview-${i}-${specs[i].type}.png` });
+		await page.keyboard.press('Escape');
+		assert(await eye.evaluate((el) => el === document.activeElement));
+		await page.waitForFunction(() => !document.querySelector('.chart-preview-tooltip-root'));
+	}
 	await frames
 		.first()
 		.locator('.chart-plot')
@@ -280,6 +358,10 @@ try {
 				'\uFEFFMiesiąc,Przychód,Koszty\r\nStyczeń,12.123456,8\r\nLuty,18,11\r\nMarzec,24,15\r\n'
 			);
 		} else {
+			transparency.push({
+				type: specs[0].type,
+				...(await assertTransparentExport(page, bytes, format))
+			});
 			if (format === 'png') {
 				assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 				assert(bytes.readUInt32BE(16) > 1000);
@@ -336,6 +418,12 @@ try {
 			const path = `${artifacts}/chart-${index}.${format}`;
 			await download.saveAs(path);
 			const bytes = await readFile(path);
+			if (format !== 'csv')
+				transparency.push({
+					type: specs[index].type,
+					variant: index,
+					...(await assertTransparentExport(page, bytes, format))
+				});
 			if (format === 'png') assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
 			if (format === 'svg') {
 				assert(bytes.toString().includes(specs[index].title));
@@ -362,6 +450,10 @@ try {
 		}
 	}
 	console.log('PASS PNG/SVG/CSV files for grouped/ horizontal bar, area and donut as well as line');
+	await writeFile(`${artifacts}/transparency.json`, JSON.stringify(transparency, null, 2));
+	console.log(
+		'PASS every chart PNG has RGBA transparent pixels; every SVG has transparent corners and no document background'
+	);
 
 	if (!process.env.LLAMPART_TEST_PRODUCTION) {
 		await page.evaluate(async () => {

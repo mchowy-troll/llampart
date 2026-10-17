@@ -15,7 +15,7 @@ const optionalNumber = (schema: z.ZodNumber) => z.union([schema, z.literal('')])
 const knownSettingsShape: Record<string, z.ZodType<SettingsConfigValue>> = {};
 for (const [key, value] of Object.entries(SETTING_CONFIG_DEFAULT)) {
 	if (value === undefined) knownSettingsShape[key] = optionalSamplingNumber;
-	// Includes the eight response preferences: strict booleans, no string coercion.
+	// Includes the nine response preferences: strict booleans, no string coercion.
 	else if (typeof value === 'boolean') knownSettingsShape[key] = z.boolean();
 	else if (typeof value === 'number') knownSettingsShape[key] = z.number().finite();
 	else knownSettingsShape[key] = z.string();

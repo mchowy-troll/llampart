@@ -18,6 +18,7 @@ export const SETTING_CONFIG_DEFAULT = {
 	responsePrefNoHeadings: false,
 	responsePrefTables: false,
 	responsePrefCharts: false,
+	responsePrefDiagrams: false,
 	responsePrefNoDecorations: false,
 	responsePrefConcise: false,
 	responsePrefExamples: false,

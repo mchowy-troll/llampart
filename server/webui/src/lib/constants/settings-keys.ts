@@ -25,6 +25,7 @@ export const SETTINGS_KEYS = {
 	RESPONSE_PREF_NO_HEADINGS: 'responsePrefNoHeadings',
 	RESPONSE_PREF_TABLES: 'responsePrefTables',
 	RESPONSE_PREF_CHARTS: 'responsePrefCharts',
+	RESPONSE_PREF_DIAGRAMS: 'responsePrefDiagrams',
 	RESPONSE_PREF_NO_DECORATIONS: 'responsePrefNoDecorations',
 	RESPONSE_PREF_CONCISE: 'responsePrefConcise',
 	RESPONSE_PREF_EXAMPLES: 'responsePrefExamples',

@@ -79,7 +79,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-markdown-content
 	.code-block-wrapper,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-markdown-content .table-block,
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-chart-frame {
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-visualization-frame {
 	background: var(--llampart-glass-white-110, rgba(255, 255, 255, 0.11)) !important;
 	border: 1px solid rgba(255, 255, 255, 0.12) !important;
 	box-shadow:

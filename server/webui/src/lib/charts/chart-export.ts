@@ -24,12 +24,7 @@ export async function chartSvg(frame: HTMLElement, plot: HTMLElement): Promise<s
 	fonts.textContent = await embeddedSvgFonts(style.fontFamily, frame);
 	defs.append(fonts);
 	svg.append(defs);
-	const background = document.createElementNS(NS, 'rect');
-	background.setAttribute('width', '100%');
-	background.setAttribute('height', '100%');
-	// Stable, opaque near-white glass print surface, independent of the desktop wallpaper.
-	background.setAttribute('fill', '#f5f6f5');
-	svg.append(background);
+	// No document backdrop: only visualization marks, text and legend are exported.
 	const canvas = document.createElement('canvas');
 	const ctx = canvas.getContext('2d')!;
 	let y = 24;
@@ -135,7 +130,8 @@ export async function exportChart(
 		const canvas = document.createElement('canvas');
 		canvas.width = image.naturalWidth * 2;
 		canvas.height = image.naturalHeight * 2;
-		canvas.getContext('2d')!.drawImage(image, 0, 0, canvas.width, canvas.height);
+		// A fresh alpha-enabled canvas preserves the SVG's transparent pixels.
+		canvas.getContext('2d', { alpha: true })!.drawImage(image, 0, 0, canvas.width, canvas.height);
 		const png = await new Promise<Blob>((resolve, reject) =>
 			canvas.toBlob(
 				(result) => (result ? resolve(result) : reject(new Error('PNG encoding failed'))),

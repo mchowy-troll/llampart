@@ -1,6 +1,6 @@
 /** Data colors are fixed, independent of wallpaper accents and glass materials. */
 export const CHART_BASE_COLORS = [
-	'#0066FF',
+	'#00BEFF',
 	'#00A3A3',
 	'#00C853',
 	'#AEEA00',

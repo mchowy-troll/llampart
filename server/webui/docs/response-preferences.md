@@ -1,8 +1,8 @@
 # Response preferences
 
 General settings contain a separate Response preferences frame below System
-message. Eight independent booleans default to `false`: no Markdown headings,
-tables, charts, no decorations, concise answers, practical examples, numbered
+message. Nine independent booleans default to `false`: no Markdown headings,
+tables, charts, diagrams, no decorations, concise answers, practical examples, numbered
 procedures, and the language of the latest user message. The two labeled groups
 use the existing field renderer and checkbox controls. The collapsed read-only
 preview uses the same English instruction builder as requests and supports copy.
@@ -16,8 +16,9 @@ format is supplied once by the existing `withChartInstructions()` function:
 
 1. Technical chart format, examples and limits (unchanged supported types:
    `line`, `area`, `bar`, `donut`).
-2. Active response preferences, in fixed UI order.
-3. Existing manual system message, unchanged.
+2. Technical Mermaid format (four supported diagram families; see [diagrams](diagrams.md)).
+3. Active response preferences, in fixed UI order.
+4. Existing manual system message, unchanged.
 
 The preference block explicitly defers to the user's instructions, including the
 manual system message. This is an instruction-ordering contract, not a semantic

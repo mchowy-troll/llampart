@@ -41,6 +41,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## Mermaid diagrams
+
+The browser-only diagram renderer uses **Mermaid 12.2.0**, MIT-licensed,
+Copyright (c) 2014–2022 Knut Sveidqvist. Mermaid source:
+<https://github.com/mermaid-js/mermaid/tree/v12.2.0>.
+
+The complete Mermaid MIT notice and the license/copyright/NOTICE files of its
+locked runtime dependency closure are preserved in
+`server/webui/static/licenses/mermaid.txt`, distributed locally with the Web UI.
+Regenerate that snapshot with `node scripts/diagram-license-notices.mjs` in
+`server/webui` after dependency changes. No upstream source was modified.
+
+The transitive review includes MIT, ISC, BSD-2-Clause/BSD-3-Clause and Apache-2.0
+notices; DOMPurify is used under its Apache-2.0 option. `khroma` omits a license
+metadata field but ships the MIT license text, included in the snapshot.
+`elkjs@0.9.3` is EPL-2.0: its unmodified source remains available at
+<https://github.com/kieler/elkjs/tree/v0.9.3>. ELK/elkjs is bundled by Mermaid
+and used by llampart for Flowchart and State layouts. Preserve these notices and
+source-availability information with redistributions; this does not change llampart's MIT license.
+
 ## Local typefaces
 
 Merriweather, Frank Ruhl Libre, Crimson Text, Libre Caslon Condensed and Fira Sans
@@ -79,7 +99,6 @@ but its tagged upstream source contained MIT license evidence:
 
 If `server/webui/package-lock.json` changes before release, repeat the dependency
 license review using the final lockfile.
-
 
 ## Frontend framework
 

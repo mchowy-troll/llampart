@@ -8,7 +8,7 @@ import { frostedGlassTheme } from '$lib/themes/frosted-glass';
 import { FROSTED_GLASS_CONFIG_DEFAULT } from '$lib/themes/frosted-glass/config';
 
 const base = [
-	'#0066FF',
+	'#00BEFF',
 	'#00A3A3',
 	'#00C853',
 	'#AEEA00',
@@ -50,13 +50,13 @@ describe('fixed chart color wheel', () => {
 		expect(CHART_BASE_COLORS).toEqual(base);
 		expect(chartPalette()).toEqual(base);
 		expect(chartPalette(5)).toEqual(base.slice(0, 5));
-		expect(chartPalette(5).at(0)).toBe('#0066FF');
+		expect(chartPalette(5).at(0)).toBe('#00BEFF');
 		expect(chartPalette(5).at(-1)).toBe('#FF6D00');
 	});
 	it.each([
-		[10, '#b89eff'],
-		[15, '#00c1fe'],
-		[20, '#00cdb4']
+		[10, '#ff7ccb'],
+		[15, '#9171ff'],
+		[20, '#f71da5']
 	] as const)('extends to %i without cycling or changing any prefix', (count, last) => {
 		const colors = chartPalette(count);
 		expect(colors).toHaveLength(count);

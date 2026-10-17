@@ -1,5 +1,6 @@
 import type { ApiChatMessageData } from '$lib/types/api';
 import { CHART_INSTRUCTIONS, withChartInstructions } from '$lib/markdown/chart-instructions';
+import { MERMAID_INSTRUCTIONS } from '$lib/markdown/mermaid-instructions';
 
 /** Stable order and English request contract; only label/help keys are translated. */
 export const RESPONSE_PREFERENCES = [
@@ -20,6 +21,12 @@ export const RESPONSE_PREFERENCES = [
 		name: 'Charts',
 		instruction:
 			'When numeric data support a meaningful comparison, trend, or distribution, you MUST include a valid fenced llampart-chart JSON block. Do not replace the chart with prose alone. Never invent data. Do not chart a single number or insufficient data.'
+	},
+	{
+		key: 'responsePrefDiagrams',
+		name: 'Diagrams',
+		instruction:
+			'When a process, workflow, state transition, hierarchy, or project schedule would be clearer visually, you MUST include a valid Mermaid diagram. Use only flowchart, stateDiagram-v2, mindmap, or gantt. Never invent steps or relationships.'
 	},
 	{
 		key: 'responsePrefNoDecorations',
@@ -85,11 +92,13 @@ export function withResponsePreferences(
 	const original = messages[index].content as string;
 	const chartPrefix = original.startsWith(CHART_INSTRUCTIONS) ? CHART_INSTRUCTIONS : '';
 	let manual = chartPrefix ? original.slice(chartPrefix.length).replace(/^\n\n/, '') : original;
+	const mermaidPrefix = manual.startsWith(MERMAID_INSTRUCTIONS) ? MERMAID_INSTRUCTIONS : '';
+	if (mermaidPrefix) manual = manual.slice(mermaidPrefix.length).replace(/^\n\n/, '');
 	if (manual.startsWith(START + '\n')) {
 		const end = manual.indexOf('\n' + END);
 		if (end >= 0) manual = manual.slice(end + END.length + 1).replace(/^\n\n/, '');
 	}
-	const content = [chartPrefix, instructions, manual].filter(Boolean).join('\n\n');
+	const content = [chartPrefix, mermaidPrefix, instructions, manual].filter(Boolean).join('\n\n');
 	if (content === original) return messages;
 	return messages.flatMap((message, i) =>
 		i !== index ? [message] : content ? [{ ...message, content }] : []
@@ -100,5 +109,24 @@ export function withChatInstructions(
 	messages: ApiChatMessageData[],
 	settings: ResponsePreferences
 ): ApiChatMessageData[] {
-	return withResponsePreferences(withChartInstructions(messages), settings);
+	const withCharts = withChartInstructions(messages);
+	const index = withCharts.findIndex(
+		(message) => message.role === 'system' && typeof message.content === 'string'
+	);
+	const original = withCharts[index].content as string;
+	const prefix = CHART_INSTRUCTIONS + '\n\n';
+	// The legacy chart helper also recognizes literal instructions anywhere in
+	// any system message. Only an anchored generated prefix may be sliced off;
+	// never truncate a manual prompt that merely quotes the chart contract.
+	const rest = original.startsWith(CHART_INSTRUCTIONS)
+		? original.slice(CHART_INSTRUCTIONS.length).replace(/^\n\n/, '')
+		: original;
+	const withDiagrams = rest.startsWith(MERMAID_INSTRUCTIONS)
+		? withCharts
+		: withCharts.map((message, i) =>
+				i === index
+					? { ...message, content: prefix + MERMAID_INSTRUCTIONS + (rest ? '\n\n' + rest : '') }
+					: message
+			);
+	return withResponsePreferences(withDiagrams, settings);
 }

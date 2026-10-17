@@ -20,7 +20,7 @@ const page = await context.newPage(),
 page.on('pageerror', (error) => errors.push(error.message));
 const base = process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40138';
 const colors = [
-	'#0066FF',
+	'#00BEFF',
 	'#00A3A3',
 	'#00C853',
 	'#AEEA00',

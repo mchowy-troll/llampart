@@ -173,12 +173,12 @@
 						{
 							id: 'formatting',
 							title: t('settings.responsePreferencesFormatting'),
-							keys: RESPONSE_PREFERENCES.slice(0, 4).map(({ key }) => key)
+							keys: RESPONSE_PREFERENCES.slice(0, 5).map(({ key }) => key)
 						},
 						{
 							id: 'style',
 							title: t('settings.responsePreferencesStyle'),
-							keys: RESPONSE_PREFERENCES.slice(4).map(({ key }) => key)
+							keys: RESPONSE_PREFERENCES.slice(5).map(({ key }) => key)
 						}
 					],
 					fields: [
@@ -204,36 +204,43 @@
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
-							key: SETTINGS_KEYS.RESPONSE_PREF_NO_DECORATIONS,
+							key: SETTINGS_KEYS.RESPONSE_PREF_DIAGRAMS,
 							order: 4,
+							label: t('settings.responsePrefDiagrams'),
+							help: t('settings.responsePrefDiagramsHelp'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.RESPONSE_PREF_NO_DECORATIONS,
+							order: 5,
 							label: t('settings.responsePrefNoDecorations'),
 							help: t('settings.responsePrefNoDecorationsHelp'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.RESPONSE_PREF_CONCISE,
-							order: 5,
+							order: 6,
 							label: t('settings.responsePrefConcise'),
 							help: t('settings.responsePrefConciseHelp'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.RESPONSE_PREF_EXAMPLES,
-							order: 6,
+							order: 7,
 							label: t('settings.responsePrefExamples'),
 							help: t('settings.responsePrefExamplesHelp'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.RESPONSE_PREF_STEPS,
-							order: 7,
+							order: 8,
 							label: t('settings.responsePrefSteps'),
 							help: t('settings.responsePrefStepsHelp'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.RESPONSE_PREF_USER_LANGUAGE,
-							order: 8,
+							order: 9,
 							label: t('settings.responsePrefUserLanguage'),
 							help: t('settings.responsePrefUserLanguageHelp'),
 							type: SettingsFieldType.CHECKBOX

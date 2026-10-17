@@ -1,7 +1,16 @@
 import type { TranslationDictionary } from '$lib/i18n/types';
 
 export const pl: TranslationDictionary = {
+	diagrams: {
+		title: 'Diagram',
+		preview: 'Podgląd diagramu',
+		preparing: 'Przygotowywanie diagramu…',
+		invalid: 'Nie można wyświetlić diagramu. Oryginalny kod:',
+		export: 'Eksportuj diagram jako',
+		exportError: 'Nie udało się wyeksportować diagramu. Spróbuj ponownie.'
+	},
 	charts: {
+		preview: 'Podgląd wykresu',
 		title: 'Wykres',
 		preparing: 'Przygotowywanie wykresu…',
 		invalid: 'Nieprawidłowe dane wykresu — oryginalny JSON',
@@ -276,6 +285,9 @@ export const pl: TranslationDictionary = {
 		responsePrefTablesHelp:
 			'Porównania i uporządkowane dane w tabelach, nie proste zdania ani procedury.',
 		responsePrefCharts: 'Używaj wykresów',
+		responsePrefDiagrams: 'Używaj diagramów',
+		responsePrefDiagramsHelp:
+			'Dodawaj diagramy Mermaid, gdy pomagają wyjaśnić procesy, architekturę lub relacje. Nie wymyślaj zależności.',
 		responsePrefChartsHelp:
 			'Natywne wykresy dla sensownych porównań, trendów i rozkładów. Bez zmyślonych danych.',
 		responsePrefNoDecorations: 'Bez emoji i ozdobników',

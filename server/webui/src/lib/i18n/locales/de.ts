@@ -1,7 +1,16 @@
 import type { TranslationDictionary } from '../types';
 
 export const de: TranslationDictionary = {
+	diagrams: {
+		title: 'Diagramm',
+		preview: 'Diagrammvorschau',
+		preparing: 'Diagramm wird vorbereitet…',
+		invalid: 'Diagramm kann nicht angezeigt werden. Originalquelltext:',
+		export: 'Diagramm exportieren als',
+		exportError: 'Diagramm konnte nicht exportiert werden. Bitte erneut versuchen.'
+	},
 	charts: {
+		preview: 'Diagrammvorschau',
 		title: 'Diagramm',
 		preparing: 'Diagramm wird vorbereitet…',
 		invalid: 'Ungültige Diagrammdaten — ursprüngliches JSON',
@@ -277,6 +286,9 @@ export const de: TranslationDictionary = {
 		responsePrefTablesHelp:
 			'Tabellen für Vergleiche und strukturierte Daten, nicht für einfache Sätze oder Abläufe.',
 		responsePrefCharts: 'Diagramme verwenden',
+		responsePrefDiagrams: 'Mermaid-Diagramme verwenden',
+		responsePrefDiagramsHelp:
+			'Mermaid-Diagramme verwenden, wenn sie Prozesse, Architektur oder Beziehungen verdeutlichen. Keine Beziehungen erfinden.',
 		responsePrefChartsHelp:
 			'Native Diagramme für sinnvolle Vergleiche, Trends und Verteilungen. Keine erfundenen Daten.',
 		responsePrefNoDecorations: 'Keine Emojis oder Verzierungen',

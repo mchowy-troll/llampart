@@ -11,10 +11,12 @@
 	} from 'layerchart/svg';
 	import { formatChartValue, type ChartSpec } from '$lib/charts/chart-schema';
 	import { chartCsv, chartFilename, downloadChartBlob } from '$lib/charts/chart-csv';
-	import { Button } from '$lib/components/ui/button';
-	import * as Tooltip from '$lib/components/ui/tooltip';
+	import VisualizationHeader from './VisualizationHeader.svelte';
+	import VisualizationPreview from './VisualizationPreview.svelte';
+	import ChartFrame from './ChartFrame.svelte';
+	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { t, getInterfaceLanguage } from '$lib/i18n';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import ChartSlice from './ChartSlice.svelte';
 	import { donutTooltipValues } from '$lib/charts/chart-donut-tooltip';
 	import { chartPresentation } from '$lib/charts/chart-presentation';
@@ -27,13 +29,23 @@
 	import { curveMonotoneX, curveLinear } from 'd3-shape';
 	import { prefersReducedMotion } from 'svelte/motion';
 
-	let { spec }: { spec: ChartSpec } = $props();
+	let {
+		spec,
+		previewMode = false,
+		initialHidden = []
+	}: {
+		spec: ChartSpec;
+		previewMode?: boolean;
+		initialHidden?: string[];
+	} = $props();
 	let frame: HTMLElement;
 	let plot: HTMLDivElement;
 	let hidden = $state<string[]>([]);
 	let exporting = $state(false);
 	let exportError = $state(false);
 	let paletteStyle = $state('');
+	let previewOpen = $state(false);
+	let previewTypography = $state('');
 	const chartId = $props.id();
 	const gradientId = (index: number) => `${chartId}-area-${index}`;
 	// Categorical x is ordered by the input. Numeric x is never sorted for decoration.
@@ -48,7 +60,29 @@
 	);
 	$effect(() => {
 		void spec;
-		hidden = [];
+		hidden = untrack(() => [...initialHidden]);
+		previewOpen = false;
+	});
+	$effect(() => {
+		void settingsStore.appearanceConfig;
+		void previewOpen;
+		let disposed = false;
+		void tick().then(() => {
+			if (disposed || !frame || previewMode) return;
+			const css = getComputedStyle(frame);
+			previewTypography = [
+				'font-family',
+				'font-size',
+				'font-weight',
+				'font-style',
+				'--llampart-text-unit'
+			]
+				.map((key) => `${key}:${css.getPropertyValue(key)}`)
+				.join(';');
+		});
+		return () => {
+			disposed = true;
+		};
 	});
 	let presentation = $derived(chartPresentation(spec));
 	let entries = $derived(presentation.entries);
@@ -167,7 +201,11 @@
 		contained="window"
 		variant="none"
 		class="llampart-chart-tooltip"
-		props={{ root: { class: 'llampart-chart-tooltip-root' } }}
+		props={{
+			root: {
+				class: `llampart-chart-tooltip-root${previewMode ? ' chart-preview-tooltip-root' : ''}`
+			}
+		}}
 		motion="none"
 		fadeDuration={prefersReducedMotion.current || exporting ? 0 : 90}
 	>
@@ -217,33 +255,22 @@
 		paletteStyle = styles;
 	}}
 	style={paletteStyle}
-	class="llampart-chart-frame"
+	class={previewMode
+		? 'llampart-chart-renderer chart-live-preview'
+		: 'llampart-visualization-frame llampart-chart-frame llampart-chart-renderer'}
 	class:chart-exporting={exporting}
 	aria-label={spec.title || t('charts.title')}
 >
-	<header class="chart-header">
-		<span class="chart-title">{spec.title || t('charts.title')}</span>
-		<div class="chart-actions">
-			{#each ['png', 'svg', 'csv'] as format (format)}
-				<Tooltip.Root>
-					<Tooltip.Trigger>
-						{#snippet child({ props })}
-							<Button
-								{...props}
-								variant="ghost"
-								size="sm"
-								disabled={exporting}
-								aria-label={`${t('charts.export')} ${format.toUpperCase()}`}
-								onclick={() => download(format as 'png' | 'svg' | 'csv')}
-								>{format.toUpperCase()}</Button
-							>
-						{/snippet}
-					</Tooltip.Trigger>
-					<Tooltip.Content>{t('charts.export')} {format.toUpperCase()}</Tooltip.Content>
-				</Tooltip.Root>
-			{/each}
-		</div>
-	</header>
+	{#if !previewMode}<VisualizationHeader
+			title={spec.title || t('charts.title')}
+			kind="chart"
+			formats={['png', 'svg', 'csv']}
+			{exporting}
+			exportLabel={t('charts.export')}
+			previewLabel={t('charts.preview')}
+			onexport={(format) => download(format as 'png' | 'svg' | 'csv')}
+			onpreview={() => (previewOpen = true)}
+		/>{/if}
 	{#if spec.description}<div class="chart-description">{spec.description}</div>{/if}
 	<div bind:this={plot} class="chart-plot">
 		{#if 'series' in spec}
@@ -366,44 +393,27 @@
 	{#if exportError}<div class="chart-export-error" role="alert">{t('charts.exportError')}</div>{/if}
 </figure>
 
+{#if !previewMode}
+	<VisualizationPreview
+		bind:open={previewOpen}
+		title={spec.title || t('charts.title')}
+		kind="chart"
+	>
+		<div style={previewTypography}>
+			<ChartFrame {spec} previewMode initialHidden={hidden} />
+		</div>
+	</VisualizationPreview>
+{/if}
+
 <style>
-	.llampart-chart-frame {
-		min-width: 0;
-		max-width: 100%;
-		margin: 1.5rem 0;
-		border: 1px solid color-mix(in oklch, var(--border) 30%, transparent);
-		border-radius: 0.75rem;
-		background: var(--code-background);
-		box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+	.chart-live-preview {
+		margin: 0;
+		min-width: min(38rem, 70vw);
+		font: inherit;
 		color: var(--foreground);
-		font: inherit;
-		font-synthesis: none;
-		text-shadow: none;
 	}
-	.chart-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.75rem;
-		padding: 0.65rem 1rem;
-		border-bottom: 1px solid color-mix(in oklch, var(--border) 30%, transparent);
-	}
-	.chart-title {
-		min-width: 0;
-		overflow-wrap: anywhere;
-		font-weight: var(--llampart-font-medium, 500);
-	}
-	.chart-actions {
-		display: flex;
-		flex-shrink: 0;
-		gap: 0.125rem;
-	}
-	.chart-actions :global(button) {
-		font: inherit;
-		font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
-		padding: 0.25rem 0.4rem;
-		height: 1.75rem;
-		text-shadow: none;
+	.chart-live-preview .chart-plot {
+		height: clamp(20rem, 48dvh, 36rem);
 	}
 	.chart-description {
 		padding: 0.75rem 1rem 0;
@@ -412,7 +422,7 @@
 	.chart-plot {
 		height: 20rem;
 		min-width: 0;
-		margin: 1rem;
+		margin: var(--llampart-visualization-body-space);
 		font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
 	}
 	.chart-plot :global(text) {
@@ -503,6 +513,9 @@
 	}
 	:global(.llampart-chart-tooltip-root) {
 		z-index: 999999 !important;
+	}
+	:global(.chart-preview-tooltip-root) {
+		z-index: 1000000 !important;
 	}
 	:global(.llampart-chart-tooltip) {
 		font: inherit !important;

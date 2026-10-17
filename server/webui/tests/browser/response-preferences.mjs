@@ -30,6 +30,7 @@ const keys = [
 	'NoHeadings',
 	'Tables',
 	'Charts',
+	'Diagrams',
 	'NoDecorations',
 	'Concise',
 	'Examples',
@@ -144,7 +145,7 @@ try {
 	);
 	const system = page.locator('[data-settings-group="system-message"]');
 	assert.equal((await frame.boundingBox()).width, (await system.boundingBox()).width);
-	assert.equal(await frame.locator('[role="checkbox"]').count(), 8);
+	assert.equal(await frame.locator('[role="checkbox"]').count(), 9);
 	assert.equal(await frame.locator('details').getAttribute('open'), null);
 	assert.equal(await page.locator('#systemMessage').inputValue(), manual);
 	await frame.locator('summary').click();
@@ -293,7 +294,7 @@ try {
 		'PASS separate frame/order, desktop two columns, narrow one column, Frosted Glass and 20px text, accessible keyboard checkbox, read-only live preview/copy'
 	);
 	console.log(
-		'PASS all eight independently, Save/reload, Cancel button/Escape/outside, Reset, Polish/English interface with identical English instructions'
+		'PASS all nine independently, Save/reload, Cancel button/Escape/outside, Reset, Polish/English interface with identical English instructions'
 	);
 	console.log(
 		'PASS real captured chat requests before/after Save in existing conversation, manual prompt unchanged, chart schema once, no generated instructions in IndexedDB or external font requests'

@@ -95,7 +95,7 @@ describe('chart presentation order and stable identity', () => {
 				data: spec.data.map((r) => ({ ...r, value: count - Number(r.value) }))
 			});
 			expect(changed.entries[0].key).toBe('C0');
-			expect(changed.entries[0].color).toBe('#0066FF');
+			expect(changed.entries[0].color).toBe('#00BEFF');
 			expect(JSON.stringify(spec)).toBe(before);
 		}
 	);

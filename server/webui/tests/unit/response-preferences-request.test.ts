@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatService } from '$lib/services/chat.service';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
-import { CHART_INSTRUCTIONS } from '$lib/markdown/chart-instructions';
+import { CHART_INSTRUCTIONS as CHART_ONLY } from '$lib/markdown/chart-instructions';
+import { MERMAID_INSTRUCTIONS } from '$lib/markdown/mermaid-instructions';
+const CHART_INSTRUCTIONS = CHART_ONLY + '\n\n' + MERMAID_INSTRUCTIONS;
 import {
 	RESPONSE_PREFERENCES,
 	buildResponsePreferenceInstructions

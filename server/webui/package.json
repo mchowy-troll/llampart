@@ -80,6 +80,7 @@
 		"highlight.js": "^11.11.1",
 		"layerchart": "^2.8.0",
 		"lowlight": "^3.3.0",
+		"mermaid": "12.2.0",
 		"pdfjs-dist": "^6.2.108",
 		"rehype-highlight": "^7.0.2",
 		"rehype-stringify": "^10.0.1",
