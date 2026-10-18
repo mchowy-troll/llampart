@@ -1,6 +1,14 @@
+# Native llama-server MODEL mode — simplified data flow
+
+This is the single-model llama.cpp integration, not a universal provider mode.
+Services/adapters and the same-origin gateway (Vite development or installed Caddy)
+are omitted for readability. The backend runs separately.
+See the general [chat](chat-flow.md), [models](models-flow.md) and
+[server](server-flow.md) flows for all three providers.
+
 ```mermaid
-%% MODEL Mode Data Flow (single model)
-%% Detailed flows: ./flows/server-flow.mmd, ./flows/models-flow.mmd, ./flows/chat-flow.mmd
+%% Native llama-server MODEL mode (single model)
+%% Detailed flows: server-flow.md, models-flow.md, chat-flow.md
 
 sequenceDiagram
     participant User as 👤 User
@@ -9,16 +17,16 @@ sequenceDiagram
     participant DB as 💾 IndexedDB
     participant API as 🌐 llama-server
 
-    Note over User,API: 🚀 Initialization (see: server-flow.mmd, models-flow.mmd)
+    Note over User,API: 🚀 Initialization (see: server-flow.md, models-flow.md)
 
     UI->>Stores: initialize()
     Stores->>DB: load conversations
-    Stores->>API: GET /props
+    Stores->>API: GET /props?autoload=false
     API-->>Stores: server config + modalities
     Stores->>API: GET /v1/models
-    API-->>Stores: single model (auto-selected)
+    API-->>Stores: single model (displayed from native props)
 
-    Note over User,API: 💬 Chat Flow (see: chat-flow.mmd)
+    Note over User,API: 💬 Chat Flow (see: chat-flow.md)
 
     User->>UI: send message
     UI->>Stores: sendMessage()
@@ -27,6 +35,7 @@ sequenceDiagram
     loop streaming
         API-->>Stores: SSE chunks
         Stores-->>UI: reactive update
+        Stores->>DB: persist stream checkpoint
     end
     API-->>Stores: done + timings
     Stores->>DB: save assistant message
@@ -40,6 +49,7 @@ sequenceDiagram
     Note over User,API: ⏹️ Stop
 
     User->>UI: stop
-    Stores->>Stores: abort stream
     Stores->>DB: save partial response
+    Stores->>API: stop native resumable stream if state exists
+    Stores->>Stores: abort stream and clear transient state
 ```

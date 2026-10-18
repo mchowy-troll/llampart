@@ -1,145 +1,52 @@
+# Simplified architecture
+
+The application runs in the browser; inference runs separately. The gateway is
+development middleware in Vite **or**, in the installed production setup, Caddy —
+not another application service.
+
 ```mermaid
 flowchart TB
-    subgraph Routes["📍 Routes"]
-        R1["/ (Welcome)"]
-        R2["/chat/[id]"]
-        RL["+layout.svelte"]
-    end
+    UI["SvelteKit routes and Svelte components<br/>Chat, model selector, Settings, Tools and MCP"]
+    Stores["Reactive stores<br/>Chat, conversations, models, connection, settings"]
+    Services["ChatService, ModelsService<br/>Provider-specific helpers where supported"]
+    Adapters["Provider adapters<br/>llama-server / vLLM / OpenAI-compatible<br/>Payloads and response parsing"]
+    Protocol["Protocol from model metadata<br/>Chat Completions by default<br/>Responses only when explicitly required"]
+    Transport["Browser fetch + same-origin routing headers<br/>JSON or SSE"]
+    Gateway["Provider gateway<br/>Vite in development OR Caddy in production"]
+    Backends["Separate inference backends<br/>llama-server / vLLM / OpenAI-compatible server"]
+    History["IndexedDB<br/>Conversations and message branches"]
+    Settings["localStorage<br/>Settings, tool preferences, resume checkpoints"]
+    Agent["agenticStore + toolsStore + permissionsStore"]
+    MCP["mcpStore / mcpResourceStore + MCPService"]
+    ExternalMCP["External MCP servers<br/>Direct WebSocket / Streamable HTTP / SSE"]
 
-    subgraph Components["🧩 Components"]
-        C_Sidebar["ChatSidebar"]
-        C_Screen["ChatScreen"]
-        C_Form["ChatForm"]
-        C_Messages["ChatMessages"]
-        C_Message["ChatMessage"]
-        C_ChatMessageAgenticContent["ChatMessageAgenticContent"]
-        C_MessageEditForm["ChatMessageEditForm"]
-        C_ModelsSelector["ModelsSelector"]
-        C_Settings["ChatSettings"]
-        C_McpSettings["McpServersSettings"]
-        C_McpResourceBrowser["McpResourceBrowser"]
-        C_McpServersSelector["McpServersSelector"]
-    end
-
-    subgraph Hooks["🪝 Hooks"]
-        H1["useModelChangeValidation"]
-        H2["useProcessingState"]
-    end
-
-    subgraph Stores["🗄️ Stores"]
-        S1["chatStore<br/><i>Chat interactions & streaming</i>"]
-        SA["agenticStore<br/><i>Multi-turn agentic loop orchestration</i>"]
-        S2["conversationsStore<br/><i>Conversation data, messages & MCP overrides</i>"]
-        S3["modelsStore<br/><i>Model selection & loading</i>"]
-        S4["serverStore<br/><i>Server props & role detection</i>"]
-        S5["settingsStore<br/><i>User configuration incl. MCP</i>"]
-        S6["mcpStore<br/><i>MCP servers, tools, prompts</i>"]
-        S7["mcpResourceStore<br/><i>MCP resources & attachments</i>"]
-    end
-
-    subgraph Services["⚙️ Services"]
-        SV1["ChatService"]
-        SV2["ModelsService"]
-        SV3["PropsService"]
-        SV4["DatabaseService"]
-        SV5["ParameterSyncService"]
-        SV6["MCPService<br/><i>protocol operations</i>"]
-    end
-
-    subgraph Storage["💾 Storage"]
-        ST1["IndexedDB<br/><i>conversations, messages</i>"]
-        ST2["LocalStorage<br/><i>config, userOverrides, mcpServers</i>"]
-    end
-
-    subgraph APIs["🌐 llama-server API"]
-        API1["/v1/chat/completions"]
-        API2["/props"]
-        API3["/models/*"]
-        API4["/v1/models"]
-    end
-
-    subgraph ExternalMCP["🔌 External MCP Servers"]
-        EXT1["MCP Server 1<br/><i>WebSocket/HTTP/SSE</i>"]
-        EXT2["MCP Server N"]
-    end
-
-    %% Routes → Components
-    R1 & R2 --> C_Screen
-    RL --> C_Sidebar
-
-    %% Layout runs MCP health checks
-    RL --> S6
-
-    %% Component hierarchy
-    C_Screen --> C_Form & C_Messages & C_Settings
-    C_Messages --> C_Message
-    C_Message --> C_ChatMessageAgenticContent
-    C_Message --> C_MessageEditForm
-    C_Form & C_MessageEditForm --> C_ModelsSelector
-    C_Form --> C_McpServersSelector
-    C_Settings --> C_McpSettings
-    C_McpSettings --> C_McpResourceBrowser
-
-    %% Components → Hooks → Stores
-    C_Form & C_Messages --> H1 & H2
-    H1 --> S3 & S4
-    H2 --> S1 & S5
-
-    %% Components → Stores
-    C_Screen --> S1 & S2
-    C_Sidebar --> S2
-    C_ModelsSelector --> S3 & S4
-    C_Settings --> S5
-    C_McpSettings --> S6
-    C_McpResourceBrowser --> S6 & S7
-    C_McpServersSelector --> S6
-    C_Form --> S6
-
-    %% chatStore → agenticStore → mcpStore (agentic loop)
-    S1 --> SA
-    SA --> SV1
-    SA --> S6
-
-    %% Stores → Services
-    S1 --> SV1 & SV4
-    S2 --> SV4
-    S3 --> SV2 & SV3
-    S4 --> SV3
-    S5 --> SV5
-    S6 --> SV6
-    S7 --> SV6
-
-    %% Services → Storage
-    SV4 --> ST1
-    SV5 --> ST2
-
-    %% Services → APIs
-    SV1 --> API1
-    SV2 --> API3 & API4
-    SV3 --> API2
-
-    %% MCP → External Servers
-    SV6 --> EXT1 & EXT2
-
-    %% Styling
-    classDef routeStyle fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef componentStyle fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef hookStyle fill:#fff8e1,stroke:#ff8f00,stroke-width:2px
-    classDef storeStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef serviceStyle fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
-    classDef storageStyle fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    classDef apiStyle fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef mcpStyle fill:#e0f2f1,stroke:#00695c,stroke-width:2px
-    classDef agenticStyle fill:#e8eaf6,stroke:#283593,stroke-width:2px
-    classDef externalStyle fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,stroke-dasharray: 5 5
-
-    class R1,R2,RL routeStyle
-    class C_Sidebar,C_Screen,C_Form,C_Messages,C_Message,C_ChatMessageAgenticContent,C_MessageEditForm,C_ModelsSelector,C_Settings componentStyle
-    class C_McpSettings,C_McpResourceBrowser,C_McpServersSelector componentStyle
-    class H1,H2 hookStyle
-    class S1,S2,S3,S4,S5,SA,S6,S7 storeStyle
-    class SV1,SV2,SV3,SV4,SV5,SV6 serviceStyle
-    class ST1,ST2 storageStyle
-    class API1,API2,API3,API4 apiStyle
-    class EXT1,EXT2 externalStyle
+    UI <--> Stores
+    Stores --> Services
+    Services --> Adapters
+    Stores -. capabilities .-> Protocol
+    Protocol -. selects adapter handling .-> Adapters
+    Adapters --> Transport
+    Transport <--> Gateway
+    Gateway <--> Backends
+    Stores --> History
+    Stores --> Settings
+    Stores --> Agent
+    Agent --> Services
+    Agent --> MCP
+    MCP <--> ExternalMCP
+    MCP -. optional native CORS proxy, llama-server only .-> Transport
+    Agent -. native built-in tools, llama-server only .-> Transport
 ```
+
+- `DatabaseService` owns IndexedDB access. Settings and tool preferences use existing
+  browser storage; the gateway does not store conversation history.
+- Tools/agentic orchestration and direct MCP are shared. Native props/defaults,
+  router load/unload, built-in `/tools`, pre-encode and resumable V2 are llama-server-only.
+- Model capabilities can be supported, unsupported or unknown. Protocol selection
+  is metadata-driven, not a generation probe or retry/fallback mechanism.
+- Charts and the four allowed Mermaid families render locally in assistant answers.
+  Technical documentation can use other Mermaid syntax, such as sequence diagrams;
+  that does not expand the application's [rendering allowlist](../diagrams.md).
+
+See the [detailed architecture](high-level-architecture.md),
+[chat flow](../flows/chat-flow.md) and [development guide](../../README.md).

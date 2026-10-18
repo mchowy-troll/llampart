@@ -1,3 +1,9 @@
+# Local conversations and message branches
+
+These core flows are shared by all three inference providers. History is local,
+not a backend-owned conversation. The diagram omits sidebar search/pinning/fork
+management details; see [chat-flow.md](chat-flow.md) for generation and stream checkpoints.
+
 ```mermaid
 sequenceDiagram
     participant UI as 🧩 ChatSidebar / ChatScreen
@@ -6,20 +12,21 @@ sequenceDiagram
     participant DbSvc as ⚙️ DatabaseService
     participant IDB as 💾 IndexedDB
 
-    Note over convStore: State:<br/>conversations: DatabaseConversation[]<br/>activeConversation: DatabaseConversation | null<br/>activeMessages: DatabaseMessage[]<br/>isInitialized: boolean<br/>pendingMcpServerOverrides: Map&lt;string, McpServerOverride&gt;
+    Note over convStore: State:<br/>conversations: DatabaseConversation[]<br/>activeConversation: DatabaseConversation | null<br/>activeMessages: DatabaseMessage[]<br/>isInitialized: boolean<br/>pendingMcpServerOverrides: McpServerOverride[]
 
     %% ═══════════════════════════════════════════════════════════════════════════
     Note over UI,IDB: 🚀 INITIALIZATION
     %% ═══════════════════════════════════════════════════════════════════════════
 
-    Note over convStore: Auto-initialized in constructor (browser only)
-    convStore->>convStore: initialize()
+    Note over convStore: Module calls init() in browser
+    convStore->>convStore: init()
     activate convStore
     convStore->>convStore: loadConversations()
     convStore->>DbSvc: getAllConversations()
     DbSvc->>IDB: SELECT * FROM conversations ORDER BY lastModified DESC
     IDB-->>DbSvc: Conversation[]
     DbSvc-->>convStore: conversations
+    convStore->>convStore: Apply sidebar ordering (including pinned/fork metadata)
     convStore->>convStore: conversations = $state(data)
     convStore->>convStore: isInitialized = true
     deactivate convStore
@@ -30,11 +37,11 @@ sequenceDiagram
 
     UI->>convStore: createConversation(name?)
     activate convStore
-    convStore->>DbSvc: createConversation(name || "New Chat")
+    convStore->>DbSvc: createConversation(name or timestamp-based Chat name)
     DbSvc->>IDB: INSERT INTO conversations
     IDB-->>DbSvc: conversation {id, name, lastModified, currNode: ""}
     DbSvc-->>convStore: conversation
-    convStore->>convStore: conversations.unshift(conversation)
+    convStore->>convStore: Sort new conversation into sidebar list
     convStore->>convStore: activeConversation = $state(conversation)
     convStore->>convStore: activeMessages = $state([])
 
@@ -55,17 +62,15 @@ sequenceDiagram
     convStore->>DbSvc: getConversation(convId)
     DbSvc->>IDB: SELECT * FROM conversations WHERE id = ?
     IDB-->>DbSvc: conversation
-    convStore->>convStore: activeConversation = $state(conversation)
-
-    convStore->>convStore: refreshActiveMessages()
     convStore->>DbSvc: getConversationMessages(convId)
     DbSvc->>IDB: SELECT * FROM messages WHERE convId = ?
     IDB-->>DbSvc: allMessages[]
     convStore->>convStore: filterByLeafNodeId(allMessages, currNode)
-    Note right of convStore: Filter to show only current branch path
+    Note right of convStore: Filter current branch path, discard stale load-generation results
+    convStore->>convStore: activeConversation = $state(conversation)
     convStore->>convStore: activeMessages = $state(filtered)
 
-    Note right of convStore: Route (+page.svelte) then calls:<br/>chatStore.syncLoadingStateForChat(convId)
+    Note right of convStore: Route synchronizes chat loading/processing state after loading
     deactivate convStore
 
     %% ═══════════════════════════════════════════════════════════════════════════
@@ -83,12 +88,10 @@ sequenceDiagram
     Note over UI,IDB: ↔️ BRANCH NAVIGATION
     %% ═══════════════════════════════════════════════════════════════════════════
 
-    UI->>convStore: navigateToSibling(msgId, direction)
+    UI->>convStore: navigateToSibling(siblingId)
     activate convStore
-    convStore->>convStore: Find message in activeMessages
-    convStore->>convStore: Get parent message
-    convStore->>convStore: Find sibling in parent.children[]
-    convStore->>convStore: findLeafNode(siblingId, allMessages)
+    convStore->>DbSvc: getConversationMessages(activeConv.id)
+    convStore->>convStore: findLeafNode(allMessages, siblingId)
     Note right of convStore: Navigate to leaf of sibling branch
     convStore->>convStore: updateCurrentNode(leafId)
     convStore->>DbSvc: updateCurrentNode(convId, leafId)
@@ -107,8 +110,8 @@ sequenceDiagram
     convStore->>convStore: Update in conversations array
     deactivate convStore
 
-    Note over convStore: Auto-title update (after first response):
-    convStore->>convStore: updateConversationTitleWithConfirmation()
+    Note over convStore: Branch navigation can request a title change when first user message changes:
+    convStore->>convStore: updateConversationTitleWithConfirmation(convId, newTitle)
     convStore->>convStore: titleUpdateConfirmationCallback?()
     Note right of convStore: Shows dialog if title would change
 
@@ -129,34 +132,34 @@ sequenceDiagram
 
     UI->>convStore: deleteAll()
     activate convStore
-    convStore->>DbSvc: Delete all conversations and messages
-    convStore->>convStore: conversations = []
-    convStore->>convStore: clearActiveConversation()
+    convStore->>DbSvc: getAllConversations(), then deleteConversations(ids)
+    Note right of DbSvc: Transaction skips pinned conversations and reparents surviving forks
+    convStore->>convStore: Reload list, clear active conversation only if deleted
     deactivate convStore
 
     %% ═══════════════════════════════════════════════════════════════════════════
-    Note over UI,IDB: � MCP SERVER PER-CHAT OVERRIDES
+    Note over UI,IDB: MCP SERVER PER-CHAT OVERRIDES
     %% ═══════════════════════════════════════════════════════════════════════════
 
     Note over convStore: Conversations can override which MCP servers are enabled.
     Note over convStore: Uses pendingMcpServerOverrides before conversation<br/>is created, then persists to conversation metadata.
 
-    UI->>convStore: setMcpServerOverride(convId, serverName, override)
-    Note right of convStore: override = {enabled: boolean}
+    UI->>convStore: setMcpServerOverride(serverId, enabled)
+    Note right of convStore: enabled = boolean, or undefined to remove
 
-    UI->>convStore: toggleMcpServerForChat(convId, serverName, enabled)
+    UI->>convStore: toggleMcpServerForChat(serverId)
     activate convStore
-    convStore->>convStore: setMcpServerOverride(convId, serverName, {enabled})
+    convStore->>convStore: setMcpServerOverride(serverId, !currentEnabled)
     deactivate convStore
 
-    UI->>convStore: isMcpServerEnabledForChat(convId, serverName)
-    Note right of convStore: Check override → fall back to global MCP config
+    UI->>convStore: isMcpServerEnabledForChat(serverId)
+    Note right of convStore: Check active/pending override, absent means false
 
-    UI->>convStore: getAllMcpServerOverrides(convId)
+    UI->>convStore: getAllMcpServerOverrides()
     Note right of convStore: Returns all overrides for a conversation
 
-    UI->>convStore: removeMcpServerOverride(convId, serverName)
-    UI->>convStore: getMcpServerOverride(convId, serverName)
+    UI->>convStore: removeMcpServerOverride(serverId)
+    UI->>convStore: getMcpServerOverride(serverId)
 
     %% ═══════════════════════════════════════════════════════════════════════════
     Note over UI,IDB: 📤 EXPORT / 📥 IMPORT
@@ -175,6 +178,7 @@ sequenceDiagram
     activate convStore
     convStore->>convStore: Parse JSON file
     convStore->>convStore: importConversationsData(parsed)
+    Note right of convStore: Parse/validate supported conversation envelope, no settings import changes
     convStore->>DbSvc: importConversations(parsed)
     Note right of DbSvc: Skips duplicate conversations<br/>(checks existing by ID)
     DbSvc->>IDB: INSERT conversations + messages (skip existing)

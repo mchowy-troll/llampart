@@ -1,228 +1,168 @@
+# Chat flow — all three providers
+
+`chatStore` owns conversation/UI state and persistence callbacks. `ChatService`
+normalizes messages and delegates payloads and response parsing to the selected
+adapter. The method name `sendMessage` covers both supported conversation protocols.
+For model discovery and protocol evidence, see [models-flow.md](models-flow.md).
+
 ```mermaid
 sequenceDiagram
-    participant UI as 🧩 ChatForm / ChatMessage
-    participant chatStore as 🗄️ chatStore
-    participant agenticStore as 🗄️ agenticStore
-    participant convStore as 🗄️ conversationsStore
-    participant settingsStore as 🗄️ settingsStore
-    participant mcpStore as 🗄️ mcpStore
-    participant ChatSvc as ⚙️ ChatService
-    participant DbSvc as ⚙️ DatabaseService
-    participant API as 🌐 /v1/chat/completions
+    participant UI as ChatForm / ChatMessage
+    participant Chat as chatStore
+    participant Conv as conversationsStore
+    participant DB as DatabaseService / IndexedDB
+    participant Agent as agenticStore
+    participant Tools as toolsStore / permissionsStore
+    participant Svc as ChatService
+    participant Models as modelsStore / capability snapshot
+    participant Adapter as Selected provider adapter
+    participant GW as Vite dev OR production Caddy gateway
+    participant API as Separate inference backend
 
-    Note over chatStore: State:<br/>isLoading, currentResponse<br/>errorDialogState, activeProcessingState<br/>chatLoadingStates (Map)<br/>chatStreamingStates (Map)<br/>abortControllers (Map)<br/>processingStates (Map)
+    Note over UI,API: Send message
+    UI->>Chat: sendMessage(content, extras)
+    Chat->>Chat: Lock operation and set per-chat loading
+    opt No active conversation
+        Chat->>Conv: createConversation()
+        Note over Conv: See conversations-flow.md
+    end
+    Chat->>Chat: Consume pending MCP resource attachments as extras
+    Chat->>DB: Create user message branch
+    Chat->>Conv: Add user message and update current node
+    Chat->>DB: Create empty assistant child
+    Chat->>Conv: Add assistant message
+    Chat->>Chat: Capture provider/address/key/source generation, model override and AbortController
+    opt Native llama-server ROUTER
+        Chat->>Models: Fetch model props if needed (no autoload)
+    end
+    Note over Chat: Abort/source switch before sending cancels pending work
 
-    %% ═══════════════════════════════════════════════════════════════════════════
-    Note over UI,API: 💬 SEND MESSAGE
-    %% ═══════════════════════════════════════════════════════════════════════════
-
-    UI->>chatStore: sendMessage(content, extras)
-    activate chatStore
-
-    chatStore->>chatStore: setChatLoading(convId, true)
-    chatStore->>chatStore: clearChatStreaming(convId)
-
-    alt no active conversation
-        chatStore->>convStore: createConversation()
-        Note over convStore: → see conversations-flow.mmd
+    alt Agentic configuration enabled and tools become available
+        Chat->>Agent: runAgenticFlow(params, callbacks, signal)
+        Agent->>Tools: Get enabled, unambiguous entries for frozen source
+        Agent->>Svc: sendMessage(history, tool definitions, frozen context)
+    else Standard chat (also fallback if agentic flow not handled)
+        Chat->>Svc: sendMessage(history, options, conversationId, signal)
     end
 
-    chatStore->>mcpStore: consumeResourceAttachmentsAsExtras()
-    Note right of mcpStore: Converts pending MCP resource<br/>attachments into message extras
+    Note over Svc,API: Shared request path for standard chat and each agentic turn
+    Svc->>Svc: Resolve requested model (compatible fallback uses current selection)
+    Svc->>Svc: Normalize DB messages, attachments and tool IDs
+    Svc->>Svc: Add request-local chart / Mermaid / response instructions
+    Svc->>Models: refreshCapabilities(context, model)
+    Models-->>Svc: Source/model snapshot from cached model-list metadata
+    Note over Models: Unknown is not unsupported, no generation probe
+    Svc->>Adapter: buildChatCompletionRequest(input, snapshot)
+    alt llama-server OR compatible metadata selects/defaults to Chat Completions
+        Adapter-->>Svc: Chat Completions payload and gateway fetch request
+        Svc->>GW: POST /__llampart/api/{provider}/v1/chat/completions
+        GW->>API: POST /v1/chat/completions
+    else vLLM / OpenAI-compatible explicitly requires Responses
+        Adapter-->>Svc: Responses input, tools/results, store:false
+        Svc->>GW: POST /__llampart/api/{provider}/v1/responses
+        GW->>API: POST /v1/responses
+    end
+    Note over GW,API: Gateway streams bytes/status, no generation POST retries
 
-    chatStore->>chatStore: addMessage("user", content, extras)
-    chatStore->>DbSvc: createMessageBranch(userMsg, parentId)
-    chatStore->>convStore: addMessageToActive(userMsg)
-    chatStore->>convStore: updateCurrentNode(userMsg.id)
-
-    chatStore->>chatStore: createAssistantMessage(userMsg.id)
-    chatStore->>DbSvc: createMessageBranch(assistantMsg, userMsg.id)
-    chatStore->>convStore: addMessageToActive(assistantMsg)
-
-    chatStore->>chatStore: streamChatCompletion(messages, assistantMsg)
-    deactivate chatStore
-
-    %% ═══════════════════════════════════════════════════════════════════════════
-    Note over UI,API: 🌊 STREAMING (with agentic flow detection)
-    %% ═══════════════════════════════════════════════════════════════════════════
-
-    activate chatStore
-    chatStore->>chatStore: startStreaming()
-    Note right of chatStore: isStreamingActive = true
-
-    chatStore->>chatStore: setActiveProcessingConversation(convId)
-    chatStore->>chatStore: getOrCreateAbortController(convId)
-    Note right of chatStore: abortControllers.set(convId, new AbortController())
-
-    chatStore->>chatStore: getApiOptions()
-    Note right of chatStore: Merge from settingsStore.config:<br/>temperature, max_tokens, top_p, etc.
-
-    alt agenticConfig.enabled && mcpStore has connected servers
-        chatStore->>agenticStore: runAgenticFlow(convId, messages, assistantMsg, options, signal)
-        Note over agenticStore: Multi-turn agentic loop:<br/>1. Call ChatService.sendMessage()<br/>2. If response has tool_calls → execute via mcpStore<br/>3. Append tool results as messages<br/>4. Loop until no more tool_calls or maxTurns<br/>→ see agentic flow details below
-        agenticStore-->>chatStore: final response with timings
-    else standard (non-agentic) flow
-        chatStore->>ChatSvc: sendMessage(messages, options, signal)
+    alt Streaming (normal chat UI path)
+        loop Complete SSE records from SseByteParser
+            API-->>GW: Provider SSE data and optional event type
+            GW-->>Svc: Streamed response bytes
+            Svc->>Adapter: Protocol-specific stream parser(data, eventType)
+            Adapter-->>Svc: Normalized content / reasoning / tools / model / outcome
+            Svc-->>Chat: Callbacks (via agenticStore when active)
+            Chat->>Conv: Update active message if this chat is visible
+            Chat-->>UI: Reactive content, reasoning and processing state
+            Svc-->>Chat: onStreamCheckpoint(accumulated data)
+            Chat->>DB: Persist content, reasoning, tool calls, timings, continuation
+        end
+        Note over Svc,Adapter: Chat parsers recognize DONE, Responses requires its terminal outcome
+        Svc-->>Chat: onComplete (agentic turn completion when active)
+    else Non-streaming service call
+        API-->>GW: JSON response
+        GW-->>Svc: JSON response
+        Svc->>Adapter: parseResponse(data, protocol) or native parser
+        Adapter-->>Svc: Normalized response / usage / outcome
+        Svc-->>Chat: Completion callbacks / response text to caller
+    end
+    Chat->>DB: Persist final message and current node
+    Chat->>Chat: Clear loading, streaming and processing state
+    opt Native llama-server only, when enabled
+        Chat->>Svc: Best-effort pre-encode after completion
+        Note over Svc,API: Check native slots, then Chat Completions with n_predict=0
     end
 
-    activate ChatSvc
-
-    ChatSvc->>ChatSvc: convertDbMessageToApiChatMessageData(messages)
-    Note right of ChatSvc: DatabaseMessage[] → ApiChatMessageData[]<br/>Process attachments (images, PDFs, audio)
-
-    ChatSvc->>API: POST /v1/chat/completions
-    Note right of API: {messages, model?, stream: true, ...params}
-
-    loop SSE chunks
-        API-->>ChatSvc: data: {"choices":[{"delta":{...}}]}
-        ChatSvc->>ChatSvc: handleStreamResponse(response)
-
-        alt content chunk
-            ChatSvc-->>chatStore: onChunk(content)
-            chatStore->>chatStore: setChatStreaming(convId, response, msgId)
-            Note right of chatStore: currentResponse = $state(accumulated)
-            chatStore->>convStore: updateMessageAtIndex(idx, {content})
-        end
-
-        alt reasoning chunk
-            ChatSvc-->>chatStore: onReasoningChunk(reasoning)
-            chatStore->>convStore: updateMessageAtIndex(idx, {thinking})
-        end
-
-        alt tool_calls chunk
-            ChatSvc-->>chatStore: onToolCallChunk(toolCalls)
-            chatStore->>convStore: updateMessageAtIndex(idx, {toolCalls})
-        end
-
-        alt model info
-            ChatSvc-->>chatStore: onModel(modelName)
-            chatStore->>chatStore: recordModel(modelName)
-            chatStore->>DbSvc: updateMessage(msgId, {model})
-        end
-
-        alt timings (during stream)
-            ChatSvc-->>chatStore: onTimings(timings, promptProgress)
-            chatStore->>chatStore: updateProcessingStateFromTimings()
-        end
-
-        chatStore-->>UI: reactive $state update
+    Note over UI,API: Stop generation
+    UI->>Chat: stopGeneration() / stopGenerationForChat(convId)
+    Chat->>DB: Save partial response if needed
+    opt Native resumable state exists
+        Chat->>Svc: stopResumableStream(convId)
+        Svc->>GW: DELETE native /v1/stream with stream identity
+        GW->>API: Stop native resumable stream
     end
+    Chat->>Chat: Abort controller, clear transient UI state
+    Note over GW,API: Closing browser fetch closes upstream transport, not a universal backend stop API
 
-    API-->>ChatSvc: data: [DONE]
-    ChatSvc-->>chatStore: onComplete(content, reasoning, timings, toolCalls)
-    deactivate ChatSvc
-
-    chatStore->>chatStore: stopStreaming()
-    chatStore->>DbSvc: updateMessage(msgId, {content, timings, model})
-    chatStore->>convStore: updateCurrentNode(msgId)
-    chatStore->>chatStore: setChatLoading(convId, false)
-    chatStore->>chatStore: clearChatStreaming(convId)
-    chatStore->>chatStore: clearProcessingState(convId)
-    deactivate chatStore
-
-    %% ═══════════════════════════════════════════════════════════════════════════
-    Note over UI,API: ⏹️ STOP GENERATION
-    %% ═══════════════════════════════════════════════════════════════════════════
-
-    UI->>chatStore: stopGeneration()
-    activate chatStore
-    chatStore->>chatStore: savePartialResponseIfNeeded(convId)
-    Note right of chatStore: Save currentResponse to DB if non-empty
-    chatStore->>chatStore: abortControllers.get(convId).abort()
-    Note right of chatStore: fetch throws AbortError → caught by isAbortError()
-    chatStore->>chatStore: stopStreaming()
-    chatStore->>chatStore: setChatLoading(convId, false)
-    chatStore->>chatStore: clearChatStreaming(convId)
-    chatStore->>chatStore: clearProcessingState(convId)
-    deactivate chatStore
-
-    %% ═══════════════════════════════════════════════════════════════════════════
-    Note over UI,API: 🔁 REGENERATE
-    %% ═══════════════════════════════════════════════════════════════════════════
-
-    UI->>chatStore: regenerateMessageWithBranching(msgId, model?)
-    activate chatStore
-    chatStore->>convStore: findMessageIndex(msgId)
-    chatStore->>chatStore: Get parent of target message
-    chatStore->>chatStore: createAssistantMessage(parentId)
-    chatStore->>DbSvc: createMessageBranch(newAssistantMsg, parentId)
-    chatStore->>convStore: refreshActiveMessages()
-    Note right of chatStore: Same streaming flow
-    chatStore->>chatStore: streamChatCompletion(...)
-    deactivate chatStore
-
-    %% ═══════════════════════════════════════════════════════════════════════════
-    Note over UI,API: ➡️ CONTINUE
-    %% ═══════════════════════════════════════════════════════════════════════════
-
-    UI->>chatStore: continueAssistantMessage(msgId)
-    activate chatStore
-    chatStore->>chatStore: Get existing content from message
-    chatStore->>chatStore: streamChatCompletion(..., existingContent)
-    Note right of chatStore: Appends to existing message content
-    deactivate chatStore
-
-    %% ═══════════════════════════════════════════════════════════════════════════
-    Note over UI,API: ✏️ EDIT USER MESSAGE
-    %% ═══════════════════════════════════════════════════════════════════════════
-
-    UI->>chatStore: editMessageWithBranching(msgId, newContent, extras)
-    activate chatStore
-    chatStore->>chatStore: Get parent of target message
-    chatStore->>DbSvc: createMessageBranch(editedMsg, parentId)
-    chatStore->>convStore: refreshActiveMessages()
-    Note right of chatStore: Creates new branch, original preserved
-    chatStore->>chatStore: createAssistantMessage(editedMsg.id)
-    chatStore->>chatStore: streamChatCompletion(...)
-    Note right of chatStore: Automatically regenerates response
-    deactivate chatStore
-
-    %% ═══════════════════════════════════════════════════════════════════════════
-    Note over UI,API: ❌ ERROR HANDLING
-    %% ═══════════════════════════════════════════════════════════════════════════
-
-    Note over chatStore: On stream error (non-abort):
-    chatStore->>chatStore: showErrorDialog(type, message)
-    Note right of chatStore: errorDialogState = {type: 'timeout'|'server', message}
-    chatStore->>convStore: removeMessageAtIndex(failedMsgIdx)
-    chatStore->>DbSvc: deleteMessage(failedMsgId)
-
-    %% ═══════════════════════════════════════════════════════════════════════════
-    Note over UI,API: 🤖 AGENTIC LOOP (when agenticConfig.enabled)
-    %% ═══════════════════════════════════════════════════════════════════════════
-
-    Note over agenticStore: agenticStore.runAgenticFlow(convId, messages, assistantMsg, options, signal)
-    activate agenticStore
-    agenticStore->>agenticStore: getSession(convId) or create new
-    agenticStore->>agenticStore: updateSession(turn: 0, running: true)
-
-    loop executeAgenticLoop (until no tool_calls or maxTurns)
-        agenticStore->>agenticStore: turn++
-        agenticStore->>ChatSvc: sendMessage(messages, options, signal)
-        ChatSvc->>API: POST /v1/chat/completions
-        API-->>ChatSvc: response with potential tool_calls
-        ChatSvc-->>agenticStore: onComplete(content, reasoning, timings, toolCalls)
-
-        alt response has tool_calls
-            agenticStore->>agenticStore: normalizeToolCalls(toolCalls)
-            loop for each tool_call
-                agenticStore->>agenticStore: updateSession(streamingToolCall)
-                agenticStore->>mcpStore: executeTool(mcpCall, signal)
-                mcpStore-->>agenticStore: tool result
-                agenticStore->>agenticStore: extractBase64Attachments(result)
-                agenticStore->>agenticStore: emitToolCallResult(convId, ...)
-                agenticStore->>convStore: addMessageToActive(toolResultMsg)
-                agenticStore->>DbSvc: createMessageBranch(toolResultMsg)
+    Note over UI,API: Agentic turn continuation (detail)
+    loop Until no tool calls, maxTurns, cancellation or error
+        Agent->>Svc: Same provider-aware request path above
+        Svc-->>Agent: Parsed response and complete function calls
+        Agent-->>Chat: Persist assistant turn through callbacks
+        opt Response has tool calls
+            loop Each advertised tool call
+                Agent->>Tools: Resolve captured entry and request permission
+                alt Allowed and entry/source still valid
+                    Agent->>Tools: executeTool(entry, args, context, signal)
+                    Note over Tools: Built-in via ToolsService + native gateway<br/>MCP via mcpStore.executeToolOnServer + MCPService
+                    Tools-->>Agent: Tool result (possibly attachments)
+                else Denied, conflicted, unavailable or failed
+                    Tools-->>Agent: Denial/error result, not successful execution
+                end
+                Agent-->>Chat: Create tool-result branch with original call ID
+                Chat->>DB: Persist tool result / attachments
             end
-            agenticStore->>agenticStore: Create new assistantMsg for next turn
-            Note right of agenticStore: Continue loop with updated messages
-        else no tool_calls (final response)
-            agenticStore->>agenticStore: buildFinalTimings(allTurns)
-            Note right of agenticStore: Break loop, return final response
+            Agent-->>Chat: Create assistant child for next turn
+            Note over Agent: Append assistant + results to full history
         end
     end
-
-    agenticStore->>agenticStore: updateSession(running: false)
-    agenticStore-->>chatStore: final content, timings, model
-    deactivate agenticStore
+    Agent-->>Chat: Flow completion / aggregate timings
 ```
+
+## Protocol, stream and source rules
+
+- `connectionProtocol()` prefers Chat Completions if declared. Otherwise Responses
+  requires `capabilities.protocols: ["responses"]`, `required_protocol: "responses"`,
+  or `chat_completions: false` with `responses: true`. Missing evidence defaults to
+  Chat Completions. Mere Responses support does not select it; there is no automatic
+  retry with another protocol after 404/405 or another generation error.
+- Responses sends full local history with `store:false`, not `previous_response_id`
+  or a backend-stored conversation. Function-call/result IDs are preserved. Opaque
+  reasoning continuation items are persisted locally and replayed only for the
+  matching source, credential fingerprint, protocol and model.
+- SSE framing is shared; payload parsing is adapter/protocol-owned. Reasoning, tool
+  deltas, usage, refusal and outcome fields depend on the protocol/backend. Native
+  `prompt_progress` and llama timings are not expected from every provider.
+- vLLM Chat streaming requests include cumulative usage options unless metadata
+  explicitly denies them. Increasing token snapshots can supply a labeled approximate
+  client speed; backend timings/metrics remain separate, and missing values are not
+  fabricated from server-wide `/metrics`.
+- Only llama-server creates resumable state. Its V2 lookup and byte-offset reattach
+  endpoints are optional; unsupported endpoints clear resume state. Compatible
+  providers do not use native resume APIs or replay a generation POST on disconnect.
+  An incomplete non-resumable stream without a terminal event is an error, not success.
+- Changing the provider source invalidates request contexts and cancels chat/agentic
+  work through `sourceLifecycleService`; native tools and MCP connections are refreshed.
+
+## Branching, continuation and errors
+
+- Regenerate creates an assistant sibling branch through
+  `regenerateMessageWithBranching(messageId, modelOverride?)`, then reuses the same
+  request path. An explicit override or the target message's model can be reused.
+- Continue reuses the existing assistant content; editing a user message with
+  branching preserves the old branch and creates a new assistant response.
+- Non-abort stream errors invoke the store error callback, clean transient state,
+  delete the failed assistant branch with `deleteMessageCascading` where applicable,
+  and show the timeout/server dialog. Stop is a separate partial-save/cancellation path.
+
+See [conversations](conversations-flow.md), [server connection](server-flow.md),
+[MCP](mcp-flow.md) and [architecture](../architecture/high-level-architecture.md).

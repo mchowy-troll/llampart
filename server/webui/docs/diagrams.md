@@ -1,6 +1,8 @@
 # Local Mermaid diagrams
 
-llampart 1.9.0 renders four Mermaid diagram families in assistant answer sections.
+The current llampart implementation renders four Mermaid diagram families in
+assistant answer sections: **Flowchart, State, Mindmap and Gantt**. This describes
+the current source, not feature availability in the public 1.9.0 release.
 The source stays in the original Markdown message; SVG is presentation only.
 There is no extra database table, migration, MCP server or rendering service.
 User messages, reasoning and raw tool results remain ordinary code blocks.
@@ -58,7 +60,7 @@ mindmap
 
 ## Model instructions and preferences
 
-The ninth Response Preferences checkbox, **Use diagrams**, defaults to off and
+The **Use diagrams** Response Preferences checkbox defaults to off and
 sits immediately after **Use charts** in Formatting and visualizations. It is
 independent of charts. Save, Cancel, Reset, settings import/export and the English
 instruction preview use the existing transactional settings mechanism.
@@ -72,8 +74,9 @@ HTML, links, images, icons or click actions; they must not invent relationships.
 `withChatInstructions()` composes chart format, Mermaid format, active response
 preferences and the manual system prompt, in that order. Explicit user
 instructions take precedence. Composition is idempotent and request-local;
-nothing is written to System Message or persistent history. Chat and pre-encode
-share the committed settings contract. Auxiliary title generation is unchanged.
+nothing is written to System Message or persistent history. Chat and native
+llama-server pre-encode share the committed settings contract. Auxiliary title
+generation is unchanged.
 
 ## Appearance, typography and preview
 
@@ -231,5 +234,10 @@ LLAMPART_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs \
 LLAMPART_TEST_URL=http://127.0.0.1:40138 node tests/browser/diagrams.mjs
 ```
 
+The sequence diagrams in the technical architecture/flow documentation target a
+general Mermaid documentation renderer. They are not examples of the assistant
+renderer allowlist: Sequence, ER, Pie, XYChart and other families remain unsupported
+inside assistant answers.
+
 See also [charts](charts.md), [response preferences](response-preferences.md) and
-the distributable license notices at `static/licenses/mermaid.txt`.
+the [distributable Mermaid license notices](../static/licenses/mermaid.txt).

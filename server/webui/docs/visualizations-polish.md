@@ -16,7 +16,8 @@ niszczy instancję podglądu, nie naruszając wykresu w rozmowie.
 Wspólna paleta dziewięciu barw pochodzi wyłącznie z `chart-palette.ts`.
 Kolory diagramów odpowiadają jawnym grupom, sekcjom i gałęziom; nie przypisuje się
 losowych kolorów węzłom ani znaczeń na podstawie ich nazw. Wykresy zachowują
-dotychczasową deterministyczną możliwość rozszerzenia palety ponad dziewięć serii.
+dotychczasową deterministyczną możliwość rozszerzenia palety do 20 kategorii Donut;
+wykresy Line/Area/Bar nadal mają limit pięciu serii.
 
 Eksporty pozostają bez zmian: PNG/SVG dla diagramów, PNG/SVG/CSV dla wykresów.
 Zachowano lokalne WOFF2, ustawienia typografii, bezpieczne SVG, streaming,

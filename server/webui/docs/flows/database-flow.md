@@ -1,3 +1,10 @@
+# Local database flow
+
+These are core browser-storage scenarios shared by all providers, not a complete
+field/method inventory. SQL-like labels below describe Dexie operations, not a SQL
+server. Source-bound Responses continuation items are local message data; canonical
+conversation exports do not include them. See [chat-flow.md](chat-flow.md).
+
 ```mermaid
 sequenceDiagram
     participant Store as 🗄️ Stores
@@ -16,7 +23,7 @@ sequenceDiagram
     end
 
     rect rgb(255, 248, 240)
-        Note over IDB: messages table:<br/>id (PK), convId (FK), type, role, timestamp,<br/>parent, children[], content, thinking,<br/>toolCalls, extra[], model, timings
+        Note over IDB: messages table (selected fields):<br/>id (PK), convId, type, role, timestamp,<br/>parent, children[], content, reasoningContent,<br/>toolCalls, toolCallId, extra[], model, timings, providerContinuation<br/>thinking is legacy compatibility data, convId is not an enforced SQL foreign key
     end
 
     %% ═══════════════════════════════════════════════════════════════════════════
@@ -114,16 +121,11 @@ sequenceDiagram
     DbSvc->>Dexie: db.conversations.update(convId, {currNode: nodeId, lastModified})
     Dexie->>IDB: UPDATE
 
-    Store->>DbSvc: deleteMessageCascading(msgId)
+    Store->>DbSvc: deleteMessageCascading(convId, msgId, replacementCurrentNode)
     activate DbSvc
-    DbSvc->>DbSvc: findDescendantMessages(msgId, allMessages)
+    Note over DbSvc: One read/write transaction, validate ownership and surviving replacement
+    DbSvc->>DbSvc: findDescendantMessages(allMessages, msgId)
     Note right of DbSvc: Recursively find all children
-    loop each descendant
-        DbSvc->>Dexie: db.messages.delete(descendantId)
-        Dexie->>IDB: DELETE
-    end
-    DbSvc->>Dexie: db.messages.delete(msgId)
-    Dexie->>IDB: DELETE target message
 
     alt target message has a parent
         DbSvc->>Dexie: db.messages.get(parentId)
@@ -131,6 +133,9 @@ sequenceDiagram
         DbSvc->>Dexie: db.messages.update(parentId, {children})
         Note right of DbSvc: Remove deleted message from parent's children[]
     end
+    DbSvc->>Dexie: db.messages.bulkDelete(target and descendant IDs)
+    Dexie->>IDB: DELETE branch records
+    DbSvc->>Dexie: Update conversation current node and lastModified
     deactivate DbSvc
 
     %% ═══════════════════════════════════════════════════════════════════════════
@@ -139,19 +144,14 @@ sequenceDiagram
 
     Store->>DbSvc: importConversations(data)
     activate DbSvc
-    loop each conversation in data
-        DbSvc->>Dexie: db.conversations.get(conv.id)
-        alt conversation already exists
-            Note right of DbSvc: Skip duplicate (keep existing)
-        else conversation is new
-            DbSvc->>Dexie: db.conversations.add(conversation)
-            Dexie->>IDB: INSERT conversation
-            loop each message
-                DbSvc->>Dexie: db.messages.add(message)
-                Dexie->>IDB: INSERT message
-            end
-        end
-    end
+    Note over DbSvc: Validate graph before transaction, reject message ID collisions<br/>bulk insert new records atomically, skip existing conversation IDs
+    DbSvc->>Dexie: db.conversations.bulkGet(imported IDs)
+    Note right of DbSvc: Skip existing conversations, keep their records unchanged
+    DbSvc->>Dexie: db.messages.bulkGet(new message IDs)
+    Note right of DbSvc: Reject collision before inserting anything
+    DbSvc->>Dexie: db.conversations.bulkAdd(new conversations)
+    DbSvc->>Dexie: db.messages.bulkAdd(new messages)
+    Dexie->>IDB: INSERT in one read/write transaction
     deactivate DbSvc
 
     %% ═══════════════════════════════════════════════════════════════════════════
@@ -165,10 +165,10 @@ sequenceDiagram
     end
 
     rect rgb(240, 255, 240)
-        Note over DbSvc: findLeafNode(startId, messages)<br/>→ Traverse to deepest child<br/>→ Used for branch navigation
+        Note over DbSvc: findLeafNode(messages, startId)<br/>→ Traverse to deepest child<br/>→ Used for branch navigation
     end
 
     rect rgb(240, 255, 240)
-        Note over DbSvc: findDescendantMessages(msgId, messages)<br/>→ Find all children recursively<br/>→ Used for cascading deletes
+        Note over DbSvc: findDescendantMessages(messages, msgId)<br/>→ Find all children recursively<br/>→ Used for cascading deletes
     end
 ```

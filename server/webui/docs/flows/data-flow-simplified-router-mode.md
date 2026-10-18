@@ -1,6 +1,14 @@
+# Native llama-server ROUTER mode — simplified data flow
+
+This is llama.cpp's native multi-model router integration. vLLM and OpenAI-compatible
+model selection does not invoke native load/unload or `/props`. Services/adapters
+and the same-origin gateway (Vite development or installed Caddy) are omitted here.
+See the general [chat](chat-flow.md), [models](models-flow.md) and
+[server](server-flow.md) flows for all three providers.
+
 ```mermaid
-%% ROUTER Mode Data Flow (multi-model)
-%% Detailed flows: ./flows/server-flow.mmd, ./flows/models-flow.mmd, ./flows/chat-flow.mmd
+%% Native llama-server ROUTER mode (multi-model)
+%% Detailed flows: server-flow.md, models-flow.md, chat-flow.md
 
 sequenceDiagram
     participant User as 👤 User
@@ -9,40 +17,35 @@ sequenceDiagram
     participant DB as 💾 IndexedDB
     participant API as 🌐 llama-server
 
-    Note over User,API: 🚀 Initialization (see: server-flow.mmd, models-flow.mmd)
+    Note over User,API: 🚀 Initialization (see: server-flow.md, models-flow.md)
 
     UI->>Stores: initialize()
     Stores->>DB: load conversations
-    Stores->>API: GET /props
+    Stores->>API: GET /props?autoload=false
     API-->>Stores: {role: "router"}
     Stores->>API: GET /v1/models
-    API-->>Stores: models[] with status (loaded/available)
-    loop each loaded model
-        Stores->>API: GET /props?model=X
+    API-->>Stores: models[] with native status.value
+    loop each loaded or sleeping model
+        Stores->>API: GET /props?model=X&autoload=false
         API-->>Stores: modalities (vision/audio)
     end
 
-    Note over User,API: 🔄 Model Selection (see: models-flow.mmd)
+    Note over User,API: 🔄 Model Selection (see: models-flow.md)
 
     User->>UI: select model
+    Stores->>Stores: set selection
     alt model not loaded
         Stores->>API: POST /models/load
         loop poll status
             Stores->>API: GET /v1/models
             API-->>Stores: check if loaded
         end
-        Stores->>API: GET /props?model=X
+        Stores->>API: GET /props?model=X&autoload=false
         API-->>Stores: cache modalities
     end
-    Stores->>Stores: validate modalities vs conversation
-    alt valid
-        Stores->>Stores: select model
-    else invalid
-        Stores->>API: POST /models/unload
-        UI->>User: show error toast
-    end
+    Note right of Stores: Attachment actions consult explicit modalities<br/>unknown does not mean unsupported
 
-    Note over User,API: 💬 Chat Flow (see: chat-flow.mmd)
+    Note over User,API: 💬 Chat Flow (see: chat-flow.md)
 
     User->>UI: send message
     UI->>Stores: sendMessage()
@@ -52,6 +55,7 @@ sequenceDiagram
     loop streaming
         API-->>Stores: SSE chunks + model info
         Stores-->>UI: reactive update
+        Stores->>DB: persist stream checkpoint
     end
     API-->>Stores: done + timings
     Stores->>DB: save assistant message + model used
@@ -59,19 +63,19 @@ sequenceDiagram
     Note over User,API: 🔁 Regenerate (optional: different model)
 
     User->>UI: regenerate
-    Stores->>Stores: validate modalities up to this message
     Stores->>DB: create message branch
     Note right of Stores: same streaming flow
 
     Note over User,API: ⏹️ Stop
 
     User->>UI: stop
-    Stores->>Stores: abort stream
     Stores->>DB: save partial response
+    Stores->>API: stop native resumable stream if state exists
+    Stores->>Stores: abort stream and clear transient state
 
-    Note over User,API: 🗑️ LRU Unloading
+    Note over User,API: 🗑️ Backend-managed cache eviction
 
-    Note right of API: Server auto-unloads LRU models<br/>when cache full
+    Note right of API: Eviction policy belongs to llama-server,<br/>not the browser stores
     User->>UI: select unloaded model
     Note right of Stores: triggers load flow again
 ```
