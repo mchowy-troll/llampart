@@ -1,99 +1,146 @@
 # llampart
 
-llampart is a local chat Web UI designed for use with `llama-server` and `OpenAI-compatible`.
+**Chat with your AI models in an interface you can make your own.**
 
-The project focuses on a polished desktop experience, including a custom Frosted Glass theme, conversation management, model selection, MCP-related UI flows, and careful local settings handling.
+llampart is an open-source chat interface designed to work with **llama-server, vLLM, and OpenAI-compatible API servers**.
 
-## Project status
+It combines a customizable **Frosted Glass interface** with advanced conversation management, model-aware controls, reasoning and tool workflows, rich Markdown rendering, interactive charts, and Mermaid diagrams.
 
-llampart is being prepared as an open-source project.
+Built with SvelteKit and Svelte 5, llampart runs as a lightweight web application while keeping conversations and most application settings locally in your browser.
 
-Current release:
-
-```text
-llampart 1.9.0
-```
-
-## Features
-
-llampart builds on the llama.cpp / llama-ui foundation and focuses on a more polished, desktop-oriented local chat experience.
-
-Key llampart features include:
-
-- **Frosted Glass visual theme**
-  A custom translucent interface style with wallpaper-backed surfaces, blur, softened panels, redesigned menus, bundled/custom wallpapers, and readability controls.
-
-- **Desktop-oriented conversation sidebar**
-  A redesigned sidebar with tiled conversations, adaptive one- or two-column layout, optional compact mode, pinned conversations, date/time display, and direct conversation management.
-
-- **Interface scaling and appearance settings**
-  Local controls for UI scale, visual theme, sidebar layout, message/statistics display behavior, model display preferences, and generation-related chat parameters.
-
-- **Localized interface**
-  Interface translations for multiple languages, including English, Polish, German, French, Italian, and Spanish, with user-facing settings and chat labels following the selected language.
-
-- **Minimalistic Reasoning and Tools display**
-  Optional cleaner presentation for reasoning and tool-related assistant activity, including inline status indicators while the assistant is thinking or using tools.
-
-- **Local import/export flows**
-  Local import/export workflows for settings and conversations, with settings export designed to avoid sensitive local configuration by default.
-
-- **Provider-aware backend support**
-  Support for both `llama-server` and `OpenAI-compatible` API servers, with provider-specific connection settings, model actions, chat request behavior, and advanced settings.
-
-- **MCP prompts, resources, and server-related UI flows**
-  MCP prompt/resource workflows and server-related UI flows integrated into the customized llampart chat interface.
-
-- **Linux Installer**
-  A bundled Linux installer for deploying prebuilt llampart release assets, serving them through Caddy, and supporting installation, update, configuration, and uninstall flows.
+The model backend runs separately, giving you control over where and how your AI models are served.
 
 ## Screenshots
 
-### Frosted Glass start screen
+### Main chat experience
 
-![llampart Frosted Glass start screen](docs/assets/screenshots/llampart-main_page-frosted-glass.png)
+![llampart main chat interface with Frosted Glass, business summary, table and interactive chart](docs/assets/screenshots/llampart-chat.png)
 
-### Frosted Glass chat
+### Rich content and visualizations
 
-![llampart Frosted Glass chat](docs/assets/screenshots/llampart-chat-frosted-glass.png)
+![llampart Markdown tables, interactive charts and Mermaid diagrams](docs/assets/screenshots/llampart-visualizations.png)
 
-### Appearance settings
+### Appearance & Personalization
 
-![llampart Frosted Glass settings](docs/assets/screenshots/llampart-settings-frosted-glass.png)
+![llampart Frosted Glass appearance settings, typography and wallpapers](docs/assets/screenshots/llampart-appearance.png)
+
+## Features
+
+### Frosted Glass & Personalization
+
+A distinctive, customizable interface built around the Frosted Glass visual theme.
+
+- Five built-in wallpapers and support for custom local wallpapers.
+- Wallpaper-aware color accents, translucent surfaces, blur effects, and adjustable glass milkiness.
+- An option to disable transparency for more opaque interface surfaces.
+- Bundled offline fonts, font variants, and adjustable text sizes.
+- Independent interface scaling and customizable sidebar layout.
+- Six interface languages: English, Polish, German, French, Italian, and Spanish.
+
+### Models & Providers
+
+Connect to different AI model servers through a provider-aware architecture.
+
+- **llama-server** — native integration with supported llama.cpp server capabilities.
+- **vLLM** — dedicated provider support with model-aware capabilities and usage information.
+- **OpenAI-compatible** — connectivity to servers implementing supported OpenAI API endpoints.
+- Support for Chat Completions and Responses workflows where available.
+- Model selection, connection management, and provider-specific controls.
+- Model-aware reasoning settings and supported generation parameters.
+
+Available capabilities depend on the connected server, model, and API implementation.
+
+### Conversations & Local Data
+
+Manage conversations locally with tools designed for longer, more complex interactions.
+
+- Conversation history stored in the browser using IndexedDB.
+- Branching conversations, message editing, and response regeneration.
+- Pinned conversations and a configurable tiled conversation sidebar.
+- Conversation search, selection, and management.
+- Import and export of conversation history.
+- Local persistence of user preferences and application settings.
+
+### Rich Markdown & Visualizations
+
+llampart goes beyond plain text responses with interactive content rendered directly in the conversation.
+
+- Markdown formatting, tables, syntax-highlighted code, and mathematical expressions.
+- Copyable tables with CSV export and expanded table previews.
+- Code blocks with dedicated typography, syntax highlighting, copying, and file downloads.
+- **Interactive charts:** Line, Area, Bar, and Donut.
+- **Mermaid diagrams:** Flowchart, State, Mindmap, and Gantt.
+- Expanded previews and export options for supported visualizations, including PNG, SVG, and CSV where applicable.
+- Markdown downloads for assistant responses.
+
+Visualizations are rendered locally in the browser. Their availability and correctness depend on the content generated by the model.
+
+### Reasoning, Tools & MCP
+
+Advanced interaction features for supported models and connected tools.
+
+- Reasoning display and model-dependent reasoning controls.
+- Tool calling and agentic workflows.
+- Model Context Protocol (MCP) integration.
+- MCP tools, prompts, and resources.
+- Configurable presentation of reasoning and tool activity.
+- Response preferences for formatting, conciseness, examples, tables, charts, diagrams, and other response characteristics.
+- Custom system instructions and advanced generation settings.
+
+Tool execution and advanced model features depend on backend capabilities and the configured integrations.
+
+### How llampart works
+
+llampart is designed as a browser-based frontend rather than a hosted AI service.
+
+- Conversations and most application preferences are stored locally.
+- Model inference is handled by your separately configured backend.
+- No llampart cloud account or hosted llampart service is required.
+- The static Web UI can be served through an existing Caddy installation.
+
+Requests and data may be sent to the model servers and external tools you choose to configure. llampart does not make a remote backend local simply by connecting to it.
 
 ## Installation
 
-llampart can be installed on supported Linux systems with the bundled installer. The installer deploys the prebuilt llampart Web UI, serves it through Caddy, configures Caddy autostart, and keeps the backend/model server separate. It does not install `llama-server`, Ollama, LM Studio, models, Node.js, npm dependencies, or development tooling.
+llampart provides a Linux installer that deploys prebuilt release assets and configures an existing Caddy installation to serve the Web UI.
 
-Supported installer targets are Ubuntu-based and Arch Linux-based distributions with systemd.
+The installer supports Ubuntu-based and Arch Linux-based distributions using systemd.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mchowy-troll/llampart/main/install.sh | bash
 ```
 
-Full installation, update, configuration, uninstall, file layout, and troubleshooting documentation is available in [the Linux installation guide](docs/installation/linux-caddy.md).
+The installer supports installation, updating, reconfiguration, and uninstallation.
+
+It manages the llampart Web UI deployment and its Caddy configuration. It does **not** install Caddy itself, AI models, model inference servers, Node.js, or development dependencies.
+
+For detailed instructions, available options, and troubleshooting, see the [Linux installation guide](docs/installation/linux-caddy.md).
 
 ## Requirements
 
-For normal installed use:
+### Installed Web UI
 
-- a supported Linux distribution for the installer: Ubuntu-based or Arch Linux-based
-- systemd
-- Caddy
-- a separately running backend, such as `llama-server` or an `OpenAI-compatible` API server
+- A supported Linux distribution with systemd when using the bundled installer.
+- An existing Caddy 2.11.4 or newer installation, available as a systemd service.
+- The `ss` command from `iproute2` for the installer's port availability check.
+- A separately running AI backend supported by llampart.
+- A modern browser with the required browser storage and JavaScript capabilities.
 
-For Web UI development:
+llampart is primarily designed for desktop use.
 
-- Node.js 22.13+ (22.x) or Node.js 24+
+### Development
+
+- Node.js `>=22.13.0 <23` or `>=24.0.0`
 - npm
-- git
+- Git
 
 ## Development
 
-From the repository root:
+Clone the repository and install the Web UI dependencies.
 
 ```bash
-cd server/webui
+git clone https://github.com/mchowy-troll/llampart.git
+cd llampart/server/webui
 npm ci
 npm run dev
 ```
@@ -101,73 +148,55 @@ npm run dev
 Common validation commands:
 
 ```bash
-cd server/webui
-npm run check
 npm run lint
+npm run check
 npm test
 npm run build
 ```
 
-The production Web UI build is generated into `server/public`. Validation includes settings metadata, theme boundaries, documentation contracts, and import boundaries.
+The frontend uses Svelte 5, SvelteKit, Vite, and TypeScript.
 
-Release Web UI assets for the installer are packaged from an already-built `server/public` directory with:
+Production builds generate the static Web UI in `server/public`.
+
+### Release packaging
+
+Release archives are prepared from a validated production build using:
 
 ```bash
-cd server/webui
 bash scripts/package-release-llampart.sh
 ```
 
-The build writes `server/public/.llampart-build.json`. The packager does not rebuild the application and accepts release packaging only when this provenance matches the current version and `HEAD`, the build was created from a clean worktree, and the worktree remains clean. Tag creation and GitHub Release publication stay manual.
+The release workflow includes build provenance checks and integrity verification. Packaging requires a matching clean build and Git state.
 
-## Repository layout
+Official releases and downloadable assets are published through [GitHub Releases](https://github.com/mchowy-troll/llampart/releases).
 
-```text
-server/
-├── public/      # generated frontend build consumed by the server and release packager
-└── webui/       # SvelteKit Web UI source, tests, docs, and helper scripts
-```
+## Documentation
 
-The main frontend project lives in:
+- [Linux installation and configuration](docs/installation/linux-caddy.md)
+- [Third-party licenses and notices](THIRD_PARTY_LICENSES.md)
+- [Project attribution](NOTICE)
+- [Contributors and asset credits](AUTHORS.md)
 
-```text
-server/webui
-```
+## Project Origins & Credits
 
-The root installer lives at:
+llampart is developed and maintained by **Marcin Gluziński**.
 
-```text
-install.sh
-```
+The project builds upon and adapts work from [llama.cpp](https://github.com/ggml-org/llama.cpp), including its original llama-ui foundation.
 
-## Relationship to llama.cpp
+Special thanks to the **ggml-org maintainers and contributors** for their open-source work.
 
-llampart is based in part on the `llama-ui` work from the `llama.cpp` project and is designed to work with `llama-server` as a local backend.
+llampart also benefits from the broader open-source ecosystem, including Svelte, SvelteKit, Mermaid, and the libraries used for Markdown processing, visualization, and browser-based functionality.
 
-`llama.cpp` and `llama-server` are separate upstream projects. `OpenAI-compatible` API servers are also separate projects. llampart is not an official llama.cpp project.
+Thanks to the maintainers and contributors of these projects for making their work available to the community.
 
-See:
+Third-party software, fonts, and bundled visual assets retain their applicable licenses and attribution requirements. See `AUTHORS.md`, `NOTICE`, and `THIRD_PARTY_LICENSES.md` for detailed information.
 
-- `NOTICE`
-- `THIRD_PARTY_LICENSES.md`
-
-for attribution and third-party license information.
-
-## Frontend framework
-
-llampart's frontend is built with Svelte and SvelteKit.
-
-Svelte and SvelteKit are MIT-licensed open-source projects. Their license information is preserved through npm package metadata, installed package license files, and the project third-party license notes.
-
-## Credits
-
-llampart is developed by Marcin Gluziński.
-
-llampart includes and adapts work from the `llama.cpp` / `llama-ui` foundation. See `AUTHORS.md`, `NOTICE` and `THIRD_PARTY_LICENSES.md` for details.
+llampart is an independent project and is not an official llama.cpp, vLLM, or OpenAI product.
 
 ## License
 
-llampart is released under the MIT License. See `LICENSE`.
+llampart is released under the **MIT License**.
 
-Third-party notices and license information are provided in `NOTICE` and `THIRD_PARTY_LICENSES.md`.
+See [LICENSE](LICENSE) for the full license text.
 
-This license information is provided for open-source project hygiene and is not legal advice.
+Third-party notices and license information are provided in [NOTICE](NOTICE) and [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
