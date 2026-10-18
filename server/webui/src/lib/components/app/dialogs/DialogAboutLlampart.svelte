@@ -62,9 +62,9 @@
 		showCloseButton={false}
 		class="llampart-solid-dialog-content llampart-about-dialog-content flex h-[100dvh] max-h-[100dvh] min-h-[100dvh] w-[100vw] max-w-none! flex-col overflow-hidden rounded-none border border-border/30 p-0 shadow-lg md:h-[80dvh] md:max-h-[80dvh] md:min-h-0 md:w-[60vw] md:max-w-[60vw]! md:rounded-lg"
 	>
-		<div class="grid min-h-0 flex-1 grid-cols-3">
+		<div class="grid min-h-0 flex-1 grid-cols-3 grid-rows-[minmax(0,1fr)]">
 			<div
-				class="col-span-1 flex flex-col items-center justify-center border-r border-border/30 px-8 py-10 text-center"
+				class="col-span-1 flex min-h-0 min-w-0 flex-col items-center overflow-y-auto border-r border-border/30 px-3 py-6 text-center [justify-content:safe_center] md:px-8 md:py-10"
 			>
 				<img
 					src="/llampart.svg"
@@ -80,9 +80,9 @@
 					{t('dialogs.aboutLlampartDescription')}
 				</Dialog.Description>
 
-				<div class="grid w-full grid-cols-3 gap-4 text-left">
+				<div class="grid w-full grid-cols-1 gap-4 text-left 2xl:grid-cols-3">
 					<div
-						class="col-span-2 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 llampart-about-info-card"
+						class="min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 llampart-about-info-card 2xl:col-span-2"
 					>
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 							{t('dialogs.aboutLlampartAuthorLabel')}
@@ -108,7 +108,7 @@
 					</div>
 
 					<div
-						class="col-span-3 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 llampart-about-info-card"
+						class="min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 llampart-about-info-card 2xl:col-span-3"
 					>
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 							{t('dialogs.aboutLlampartRepositoryLabel')}
@@ -125,7 +125,7 @@
 				</div>
 			</div>
 
-			<div class="col-span-2 flex min-h-0 flex-col px-8 py-8">
+			<div class="col-span-2 flex min-h-0 min-w-0 flex-col px-3 py-6 md:px-8 md:py-8">
 				<div class="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
 					<section class="rounded-lg border border-border/30 bg-muted/10 p-5">
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -136,6 +136,7 @@
 							<p>{t('dialogs.aboutLlampartAboutProgramBodyOne')}</p>
 							<p>{t('dialogs.aboutLlampartAboutProgramBodyTwo')}</p>
 							<p>{t('dialogs.aboutLlampartAboutProgramBodyThree')}</p>
+							<p>{t('dialogs.aboutLlampartAboutProgramBodyFour')}</p>
 						</div>
 					</section>
 
@@ -200,7 +201,7 @@
 			</div>
 		</div>
 
-		<div class="flex items-center gap-4 border-t border-border/30 px-6 py-4">
+		<div class="flex shrink-0 items-center gap-4 border-t border-border/30 px-6 py-4">
 			<div class="flex min-w-0 flex-1 items-center gap-3">
 				<Checkbox id="about-llampart-do-not-show-again" bind:checked={doNotShowAgain} />
 

@@ -952,11 +952,13 @@ export const pl: TranslationDictionary = {
 		aboutLlampartRepositoryLabel: 'Repozytorium',
 		aboutLlampartAboutProgramTitle: 'O programie',
 		aboutLlampartAboutProgramBodyOne:
-			'llampart to niezależne lokalne web UI inspirowane bazą llama-ui, ale niepowiązane bezpośrednio z llama.cpp i rozwijane niezależnie od oryginalnego interfejsu. Zachowuje lokalny charakter pracy znany z llama-server, a jednocześnie skupia się na wygodniejszym codziennym doświadczeniu rozmowy.',
+			'llampart to niezależny projekt open source oferujący nowoczesny interfejs internetowy do pracy z modelami AI. Dzięki obsłudze llama-server, vLLM oraz interfejsów API zgodnych z OpenAI umożliwia korzystanie z różnych środowisk uruchomieniowych w jednym, spójnym i konfigurowalnym miejscu. Aplikacja została zaprojektowana z myślą o wygodnej, uporządkowanej i efektywnej codziennej pracy z modelami sztucznej inteligencji.',
 		aboutLlampartAboutProgramBodyTwo:
-			'W porównaniu z oryginalnym llama-ui, llampart dodaje szersze i czytelniej uporządkowane okno ustawień, dopracowany sidebar, wygodniejszą prezentację rozmów, lepiej ułożone sekcje Reasoning i wywołań narzędzi oraz lepszą obsługę bogatszego markdownu, w tym tabel. Dzięki temu interfejs jest łatwiejszy do czytania, prostszy w konfiguracji i przyjemniejszy podczas dłuższych sesji.',
+			'llampart wykracza poza standardowy interfejs czatu, oferując rozbudowane możliwości prezentacji i analizy informacji. Formatowanie Markdown, przejrzyste tabele, interaktywne wykresy oraz diagramy Mermaid ułatwiają pracę ze złożonymi treściami. Obsługa informacji o procesie rozumowania modelu, wywołań narzędzi oraz integracji MCP dodatkowo rozszerza funkcjonalność aplikacji, zależnie od możliwości wybranego modelu i skonfigurowanych usług.',
 		aboutLlampartAboutProgramBodyThree:
-			'Interfejs ma tłumaczenia na język polski, angielski, niemiecki, francuski, włoski i hiszpański, a także praktyczne dodatki dla użytkownika, takie jak wyświetlanie daty i godziny rozmowy. Projekt jest rozwijany iteracyjnie z naciskiem na czyste, maintainable usprawnienia UI zamiast szybkich wizualnych obejść.',
+			'Personalizacja stanowi istotny element llampart. Rozbudowane ustawienia wyglądu, efekty Frosted Glass, konfigurowalne tapety, typografia oraz skalowanie interfejsu pozwalają dostosować środowisko do indywidualnych preferencji. Zarządzanie rozmowami, preferencje dotyczące odpowiedzi modeli oraz import i eksport ustawień pomagają zachować wygodę i spójność codziennej pracy.',
+		aboutLlampartAboutProgramBodyFour:
+			'Projekt powstał na bazie llama-ui, lecz rozwija się niezależnie, we własnym kierunku i z własnym zestawem funkcji. llampart nie jest powiązany organizacyjnie z zespołem llama.cpp, zachowując jednocześnie zgodność z uznanymi rozwiązaniami do uruchamiania modeli AI. Rozwój projektu koncentruje się na użyteczności, przejrzystości i łatwości utrzymania kodu. Interfejs jest dostępny w sześciu językach: angielskim, polskim, niemieckim, francuskim, włoskim i hiszpańskim.',
 		aboutLlampartSpecialThanksTitle: 'Specjalne podziękowania',
 		aboutLlampartSpecialThanksLlamaUiBody:
 			'Specjalne podziękowania dla zespołu llama.cpp i autorów bazowego llama-ui, na którym opiera się llampart.',

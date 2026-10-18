@@ -7,7 +7,7 @@
  * Optional: LLAMPART_CHROMIUM, LLAMPART_TEST_ARTIFACTS (outside the repository).
  */
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 
 assert(process.env.LLAMPART_PLAYWRIGHT_MODULE, 'Set LLAMPART_PLAYWRIGHT_MODULE');
 const { chromium } = await import(process.env.LLAMPART_PLAYWRIGHT_MODULE);
@@ -20,6 +20,9 @@ const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 const dismissalKey = 'Llampart.aboutDismissedVersion';
+const { version: appVersion } = JSON.parse(
+	await readFile(new URL('../../package.json', import.meta.url), 'utf8')
+);
 let propsRequests = 0;
 await page.addInitScript(() => {
 	if (!localStorage.getItem('LlamaCppWebui.config')) {
@@ -118,7 +121,7 @@ try {
 	assert.equal(await checkbox.getAttribute('aria-checked'), 'true');
 	await ok.click();
 	await welcome.waitFor({ state: 'hidden' });
-	assert.equal(await page.evaluate((key) => localStorage.getItem(key), dismissalKey), '1.9.0');
+	assert.equal(await page.evaluate((key) => localStorage.getItem(key), dismissalKey), appVersion);
 	await page.reload();
 	await page.waitForSelector('textarea');
 	assert.equal(await welcome.count(), 0);
@@ -127,7 +130,7 @@ try {
 	console.log('PASS: remembered dismissal survives reload; no effect-update errors');
 
 	// Each initial persistence state must be checked in a separate browser context.
-	for (const savedVersion of ['1.9.0', '1.8.0', 'historical-value']) {
+	for (const savedVersion of new Set([appVersion, '1.9.0', '1.8.0', 'historical-value'])) {
 		const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
 		try {
 			const isolatedPage = await context.newPage();
@@ -154,7 +157,7 @@ try {
 			await isolatedPage.goto(process.env.LLAMPART_TEST_URL || 'http://localhost:5173');
 			await isolatedPage.waitForSelector('textarea');
 			const isolatedWelcome = isolatedPage.locator('.llampart-about-dialog-content');
-			if (savedVersion === '1.9.0') {
+			if (savedVersion === appVersion) {
 				await isolatedPage.waitForTimeout(200);
 				assert.equal(await isolatedWelcome.count(), 0);
 				await isolatedPage.reload();
@@ -175,7 +178,7 @@ try {
 				await isolatedWelcome.waitFor({ state: 'hidden' });
 				assert.equal(
 					await isolatedPage.evaluate((key) => localStorage.getItem(key), dismissalKey),
-					'1.9.0'
+					appVersion
 				);
 				await isolatedPage.reload();
 				await isolatedPage.waitForSelector('textarea');
