@@ -294,7 +294,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.code-preview-wrapper,
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-agentic-panel
-	.code-block-wrapper,
+	.code-block-wrapper.llampart-chart-fallback,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-agentic-panel .table-block,
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-agentic-panel

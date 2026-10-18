@@ -51,6 +51,8 @@ export const pl: TranslationDictionary = {
 		removeItem: 'Usuń element',
 		codeIncomplete: 'Kod niekompletny',
 		copyCode: 'Kopiuj kod',
+		downloadCode: 'Pobierz kod jako {format}',
+		failedToDownloadCode: 'Nie udało się pobrać kodu',
 		previewCode: 'Podgląd kodu',
 		previewMarkdown: 'Podgląd Markdown',
 		tablePreview: 'Podgląd tabeli',

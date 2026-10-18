@@ -8,6 +8,8 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { buttonVariants } from '$lib/components/ui/button';
 	import './visualization-frame.css';
+	import './code-block.css';
+	import { codeFileFormat, downloadCodeFromAction } from '$lib/markdown/code-download';
 	import {
 		escapeCodeHtml,
 		highlightCodeAsync,
@@ -177,6 +179,11 @@
 		const copyButtons = containerRef.querySelectorAll<HTMLButtonElement>(
 			MARKDOWN_PRESENTATION_SELECTORS.copyCodeButton
 		);
+		for (const button of containerRef.querySelectorAll(
+			MARKDOWN_PRESENTATION_SELECTORS.downloadCodeButton
+		)) {
+			button.removeEventListener('click', handleCodeDownloadClick);
+		}
 		const previewButtons = containerRef.querySelectorAll<HTMLButtonElement>(
 			MARKDOWN_PRESENTATION_SELECTORS.previewCodeButton
 		);
@@ -447,11 +454,20 @@
 		return { html, hash };
 	}
 
-	/**
-	 * Handles click events on copy buttons within code blocks.
-	 * Copies the raw code content to the clipboard.
-	 * @param event - The click event from the copy button
-	 */
+	/** Download only the selected block using its current position in this message. */
+	function handleCodeDownloadClick(event: Event) {
+		event.preventDefault();
+		event.stopPropagation();
+		if (!containerRef) return;
+		try {
+			downloadCodeFromAction(event.currentTarget as HTMLButtonElement, containerRef);
+		} catch (error) {
+			console.error('Code download failed:', error);
+			toast.error(t('common.failedToDownloadCode'));
+		}
+	}
+
+	/** Copy the raw source, preserving the existing clipboard/toast behavior. */
 	async function handleCopyClick(event: Event) {
 		event.preventDefault();
 		event.stopPropagation();
@@ -882,12 +898,35 @@
 		);
 
 		for (const wrapper of wrappers) {
+			// Streaming actions are Svelte-owned and remain disabled until the fence closes.
+			if (wrapper.classList.contains('streaming-code-block')) continue;
+			const downloadButton = wrapper.querySelector<HTMLButtonElement>(
+				MARKDOWN_PRESENTATION_SELECTORS.downloadCodeButton
+			);
 			const copyButton = wrapper.querySelector<HTMLButtonElement>(
 				MARKDOWN_PRESENTATION_SELECTORS.copyCodeButton
 			);
 			const previewButton = wrapper.querySelector<HTMLButtonElement>(
 				MARKDOWN_PRESENTATION_SELECTORS.previewCodeButton
 			);
+			if (downloadButton) {
+				const language = wrapper.querySelector(
+					MARKDOWN_PRESENTATION_SELECTORS.codeLanguage
+				)?.textContent;
+				const { label } = codeFileFormat(language ?? '');
+				downloadButton.textContent = label;
+				downloadButton.classList.add(
+					...buttonVariants({ variant: 'ghost', size: 'sm' }).split(' ')
+				);
+				downloadButton.dataset.slot = 'button';
+				const description = t('common.downloadCode').replace('{format}', label);
+				downloadButton.setAttribute('aria-label', description);
+				downloadButton.dataset.llampartCodeTooltip = description;
+				if (downloadButton.dataset.listenerBound !== 'true') {
+					downloadButton.dataset.listenerBound = 'true';
+					downloadButton.addEventListener('click', handleCodeDownloadClick);
+				}
+			}
 
 			if (copyButton) {
 				const copyLabel = t('common.copyCode');
@@ -2395,12 +2434,15 @@
 		overflow: visible;
 	}
 
+	div :global(.download-code-btn[data-llampart-code-tooltip]),
 	div :global(.copy-code-btn[data-llampart-code-tooltip]),
 	div :global(.preview-code-btn[data-llampart-code-tooltip]) {
 		position: relative;
 		overflow: visible;
 	}
 
+	div :global(.download-code-btn[data-llampart-code-tooltip]:hover::after),
+	div :global(.download-code-btn[data-llampart-code-tooltip]:focus-visible::after),
 	div :global(.copy-code-btn[data-llampart-code-tooltip]:hover::after),
 	div :global(.copy-code-btn[data-llampart-code-tooltip]:focus-visible::after),
 	div :global(.preview-code-btn[data-llampart-code-tooltip]:hover::after),
@@ -2431,6 +2473,8 @@
 		pointer-events: none;
 	}
 
+	div :global(.download-code-btn[data-llampart-code-tooltip]:hover::before),
+	div :global(.download-code-btn[data-llampart-code-tooltip]:focus-visible::before),
 	div :global(.copy-code-btn[data-llampart-code-tooltip]:hover::before),
 	div :global(.copy-code-btn[data-llampart-code-tooltip]:focus-visible::before),
 	div :global(.preview-code-btn[data-llampart-code-tooltip]:hover::before),
@@ -2457,9 +2501,13 @@
 	   it owns markdown presentation resets. */
 	div.markdown-inherit-typography,
 	div.markdown-inherit-typography :global(*) {
-		font-family: inherit !important;
 		font-size: inherit !important;
 		line-height: inherit !important;
+	}
+
+	div.markdown-inherit-typography,
+	div.markdown-inherit-typography :global(*:not(code, code *, pre)) {
+		font-family: inherit !important;
 	}
 
 	div.markdown-inherit-typography :global(:is(h1, h2, h3, h4, h5, h6)) {
@@ -2516,7 +2564,6 @@
 	div.markdown-inherit-typography :global(.code-block-wrapper *),
 	div.markdown-inherit-typography :global(.markdown-rendered-code-block),
 	div.markdown-inherit-typography :global(.markdown-rendered-code-block *) {
-		font-family: inherit !important;
 		font-size: inherit !important;
 		line-height: inherit !important;
 	}

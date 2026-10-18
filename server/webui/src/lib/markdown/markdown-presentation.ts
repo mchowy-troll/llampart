@@ -52,6 +52,7 @@ export const TABLE_PREVIEW_BUTTON_CLASS = 'table-preview-button';
 export const MARKDOWN_PRESENTATION_SELECTORS = {
 	codeBlockWrapper: `.${CODE_BLOCK_WRAPPER_CLASS}`,
 	copyCodeButton: `.${COPY_CODE_BTN_CLASS}`,
+	downloadCodeButton: '.download-code-btn',
 	previewCodeButton: `.${PREVIEW_CODE_BTN_CLASS}`,
 	codeLanguage: `.${CODE_LANGUAGE_CLASS}`,
 	markdownRenderedCodeContent: `.${MARKDOWN_RENDERED_CODE_CONTENT_CLASS}`,
@@ -102,7 +103,7 @@ export function renderMarkdownRenderedCodeBlockShell({
 	const escapedPreviewMarkdownLabel = escapeMarkdownHtml(previewMarkdownLabel);
 	const escapedRawCode = escapeMarkdownHtml(rawCode);
 
-	return `<div class="${CODE_BLOCK_WRAPPER_CLASS} ${MARKDOWN_RENDERED_CODE_BLOCK_CLASS} ${RELATIVE_CLASS}"><div class="${CODE_BLOCK_HEADER_CLASS}"><span class="${CODE_LANGUAGE_CLASS}">${escapedLanguage}</span><div class="${CODE_BLOCK_ACTIONS_CLASS}"><button class="${COPY_CODE_BTN_CLASS}" data-code-id="${escapedCodeId}" aria-label="" data-llampart-code-tooltip="" type="button"><span>${COPY_ICON_SVG}</span></button><button class="${PREVIEW_CODE_BTN_CLASS} ${MARKDOWN_RENDERED_CODE_PREVIEW_BUTTON_CLASS}" data-code-id="${escapedCodeId}" aria-label="${escapedPreviewMarkdownLabel}" data-llampart-code-tooltip="${escapedPreviewMarkdownLabel}" type="button"><span>${MARKDOWN_PREVIEW_ICON_SVG}</span></button></div></div><div class="${MARKDOWN_RENDERED_CODE_CONTENT_CLASS} ${MARKDOWN_RENDERED_CODE_SCROLL_CONTAINER_CLASS}"><code data-code-id="${escapedCodeId}" data-raw-code="${escapedRawCode}" hidden></code>${renderedMarkdown}</div></div>`;
+	return `<div class="${CODE_BLOCK_WRAPPER_CLASS} ${MARKDOWN_RENDERED_CODE_BLOCK_CLASS} ${RELATIVE_CLASS}"><div class="${CODE_BLOCK_HEADER_CLASS}"><span class="${CODE_LANGUAGE_CLASS}">${escapedLanguage}</span><div class="${CODE_BLOCK_ACTIONS_CLASS}"><button class="download-code-btn" type="button">MD</button><button class="${COPY_CODE_BTN_CLASS}" data-code-id="${escapedCodeId}" aria-label="" data-llampart-code-tooltip="" type="button"><span>${COPY_ICON_SVG}</span></button><button class="${PREVIEW_CODE_BTN_CLASS} ${MARKDOWN_RENDERED_CODE_PREVIEW_BUTTON_CLASS}" data-code-id="${escapedCodeId}" aria-label="${escapedPreviewMarkdownLabel}" data-llampart-code-tooltip="${escapedPreviewMarkdownLabel}" type="button"><span>${MARKDOWN_PREVIEW_ICON_SVG}</span></button></div></div><div class="${MARKDOWN_RENDERED_CODE_CONTENT_CLASS} ${MARKDOWN_RENDERED_CODE_SCROLL_CONTAINER_CLASS}"><code data-code-id="${escapedCodeId}" data-raw-code="${escapedRawCode}" hidden></code>${renderedMarkdown}</div></div>`;
 }
 
 const MARKDOWN_RENDERED_PREVIEW_OMITTED_SELECTORS = [

@@ -50,6 +50,8 @@ export const es: TranslationDictionary = {
 		removeItem: 'Eliminar elemento',
 		codeIncomplete: 'Código incompleto',
 		copyCode: 'Copiar código',
+		downloadCode: 'Descargar código como {format}',
+		failedToDownloadCode: 'No se pudo descargar el código',
 		previewCode: 'Vista previa del código',
 		previewMarkdown: 'Vista previa de Markdown',
 		tablePreview: 'Vista previa de tabla',

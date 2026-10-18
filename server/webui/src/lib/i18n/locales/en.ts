@@ -50,6 +50,8 @@ export const en: TranslationDictionary = {
 		removeItem: 'Remove item',
 		codeIncomplete: 'Code incomplete',
 		copyCode: 'Copy code',
+		downloadCode: 'Download code as {format}',
+		failedToDownloadCode: 'Failed to download code',
 		previewCode: 'Preview code',
 		previewMarkdown: 'Preview Markdown',
 		tablePreview: 'Preview table',

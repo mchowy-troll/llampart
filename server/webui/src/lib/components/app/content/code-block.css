@@ -1,0 +1,103 @@
+/* Opaque code material, independent of message surfaces and the body font. */
+.llampart-markdown-content {
+	--llampart-code-background: #222831;
+	--llampart-code-foreground: #e6edf3;
+}
+
+.llampart-markdown-content .code-block-wrapper:not(.llampart-chart-fallback) {
+	background: var(--llampart-code-background);
+	color: var(--llampart-code-foreground);
+	border-color: #414954;
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+
+/* Beat compact/reasoning typography and message text resets, only inside code. */
+html .llampart-markdown-content code,
+html .llampart-markdown-content code *,
+html .llampart-markdown-content pre {
+	font-family: var(--llampart-code-font-family) !important;
+	font-style: normal !important;
+	font-weight: 400 !important;
+	font-variant-ligatures: none;
+}
+
+html
+	.llampart-markdown-content
+	.code-block-wrapper:not(.llampart-chart-fallback)
+	:is(pre, pre code, pre code *) {
+	color: var(--llampart-code-token, var(--llampart-code-foreground)) !important;
+	text-shadow: none !important;
+	background: transparent !important;
+}
+
+html
+	.llampart-markdown-content
+	.code-block-wrapper:not(.llampart-chart-fallback)
+	.code-block-header
+	:is(.code-language, .code-block-actions, .code-block-actions *) {
+	color: var(--llampart-code-foreground) !important;
+	text-shadow: none !important;
+}
+
+html .llampart-markdown-content .code-block-wrapper .code-block-header svg {
+	filter: none !important;
+}
+
+.code-block-wrapper .hljs-comment,
+.code-block-wrapper .hljs-quote {
+	--llampart-code-token: #a5afbd;
+}
+.code-block-wrapper .hljs-keyword,
+.code-block-wrapper .hljs-selector-tag,
+.code-block-wrapper .hljs-literal {
+	--llampart-code-token: #ff9baf;
+}
+.code-block-wrapper .hljs-string,
+.code-block-wrapper .hljs-regexp,
+.code-block-wrapper .hljs-addition {
+	--llampart-code-token: #b4dfb0;
+}
+.code-block-wrapper .hljs-number,
+.code-block-wrapper .hljs-attr,
+.code-block-wrapper .hljs-attribute {
+	--llampart-code-token: #91ceff;
+}
+.code-block-wrapper .hljs-title,
+.code-block-wrapper .hljs-section {
+	--llampart-code-token: #d8b9ff;
+}
+.code-block-wrapper .hljs-type,
+.code-block-wrapper .hljs-built_in,
+.code-block-wrapper .hljs-symbol {
+	--llampart-code-token: #ffd298;
+}
+.code-block-wrapper .hljs-operator,
+.code-block-wrapper .hljs-punctuation,
+.code-block-wrapper .hljs-tag {
+	--llampart-code-token: #d1dae5;
+}
+.code-block-wrapper .hljs-name,
+.code-block-wrapper .hljs-selector-class {
+	--llampart-code-token: #82dfda;
+}
+.code-block-wrapper .hljs-meta,
+.code-block-wrapper .hljs-variable,
+.code-block-wrapper .hljs-deletion {
+	--llampart-code-token: #ffb497;
+}
+
+/* Markdown fences retain their rendered layout on the same opaque code material. */
+.markdown-rendered-code-content {
+	background: var(--llampart-code-background);
+	color: var(--llampart-code-foreground);
+	border-radius: 0 0 0.75rem 0.75rem;
+}
+
+.markdown-rendered-code-content a {
+	--llampart-code-token: #91ceff;
+}
+
+.download-code-btn {
+	cursor: pointer;
+}

@@ -77,7 +77,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-markdown-content
-	.code-block-wrapper,
+	.code-block-wrapper.llampart-chart-fallback,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-markdown-content .table-block,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-visualization-frame {
 	background: var(--llampart-glass-white-110, rgba(255, 255, 255, 0.11)) !important;
@@ -91,6 +91,81 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-visualization
 		--llampart-glass-filter-10-104,
 		blur(10px) saturate(104%)
 	) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.code-block-wrapper:not(.llampart-chart-fallback) {
+	/* Alpha belongs only to the material, never to code or toolbar content. */
+	--llampart-code-background: rgb(34 40 49 / 90%);
+	background: var(--llampart-code-background) !important;
+	border: 1px solid #414954 !important;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12) !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+
+	/* Avoid painting this translucent material twice in rendered Markdown fences. */
+	& > .markdown-rendered-code-content {
+		background: transparent;
+	}
+
+	& pre {
+		--llampart-code-foreground: #e8eff7;
+	}
+
+	& :is(.hljs-keyword, .hljs-literal) {
+		/* Slightly lighter pink keeps >= 4.5:1 even over a white backdrop. */
+		--llampart-code-token: #ff7dbb;
+	}
+	&
+		:is(
+			.hljs-title,
+			.hljs-section,
+			.hljs-name,
+			.hljs-selector-tag,
+			.hljs-selector-id,
+			.hljs-selector-class,
+			.hljs-selector-pseudo,
+			.hljs-selector-attr
+		) {
+		--llampart-code-token: #5aefe3;
+	}
+	& :is(.hljs-attr, .hljs-attribute, .hljs-property) {
+		--llampart-code-token: #80d4ff;
+	}
+	& :is(.hljs-string, .hljs-regexp, .hljs-addition) {
+		--llampart-code-token: #bfff73;
+	}
+	& :is(.hljs-number, .hljs-type, .hljs-title.class_) {
+		--llampart-code-token: #c7a5ff;
+	}
+	& :is(.hljs-built_in, .hljs-symbol, .hljs-meta, .hljs-variable, .hljs-deletion) {
+		--llampart-code-token: #ffcb77;
+	}
+	& :is(.hljs-comment, .hljs-quote) {
+		--llampart-code-token: #a6b4c4;
+	}
+	& :is(.hljs-operator, .hljs-punctuation, .hljs-tag, .hljs-subst) {
+		--llampart-code-token: #e8eff7;
+	}
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme.has-frosted-glass-opaque
+	.llampart-markdown-content
+	.code-block-wrapper:not(.llampart-chart-fallback) {
+	--llampart-code-background: #222831;
+}
+
+/* Rendered Markdown fences keep their content/layout, with readable dark-frame text. */
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.markdown-rendered-code-content,
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.markdown-rendered-code-content
+	* {
+	color: var(--llampart-code-token, var(--llampart-code-foreground)) !important;
+	text-shadow: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme

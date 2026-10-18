@@ -3,6 +3,8 @@
 	import { Eye } from '@lucide/svelte';
 	import ActionIconCopyToClipboard from '$lib/components/app/actions/ActionIconCopyToClipboard.svelte';
 	import { FileTypeText } from '$lib/enums';
+	import { Button } from '$lib/components/ui/button';
+	import { codeFileFormat } from '$lib/markdown/code-download';
 
 	interface Props {
 		code: string;
@@ -14,6 +16,12 @@
 	let { code, language, disabled = false, onPreview }: Props = $props();
 
 	const showPreview = $derived(language?.toLowerCase() === FileTypeText.HTML);
+	const format = $derived(codeFileFormat(language));
+	const downloadLabel = $derived(
+		disabled
+			? t('common.codeIncomplete')
+			: t('common.downloadCode').replace('{format}', format.label)
+	);
 	const copyLabel = $derived(disabled ? t('common.codeIncomplete') : t('common.copyCode'));
 	const previewLabel = $derived(disabled ? t('common.codeIncomplete') : t('common.previewCode'));
 
@@ -24,6 +32,16 @@
 </script>
 
 <div class="code-block-actions">
+	<Button
+		variant="ghost"
+		size="sm"
+		class="download-code-btn"
+		{disabled}
+		aria-label={downloadLabel}
+		data-llampart-code-tooltip={downloadLabel}
+	>
+		{format.label}
+	</Button>
 	<div
 		class="copy-code-btn"
 		class:opacity-50={disabled}

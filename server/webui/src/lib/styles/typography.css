@@ -1,3 +1,8 @@
+:root {
+	--llampart-code-font-family:
+		'Cascadia Code', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
 /* Local faces: Latin + Latin Extended, upright and genuine italic.
    Sources and OFL licenses are retained in static/fonts/. */
 @font-face {

@@ -35,9 +35,11 @@
 	gap: 0.125rem;
 }
 .visualization-actions button,
-.table-csv-button {
+.table-csv-button,
+.download-code-btn {
 	font: inherit;
 	font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
+	line-height: 1.5;
 	padding: 0.25rem 0.4rem;
 	height: 1.75rem;
 	text-shadow: none;

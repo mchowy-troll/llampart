@@ -24,6 +24,7 @@ import {
 	RELATIVE_CLASS
 } from '$lib/constants';
 import { CODE_PREVIEW_ICON_SVG, COPY_ICON_SVG } from '$lib/markdown/markdown-presentation';
+import { codeFileFormat } from './code-download';
 
 declare global {
 	interface Window {
@@ -75,7 +76,15 @@ function createPreviewButton(codeId: string): Element {
 }
 
 function createHeader(language: string, codeId: string): Element {
-	const actions: Element[] = [createCopyButton(codeId)];
+	const actions: Element[] = [
+		{
+			type: 'element',
+			tagName: 'button',
+			properties: { className: ['download-code-btn'], type: 'button' },
+			children: [{ type: 'text', value: codeFileFormat(language).label }]
+		},
+		createCopyButton(codeId)
+	];
 
 	if (language.toLowerCase() === 'html') {
 		actions.push(createPreviewButton(codeId));

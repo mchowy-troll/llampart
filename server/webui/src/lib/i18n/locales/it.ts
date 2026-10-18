@@ -51,6 +51,8 @@ export const it: TranslationDictionary = {
 		removeItem: 'Rimuovi elemento',
 		codeIncomplete: 'Codice incompleto',
 		copyCode: 'Copia codice',
+		downloadCode: 'Scarica codice in formato {format}',
+		failedToDownloadCode: 'Impossibile scaricare il codice',
 		previewCode: 'Anteprima codice',
 		previewMarkdown: 'Anteprima Markdown',
 		tablePreview: 'Anteprima tabella',
