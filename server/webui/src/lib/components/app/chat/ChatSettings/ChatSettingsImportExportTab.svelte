@@ -6,7 +6,8 @@
 	import { createMessageCountMap } from '$lib/utils';
 	import {
 		exportApplicationSettings,
-		importApplicationSettings
+		importApplicationSettings,
+		type SettingsImportResult
 	} from '$lib/utils/settings-import-export';
 	import { ISO_DATE_TIME_SEPARATOR } from '$lib/constants';
 	import { parseConversationImport } from '$lib/utils/conversation-import-export';
@@ -29,6 +30,17 @@
 	);
 
 	let showSettingsReloadDialog = $state(false);
+	let missingSettingsGroups = $state<SettingsImportResult['missingSettingsGroups']>([]);
+	const settingsReloadDescription = $derived(
+		(missingSettingsGroups.length > 0
+			? t('settings.importExport.olderSettingsFile').replace(
+					'{sections}',
+					missingSettingsGroups
+						.map((group) => t(`settings.importExport.olderSettingsSections.${group}`))
+						.join(', ')
+				) + ' '
+			: '') + t('settings.importExport.reloadAfterSettingsImport')
+	);
 
 	// Delete functionality state
 	let showDeleteDialog = $state(false);
@@ -165,7 +177,7 @@
 
 				try {
 					const text = await file.text();
-					importApplicationSettings(text);
+					({ missingSettingsGroups } = importApplicationSettings(text));
 					toast.success(t('settings.importExport.settingsImported'));
 					showSettingsReloadDialog = true;
 				} catch (err) {
@@ -413,7 +425,7 @@
 <DialogConfirmation
 	bind:open={showSettingsReloadDialog}
 	title={t('settings.importExport.settingsImported')}
-	description={t('settings.importExport.reloadAfterSettingsImport')}
+	description={settingsReloadDescription}
 	confirmText={t('settings.importExport.reloadSettingsImportConfirmText')}
 	cancelText={t('common.cancel')}
 	onConfirm={handleSettingsReloadConfirm}

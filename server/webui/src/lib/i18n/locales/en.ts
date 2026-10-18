@@ -390,6 +390,14 @@ export const en: TranslationDictionary = {
 			exportSettingsButton: 'Export settings',
 			settingsExported: 'Settings exported',
 			settingsImported: 'Settings imported',
+			olderSettingsFile:
+				'This file uses an older set of settings and does not include all newer options in these sections: {sections}. Missing settings were not changed. We recommend exporting a new settings file so future backups include these options.',
+			olderSettingsSections: {
+				responsePreferences: 'response preferences',
+				interfaceScale: 'interface scale',
+				typography: 'typography',
+				frostedGlass: 'Frosted Glass transparency'
+			},
 			reloadAfterSettingsImport: 'Settings were imported. Reload the app now to fully apply them?',
 			reloadSettingsImportConfirmText: 'Reload now',
 			failedToExportSettings: 'Failed to export settings',

@@ -4,6 +4,7 @@ import {
 	USER_OVERRIDES_LOCALSTORAGE_KEY
 } from '$lib/constants';
 import type { SettingsConfigValue } from '$lib/types';
+import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
 import {
 	parseSettingsStorage,
 	parseUserOverrides,
@@ -41,6 +42,18 @@ const EXPORTABLE_CONFIG_KEYS = Object.keys(SETTING_CONFIG_DEFAULT).filter(
 	(key) => !EXCLUDED_CONFIG_KEYS.has(key)
 );
 const EXPORTABLE_CONFIG_KEY_SET = new Set(EXPORTABLE_CONFIG_KEYS);
+
+// Check the original file, not the normalized/merged settings (which include defaults).
+const NEW_SETTINGS_GROUPS = {
+	responsePreferences: RESPONSE_PREFERENCES.map(({ key }) => key),
+	interfaceScale: ['uiScale'],
+	typography: ['fontFamily', 'fontVariant', 'fontSize'],
+	frostedGlass: ['frostedGlassMilkiness', 'frostedGlassOpaque']
+} as const;
+
+export type SettingsImportResult = {
+	missingSettingsGroups: (keyof typeof NEW_SETTINGS_GROUPS)[];
+};
 
 type ExportableSettings = Record<string, SettingsConfigValue>;
 
@@ -112,7 +125,7 @@ export function exportApplicationSettings(): void {
 	URL.revokeObjectURL(url);
 }
 
-export function importApplicationSettings(fileText: string): void {
+export function importApplicationSettings(fileText: string): SettingsImportResult {
 	const parsed = JSON.parse(fileText) as Partial<SettingsExportFile>;
 
 	if (
@@ -125,6 +138,11 @@ export function importApplicationSettings(fileText: string): void {
 	) {
 		throw new Error('Invalid settings export file');
 	}
+
+	const fileSettings = parsed.settings;
+	const missingSettingsGroups = (
+		Object.keys(NEW_SETTINGS_GROUPS) as (keyof typeof NEW_SETTINGS_GROUPS)[]
+	).filter((group) => NEW_SETTINGS_GROUPS[group].some((key) => !Object.hasOwn(fileSettings, key)));
 
 	const currentConfig = getStoredConfig();
 	const candidateSettings: Record<string, unknown> = {};
@@ -149,4 +167,5 @@ export function importApplicationSettings(fileText: string): void {
 		serializeSettingsStorage({ ...currentConfig, ...importedSettings } as SettingsConfigType)
 	);
 	localStorage.setItem(USER_OVERRIDES_LOCALSTORAGE_KEY, JSON.stringify(nextOverrides));
+	return { missingSettingsGroups };
 }

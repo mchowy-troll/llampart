@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	CONFIG_LOCALSTORAGE_KEY,
 	SETTING_CONFIG_DEFAULT,
@@ -17,8 +17,24 @@ import {
 } from '$lib/utils/settings-import-export';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
+import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
+import { getDictionary, INTERFACE_LANGUAGES } from '$lib/i18n';
+import {
+	CUSTOM_FROSTED_GLASS_WALLPAPER_ID,
+	CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY
+} from '$lib/themes/frosted-glass/wallpapers';
+import {
+	ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY,
+	DISABLED_TOOL_KEYS_LOCALSTORAGE_KEY,
+	DISABLED_TOOLS_LOCALSTORAGE_KEY,
+	MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY
+} from '$lib/constants/localstorage-keys';
 
 const storage = new Map<string, string>();
+
+afterEach(() => {
+	vi.unstubAllGlobals();
+});
 
 beforeEach(() => {
 	storage.clear();
@@ -27,6 +43,283 @@ beforeEach(() => {
 		setItem: (key: string, value: string) => storage.set(key, value),
 		removeItem: (key: string) => storage.delete(key)
 	});
+});
+
+describe('settings JSON import/export compatibility', () => {
+	const newSettings = {
+		...Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }, index) => [key, index % 2 === 0])),
+		uiScale: '105',
+		fontFamily: 'merriweather',
+		fontVariant: '700',
+		fontSize: '18',
+		frostedGlassMilkiness: 27,
+		frostedGlassOpaque: true
+	};
+	const groups = ['responsePreferences', 'interfaceScale', 'typography', 'frostedGlass'];
+	const importPatch = (settings: Record<string, unknown>, userOverrides?: unknown) =>
+		importApplicationSettings(
+			JSON.stringify({
+				type: 'llampart-settings-export',
+				formatVersion: 1,
+				settings,
+				userOverrides
+			})
+		);
+	const savedConfig = () => parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!);
+	async function exportFile() {
+		let blob: Blob | undefined;
+		const originalDocument = globalThis.document;
+		const link = { href: '', download: '', click: vi.fn() };
+		const create = vi.spyOn(URL, 'createObjectURL').mockImplementation((value) => {
+			blob = value as Blob;
+			return 'blob:settings-regression';
+		});
+		const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+		vi.stubGlobal('document', {
+			createElement: () => link,
+			body: { appendChild: vi.fn(), removeChild: vi.fn() }
+		});
+		try {
+			exportApplicationSettings();
+			expect(link.click).toHaveBeenCalledOnce();
+			expect(link.download).toMatch(/^llampart-settings-\d{4}-\d{2}-\d{2}\.json$/);
+			expect(blob!.type).toBe('application/json');
+			const text = await blob!.text();
+			return { text, data: JSON.parse(text) };
+		} finally {
+			create.mockRestore();
+			revoke.mockRestore();
+			vi.stubGlobal('document', originalDocument);
+		}
+	}
+
+	it.each([false, true])(
+		'round-trips all current fields, with preference inversion=%s',
+		async (invert) => {
+			const preferences = Object.fromEntries(
+				RESPONSE_PREFERENCES.map(({ key }, index) => [key, (index % 2 === 0) !== invert])
+			);
+			const values = {
+				...SETTING_CONFIG_DEFAULT,
+				...newSettings,
+				...preferences,
+				systemMessage: 'Keep me'
+			};
+			storage.set(CONFIG_LOCALSTORAGE_KEY, serializeSettingsStorage(values));
+			storage.set(USER_OVERRIDES_LOCALSTORAGE_KEY, '["systemMessage","theme"]');
+			const { data, text } = await exportFile();
+			expect(Object.keys(data).sort()).toEqual([
+				'app',
+				'exportedAt',
+				'formatVersion',
+				'settings',
+				'type',
+				'userOverrides'
+			]);
+			expect(data).toMatchObject({
+				type: 'llampart-settings-export',
+				formatVersion: 1,
+				app: 'llampart'
+			});
+			expect(data.settings).toMatchObject({ ...newSettings, ...preferences });
+			for (const { key } of RESPONSE_PREFERENCES) expect(data.settings[key]).toBeTypeOf('boolean');
+			storage.clear();
+			expect(importApplicationSettings(text)).toEqual({ missingSettingsGroups: [] });
+			expect(savedConfig()).toEqual(parseSettingsStorage(serializeSettingsStorage(values)));
+			expect(JSON.parse(storage.get(USER_OVERRIDES_LOCALSTORAGE_KEY)!)).toEqual(data.userOverrides);
+			const reexport = await exportFile();
+			expect(reexport.data.settings).toEqual(data.settings);
+			expect(reexport.data.userOverrides).toEqual(data.userOverrides);
+		}
+	);
+
+	it('imports an older file successfully without resetting any absent new settings', () => {
+		storage.set(
+			CONFIG_LOCALSTORAGE_KEY,
+			serializeSettingsStorage({ ...SETTING_CONFIG_DEFAULT, ...newSettings })
+		);
+		expect(
+			importPatch({ systemMessage: 'Imported prompt', showMessageStats: false, temperature: 0.3 })
+		).toEqual({ missingSettingsGroups: groups });
+		expect(savedConfig()).toMatchObject({
+			...newSettings,
+			systemMessage: 'Imported prompt',
+			showMessageStats: false,
+			temperature: 0.3
+		});
+	});
+
+	it('reports only incomplete groups in a partial file and preserves absent fields', () => {
+		storage.set(
+			CONFIG_LOCALSTORAGE_KEY,
+			serializeSettingsStorage({ ...SETTING_CONFIG_DEFAULT, ...newSettings })
+		);
+		const patch = { ...newSettings, uiScale: '90', fontSize: '20', frostedGlassOpaque: false };
+		const partial: Record<string, unknown> = { ...patch };
+		delete partial.responsePrefCharts;
+		delete partial.fontFamily;
+		delete partial.frostedGlassMilkiness;
+		expect(importPatch(partial)).toEqual({
+			missingSettingsGroups: ['responsePreferences', 'typography', 'frostedGlass']
+		});
+		expect(savedConfig()).toMatchObject(patch);
+	});
+
+	it.each([
+		...RESPONSE_PREFERENCES.map(({ key }) => [key, 'responsePreferences']),
+		['uiScale', 'interfaceScale'],
+		['fontFamily', 'typography'],
+		['fontVariant', 'typography'],
+		['fontSize', 'typography'],
+		['frostedGlassMilkiness', 'frostedGlass'],
+		['frostedGlassOpaque', 'frostedGlass']
+	])('detects a missing %s before defaults or font normalization can fill it', (key, group) => {
+		const partial: Record<string, unknown> = { ...newSettings };
+		delete partial[key];
+		expect(importPatch(partial)).toEqual({ missingSettingsGroups: [group] });
+	});
+
+	it('counts false, zero, empty strings and default values as present keys', () => {
+		expect(
+			importPatch({
+				...SETTING_CONFIG_DEFAULT,
+				fontFamily: '',
+				fontVariant: '',
+				frostedGlassMilkiness: 0
+			})
+		).toEqual({ missingSettingsGroups: [] });
+		expect(savedConfig()).toMatchObject({
+			fontFamily: 'default',
+			fontVariant: '400',
+			frostedGlassMilkiness: 0,
+			frostedGlassOpaque: false
+		});
+	});
+
+	it.each(['llama-server', 'vllm', 'openai-compatible'])(
+		'preserves exclusions for %s and retains the existing active-provider selection rule',
+		async (apiProvider) => {
+			const excluded = {
+				serverBaseUrl: 'http://shared.invalid',
+				apiKey: 'shared-secret',
+				llamaServerBaseUrl: 'http://llama.invalid',
+				llamaServerApiKey: 'llama-secret',
+				vllmBaseUrl: 'http://vllm.invalid',
+				vllmApiKey: 'vllm-secret',
+				openAiCompatibleBaseUrl: 'http://openai.invalid',
+				openAiCompatibleApiKey: 'openai-secret',
+				titleGenerationPrompt: 'private template',
+				mcpServers: '[{"id":"private"}]',
+				mcpServerUsageStats: '{"private":4}',
+				agenticMaxTurns: 17,
+				agenticMaxToolPreviewLines: 11,
+				showToolCallInProgress: true,
+				alwaysShowAgenticTurns: true
+			};
+			const separateStorage = {
+				[MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY]: 'false',
+				[DISABLED_TOOLS_LOCALSTORAGE_KEY]: '["tool"]',
+				[DISABLED_TOOL_KEYS_LOCALSTORAGE_KEY]: '["server/tool"]',
+				[ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY]: '["allowed"]',
+				[CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY]: 'data:image/png;base64,cHJpdmF0ZQ=='
+			};
+			for (const [key, value] of Object.entries(separateStorage)) storage.set(key, value);
+			storage.set(
+				CONFIG_LOCALSTORAGE_KEY,
+				serializeSettingsStorage({
+					...SETTING_CONFIG_DEFAULT,
+					...excluded,
+					apiProvider,
+					frostedGlassWallpaper: CUSTOM_FROSTED_GLASS_WALLPAPER_ID
+				})
+			);
+			storage.set(USER_OVERRIDES_LOCALSTORAGE_KEY, '["agenticMaxTurns","temperature"]');
+			const { data, text } = await exportFile();
+			expect(data.settings.apiProvider).toBe(apiProvider);
+			expect(data.settings.frostedGlassWallpaper).toBe(CUSTOM_FROSTED_GLASS_WALLPAPER_ID);
+			for (const key of Object.keys(excluded)) expect(data.settings).not.toHaveProperty(key);
+			for (const key of Object.keys(separateStorage)) expect(data.settings).not.toHaveProperty(key);
+			expect(text).not.toContain(separateStorage[CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY]);
+			expect(data.userOverrides).toEqual(['temperature']);
+			const injected = Object.fromEntries(
+				Object.keys(excluded).map((key) => [key, { invalid: 'ignored' }])
+			);
+			// Provider selection is exportable; connection profiles and old protocols are not.
+			storage.set(
+				CONFIG_LOCALSTORAGE_KEY,
+				serializeSettingsStorage({ ...savedConfig(), apiProvider: 'llama-server' })
+			);
+			importPatch(
+				{
+					...data.settings,
+					...injected,
+					openAiCompatibleProtocol: 'responses',
+					vllmProtocol: 'responses'
+				},
+				['theme', 'apiKey', 'agenticMaxTurns', 'unknown', 4]
+			);
+			expect(savedConfig()).toMatchObject({ ...excluded, apiProvider });
+			expect(savedConfig()).not.toHaveProperty('vllmProtocol');
+			expect(savedConfig()).not.toHaveProperty('openAiCompatibleProtocol');
+			expect(JSON.parse(storage.get(USER_OVERRIDES_LOCALSTORAGE_KEY)!)).toEqual([
+				'agenticMaxTurns',
+				'theme'
+			]);
+			for (const [key, value] of Object.entries(separateStorage))
+				expect(storage.get(key)).toBe(value);
+		}
+	);
+
+	it.each<[string, unknown]>([
+		...RESPONSE_PREFERENCES.map(({ key }): [string, unknown] => [key, 'false']),
+		['uiScale', '120'],
+		['uiScale', 100],
+		['fontFamily', null],
+		['fontVariant', false],
+		['fontSize', '99'],
+		['frostedGlassMilkiness', -1],
+		['frostedGlassMilkiness', 101],
+		['frostedGlassMilkiness', 0.5],
+		['frostedGlassOpaque', 0]
+	])('rejects invalid %s=%j without writing either storage entry', (key, value) => {
+		storage.set(
+			CONFIG_LOCALSTORAGE_KEY,
+			serializeSettingsStorage({ ...SETTING_CONFIG_DEFAULT, ...newSettings })
+		);
+		storage.set(USER_OVERRIDES_LOCALSTORAGE_KEY, '["temperature"]');
+		const before = new Map(storage);
+		expect(() =>
+			importPatch({ systemMessage: 'Must not be saved', [key as string]: value }, ['theme'])
+		).toThrow(String(key));
+		expect(storage).toEqual(before);
+	});
+
+	it.each([
+		'{broken',
+		'null',
+		'[]',
+		'{"type":"llampart-conversations","formatVersion":1,"settings":{}}',
+		'{"type":"llampart-settings-export","formatVersion":2,"settings":{}}',
+		'{"type":"llampart-settings-export","formatVersion":1,"settings":[]}'
+	])('keeps rejecting invalid files atomically: %s', (text) => {
+		const before = new Map(storage);
+		expect(() => importApplicationSettings(text)).toThrow();
+		expect(storage).toEqual(before);
+	});
+
+	it.each(INTERFACE_LANGUAGES)(
+		'includes native warning text and all four section labels in %s',
+		(language) => {
+			// Read the actual language dictionary: a fallback translation must not hide a missing key.
+			const settings = getDictionary(language).settings as Record<string, unknown>;
+			const messages = settings.importExport as Record<string, unknown>;
+			expect(messages.olderSettingsFile).toBeTypeOf('string');
+			expect(messages.olderSettingsFile).toContain('{sections}');
+			const labels = messages.olderSettingsSections as Record<string, string>;
+			expect(Object.keys(labels)).toEqual(groups);
+			for (const group of groups) expect(labels[group].length).toBeGreaterThan(0);
+		}
+	);
 });
 
 describe('settings runtime schema', () => {

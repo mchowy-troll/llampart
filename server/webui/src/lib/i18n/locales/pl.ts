@@ -392,6 +392,14 @@ export const pl: TranslationDictionary = {
 			exportSettingsButton: 'Eksportuj ustawienia',
 			settingsExported: 'Ustawienia wyeksportowane',
 			settingsImported: 'Ustawienia zaimportowane',
+			olderSettingsFile:
+				'Plik zawiera starszy zestaw ustawień i nie obejmuje wszystkich nowszych opcji w następujących sekcjach: {sections}. Brakujące ustawienia nie zostały zmienione. Zalecamy wyeksportowanie nowego pliku ustawień, aby przyszłe kopie zapasowe obejmowały również te opcje.',
+			olderSettingsSections: {
+				responsePreferences: 'preferencje odpowiedzi',
+				interfaceScale: 'skala interfejsu',
+				typography: 'typografia',
+				frostedGlass: 'przezroczystość Frosted Glass'
+			},
 			reloadAfterSettingsImport:
 				'Ustawienia zostały zaimportowane. Odświeżyć aplikację teraz, aby w pełni je zastosować?',
 			reloadSettingsImportConfirmText: 'Odśwież teraz',

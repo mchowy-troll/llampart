@@ -7,7 +7,7 @@
  * Provider HTTP responses are mocked; this does not test a real inference backend.
  */
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 
 assert(process.env.LLAMPART_PLAYWRIGHT_MODULE, 'Set LLAMPART_PLAYWRIGHT_MODULE');
 const { chromium } = await import(process.env.LLAMPART_PLAYWRIGHT_MODULE);
@@ -117,7 +117,8 @@ async function save() {
 	await dialog.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click();
 }
 async function screenshot(name) {
-	if (artifacts) await page.screenshot({ path: `${artifacts}/${name}.png` });
+	if (artifacts)
+		await page.screenshot({ path: `${artifacts}/${name}.png`, animations: 'disabled' });
 }
 
 try {
@@ -331,8 +332,200 @@ try {
 		await page.evaluate((key) => localStorage.getItem(key), wallpaperKey),
 		/^data:image\/png;base64,/
 	);
+	console.log('PASS custom wallpaper: upload preview, cancellation and commit');
+
+	// Exercise the existing file inputs, download links and reload popup in the real UI.
+	async function upload(button, value) {
+		const chooser = page.waitForEvent('filechooser');
+		await dialog.getByRole('button', { name: button, exact: true }).click();
+		await (
+			await chooser
+		).setFiles({
+			name: 'settings-regression.json',
+			mimeType: 'application/json',
+			buffer: Buffer.from(JSON.stringify(value))
+		});
+	}
+	async function download(button, confirm) {
+		const pending = page.waitForEvent('download');
+		await dialog.getByRole('button', { name: button, exact: true }).click();
+		if (confirm) {
+			await page
+				.getByRole('dialog', { name: 'Wybierz rozmowy do eksportu', exact: true })
+				.getByRole('button', { name: /^Eksportuj \(\d+\)$/ })
+				.click();
+		}
+		const file = await pending;
+		return {
+			name: file.suggestedFilename(),
+			data: JSON.parse(await readFile(await file.path(), 'utf8'))
+		};
+	}
+	async function history() {
+		return page.evaluate(
+			() =>
+				new Promise((resolve, reject) => {
+					const request = indexedDB.open('LlamacppWebui');
+					request.onerror = () => reject(request.error);
+					request.onsuccess = () => {
+						const db = request.result;
+						const tx = db.transaction(['conversations', 'messages']);
+						const convs = tx.objectStore('conversations').getAll();
+						const messages = tx.objectStore('messages').getAll();
+						tx.oncomplete = () => {
+							resolve({ conversations: convs.result, messages: messages.result });
+							db.close();
+						};
+						tx.onerror = () => {
+							reject(tx.error);
+							db.close();
+						};
+					};
+				})
+		);
+	}
+	await open();
+	await dialog.getByRole('button', { name: 'Dane', exact: true }).click();
+	const conversation = {
+		conv: {
+			id: 'settings-regression-conversation',
+			name: 'Settings regression history',
+			currNode: 'settings-message',
+			lastModified: 1
+		},
+		messages: [
+			{
+				id: 'settings-root',
+				convId: 'settings-regression-conversation',
+				type: 'root',
+				role: 'system',
+				content: '',
+				timestamp: 1,
+				parent: null,
+				children: ['settings-message'],
+				toolCalls: ''
+			},
+			{
+				id: 'settings-message',
+				convId: 'settings-regression-conversation',
+				type: 'text',
+				role: 'user',
+				content: 'Preserve this conversation.',
+				timestamp: 1,
+				parent: 'settings-root',
+				children: [],
+				toolCalls: ''
+			}
+		]
+	};
+	await upload('Importuj rozmowy', {
+		type: 'llampart-conversations',
+		formatVersion: 1,
+		appVersion: '1.9.0',
+		exportedAt: new Date().toISOString(),
+		conversations: [conversation]
+	});
+	await page
+		.getByRole('dialog', { name: 'Wybierz rozmowy do importu', exact: true })
+		.getByRole('button', { name: /^Importuj \(\d+\)$/ })
+		.click();
+	await dialog.getByText('Zaimportowano 1 rozmowę', { exact: true }).waitFor();
+	const historyBefore = await history();
+	assert(
+		historyBefore.messages.some((message) => message.content === 'Preserve this conversation.')
+	);
+	const conversationsBefore = await download('Eksportuj rozmowy', true);
+	const current = await download('Eksportuj ustawienia');
+	assert.match(current.name, /^llampart-settings-\d{4}-\d{2}-\d{2}\.json$/);
+	assert.equal(current.data.formatVersion, 1);
+	assert(!JSON.stringify(current.data).includes('data:image/'));
+	const reloadDialog = page.getByRole('alertdialog', {
+		name: 'Ustawienia zaimportowane',
+		exact: true
+	});
+	const labels = [
+		'preferencje odpowiedzi',
+		'skala interfejsu',
+		'typografia',
+		'przezroczystość Frosted Glass'
+	];
+	const envelope = (settings) => ({ type: 'llampart-settings-export', formatVersion: 1, settings });
+	await upload('Importuj ustawienia', envelope({ systemMessage: 'Imported older settings' }));
+	await reloadDialog.waitFor();
+	let text = await reloadDialog.textContent();
+	for (const label of labels) assert(text.includes(label), label);
+	assert(text.includes('Brakujące ustawienia nie zostały zmienione.'));
+	assert(text.includes('Zalecamy wyeksportowanie nowego pliku ustawień'));
+	assert(text.includes('Odświeżyć aplikację teraz, aby w pełni je zastosować?'));
+	await screenshot('older-settings-popup');
+	await reloadDialog.getByRole('button', { name: 'Anuluj', exact: true }).click();
+	await reloadDialog.waitFor({ state: 'hidden' });
+	assert(await dialog.isVisible());
+	let saved = JSON.parse(await persisted());
+	assert.equal(saved.systemMessage, 'Imported older settings');
+	for (const key of [
+		'uiScale',
+		'fontFamily',
+		'fontVariant',
+		'fontSize',
+		'frostedGlassMilkiness',
+		'frostedGlassOpaque'
+	])
+		assert.equal(saved[key], current.data.settings[key]);
+	const partial = { ...current.data.settings, uiScale: '95' };
+	delete partial.fontSize;
+	await upload('Importuj ustawienia', envelope(partial));
+	await reloadDialog.waitFor();
+	text = await reloadDialog.textContent();
+	assert(text.includes('typografia'));
+	for (const label of labels.filter((label) => label !== 'typografia'))
+		assert(!text.includes(label), label);
+	await reloadDialog.getByRole('button', { name: 'Anuluj', exact: true }).click();
+	await reloadDialog.waitFor({ state: 'hidden' });
+	saved = JSON.parse(await persisted());
+	assert.equal(saved.uiScale, '95');
+	assert.equal(saved.fontSize, current.data.settings.fontSize);
+	const beforeInvalid = await persisted();
+	const invalidAlert = page.waitForEvent('dialog').then(async (alert) => {
+		assert.equal(alert.message(), 'Nie udało się zaimportować ustawień. Sprawdź format pliku.');
+		await alert.accept();
+	});
+	await upload(
+		'Importuj ustawienia',
+		envelope({ systemMessage: 'Not saved', responsePrefTables: 'false' })
+	);
+	await invalidAlert;
+	assert.equal(await persisted(), beforeInvalid);
+	assert.equal(await reloadDialog.isVisible(), false);
+	const complete = { ...current.data, settings: { ...current.data.settings, uiScale: '90' } };
+	await upload('Importuj ustawienia', complete);
+	await reloadDialog.waitFor();
+	assert.equal(
+		await reloadDialog.locator('[data-slot="alert-dialog-description"]').textContent(),
+		'Ustawienia zostały zaimportowane. Odświeżyć aplikację teraz, aby w pełni je zastosować?'
+	);
+	await Promise.all([
+		page.waitForEvent('load'),
+		reloadDialog.getByRole('button', { name: 'Odśwież teraz', exact: true }).click()
+	]);
+	await page.waitForSelector('textarea');
+	await page.waitForFunction(() => document.documentElement.dataset.llampartUiScale === '90');
+	assert.equal(JSON.parse(await persisted()).uiScale, '90');
+	assert.deepEqual(await history(), historyBefore);
+	await open();
+	await dialog.getByRole('button', { name: 'Dane', exact: true }).click();
+	const conversationsAfter = await download('Eksportuj rozmowy', true);
+	assert.deepEqual(conversationsAfter.data.conversations, conversationsBefore.data.conversations);
+	assert.equal(conversationsAfter.data.type, conversationsBefore.data.type);
+	assert.equal(conversationsAfter.data.formatVersion, conversationsBefore.data.formatVersion);
+	await close();
 	assert.deepEqual(errors, []);
-	console.log('PASS custom wallpaper: upload preview, cancellation and commit; no page errors');
+	console.log(
+		'PASS settings import/export: older + partial + complete popup, Cancel preserves imports, invalid import is atomic, Reload applies values'
+	);
+	console.log(
+		'PASS independent conversation import/export and nonempty IndexedDB history unchanged; no page errors'
+	);
 } finally {
 	await browser.close();
 }
