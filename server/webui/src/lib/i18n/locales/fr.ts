@@ -5,7 +5,7 @@ export const fr: TranslationDictionary = {
 		title: 'Diagramme',
 		preview: 'Aperçu du diagramme',
 		preparing: 'Préparation du diagramme…',
-		invalid: 'Impossible d’afficher le diagramme. Source originale :',
+		invalid: 'Impossible d’afficher le diagramme.',
 		export: 'Exporter le diagramme en',
 		exportError: 'Impossible d’exporter le diagramme. Veuillez réessayer.'
 	},
@@ -13,7 +13,7 @@ export const fr: TranslationDictionary = {
 		preview: 'Aperçu du graphique',
 		title: 'Graphique',
 		preparing: 'Préparation du graphique…',
-		invalid: 'Données de graphique invalides — JSON original',
+		invalid: 'Impossible d’afficher le graphique.',
 		export: 'Exporter le graphique en',
 		exportError: 'Impossible d’exporter ce graphique. Réessayez.',
 		legend: 'Légende du graphique — activer les séries',
@@ -21,6 +21,7 @@ export const fr: TranslationDictionary = {
 		share: 'Part'
 	},
 	common: {
+		showCode: 'Afficher le code',
 		saveSettings: 'Enregistrer les paramètres',
 		save: 'Enregistrer',
 		reset: 'Réinitialiser',
@@ -561,6 +562,11 @@ export const fr: TranslationDictionary = {
 		retryConnection: 'Réessayer la connexion',
 		retrying: 'Nouvelle tentative...',
 		serverUnavailable: 'Serveur indisponible',
+		authenticationRequired: 'Échec de l’authentification auprès du serveur',
+		connectionUnavailableHelp:
+			'Impossible de se connecter au serveur. Actualisez la page lorsque le serveur est disponible ou vérifiez les paramètres de connexion.',
+		refreshPage: 'Actualiser la page',
+		connectionSettings: 'Paramètres de connexion',
 		initializingConnection: 'Initialisation de la connexion au serveur llampart...',
 		connectionErrorTryAgain: 'Erreur de connexion — veuillez réessayer',
 		serverAddressPlaceholder:

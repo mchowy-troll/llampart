@@ -5,7 +5,7 @@ export const it: TranslationDictionary = {
 		title: 'Diagramma',
 		preview: 'Anteprima del diagramma',
 		preparing: 'Preparazione del diagramma…',
-		invalid: 'Impossibile visualizzare il diagramma. Codice originale:',
+		invalid: 'Impossibile visualizzare il diagramma.',
 		export: 'Esporta diagramma come',
 		exportError: 'Impossibile esportare il diagramma. Riprova.'
 	},
@@ -13,7 +13,7 @@ export const it: TranslationDictionary = {
 		preview: 'Anteprima del grafico',
 		title: 'Grafico',
 		preparing: 'Preparazione del grafico…',
-		invalid: 'Dati del grafico non validi — JSON originale',
+		invalid: 'Impossibile visualizzare il grafico.',
 		export: 'Esporta grafico come',
 		exportError: 'Impossibile esportare il grafico. Riprova.',
 		legend: 'Legenda del grafico — attiva le serie',
@@ -21,6 +21,7 @@ export const it: TranslationDictionary = {
 		share: 'Quota'
 	},
 	common: {
+		showCode: 'Mostra codice',
 		saveSettings: 'Salva impostazioni',
 		save: 'Salva',
 		reset: 'Reimposta',
@@ -554,6 +555,11 @@ export const it: TranslationDictionary = {
 		retryConnection: 'Riprova connessione',
 		retrying: 'Nuovo tentativo...',
 		serverUnavailable: 'Server non disponibile',
+		authenticationRequired: 'Autenticazione del server non riuscita',
+		connectionUnavailableHelp:
+			'Impossibile connettersi al server. Aggiorna la pagina quando il server è disponibile oppure controlla le impostazioni di connessione.',
+		refreshPage: 'Aggiorna pagina',
+		connectionSettings: 'Impostazioni di connessione',
 		initializingConnection: 'Inizializzazione della connessione al server llampart...',
 		connectionErrorTryAgain: 'Errore di connessione - riprova',
 		serverAddressPlaceholder:

@@ -1,9 +1,12 @@
 <script lang="ts">
 	import type { ChartResult } from '$lib/charts/chart-schema';
-	import { copyCodeToClipboard } from '$lib/utils/clipboard';
 	import { t } from '$lib/i18n';
-	import { Button } from '$lib/components/ui/button';
+	import VisualizationFallback from './VisualizationFallback.svelte';
+	import { chartSourceTitle } from '$lib/charts/chart-title';
 	let { result, source }: { result: ChartResult; source: string } = $props();
+	let title = $derived(
+		(result.success ? result.spec.title : chartSourceTitle(source)) || t('charts.title')
+	);
 	let renderer = $derived(result.success ? loadRenderer() : null);
 
 	async function loadRenderer() {
@@ -18,22 +21,7 @@
 </script>
 
 {#snippet fallback()}
-	<div class="llampart-chart-fallback code-block-wrapper">
-		<div class="code-block-header">
-			<span>{t('charts.invalid')}</span>
-			<Button
-				variant="ghost"
-				size="sm"
-				onclick={() =>
-					copyCodeToClipboard(
-						source,
-						t('common.codeCopiedToClipboard'),
-						t('common.failedToCopyCode')
-					)}>{t('common.copyCode')}</Button
-			>
-		</div>
-		<div class="code-block-scroll-container"><pre><code>{source}</code></pre></div>
-	</div>
+	<VisualizationFallback {source} {title} kind="chart" />
 {/snippet}
 
 {#if result.success && renderer}

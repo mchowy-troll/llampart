@@ -17,7 +17,9 @@ export class ProviderConnectionStore {
 	status = $state<ProviderConnectionStatus>('idle');
 	errorMessage = $state('');
 	hasDisconnected = $state(false);
+	authenticationError = $state(false);
 
+	private displayedKey: string | null = null;
 	private activeKey: string | null = null;
 	private pending: { source: ProviderConnectionSource; fetchImpl: typeof fetch } | null = null;
 	private running: Promise<boolean> | null = null;
@@ -37,7 +39,13 @@ export class ProviderConnectionStore {
 		fetchImpl: typeof fetch = globalThis.fetch
 	): Promise<boolean> {
 		const key = sourceKey(source);
-		if (this.running && this.activeKey === key) return this.running;
+		if (this.displayedKey !== key) {
+			this.displayedKey = key;
+			this.hasDisconnected = false;
+			this.authenticationError = false;
+			this.errorMessage = '';
+		}
+		if (this.running && this.activeKey === key && !this.pending) return this.running;
 
 		this.pending = { source, fetchImpl };
 		if (this.running) return this.running;
@@ -72,10 +80,17 @@ export class ProviderConnectionStore {
 					this.status = 'connected';
 					this.errorMessage = '';
 					this.hasDisconnected = false;
+					this.authenticationError = false;
 				} else {
 					this.status = 'disconnected';
 					this.errorMessage = result.errorMessage ?? '';
 					this.hasDisconnected = true;
+					// OpenAI-family adapters expose discovery HTTP failures as a
+					// bounded diagnostic rather than a status field.
+					this.authenticationError =
+						result.status === 401 ||
+						result.status === 403 ||
+						/^Model discovery failed \((401|403)\)$/.test(result.errorMessage ?? '');
 				}
 			}
 

@@ -35,6 +35,61 @@ afterEach(() => {
 });
 
 describe('response preferences through ChatService requests', () => {
+	it.each(['llama-server', 'openai-compatible', 'vllm'])(
+		'sends compliant visualization preferences independently through %s without changing history',
+		async (apiProvider) => {
+			const history: ApiChatMessageData[] = [
+				{ role: 'system', content: 'Manual system: use a plain-text explanation.' },
+				{ role: 'user', content: 'Saved question' },
+				{ role: 'assistant', content: 'Saved answer' },
+				{ role: 'user', content: 'Compare the data and explain the workflow.' }
+			];
+			const before = structuredClone(history);
+			for (const responsePrefCharts of [false, true]) {
+				for (const responsePrefDiagrams of [false, true]) {
+					settingsStore.config = {
+						...SETTING_CONFIG_DEFAULT,
+						apiProvider,
+						serverBaseUrl: 'http://localhost:8080',
+						responsePrefCharts,
+						responsePrefDiagrams
+					};
+					const context = ChatService.createProviderRequestContext();
+					await ChatService.sendMessage(history, { stream: true, model: 'test' }, 'conversation');
+					const messages = bodies.at(-1)!.messages;
+					const text = String(messages[0].content);
+					expect(text.split(CHART_ONLY)).toHaveLength(2);
+					expect(text.split(MERMAID_INSTRUCTIONS)).toHaveLength(2);
+					for (const { key, instruction } of RESPONSE_PREFERENCES)
+						expect(text.split(instruction)).toHaveLength(settingsStore.config[key] ? 2 : 1);
+					expect(text.includes('You MUST follow the llampart chart format instructions')).toBe(
+						responsePrefCharts
+					);
+					expect(text.includes('You MUST follow the llampart diagram format instructions')).toBe(
+						responsePrefDiagrams
+					);
+					expect(text).toBe(
+						[
+							CHART_ONLY,
+							MERMAID_INSTRUCTIONS,
+							buildResponsePreferenceInstructions(settingsStore.config),
+							history[0].content
+						]
+							.filter(Boolean)
+							.join('\n\n')
+					);
+					expect(messages.slice(1)).toEqual(history.slice(1));
+					expect(history).toEqual(before);
+					if (apiProvider === 'llama-server') {
+						await ChatService.preEncode(history, context, 'test', true);
+						expect(bodies.at(-1)!.messages).toEqual(messages);
+						await ChatService.preEncode(messages, context, 'test', true);
+						expect(bodies.at(-1)!.messages).toEqual(messages);
+					}
+				}
+			}
+		}
+	);
 	it.each([
 		{ enabled: false, manual: '' },
 		{ enabled: false, manual: 'Manual system prompt' },

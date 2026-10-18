@@ -374,8 +374,18 @@
 			if (preceding.filter((block) => block.kind === 'chart').length >= chartLimit)
 				result = { success: false };
 			if (!result) {
-				const { parseChart } = await import('$lib/charts/chart-schema');
-				result = parseChart(source);
+				try {
+					const { parseChart } = await import('$lib/charts/chart-schema');
+					result = parseChart(source);
+				} catch (error) {
+					// A missing validator chunk must affect only this visualization,
+					// not replace the entire message with raw Markdown/source.
+					console.error(
+						'Chart validation module failed:',
+						error instanceof Error ? error.name : 'Unknown error'
+					);
+					result = { success: false };
+				}
 				chartCache.set(source, result);
 			}
 			return { kind: 'chart', id, contentHash: hash, chart: { result, source } };

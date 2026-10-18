@@ -2,6 +2,7 @@ import type { Code } from 'mdast';
 
 export const CHART_LANGUAGE = 'llampart-chart';
 export const MAX_MESSAGE_CHARTS = 8;
+export const MAX_CHART_SOURCE_BYTES = 128 * 1024;
 
 /** Lightweight fence bookkeeping only; it never parses chart JSON. */
 export function scanChartFences(markdown: string, language = CHART_LANGUAGE) {

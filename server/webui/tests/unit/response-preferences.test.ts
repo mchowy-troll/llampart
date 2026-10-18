@@ -7,7 +7,8 @@ import {
 	RESPONSE_PREFERENCES,
 	buildResponsePreferenceInstructions,
 	withResponsePreferences,
-	withChatInstructions
+	withChatInstructions,
+	type ResponsePreferences
 } from '$lib/utils/response-preferences';
 import type { ApiChatMessageData } from '$lib/types/api';
 import { getDictionary } from '$lib/i18n';
@@ -17,11 +18,84 @@ const all = Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }) => [key, true]
 describe('response preferences contract', () => {
 	it('restricts diagram preferences to the four supported families', () => {
 		const instruction = buildResponsePreferenceInstructions({ responsePrefDiagrams: true });
-		expect(instruction).toContain('you MUST include a valid Mermaid diagram');
+		expect(instruction).toContain('you MUST include a valid fenced mermaid diagram');
 		expect(instruction).toContain('Use only flowchart, stateDiagram-v2, mindmap, or gantt.');
-		expect(instruction).toContain('Never invent steps or relationships.');
+		expect(instruction).toContain('without inventing steps or relationships.');
 		expect(instruction).not.toMatch(/sequence|entity relationships?|\ber\b|erDiagram/i);
+		expect(instruction).not.toContain('llampart-diagram');
 	});
+	it.each([
+		{
+			key: 'responsePrefCharts',
+			fragments: [
+				'valid fenced llampart-chart JSON block whenever a compliant chart can be produced',
+				'You MUST follow the llampart chart format instructions',
+				'required JSON schema, supported chart types, accurate data, and all technical limits',
+				'Check JSON syntax, schema compliance, data accuracy, and limits before responding.',
+				'Simplify the visualization when necessary without inventing or distorting data.',
+				'If a compliant chart cannot be created, use a Markdown table or clear text instead.',
+				'Never output an invalid llampart-chart block.'
+			]
+		},
+		{
+			key: 'responsePrefDiagrams',
+			fragments: [
+				'valid fenced mermaid diagram whenever a compliant diagram can be produced',
+				'You MUST follow the llampart diagram format instructions',
+				'supported diagram families, valid Mermaid syntax, safety restrictions, and all technical size and complexity limits',
+				'Check Mermaid syntax, safety, and limits before responding.',
+				'Simplify overly complex diagrams without inventing steps or relationships.',
+				'If a compliant diagram cannot be created, use a clear Markdown or text explanation instead.',
+				'Never output invalid Mermaid code.'
+			]
+		}
+	] as const)(
+		'requires technical compliance, preflight and a safe alternative for $key',
+		({ key, fragments }) => {
+			const text = buildResponsePreferenceInstructions({ [key]: true });
+			for (const fragment of fragments) expect(text).toContain(fragment);
+			// Numeric limits remain exclusively in the independent technical contracts.
+			expect(text).not.toMatch(/\b\d+\s*(?:KiB|bytes|lines|edges|rows|series|diagrams|charts)\b/i);
+		}
+	);
+	it.each([
+		{ responsePrefCharts: false, responsePrefDiagrams: false },
+		{ responsePrefCharts: true, responsePrefDiagrams: false },
+		{ responsePrefCharts: false, responsePrefDiagrams: true },
+		{ responsePrefCharts: true, responsePrefDiagrams: true }
+	])(
+		'keeps both visualization preferences independent and technical contracts exactly once: %j',
+		(settings) => {
+			const manual = 'Manual system: explain in plain text and preserve this exact message.';
+			const history: ApiChatMessageData[] = [
+				{ role: 'system', content: manual },
+				{ role: 'user', content: 'Saved question' },
+				{ role: 'assistant', content: 'Saved answer' }
+			];
+			const before = structuredClone(history);
+			const result = withChatInstructions(history, settings);
+			const text = String(result[0].content);
+			const enabled: ResponsePreferences = settings;
+			expect(text.split(CHART_INSTRUCTIONS)).toHaveLength(2);
+			expect(text.split(MERMAID_INSTRUCTIONS)).toHaveLength(2);
+			for (const { key, instruction } of RESPONSE_PREFERENCES)
+				expect(text.split(instruction)).toHaveLength(enabled[key] ? 2 : 1);
+			expect(text).toBe(
+				[
+					CHART_INSTRUCTIONS,
+					MERMAID_INSTRUCTIONS,
+					buildResponsePreferenceInstructions(settings),
+					manual
+				]
+					.filter(Boolean)
+					.join('\n\n')
+			);
+			expect(withChatInstructions(result, settings)).toEqual(result);
+			expect(withChatInstructions(result, {})).toEqual(withChatInstructions(history, {}));
+			expect(history).toEqual(before);
+			expect(result.slice(1)).toEqual(history.slice(1));
+		}
+	);
 	it('defaults all nine off and preserves existing settings on upgrade', () => {
 		expect(RESPONSE_PREFERENCES).toHaveLength(9);
 		const upgraded = parseSettingsConfig({

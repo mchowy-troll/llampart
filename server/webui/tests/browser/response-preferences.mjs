@@ -129,6 +129,36 @@ async function screenshot(name) {
 	await page.screenshot({ path: `${artifacts}/${name}.png` });
 }
 
+function assertVisualizationContract(text, charts, diagrams) {
+	assert.equal(text.split('llampart chart format (').length, 2);
+	assert.equal(text.split('llampart diagram format (').length, 2);
+	for (const [enabled, fragments] of [
+		[
+			charts,
+			[
+				'You MUST follow the llampart chart format instructions',
+				'Check JSON syntax, schema compliance, data accuracy, and limits before responding.',
+				'If a compliant chart cannot be created, use a Markdown table or clear text instead.',
+				'Never output an invalid llampart-chart block.'
+			]
+		],
+		[
+			diagrams,
+			[
+				'You MUST follow the llampart diagram format instructions',
+				'Check Mermaid syntax, safety, and limits before responding.',
+				'If a compliant diagram cannot be created, use a clear Markdown or text explanation instead.',
+				'Never output invalid Mermaid code.'
+			]
+		]
+	]) {
+		for (const fragment of fragments) assert.equal(text.split(fragment).length, enabled ? 2 : 1);
+	}
+	assert(!text.includes('llampart-diagram'));
+	assert.equal(text.split('<llampart-response-preferences>').length, charts || diagrams ? 2 : 1);
+	assert(text.endsWith(manual));
+}
+
 try {
 	await page.goto(process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40138');
 	await page.waitForSelector('textarea');
@@ -136,6 +166,7 @@ try {
 	const baseline = await send('Pierwsza wiadomość bez aktywnych preferencji.');
 	assert(baseline.endsWith(manual));
 	assert(!baseline.includes('<llampart-response-preferences>'));
+	assertVisualizationContract(baseline, false, false);
 	await open();
 	assert.deepEqual(
 		await dialog
@@ -211,6 +242,7 @@ try {
 	assert(enabled.includes(preview));
 	assert(enabled.endsWith(manual));
 	assert.equal(enabled.split('Cartesian example:').length, 2);
+	assertVisualizationContract(enabled, true, true);
 	await page.reload();
 	await page.waitForSelector('textarea');
 	await open();
@@ -268,6 +300,25 @@ try {
 	assert(!disabled.includes('<llampart-response-preferences>'));
 	assert(disabled.includes('Supported types: line, area, bar, donut.'));
 	assert(disabled.endsWith(manual));
+	assertVisualizationContract(disabled, false, false);
+	// Validate the real request contract for all four independent checkbox states.
+	// The fixture response is intentionally not a model-compliance assertion.
+	for (const [charts, diagrams] of [
+		[true, false],
+		[false, true],
+		[true, true],
+		[false, false]
+	]) {
+		await open();
+		await page.locator('#responsePrefCharts').setChecked(charts);
+		await page.locator('#responsePrefDiagrams').setChecked(diagrams);
+		await save();
+		assertVisualizationContract(
+			await send(`Preferencje wizualizacji: charts=${charts}, diagrams=${diagrams}.`),
+			charts,
+			diagrams
+		);
+	}
 	await open();
 	for (const key of keys) await page.locator(`#${key}`).check();
 	await save();
@@ -298,6 +349,9 @@ try {
 	);
 	console.log(
 		'PASS real captured chat requests before/after Save in existing conversation, manual prompt unchanged, chart schema once, no generated instructions in IndexedDB or external font requests'
+	);
+	console.log(
+		'PASS chart/diagram compliance, preflight, safe text fallback, independent checkbox combinations and both technical contracts exactly once in captured requests'
 	);
 } finally {
 	await browser.close();

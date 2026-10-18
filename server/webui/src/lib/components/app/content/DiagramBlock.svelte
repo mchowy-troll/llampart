@@ -8,7 +8,7 @@
 	import { diagramTypography } from '$lib/diagrams/mermaid-presentation';
 	import { mountDiagram } from '$lib/diagrams/diagram-svg';
 	import { diagramTitle } from '$lib/diagrams/diagram-title';
-	import SyntaxHighlightedCode from './SyntaxHighlightedCode.svelte';
+	import VisualizationFallback from './VisualizationFallback.svelte';
 
 	let {
 		source,
@@ -70,7 +70,20 @@
 				if (!disposed && revision === request && !controller.signal.aborted) svg = result;
 			} catch (error) {
 				if (!disposed && revision === request && !controller.signal.aborted) {
-					console.error(`Mermaid ${stage} failed:`, error);
+					// Parser errors can contain the original source. Log the stage and
+					// policy reason / parser line, not model/conversation content.
+					const message = error instanceof Error ? error.message : '';
+					const line = /^Parse error on line (\d+):/.exec(message)?.[1];
+					console.error(
+						`Mermaid ${stage} failed:`,
+						stage === 'policy'
+							? message
+							: line
+								? `Syntax error at line ${line}`
+								: error instanceof Error
+									? error.name
+									: 'Unknown error'
+					);
 					invalid = true;
 				}
 			}
@@ -107,10 +120,7 @@
 
 <div bind:this={frame} class="diagram-typography">
 	{#if invalid}
-		<div class="llampart-diagram-fallback">
-			<div role="status">{t('diagrams.invalid')}</div>
-			<SyntaxHighlightedCode code={source} language="mermaid" />
-		</div>
+		<VisualizationFallback {source} {title} kind="diagram" />
 	{:else if svg}
 		<figure class="llampart-visualization-frame llampart-diagram-frame" aria-label={title}>
 			<VisualizationHeader

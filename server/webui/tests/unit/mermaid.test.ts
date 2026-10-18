@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { remark } from 'remark';
-import { diagramType, MAX_DIAGRAM_SOURCE, DIAGRAM_TYPES } from '$lib/diagrams/mermaid-policy';
+import {
+	diagramType,
+	MAX_DIAGRAM_SOURCE,
+	MAX_DIAGRAM_LINES,
+	MAX_DIAGRAM_EDGES,
+	DIAGRAM_TYPES
+} from '$lib/diagrams/mermaid-policy';
+import { MAX_MESSAGE_DIAGRAMS } from '$lib/markdown/mermaid-blocks';
 import {
 	diagramConfig,
 	diagramTypography,
@@ -82,8 +89,13 @@ describe('Mermaid source boundary', () => {
 			expect(() => diagramType(source)).not.toThrow();
 	});
 	it('keeps the format instruction short and independent of preferences', () => {
-		expect(MERMAID_INSTRUCTIONS.length).toBeLessThan(1000);
+		expect(MERMAID_INSTRUCTIONS.length).toBeLessThan(1600);
 		DIAGRAM_TYPES.forEach((type) => expect(MERMAID_INSTRUCTIONS).toContain(type));
+		expect(MERMAID_INSTRUCTIONS).toContain(`${MAX_MESSAGE_DIAGRAMS} diagrams`);
+		expect(MERMAID_INSTRUCTIONS).toContain(`${MAX_DIAGRAM_SOURCE / 1024} KiB`);
+		expect(MERMAID_INSTRUCTIONS).toContain(`${MAX_DIAGRAM_LINES} lines`);
+		expect(MERMAID_INSTRUCTIONS).toContain(`${MAX_DIAGRAM_EDGES} edges`);
+		expect(MERMAID_INSTRUCTIONS).toContain('Markdown table or text');
 	});
 	it('does not confuse plain label words with active statements', () => {
 		for (const source of [

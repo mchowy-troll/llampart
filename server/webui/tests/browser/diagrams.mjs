@@ -819,7 +819,13 @@ try {
 	]) {
 		await setContent('Przed\n\n' + fence(invalid) + '\n\nPo błędzie.');
 		await assistant.locator('.llampart-diagram-fallback').waitFor();
-		assert((await assistant.innerText()).includes(invalid));
+		assert(!(await assistant.innerText()).includes(invalid));
+		await assistant
+			.locator('.llampart-diagram-fallback')
+			.getByRole('button', { name: 'Pokaż kod', exact: true })
+			.click();
+		assert.equal(await page.locator('.visualization-source').textContent(), invalid);
+		await page.keyboard.press('Escape');
 		assert((await assistant.innerText()).includes('Po błędzie.'));
 	}
 	await setContent(Array.from({ length: 10 }, () => first).join('\n\n'));

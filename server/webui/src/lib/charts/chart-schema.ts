@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { MAX_MESSAGE_CHARTS } from '$lib/markdown/chart-blocks';
+import { MAX_CHART_SOURCE_BYTES, MAX_MESSAGE_CHARTS } from '$lib/markdown/chart-blocks';
 
 export const CHART_LIMITS = {
-	sourceBytes: 131072,
+	sourceBytes: MAX_CHART_SOURCE_BYTES,
 	series: 5,
 	points: 500,
 	slices: 20,

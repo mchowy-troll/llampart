@@ -7,9 +7,18 @@
 		code: string;
 		language: string;
 		onOpenChange?: (open: boolean) => void;
+		sourceOnly?: boolean;
+		returnFocus?: HTMLElement | null;
 	}
 
-	let { open = $bindable(), code, language, onOpenChange }: Props = $props();
+	let {
+		open = $bindable(),
+		code,
+		language,
+		onOpenChange,
+		sourceOnly = false,
+		returnFocus
+	}: Props = $props();
 
 	let iframeRef = $state<HTMLIFrameElement | null>(null);
 	let displayLanguage = $derived((language || 'html').trim() || 'html');
@@ -33,6 +42,12 @@
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
 	<Dialog.Content
+		onCloseAutoFocus={(event) => {
+			if (returnFocus?.isConnected) {
+				event.preventDefault();
+				returnFocus.focus();
+			}
+		}}
 		class="llampart-code-preview-dialog-content table-preview-dialog-content llampart-attachment-preview-dialog-content z-[999999] flex !max-h-[80dvh] !w-[80vw] !max-w-[80vw] flex-col gap-0 overflow-hidden p-0"
 	>
 		<div
@@ -49,18 +64,50 @@
 			<div
 				class="table-preview-body llampart-attachment-preview-dialog-body llampart-code-preview-dialog-body"
 			>
-				<iframe
-					bind:this={iframeRef}
-					title={`${t('common.previewCode')} ${displayLanguageLabel}`}
-					sandbox="allow-scripts"
-					class="llampart-code-preview-iframe"
-				></iframe>
+				{#if sourceOnly}
+					<!-- A scrollable source region must be keyboard reachable. -->
+					<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+					<div
+						class="visualization-source-scroll"
+						tabindex="0"
+						role="region"
+						aria-label={t('common.previewCode')}
+					>
+						<pre class="visualization-source"><code>{code}</code></pre>
+					</div>
+				{:else}
+					<iframe
+						bind:this={iframeRef}
+						title={`${t('common.previewCode')} ${displayLanguageLabel}`}
+						sandbox="allow-scripts"
+						class="llampart-code-preview-iframe"
+					></iframe>
+				{/if}
 			</div>
 		</div>
 	</Dialog.Content>
 </Dialog.Root>
 
 <style>
+	.visualization-source-scroll {
+		min-width: 0;
+		max-width: 100%;
+		max-height: calc(80dvh - 7rem);
+		overflow: auto;
+		overscroll-behavior: contain;
+	}
+	.visualization-source {
+		display: block !important;
+		width: max-content;
+		min-width: 100%;
+		margin: 0;
+		padding: 0.75rem;
+		white-space: pre;
+		overflow-wrap: normal;
+		word-break: normal;
+		font-size: 0.875rem;
+		line-height: 1.5 !important;
+	}
 	.llampart-code-preview-dialog-shell {
 		width: 100%;
 	}

@@ -20,13 +20,13 @@ export const RESPONSE_PREFERENCES = [
 		key: 'responsePrefCharts',
 		name: 'Charts',
 		instruction:
-			'When numeric data support a meaningful comparison, trend, or distribution, you MUST include a valid fenced llampart-chart JSON block. Do not replace the chart with prose alone. Never invent data. Do not chart a single number or insufficient data.'
+			'When numeric data support a meaningful comparison, trend, or distribution, you MUST include a valid fenced llampart-chart JSON block whenever a compliant chart can be produced. You MUST follow the llampart chart format instructions, including the required JSON schema, supported chart types, accurate data, and all technical limits. Check JSON syntax, schema compliance, data accuracy, and limits before responding. Simplify the visualization when necessary without inventing or distorting data. Do not chart a single number or insufficient data. If a compliant chart cannot be created, use a Markdown table or clear text instead. Never output an invalid llampart-chart block.'
 	},
 	{
 		key: 'responsePrefDiagrams',
 		name: 'Diagrams',
 		instruction:
-			'When a process, workflow, state transition, hierarchy, or project schedule would be clearer visually, you MUST include a valid Mermaid diagram. Use only flowchart, stateDiagram-v2, mindmap, or gantt. Never invent steps or relationships.'
+			'When a process, workflow, state transition, hierarchy, or project schedule would be clearer visually, you MUST include a valid fenced mermaid diagram whenever a compliant diagram can be produced. You MUST follow the llampart diagram format instructions, including supported diagram families, valid Mermaid syntax, safety restrictions, and all technical size and complexity limits. Use only flowchart, stateDiagram-v2, mindmap, or gantt. Check Mermaid syntax, safety, and limits before responding. Simplify overly complex diagrams without inventing steps or relationships. If a compliant diagram cannot be created, use a clear Markdown or text explanation instead. Never output invalid Mermaid code.'
 	},
 	{
 		key: 'responsePrefNoDecorations',

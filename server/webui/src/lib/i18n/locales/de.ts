@@ -5,7 +5,7 @@ export const de: TranslationDictionary = {
 		title: 'Diagramm',
 		preview: 'Diagrammvorschau',
 		preparing: 'Diagramm wird vorbereitet…',
-		invalid: 'Diagramm kann nicht angezeigt werden. Originalquelltext:',
+		invalid: 'Das Diagramm konnte nicht angezeigt werden.',
 		export: 'Diagramm exportieren als',
 		exportError: 'Diagramm konnte nicht exportiert werden. Bitte erneut versuchen.'
 	},
@@ -13,7 +13,7 @@ export const de: TranslationDictionary = {
 		preview: 'Diagrammvorschau',
 		title: 'Diagramm',
 		preparing: 'Diagramm wird vorbereitet…',
-		invalid: 'Ungültige Diagrammdaten — ursprüngliches JSON',
+		invalid: 'Das Schaubild konnte nicht angezeigt werden.',
 		export: 'Diagramm exportieren als',
 		exportError: 'Das Diagramm konnte nicht exportiert werden. Bitte erneut versuchen.',
 		legend: 'Diagrammlegende — Reihen umschalten',
@@ -21,6 +21,7 @@ export const de: TranslationDictionary = {
 		share: 'Anteil'
 	},
 	common: {
+		showCode: 'Code anzeigen',
 		saveSettings: 'Einstellungen speichern',
 		save: 'Speichern',
 		reset: 'Zurücksetzen',
@@ -553,6 +554,11 @@ export const de: TranslationDictionary = {
 		retryConnection: 'Verbindung erneut versuchen',
 		retrying: 'Erneuter Versuch...',
 		serverUnavailable: 'Server nicht verfügbar',
+		authenticationRequired: 'Serverauthentifizierung fehlgeschlagen',
+		connectionUnavailableHelp:
+			'Keine Verbindung zum Server möglich. Laden Sie die Seite neu, wenn der Server wieder verfügbar ist, oder prüfen Sie die Verbindungseinstellungen.',
+		refreshPage: 'Seite neu laden',
+		connectionSettings: 'Verbindungseinstellungen',
 		initializingConnection: 'Verbindung zum llampart-Server wird initialisiert...',
 		connectionErrorTryAgain: 'Verbindungsfehler – bitte versuchen Sie es erneut',
 		serverAddressPlaceholder:

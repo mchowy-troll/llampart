@@ -19,6 +19,7 @@ const content =
 	fixture + '\n\n```html\n' + code + '```\n\n| Miasto | Liczba |\n|---|---|\n| Łódź | 42 |\n';
 let paths = {
 	chart: '/src/lib/components/app/content/ChartFrame.svelte',
+	schema: '/src/lib/charts/chart-schema.ts',
 	module: '/src/lib/diagrams/mermaid-runtime.ts',
 	engine: '/node_modules/.vite/deps/mermaid.js'
 };
@@ -29,6 +30,7 @@ if (process.env.LLAMPART_TEST_PRODUCTION) {
 	paths = Object.fromEntries(
 		Object.entries({
 			chart: 'src/lib/components/app/content/ChartFrame.svelte',
+			schema: 'src/lib/charts/chart-schema.ts',
 			module: 'src/lib/diagrams/mermaid-runtime.ts',
 			engine: 'node_modules/mermaid/dist/mermaid.core.mjs'
 		}).map(([name, key]) => [name, '/' + manifest[key].file])
@@ -43,11 +45,13 @@ const reports = [];
 try {
 	for (const fault of [
 		'none',
+		'chart-schema',
 		'chart-import',
 		'chart-render',
 		'mermaid-module',
 		'mermaid-engine'
 	]) {
+		if (process.env.LLAMPART_TEST_FAULT && process.env.LLAMPART_TEST_FAULT !== fault) continue;
 		const context = await browser.newContext({
 			viewport: { width: 1600, height: 1200 },
 			acceptDownloads: true,
@@ -100,11 +104,14 @@ try {
 		page.on('requestfailed', (request) =>
 			report.network.push({ url: request.url(), failure: request.failure() })
 		);
-		const failedPath = fault.startsWith('chart')
-			? paths.chart
-			: fault === 'mermaid-module'
-				? paths.module
-				: paths.engine;
+		const failedPath =
+			fault === 'chart-schema'
+				? paths.schema
+				: fault.startsWith('chart')
+					? paths.chart
+					: fault === 'mermaid-module'
+						? paths.module
+						: paths.engine;
 		const matcher = (url) =>
 			!url.searchParams.has('lifecycleReal') &&
 			(url.pathname === failedPath ||
@@ -164,13 +171,15 @@ export default function(anchor, props) {
 				{ chart, expected: fault === 'chart-render' ? 3 : 4 }
 			);
 			const label =
-				fault === 'chart-import'
-					? 'Chart renderer import failed:'
-					: fault === 'chart-render'
-						? 'Chart rendering failed:'
-						: fault === 'mermaid-module'
-							? 'Mermaid module failed:'
-							: 'Mermaid render failed:';
+				fault === 'chart-schema'
+					? 'Chart validation module failed:'
+					: fault === 'chart-import'
+						? 'Chart renderer import failed:'
+						: fault === 'chart-render'
+							? 'Chart rendering failed:'
+							: fault === 'mermaid-module'
+								? 'Mermaid module failed:'
+								: 'Mermaid render failed:';
 			assert(
 				report.errors.some((message) => message.includes(label)),
 				`Diagnostic: ${label}`
@@ -178,6 +187,21 @@ export default function(anchor, props) {
 			if (fault === 'chart-render')
 				assert(report.errors.some((message) => message.includes('lifecycle renderer sentinel')));
 			else assert(report.network.some((request) => matcher(new URL(request.url))));
+			const fallback = assistant
+				.locator(chart ? '.llampart-chart-fallback' : '.llampart-diagram-fallback')
+				.first();
+			const original = fixture.match(
+				new RegExp('```' + (chart ? 'llampart-chart' : 'mermaid') + '\\n([\\s\\S]*?)\\n```')
+			)[1];
+			assert.equal(await fallback.locator('pre').count(), 0);
+			const show = fallback.getByRole('button', { name: 'Pokaż kod', exact: true });
+			await show.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+			await show.click();
+			assert.equal(await page.locator('.visualization-source').textContent(), original);
+			await page.keyboard.press('Escape');
+			await page.locator('.visualization-source').waitFor({ state: 'hidden' });
+			await fallback.getByRole('button', { name: 'Kopiuj kod', exact: true }).click();
+			assert.equal(await page.evaluate(() => navigator.clipboard.readText()), original);
 			await page.unroute(matcher);
 			// A full document reload must discard failed module promises/boundaries without editing stored Markdown.
 			await page.reload();

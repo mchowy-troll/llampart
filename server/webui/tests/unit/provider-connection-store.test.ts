@@ -10,6 +10,89 @@ function jsonResponse(data: unknown, status = 200): Response {
 }
 
 describe('provider connection store', () => {
+	it('keeps the latest source when switching A → B → A during a probe', async () => {
+		const store = new ProviderConnectionStore();
+		const a = {
+			providerId: API_PROVIDER_IDS.LLAMA_SERVER,
+			serverBaseUrl: 'http://a.test',
+			apiKey: ''
+		};
+		const b = { ...a, providerId: API_PROVIDER_IDS.VLLM };
+		let resolve!: (response: Response) => void;
+		const slow = vi.fn(
+			() =>
+				new Promise<Response>((done) => {
+					resolve = done;
+				})
+		);
+		const skipped = vi.fn().mockResolvedValue(jsonResponse({}, 401));
+		const latest = vi
+			.fn()
+			.mockResolvedValue(jsonResponse({ default_generation_settings: {}, build_info: {} }));
+		const running = store.check(a, slow);
+		void store.check(b, skipped);
+		void store.check(a, latest);
+		resolve(jsonResponse({}, 503));
+		await running;
+		expect(skipped).not.toHaveBeenCalled();
+		expect(latest).toHaveBeenCalledTimes(1);
+		expect(store.status).toBe('connected');
+		expect(store.hasDisconnected).toBe(false);
+	});
+	it.each(Object.values(API_PROVIDER_IDS))(
+		'distinguishes offline/authentication and recovers for %s',
+		async (providerId) => {
+			const store = new ProviderConnectionStore();
+			const source = { providerId, serverBaseUrl: 'http://localhost:8080', apiKey: '' };
+			await store.check(source, vi.fn().mockRejectedValue(new TypeError('Failed to fetch')));
+			expect(store.hasDisconnected).toBe(true);
+			expect(store.authenticationError).toBe(false);
+			for (const status of [401, 403]) {
+				await store.check(source, vi.fn().mockResolvedValue(jsonResponse({}, status)));
+				expect(store.authenticationError).toBe(true);
+			}
+			await store.check(
+				source,
+				vi
+					.fn()
+					.mockResolvedValue(
+						jsonResponse(
+							providerId === API_PROVIDER_IDS.LLAMA_SERVER
+								? { default_generation_settings: {}, build_info: {} }
+								: { object: 'list', data: [{ id: 'model-a' }] }
+						)
+					)
+			);
+			expect(store.status).toBe('connected');
+			expect(store.hasDisconnected).toBe(false);
+			expect(store.authenticationError).toBe(false);
+		}
+	);
+
+	it('does not show a previous provider failure while validating a new source', async () => {
+		const store = new ProviderConnectionStore();
+		const oldSource = {
+			providerId: API_PROVIDER_IDS.LLAMA_SERVER,
+			serverBaseUrl: 'http://old.test',
+			apiKey: ''
+		};
+		await store.check(oldSource, vi.fn().mockResolvedValue(jsonResponse({}, 401)));
+		let resolve!: (response: Response) => void;
+		const pending = store.check(
+			{ ...oldSource, providerId: API_PROVIDER_IDS.VLLM },
+			vi.fn(
+				() =>
+					new Promise<Response>((done) => {
+						resolve = done;
+					})
+			)
+		);
+		expect(store.hasDisconnected).toBe(false);
+		expect(store.authenticationError).toBe(false);
+		resolve(jsonResponse({ object: 'list', data: [{ id: 'vllm-model' }] }));
+		await pending;
+		expect(store.status).toBe('connected');
+	});
 	it('keeps the disconnected notice state while a single retry is running', async () => {
 		const store = new ProviderConnectionStore();
 		const source = {
