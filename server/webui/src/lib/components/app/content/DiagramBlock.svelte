@@ -59,14 +59,20 @@
 			svg = '';
 			invalid = false;
 			exportError = false;
+			let stage: 'policy' | 'module' | 'render' = 'policy';
 			try {
 				if (!enabled) throw new Error('Diagram limit');
 				diagramType(input);
+				stage = 'module';
 				const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
+				stage = 'render';
 				const result = await renderDiagram(input, font, controller.signal);
 				if (!disposed && revision === request && !controller.signal.aborted) svg = result;
-			} catch {
-				if (!disposed && revision === request && !controller.signal.aborted) invalid = true;
+			} catch (error) {
+				if (!disposed && revision === request && !controller.signal.aborted) {
+					console.error(`Mermaid ${stage} failed:`, error);
+					invalid = true;
+				}
 			}
 		}
 		void update();
