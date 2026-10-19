@@ -30,6 +30,7 @@ import { modelsStore } from '$lib/stores/models.svelte';
 import { isAbortError } from '$lib/utils/abort';
 import { projectToolHistory, toolExecutionDescription } from '$lib/utils/tool-lifecycle';
 import { uuid } from '$lib/utils/uuid';
+import { ToolExecutionUnavailableError } from '$lib/utils/tool-registry';
 import {
 	DEFAULT_AGENTIC_CONFIG,
 	NEWLINE_SEPARATOR,
@@ -58,7 +59,8 @@ import type {
 	AgenticConfig,
 	SettingsConfigType,
 	McpServerOverride,
-	ToolEntry
+	ToolEntry,
+	ToolExecutionScope
 } from '$lib/types';
 import { SvelteMap } from 'svelte/reactivity';
 import type {
@@ -313,6 +315,8 @@ class AgenticStore {
 
 	async runAgenticFlow(params: AgenticFlowParams): Promise<AgenticFlowResult> {
 		const { conversationId, messages, options = {}, callbacks, signal, perChatOverrides } = params;
+		const overridesSnapshot = perChatOverrides?.map((override) => ({ ...override }));
+		const toolExecutionScope = mcpStore.createToolExecutionScope(overridesSnapshot);
 		const requestContext =
 			options.providerRequestContext ?? ChatService.createProviderRequestContext();
 		const flowController = new AbortController();
@@ -342,13 +346,13 @@ class AgenticStore {
 			return notHandled();
 		}
 
-		const agenticConfig = this.getConfig(config(), perChatOverrides);
+		const agenticConfig = this.getConfig(config(), overridesSnapshot);
 		if (!agenticConfig.enabled) return notHandled();
 
-		const hasMcpServers = mcpStore.hasEnabledServers(perChatOverrides);
+		const hasMcpServers = mcpStore.hasEnabledServers(overridesSnapshot);
 		let hasMcpConnection = false;
 		if (hasMcpServers) {
-			hasMcpConnection = await mcpStore.ensureInitialized(perChatOverrides);
+			hasMcpConnection = await mcpStore.ensureInitialized(overridesSnapshot);
 			if (flowSignal.aborted || !ChatService.isProviderRequestContextCurrent(requestContext)) {
 				return notHandled();
 			}
@@ -357,7 +361,7 @@ class AgenticStore {
 			}
 		}
 
-		const toolEntries = toolsStore.getEnabledToolEntriesForLLM(requestContext);
+		const toolEntries = toolsStore.getEnabledToolEntriesForLLM(requestContext, toolExecutionScope);
 		if (toolEntries.length === 0) {
 			console.log('[AgenticStore] No tools available, falling back to standard chat');
 			return notHandled();
@@ -398,6 +402,7 @@ class AgenticStore {
 				options,
 				tools,
 				toolEntries,
+				toolExecutionScope,
 				requestContext,
 				agenticConfig,
 				callbacks,
@@ -429,6 +434,7 @@ class AgenticStore {
 		options: AgenticFlowOptions;
 		tools: ReturnType<typeof mcpStore.getToolDefinitionsForLLM>;
 		toolEntries: ToolEntry[];
+		toolExecutionScope: ToolExecutionScope;
 		requestContext: NonNullable<AgenticFlowOptions['providerRequestContext']>;
 		agenticConfig: AgenticConfig;
 		callbacks: AgenticFlowCallbacks;
@@ -440,6 +446,7 @@ class AgenticStore {
 			options,
 			tools,
 			toolEntries,
+			toolExecutionScope,
 			requestContext,
 			agenticConfig,
 			callbacks,
@@ -723,7 +730,14 @@ class AgenticStore {
 					const toolStartTime = performance.now();
 					const toolName = toolCall.function.name;
 					const toolEntry = entriesByApiName.get(toolName);
-					if (!toolEntry) throw new Error(`Tool unavailable: ${toolName}`);
+					if (!toolEntry) {
+						await onToolCallState(identity(), toolCall.id, {
+							status: 'error',
+							error: `Tool unavailable in conversation scope: ${toolName}`
+						});
+						pending.set(toolCall.id, 'error');
+						throw new Error(`Tool unavailable in conversation scope: ${toolName}`);
+					}
 					const permission = await this.requestPermission(conversationId, toolEntry, signal);
 
 					await new Promise((resolve) => setTimeout(resolve, 0));
@@ -746,6 +760,7 @@ class AgenticStore {
 					} else {
 						try {
 							const args = this.parseToolArguments(toolCall.function.arguments);
+							toolsStore.validateToolExecution(toolEntry, requestContext, toolExecutionScope);
 							await onToolCallState?.(identity(), toolCall.id, { status: 'started' });
 							pending.set(toolCall.id, 'started');
 							if (signal?.aborted) {
@@ -756,14 +771,18 @@ class AgenticStore {
 								toolEntry,
 								args,
 								requestContext,
-								signal
+								signal,
+								toolExecutionScope
 							);
 							result = executionResult.content;
 							confirmed = true;
 							status = executionResult.isError ? 'error' : 'completed';
 							if (executionResult.isError) toolSuccess = false;
 						} catch (error) {
-							if (pending.get(toolCall.id) === 'started') {
+							if (
+								pending.get(toolCall.id) === 'started' &&
+								!(error instanceof ToolExecutionUnavailableError)
+							) {
 								await onToolCallState?.(identity(), toolCall.id, {
 									status: 'interrupted_unknown',
 									error: error instanceof Error ? error.message : String(error)

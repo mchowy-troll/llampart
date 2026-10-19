@@ -92,7 +92,7 @@ export type {
 export type { ModelModalities, ModelOption, ModalityCapabilities } from './models';
 
 // Tools types
-export type { ToolEntry, ToolGroup, ServerBuiltinToolInfo } from './tools';
+export type { ToolEntry, ToolExecutionScope, ToolGroup, ServerBuiltinToolInfo } from './tools';
 
 // Settings types
 export type {

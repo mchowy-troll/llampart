@@ -8,3 +8,6 @@ export function resolveToolName<T>(entries: readonly T[]): ToolNameResolution<T>
 	if (entries.length > 1) return { status: 'conflicted' };
 	return { status: 'unique', entry: entries[0] };
 }
+
+/** Known local rejection: no executor was dispatched, unlike an uncertain transport failure. */
+export class ToolExecutionUnavailableError extends Error {}

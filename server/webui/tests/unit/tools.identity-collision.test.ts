@@ -8,17 +8,20 @@ import { agenticStore } from '$lib/stores/agentic.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
+import { buildMcpServerConfig } from '$lib/utils/mcp-config';
 import type {
 	MCPConnection,
+	MCPServerConfig,
 	OpenAIToolDefinition,
 	ProviderRequestContext,
 	Tool,
-	ToolEntry
+	ToolEntry,
+	ToolExecutionScope
 } from '$lib/types';
 
 interface McpHarness {
 	connections: Map<string, MCPConnection>;
-	serverConfigs: Map<string, { url: string; transport?: string; useProxy?: boolean }>;
+	serverConfigs: Map<string, MCPServerConfig>;
 	rebuildToolsIndex(): void;
 	handleToolsListChanged(serverName: string, tools: Tool[]): void;
 }
@@ -27,13 +30,17 @@ interface ToolsHarness {
 	_disabledTools: Set<string>;
 	clear(): void;
 	fetchBuiltinTools(context: ProviderRequestContext): Promise<void>;
-	getEnabledToolEntriesForLLM(context: ProviderRequestContext): ToolEntry[];
+	getEnabledToolEntriesForLLM(
+		context: ProviderRequestContext,
+		scope?: ToolExecutionScope
+	): ToolEntry[];
 	getServerPermissionKeys(entry: ToolEntry): string[];
 	executeTool(
 		entry: ToolEntry,
 		params: Record<string, unknown>,
 		context: ProviderRequestContext,
-		signal?: AbortSignal
+		signal?: AbortSignal,
+		scope?: ToolExecutionScope
 	): Promise<{ content: string; isError?: boolean }>;
 	allTools: ToolEntry[];
 	setToolEnabled(key: string, enabled: boolean): void;
@@ -82,6 +89,12 @@ function definition(name: string, property: string): OpenAIToolDefinition {
 }
 
 function installMcp(serverId: string, definitions: OpenAIToolDefinition[]): void {
+	const servers = mcpStore.getServers().filter((server) => server.id !== serverId);
+	settingsStore.updateConfig(
+		'mcpServers',
+		JSON.stringify([...servers, { id: serverId, enabled: true, url: `https://${serverId}.test` }])
+	);
+	mcpHarness.serverConfigs.set(serverId, buildMcpServerConfig(mcpStore.getServerById(serverId)!)!);
 	const tools = definitions.map(
 		(tool): Tool => ({
 			name: tool.function.name,
@@ -94,6 +107,12 @@ function installMcp(serverId: string, definitions: OpenAIToolDefinition[]): void
 		tools
 	} as MCPConnection);
 	mcpHarness.rebuildToolsIndex();
+}
+
+function executionScope(): ToolExecutionScope {
+	return mcpStore.createToolExecutionScope(
+		mcpStore.getServers().map((server) => ({ serverId: server.id, enabled: true }))
+	);
 }
 
 async function installBuiltin(
@@ -124,6 +143,8 @@ beforeEach(() => {
 		apiKey: 'https://a.test-key'
 	});
 	mcpHarness.connections.clear();
+	mcpHarness.serverConfigs.clear();
+	settingsStore.updateConfig('mcpServers', '[]');
 	store._disabledTools.clear();
 	store.clear();
 	agenticHarness.flowControllers.clear();
@@ -133,6 +154,7 @@ afterEach(() => {
 	vi.restoreAllMocks();
 	vi.unstubAllGlobals();
 	mcpHarness.connections.clear();
+	mcpHarness.serverConfigs.clear();
 	store._disabledTools.clear();
 	store.clear();
 	agenticHarness.flowControllers.clear();
@@ -204,10 +226,10 @@ describe('exact tool identity and collision policy', () => {
 		const builtinExecute = vi.spyOn(ToolsService, 'executeTool');
 		const mcpExecute = vi.spyOn(MCPService, 'callTool');
 
-		expect(store.getEnabledToolEntriesForLLM(source)).toEqual([]);
-		await expect(store.executeTool(select(ToolSource.MCP, 'server-a'), {}, source)).rejects.toThrow(
-			/conflict/i
-		);
+		expect(store.getEnabledToolEntriesForLLM(source, executionScope())).toEqual([]);
+		await expect(
+			store.executeTool(select(ToolSource.MCP, 'server-a'), {}, source, undefined, executionScope())
+		).rejects.toThrow(/conflict/i);
 		expect(builtinExecute).not.toHaveBeenCalled();
 		expect(mcpExecute).not.toHaveBeenCalled();
 	});
@@ -218,13 +240,13 @@ describe('exact tool identity and collision policy', () => {
 		installMcp('server-b', [definition('X', 'argB')]);
 		const execute = vi.spyOn(MCPService, 'callTool');
 
-		expect(store.getEnabledToolEntriesForLLM(source)).toEqual([]);
-		await expect(store.executeTool(select(ToolSource.MCP, 'server-a'), {}, source)).rejects.toThrow(
-			/conflict/i
-		);
-		await expect(store.executeTool(select(ToolSource.MCP, 'server-b'), {}, source)).rejects.toThrow(
-			/conflict/i
-		);
+		expect(store.getEnabledToolEntriesForLLM(source, executionScope())).toEqual([]);
+		await expect(
+			store.executeTool(select(ToolSource.MCP, 'server-a'), {}, source, undefined, executionScope())
+		).rejects.toThrow(/conflict/i);
+		await expect(
+			store.executeTool(select(ToolSource.MCP, 'server-b'), {}, source, undefined, executionScope())
+		).rejects.toThrow(/conflict/i);
 		expect(execute).not.toHaveBeenCalled();
 	});
 
@@ -236,8 +258,10 @@ describe('exact tool identity and collision policy', () => {
 
 		expect(candidates).toHaveLength(2);
 		expect(candidates.map((entry) => entry.key)).toEqual(['builtin:X', 'builtin:X']);
-		expect(store.getEnabledToolEntriesForLLM(source)).toEqual([]);
-		await expect(store.executeTool(candidates[0], {}, source)).rejects.toThrow(/conflict/i);
+		expect(store.getEnabledToolEntriesForLLM(source, executionScope())).toEqual([]);
+		await expect(
+			store.executeTool(candidates[0], {}, source, undefined, executionScope())
+		).rejects.toThrow(/conflict/i);
 		expect(execute).not.toHaveBeenCalled();
 	});
 
@@ -251,8 +275,10 @@ describe('exact tool identity and collision policy', () => {
 		expect(candidates.map((entry) => entry.key)).toEqual(['mcp-server-a:X', 'mcp-server-a:X']);
 		expect(mcpStore.hasTool('X')).toBe(false);
 		expect(mcpStore.getToolDefinitionsForLLM()).toEqual([]);
-		expect(store.getEnabledToolEntriesForLLM(source)).toEqual([]);
-		await expect(store.executeTool(candidates[0], {}, source)).rejects.toThrow(/conflict/i);
+		expect(store.getEnabledToolEntriesForLLM(source, executionScope())).toEqual([]);
+		await expect(
+			store.executeTool(candidates[0], {}, source, undefined, executionScope())
+		).rejects.toThrow(/conflict/i);
 		expect(execute).not.toHaveBeenCalled();
 	});
 
@@ -272,18 +298,22 @@ describe('exact tool identity and collision policy', () => {
 	it('never changes a conflicted owner because connection order or tool lists change', async () => {
 		const source = context('https://a.test', 3);
 		installMcp('server-a', [definition('X', 'argA')]);
-		const offeredByA = store.getEnabledToolEntriesForLLM(source);
+		const offeredByA = store.getEnabledToolEntriesForLLM(source, executionScope());
 		expect(offeredByA.map((entry) => entry.key)).toEqual(['mcp-server-a:X']);
 
 		installMcp('server-b', [definition('X', 'argB')]);
-		expect(store.getEnabledToolEntriesForLLM(source)).toEqual([]);
-		await expect(store.executeTool(offeredByA[0], {}, source)).rejects.toThrow(/conflict/i);
+		expect(store.getEnabledToolEntriesForLLM(source, executionScope())).toEqual([]);
+		await expect(
+			store.executeTool(offeredByA[0], {}, source, undefined, executionScope())
+		).rejects.toThrow(/conflict/i);
 
 		mcpHarness.handleToolsListChanged('server-a', []);
-		expect(store.getEnabledToolEntriesForLLM(source).map((entry) => entry.key)).toEqual([
-			'mcp-server-b:X'
-		]);
-		await expect(store.executeTool(offeredByA[0], {}, source)).rejects.toThrow(/unavailable/i);
+		expect(
+			store.getEnabledToolEntriesForLLM(source, executionScope()).map((entry) => entry.key)
+		).toEqual(['mcp-server-b:X']);
+		await expect(
+			store.executeTool(offeredByA[0], {}, source, undefined, executionScope())
+		).rejects.toThrow(/unavailable/i);
 
 		mcpHarness.handleToolsListChanged('server-a', [
 			{
@@ -292,14 +322,16 @@ describe('exact tool identity and collision policy', () => {
 				inputSchema: definition('X', 'reconnectedArg').function.parameters
 			} as Tool
 		]);
-		expect(store.getEnabledToolEntriesForLLM(source)).toEqual([]);
+		expect(store.getEnabledToolEntriesForLLM(source, executionScope())).toEqual([]);
 
 		mcpHarness.connections.delete('server-a');
 		mcpHarness.rebuildToolsIndex();
-		expect(store.getEnabledToolEntriesForLLM(source).map((entry) => entry.key)).toEqual([
-			'mcp-server-b:X'
-		]);
-		await expect(store.executeTool(offeredByA[0], {}, source)).rejects.toThrow(/unavailable/i);
+		expect(
+			store.getEnabledToolEntriesForLLM(source, executionScope()).map((entry) => entry.key)
+		).toEqual(['mcp-server-b:X']);
+		await expect(
+			store.executeTool(offeredByA[0], {}, source, undefined, executionScope())
+		).rejects.toThrow(/unavailable/i);
 	});
 
 	it('clears A builtins on source switch and rejects their later execution', async () => {

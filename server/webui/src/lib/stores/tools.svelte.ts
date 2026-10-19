@@ -3,6 +3,7 @@ import type {
 	ProviderRequestContext,
 	ToolEntry,
 	ToolExecutionResult,
+	ToolExecutionScope,
 	ToolGroup
 } from '$lib/types';
 import { ToolsService } from '$lib/services/tools.service';
@@ -17,7 +18,7 @@ import {
 	TOOL_SERVER_LABELS
 } from '$lib/constants';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-import { resolveToolName } from '$lib/utils/tool-registry';
+import { resolveToolName, ToolExecutionUnavailableError } from '$lib/utils/tool-registry';
 
 /** Stable selection identity for a tool, shared by disabled tools and permission lookups. */
 function toolKey(source: ToolSource, name: string, serverId?: string): string {
@@ -267,7 +268,19 @@ class ToolsStore {
 		}
 	}
 
-	private availableEntries(context?: ProviderRequestContext): ToolEntry[] {
+	private isInScope(entry: ToolEntry, scope?: ToolExecutionScope): boolean {
+		if (entry.source === ToolSource.BUILTIN) return true;
+		const server = scope?.mcpServers.find((server) => server.serverId === entry.serverId);
+		return (
+			server !== undefined &&
+			mcpStore.isConnectionConfigurationCurrent(server.serverId, server.configuration)
+		);
+	}
+
+	private availableEntries(
+		context?: ProviderRequestContext,
+		scope?: ToolExecutionScope
+	): ToolEntry[] {
 		const byApiName = new SvelteMap<string, ToolEntry[]>();
 		for (const entry of this.allTools) {
 			if (
@@ -288,7 +301,9 @@ class ToolsStore {
 
 		return [...byApiName.values()].flatMap((entries) => {
 			const resolution = resolveToolName(entries);
-			return resolution.status === 'unique' ? [resolution.entry] : [];
+			return resolution.status === 'unique' && this.isInScope(resolution.entry, scope)
+				? [resolution.entry]
+				: [];
 		});
 	}
 
@@ -303,12 +318,18 @@ class ToolsStore {
 	 * Returns enabled tool definitions for sending to the LLM.
 	 * Every duplicate API-visible name is excluded, regardless of enabled state.
 	 */
-	getEnabledToolEntriesForLLM(context: ProviderRequestContext): ToolEntry[] {
-		return this.availableEntries(context).filter((entry) => this.isToolEnabled(entry.key));
+	getEnabledToolEntriesForLLM(
+		context: ProviderRequestContext,
+		scope?: ToolExecutionScope
+	): ToolEntry[] {
+		return this.availableEntries(context, scope).filter((entry) => this.isToolEnabled(entry.key));
 	}
 
-	getEnabledToolsForLLM(context?: ProviderRequestContext): OpenAIToolDefinition[] {
-		const entries = context ? this.getEnabledToolEntriesForLLM(context) : this.availableEntries();
+	getEnabledToolsForLLM(
+		context?: ProviderRequestContext,
+		scope?: ToolExecutionScope
+	): OpenAIToolDefinition[] {
+		const entries = this.availableEntries(context, scope);
 		return entries
 			.filter((entry) => this.isToolEnabled(entry.key))
 			.map((entry) => entry.definition);
@@ -460,36 +481,50 @@ class ToolsStore {
 		);
 	}
 
-	async executeTool(
+	/** Shared preflight, also repeated synchronously at the actual dispatch boundary. */
+	validateToolExecution(
 		entry: ToolEntry,
-		params: Record<string, unknown>,
 		context: ProviderRequestContext,
-		signal?: AbortSignal
-	): Promise<ToolExecutionResult> {
+		scope?: ToolExecutionScope
+	): void {
 		const currentConfig = config();
 		if (
 			getApiProvider(String(currentConfig.apiProvider ?? '')).id !== context.providerId ||
 			String(currentConfig.serverBaseUrl ?? '') !== context.serverBaseUrl ||
 			String(currentConfig.apiKey ?? '') !== context.apiKey
 		) {
-			throw new Error(`Tool unavailable for provider source: ${entry.apiName}`);
+			throw new ToolExecutionUnavailableError(
+				`Tool unavailable for provider source: ${entry.apiName}`
+			);
 		}
 		if (entry.registryGeneration !== this.registryGeneration) {
-			throw new Error(`Tool unavailable: ${entry.apiName}`);
+			throw new ToolExecutionUnavailableError(`Tool unavailable: ${entry.apiName}`);
 		}
 		const candidates = this.allTools.filter((candidate) => candidate.apiName === entry.apiName);
 		const resolution = resolveToolName(candidates);
-		if (resolution.status === 'conflicted') throw new Error(`Tool name conflict: ${entry.apiName}`);
-		if (resolution.status === 'unavailable') throw new Error(`Tool unavailable: ${entry.apiName}`);
+		if (resolution.status === 'conflicted')
+			throw new ToolExecutionUnavailableError(`Tool name conflict: ${entry.apiName}`);
+		if (resolution.status === 'unavailable')
+			throw new ToolExecutionUnavailableError(`Tool unavailable: ${entry.apiName}`);
 		if (
 			entry.source === ToolSource.MCP &&
 			entry.mcpGeneration !== mcpStore.getToolRegistryGeneration()
 		) {
-			throw new Error(`Tool unavailable: ${entry.apiName}`);
+			throw new ToolExecutionUnavailableError(`Tool unavailable: ${entry.apiName}`);
 		}
 		const current = resolution.entry;
-		if (!current || current.key !== entry.key || !this.isToolEnabled(current.key)) {
-			throw new Error(`Tool unavailable: ${entry.apiName}`);
+		if (
+			current.key !== entry.key ||
+			current.source !== entry.source ||
+			current.serverId !== entry.serverId ||
+			!this.isToolEnabled(current.key)
+		) {
+			throw new ToolExecutionUnavailableError(`Tool unavailable: ${entry.apiName}`);
+		}
+		if (!this.isInScope(current, scope)) {
+			throw new ToolExecutionUnavailableError(
+				`Tool unavailable in conversation scope: ${entry.apiName}`
+			);
 		}
 
 		if (entry.source === ToolSource.BUILTIN) {
@@ -500,13 +535,34 @@ class ToolsStore {
 				this.builtinContext.serverBaseUrl !== context.serverBaseUrl ||
 				this.builtinContext.apiKey !== context.apiKey
 			) {
-				throw new Error(`Tool unavailable for provider source: ${entry.apiName}`);
+				throw new ToolExecutionUnavailableError(
+					`Tool unavailable for provider source: ${entry.apiName}`
+				);
 			}
+		}
+	}
+
+	async executeTool(
+		entry: ToolEntry,
+		params: Record<string, unknown>,
+		context: ProviderRequestContext,
+		signal?: AbortSignal,
+		scope?: ToolExecutionScope
+	): Promise<ToolExecutionResult> {
+		this.validateToolExecution(entry, context, scope);
+		if (signal?.aborted) throw signal.reason;
+		if (entry.source === ToolSource.BUILTIN) {
 			return ToolsService.executeTool(entry.apiName, params, context, signal);
 		}
-
-		if (!entry.serverId) throw new Error(`Tool unavailable: ${entry.apiName}`);
-		return mcpStore.executeToolOnServer(entry.serverId, entry.apiName, params, signal);
+		if (!entry.serverId)
+			throw new ToolExecutionUnavailableError(`Tool unavailable: ${entry.apiName}`);
+		return mcpStore.executeToolOnServer(
+			entry.serverId,
+			entry.apiName,
+			params,
+			signal,
+			scope?.mcpServers.find((server) => server.serverId === entry.serverId)?.configuration
+		);
 	}
 
 	clear(): void {

@@ -1,6 +1,15 @@
 import type { ToolSource } from '$lib/enums';
 import type { OpenAIToolDefinition } from './mcp';
 
+/** Operation-local MCP authorization, resolved from the owner's override snapshot. */
+export interface ToolExecutionScope {
+	readonly mcpServers: readonly {
+		readonly serverId: string;
+		/** Transport identity only; never persist it or include it in an LLM payload. */
+		readonly configuration: string;
+	}[];
+}
+
 export interface ToolEntry {
 	source: ToolSource;
 	/** API-visible function name. It is executable only when unique across exact identities. */

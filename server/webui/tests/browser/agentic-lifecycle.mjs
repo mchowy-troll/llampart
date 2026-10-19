@@ -143,6 +143,8 @@ try {
 				});
 				tools.hasBuiltinToolsForContext = () => true;
 				tools.getEnabledToolEntriesForLLM = () => [entry];
+				// This suite replaces registry and execution; real scope resolution has its own suite.
+				tools.validateToolExecution = () => {};
 				mcp.hasEnabledServers = () => false;
 				const records = [];
 				for (const scenario of [
@@ -666,6 +668,7 @@ try {
 					};
 					tools.hasBuiltinToolsForContext = () => true;
 					tools.getEnabledToolEntriesForLLM = () => [entry];
+					tools.validateToolExecution = () => {};
 					mcp.hasEnabledServers = () => false;
 					permissions.hasTool = () => kind !== 'permission';
 					agent.getConfig = () => ({ enabled: true, maxTurns: 3, maxToolPreviewLines: 10 });

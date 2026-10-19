@@ -58,6 +58,7 @@ import type {
 	OpenAIToolDefinition,
 	ServerStatus,
 	ToolExecutionResult,
+	ToolExecutionScope,
 	MCPClientConfig,
 	MCPConnection,
 	HealthCheckParams,
@@ -512,6 +513,32 @@ class MCPStore {
 		return this.getServers().filter((server) => {
 			return this.#checkServerEnabled(server, perChatOverrides);
 		});
+	}
+
+	/** Capture authorization before awaiting discovery; connections are not permissions. */
+	createToolExecutionScope(perChatOverrides?: McpServerOverride[]): ToolExecutionScope {
+		return Object.freeze({
+			mcpServers: Object.freeze(
+				this.getEnabledServersForConversation(perChatOverrides).flatMap((server) => {
+					const configuration = buildMcpServerConfig(server);
+					return configuration
+						? [Object.freeze({ serverId: server.id, configuration: JSON.stringify(configuration) })]
+						: [];
+				})
+			)
+		});
+	}
+
+	/** A saved server ID must still identify both this configuration and its live transport. */
+	isConnectionConfigurationCurrent(serverId: string, configuration: string): boolean {
+		const server = this.getServerById(serverId);
+		if (!server || !this.connections.has(serverId)) return false;
+		const current = buildMcpServerConfig(server);
+		return (
+			current !== undefined &&
+			JSON.stringify(current) === configuration &&
+			JSON.stringify(this.serverConfigs.get(serverId)) === configuration
+		);
 	}
 
 	async ensureInitialized(perChatOverrides?: McpServerOverride[]): Promise<boolean> {
@@ -1243,8 +1270,15 @@ class MCPStore {
 		serverName: string,
 		toolName: string,
 		args: Record<string, unknown>,
-		signal?: AbortSignal
+		signal?: AbortSignal,
+		expectedConfiguration?: string
 	): Promise<ToolExecutionResult> {
+		if (
+			expectedConfiguration !== undefined &&
+			!this.isConnectionConfigurationCurrent(serverName, expectedConfiguration)
+		) {
+			throw new Error(`Tool connection unavailable: ${serverName}:${toolName}`);
+		}
 		const owner = this.getToolServer(toolName);
 		if (owner !== serverName) {
 			throw new Error(
@@ -1263,6 +1297,12 @@ class MCPStore {
 		} catch (error) {
 			if (!MCPService.isSessionExpiredError(error)) throw error;
 			await this.reconnectServer(serverName);
+			if (
+				expectedConfiguration !== undefined &&
+				!this.isConnectionConfigurationCurrent(serverName, expectedConfiguration)
+			) {
+				throw new Error(`Tool connection unavailable after reconnect: ${serverName}:${toolName}`);
+			}
 			if (this.getToolServer(toolName) !== serverName) {
 				throw new Error(`Tool name conflict after reconnect: ${toolName}`);
 			}
