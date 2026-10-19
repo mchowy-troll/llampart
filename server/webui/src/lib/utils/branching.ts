@@ -35,7 +35,7 @@ export function findMessageById(
  * @param messages - All messages in the conversation
  * @param leafNodeId - The target leaf node ID to trace back from
  * @param includeRoot - Whether to include root messages in the result
- * @returns Array of messages from root to leaf, sorted by timestamp
+ * @returns Array of messages in graph order, with system messages first
  */
 export function filterByLeafNodeId(
 	messages: readonly DatabaseMessage[],
@@ -78,12 +78,13 @@ export function filterByLeafNodeId(
 		currentNode = nodeMap.get(currentNode.parent);
 	}
 
-	// Sort: system messages first, then by timestamp
+	// Edges, not clocks, define history order (legacy segments can share a timestamp).
+	result.reverse();
 	result.sort((a, b) => {
 		if (a.role === MessageRole.SYSTEM && b.role !== MessageRole.SYSTEM) return -1;
 		if (a.role !== MessageRole.SYSTEM && b.role === MessageRole.SYSTEM) return 1;
 
-		return a.timestamp - b.timestamp;
+		return 0;
 	});
 	return result;
 }

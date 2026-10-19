@@ -1,5 +1,6 @@
 import { DatabaseService } from '$lib/services/database.service';
 import { runLegacyMigration } from '$lib/utils/legacy-migration';
+import { legacyScenarios } from './legacy-migration-harness';
 import {
 	createConversationExportEnvelope,
 	parseConversationImport
@@ -495,7 +496,7 @@ async function migrationRetry() {
 	]);
 
 	const before = await snapshot(['migration']);
-	const originalCreateMessageBranch = DatabaseService.createMessageBranch;
+	const originalAdd = IDBObjectStore.prototype.add;
 	const originalConsoleError = console.error;
 	const expectedPrefix = '[Migration] Failed to migrate legacy messages:';
 	const injectedFailure = new Error('injected migration failure');
@@ -508,10 +509,10 @@ async function migrationRetry() {
 			if (args.length !== 2 || args[0] !== expectedPrefix || args[1] !== injectedFailure)
 				originalConsoleError(...args);
 		};
-		DatabaseService.createMessageBranch = async (newMessage, parentId) => {
+		IDBObjectStore.prototype.add = function (value, key) {
 			createCalls++;
 			if (createCalls === 2) throw injectedFailure;
-			return await originalCreateMessageBranch.call(DatabaseService, newMessage, parentId);
+			return originalAdd.call(this, value, key);
 		};
 		await runLegacyMigration();
 		if (errorLogs.length !== 1)
@@ -534,7 +535,7 @@ async function migrationRetry() {
 		};
 	} finally {
 		console.error = originalConsoleError;
-		DatabaseService.createMessageBranch = originalCreateMessageBranch;
+		IDBObjectStore.prototype.add = originalAdd;
 	}
 
 	const afterFailure = await snapshot(['migration']);
@@ -608,6 +609,7 @@ async function currentNodeOwnership() {
 }
 
 const scenarios: Record<string, () => Promise<unknown>> = {
+	...legacyScenarios,
 	'current-node-ownership': currentNodeOwnership,
 	'import-collision': importCollision,
 	'import-preflight': importPreflight,

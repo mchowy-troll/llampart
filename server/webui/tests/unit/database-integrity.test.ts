@@ -367,4 +367,181 @@ describeWithChromium('DatabaseService integrity on IndexedDB', () => {
 			}
 		}
 	}, 30_000);
+
+	it('preserves the complete legacy graph, selected branch and exported relationships', async () => {
+		const result = await runScenario<{
+			inputs: Array<{ conv: DatabaseConversation; messages: DatabaseMessage[] }>;
+			after: Array<{ conv: DatabaseConversation; messages: DatabaseMessage[] }>;
+			retry: unknown;
+			done: string | null;
+			exportError: string | null;
+			roundtrip: unknown;
+		}>('migration-matrix');
+		expect(result.done).not.toBeNull();
+		expect(result.exportError).toBeNull();
+		expect(result.retry).toEqual(result.after);
+		expect(result.roundtrip).toEqual(result.after);
+		for (const [index, output] of result.after.entries()) {
+			const input = result.inputs[index];
+			const graph = new Map(output.messages.map((m) => [m.id, m]));
+			const expectedAdded: Record<string, number> = {
+				modern: 0,
+				reasoning: 0,
+				multi: 5,
+				consecutive: 4
+			};
+			expect(output.messages.length - input.messages.length, input.conv.id).toBe(
+				expectedAdded[input.conv.id] ?? 2
+			);
+			const seen = new Set<string>();
+			const pending = [output.messages.find((m) => m.type === 'root')!.id];
+			while (pending.length) {
+				const id = pending.pop()!;
+				expect(seen.has(id), `cycle or duplicate edge ${id}`).toBe(false);
+				seen.add(id);
+				pending.push(...graph.get(id)!.children);
+			}
+			expect(seen.size).toBe(output.messages.length);
+			expect(output.conv.lastModified).toBe(input.conv.lastModified);
+			const selected = input.messages.find((m) => m.id === input.conv.currNode)!;
+			if (selected.content.includes('<<<AGENTIC_TOOL_CALL_START>>>')) {
+				// An expanded message represents its entire turn, not just its first segment.
+				expect(graph.get(output.conv.currNode!)?.content).toMatch(/final/i);
+			} else {
+				expect(output.conv.currNode).toBe(input.conv.currNode);
+			}
+			for (const original of input.messages) {
+				expect(graph.has(original.id)).toBe(true);
+				if (!original.content.includes('<<<'))
+					expect(graph.get(original.id)?.content).toBe(original.content);
+			}
+			for (const m of output.messages) {
+				expect(m.convId).toBe(input.conv.id);
+				if (m.parent) expect(graph.get(m.parent)?.children).toContain(m.id);
+				for (const child of m.children) expect(graph.get(child)?.parent).toBe(m.id);
+			}
+		}
+		const multi = result.after.find((item) => item.conv.id === 'multi')!;
+		expect(
+			multi.messages
+				.filter((m) => m.role === 'tool')
+				.map((m) => m.toolCallId)
+				.sort()
+		).toEqual(['kept-a', 'kept-b', 'kept-c']);
+		const modern = result.after.find((item) => item.conv.id === 'modern')!;
+		const originalModern = result.inputs.find((item) => item.conv.id === 'modern')!;
+		expect(modern.conv).toEqual(originalModern.conv);
+		expect([...modern.messages].sort((a, b) => a.id.localeCompare(b.id))).toEqual(
+			[...originalModern.messages].sort((a, b) => a.id.localeCompare(b.id))
+		);
+	}, 30_000);
+
+	it('rolls back every conversation on creation, reparenting, validation or precommit failure and retries safely', async () => {
+		const results = await runScenario<
+			Array<{
+				phase: string;
+				injected: boolean;
+				errors: string[];
+				before: unknown;
+				after: unknown;
+				done: string | null;
+				success: unknown;
+				retry: unknown;
+			}>
+		>('migration-failures');
+		for (const result of results) {
+			expect(
+				result.injected || ['malformed', 'invalid-input', 'existing-result'].includes(result.phase),
+				result.phase
+			).toBe(true);
+			expect(result.errors, result.phase).toHaveLength(1);
+			expect(result.after, result.phase).toEqual(result.before);
+			expect(result.done, result.phase).toBeNull();
+			expect(result.retry, result.phase).toEqual(result.success);
+		}
+	}, 30_000);
+
+	it('validates internal graphs without applying export-only metadata restrictions', async () => {
+		const result = await runScenario<{
+			metadata: Partial<DatabaseMessage>;
+			before: { conv: DatabaseConversation };
+			after: { conv: DatabaseConversation; messages: DatabaseMessage[] };
+		}>('migration-metadata');
+		expect(result.after.messages.find((m) => m.id === 'metadata-legacy')).toMatchObject(
+			result.metadata
+		);
+		expect(result.after.conv).toEqual(result.before.conv);
+	}, 30_000);
+
+	it('never remigrates or recovers data protected by the shipped done marker', async () => {
+		const result = await runScenario<{ before: unknown; after: unknown; done: string }>(
+			'migration-done'
+		);
+		expect(result.after).toEqual(result.before);
+		expect(result.done).toBe('original-marker');
+	}, 30_000);
+
+	it('preserves argument-based tool IDs and rolls back all writes on ambiguous or mismatched arguments', async () => {
+		const results = await runScenario<
+			Array<{
+				mode: string;
+				before: unknown;
+				after: Array<{ conv: DatabaseConversation; messages: DatabaseMessage[] }>;
+				done: string | null;
+				errors: string[];
+				firstConversationWrites: number;
+				retry: unknown;
+			}>
+		>('migration-argument-matching');
+		for (const result of results) {
+			expect(result.retry, result.mode).toEqual(result.after);
+			if (['different', 'ambiguous', 'repeated'].includes(result.mode)) {
+				expect(result.errors, result.mode).toHaveLength(2);
+				expect(result.errors.every((error) => /Unmatched|Ambiguous/.test(error))).toBe(true);
+				expect(result.firstConversationWrites, result.mode).toBe(4);
+				expect(result.after, result.mode).toEqual(result.before);
+				expect(result.done, result.mode).toBeNull();
+			} else {
+				expect(result.errors, result.mode).toEqual([]);
+				expect(result.done, result.mode).not.toBeNull();
+				expect(result.firstConversationWrites, result.mode).toBe(2);
+				const tools = result.after[1].messages.filter((m) => m.role === 'tool');
+				expect(tools.map((m) => [m.content, m.toolCallId]).sort()).toEqual([
+					['Result one', result.mode === 'id-only' ? 'only-first' : 'for-one'],
+					['Result two', result.mode === 'id-only' ? 'only-second' : 'for-two']
+				]);
+				expect(result.after[1].conv.currNode).toBe(`z-arguments-${result.mode}-tail`);
+			}
+		}
+	}, 30_000);
+
+	it('supports history, fork, edit, regeneration and normal save on a migrated branched graph', async () => {
+		const result = await runScenario<{
+			path: string[];
+			forked: { messages: DatabaseMessage[] };
+			edited: { deletedIds: string[] };
+			regenerated: { deletedIds: string[]; parentId: string };
+			saved: DatabaseMessage;
+			after: { conv: DatabaseConversation; messages: DatabaseMessage[] };
+		}>('migration-consumers');
+		expect(result.path).toEqual([
+			'Original question',
+			'Before',
+			'Saved result',
+			'Final answer',
+			'Next 0',
+			'Existing tail 0'
+		]);
+		expect(result.forked.messages.map((m) => m.content)).toContain('Final answer');
+		expect(result.edited.deletedIds).toEqual(['consumers-tail']);
+		expect(result.regenerated.deletedIds).toEqual(['consumers-tail1']);
+		expect(result.regenerated.parentId).toBe('consumers-next1');
+		expect(result.after.conv.currNode).toBe(result.saved.id);
+		expect(result.after.messages.find((m) => m.id === 'consumers-next0')?.content).toBe(
+			'Edited next question'
+		);
+		expect(result.after.messages.find((m) => m.id === 'consumers-next1')?.children).toEqual([
+			result.saved.id
+		]);
+	}, 30_000);
 });

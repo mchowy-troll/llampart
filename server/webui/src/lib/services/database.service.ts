@@ -3,6 +3,8 @@ import { filterByLeafNodeId, findDescendantMessages } from '$lib/utils/branching
 import { uuid } from '$lib/utils/uuid';
 import { planConversationDeletion } from '$lib/utils/conversation-selection';
 import { validateConversationImportRecords } from '$lib/utils/conversation-import-export';
+import { validateConversationGraph } from '$lib/utils/conversation-graph';
+import { LEGACY_MIGRATION_DONE_KEY, type LegacyMessagePlanner } from '$lib/types/legacy-migration';
 import type { McpServerOverride } from '$lib/types/database';
 
 class LlamacppDatabase extends Dexie {
@@ -85,7 +87,6 @@ function validateConversationImports(data: unknown): ConversationImport[] {
 		}
 
 		const messages = item.messages as DatabaseMessage[];
-		const graph = new Map<string, DatabaseMessage>();
 		for (const [messageIndex, messageValue] of messages.entries()) {
 			if (!messageValue || typeof messageValue !== 'object') {
 				throw new Error(`Message ${messageIndex} in conversation ${conv.id} must be an object`);
@@ -97,81 +98,8 @@ function validateConversationImports(data: unknown): ConversationImport[] {
 				throw new Error(`Duplicate message ID in import: ${message.id}`);
 			}
 			messageIds.add(message.id);
-			graph.set(message.id, message);
-
-			if (message.convId !== conv.id) {
-				throw new Error(`Message ${message.id} does not belong to conversation ${conv.id}`);
-			}
-			if (message.parent !== null) {
-				assertNonEmptyId(message.parent, `Parent of message ${message.id}`);
-			}
-			if (!Array.isArray(message.children)) {
-				throw new Error(`Children of message ${message.id} must be an array`);
-			}
-			const uniqueChildren = new Set<string>();
-			for (const childId of message.children) {
-				assertNonEmptyId(childId, `Child of message ${message.id}`);
-				if (uniqueChildren.has(childId)) {
-					throw new Error(`Message ${message.id} contains duplicate child ${childId}`);
-				}
-				uniqueChildren.add(childId);
-			}
 		}
-
-		if (messages.length === 0) {
-			if (conv.currNode !== null && conv.currNode !== '') {
-				throw new Error(`Conversation ${conv.id} currNode does not exist in its graph`);
-			}
-			imports.push({ conv, messages });
-			continue;
-		}
-
-		assertNonEmptyId(conv.currNode, `Conversation ${conv.id} currNode`);
-		if (!graph.has(conv.currNode)) {
-			throw new Error(`Conversation ${conv.id} currNode does not exist in its graph`);
-		}
-
-		const roots = messages.filter((message) => message.parent === null);
-		if (roots.length !== 1 || roots[0].type !== 'root') {
-			throw new Error(`Conversation ${conv.id} must contain exactly one root message`);
-		}
-		for (const message of messages) {
-			if (message.type === 'root' && message !== roots[0]) {
-				throw new Error(`Root message ${message.id} must have a null parent`);
-			}
-
-			if (message.parent !== null) {
-				const parent = graph.get(message.parent);
-				if (!parent) throw new Error(`Message ${message.id} has a dangling parent`);
-				if (!parent.children.includes(message.id)) {
-					throw new Error(`Parent/children relationship is not reciprocal for ${message.id}`);
-				}
-			}
-
-			for (const childId of message.children) {
-				const child = graph.get(childId);
-				if (!child) throw new Error(`Message ${message.id} has a dangling child`);
-				if (child.parent !== message.id) {
-					throw new Error(`Parent/children relationship is not reciprocal for ${childId}`);
-				}
-			}
-		}
-
-		const visiting = new Set<string>();
-		const visited = new Set<string>();
-		const visit = (messageId: string): void => {
-			if (visiting.has(messageId)) throw new Error(`Conversation ${conv.id} contains a cycle`);
-			if (visited.has(messageId)) return;
-			visiting.add(messageId);
-			for (const childId of graph.get(messageId)!.children) visit(childId);
-			visiting.delete(messageId);
-			visited.add(messageId);
-		};
-		visit(roots[0].id);
-		if (visited.size !== messages.length) {
-			throw new Error(`Conversation ${conv.id} contains messages disconnected from its root`);
-		}
-
+		validateConversationGraph(conv, messages);
 		imports.push({ conv, messages });
 	}
 
@@ -920,16 +848,105 @@ export class DatabaseService {
 		});
 	}
 
-	/** Runs one legacy conversation migration as a single graph transaction. */
-	static async runConversationGraphTransaction<T>(operation: () => Promise<T>): Promise<T> {
-		return await db.transaction('rw', [db.conversations, db.messages], async (transaction) => {
-			try {
-				return await operation();
-			} catch (error) {
-				transaction.abort();
-				throw error;
+	/**
+	 * Apply parser-only plans. All conversations roll back together on any failure.
+	 * The shipped localStorage marker is a post-commit cache, never a transaction record.
+	 * If writing it fails (or the app stops first), retry sees already structured messages.
+	 */
+	static async migrateLegacyMessages(planMessage: LegacyMessagePlanner): Promise<void> {
+		try {
+			if (localStorage.getItem(LEGACY_MIGRATION_DONE_KEY)) return;
+		} catch {
+			return;
+		}
+		await db.transaction('rw', [db.conversations, db.messages], async () => {
+			for (const conversation of await db.conversations.toArray()) {
+				const messages = await db.messages.where('convId').equals(conversation.id).toArray();
+				const plans = messages.map((message) => ({
+					message,
+					segments: planMessage({
+						id: message.id,
+						role: message.role,
+						content: message.content,
+						reasoningContent: message.reasoningContent,
+						toolCalls: message.toolCalls
+					})
+				}));
+				if (!plans.some(({ segments }) => segments !== null)) continue;
+				validateConversationGraph(conversation, messages);
+				const graph = new Map(messages.map((message) => [message.id, message]));
+				for (const { message, segments } of plans) {
+					if (!segments) continue;
+					if (
+						!segments.length ||
+						segments[0].role !== 'assistant' ||
+						message.role !== 'assistant'
+					) {
+						throw new Error(`Invalid legacy transformation for ${message.id}`);
+					}
+					const children = [...message.children];
+					const resultIds = new Set(
+						segments
+							.filter((segment) => segment.role === 'tool')
+							.map((segment) => segment.toolCallId)
+					);
+					const existingTools = [...children];
+					while (existingTools.length) {
+						const child = graph.get(existingTools.pop()!)!;
+						if (child.role !== 'tool') continue;
+						if (resultIds.has(child.toolCallId)) {
+							throw new Error(`Ambiguous existing tool result for legacy message ${message.id}`);
+						}
+						existingTools.push(...child.children);
+					}
+					message.content = segments[0].content;
+					message.reasoningContent = segments[0].reasoningContent;
+					message.toolCalls = segments[0].toolCalls;
+					let tail = message;
+					for (const segment of segments.slice(1)) {
+						const next: DatabaseMessage = {
+							...segment,
+							id: uuid(),
+							convId: conversation.id,
+							type: 'text',
+							timestamp: message.timestamp,
+							toolCalls: segment.toolCalls ?? '',
+							model: message.model,
+							parent: tail.id,
+							children: []
+						};
+						await db.messages.add(next);
+						tail.children = [next.id];
+						await db.messages.put(tail);
+						graph.set(next.id, next);
+						tail = next;
+					}
+					tail.children = children;
+					for (const childId of children) {
+						const child = graph.get(childId)!;
+						child.parent = tail.id;
+						await requireUpdated(
+							await db.messages.update(childId, { parent: tail.id }),
+							`Message ${childId}`
+						);
+					}
+					await db.messages.put(tail);
+					// Explicit mapping: selection of the whole old message means its last segment.
+					if (conversation.currNode === message.id) conversation.currNode = tail.id;
+				}
+				await db.conversations.put(conversation); // Preserve lastModified, pinned and all metadata.
+				// Validate persisted records, not merely the in-memory plan, before commit.
+				validateConversationGraph(
+					await requireConversation(conversation.id),
+					await db.messages.where('convId').equals(conversation.id).toArray()
+				);
 			}
 		});
+		try {
+			localStorage.setItem(LEGACY_MIGRATION_DONE_KEY, String(Date.now()));
+		} catch {
+			// Committed transformations are idempotent; a later startup may retry safely.
+		}
 	}
 
 	/**
