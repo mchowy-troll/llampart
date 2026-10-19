@@ -858,16 +858,6 @@ class ChatStore {
 				updateActiveMessage(currentAssistantMessageId, update);
 				this.setChatStreaming(convId, checkpoint.content, currentAssistantMessageId);
 			},
-			onAttachments: (messageId: string, extras: DatabaseMessageExtra[]) => {
-				if (!extras.length) return;
-				if (conversationsStore.activeConversation?.id !== convId) return;
-				const idx = conversationsStore.findMessageIndex(messageId);
-				if (idx === -1) return;
-				const msg = conversationsStore.activeMessages[idx];
-				const updatedExtras = [...(msg.extra || []), ...extras];
-				conversationsStore.updateMessageAtIndex(idx, { extra: updatedExtras });
-				DatabaseService.updateMessage(messageId, { extra: updatedExtras }).catch(console.error);
-			},
 			onModel: (modelName: string) => recordModel(modelName),
 			onCompletionId: (id: string) => recordCompletionId(id),
 			onTurnComplete: (intermediateTimings: ChatMessageTimings) => {

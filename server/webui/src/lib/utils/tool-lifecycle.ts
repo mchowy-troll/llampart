@@ -1,5 +1,14 @@
-import type { ApiChatMessageData } from '$lib/types/api';
+import type { ApiChatMessageContentPart, ApiChatMessageData } from '$lib/types/api';
+import { ContentPartType } from '$lib/enums';
 import type { ToolCallExecution } from '$lib/types/agentic';
+
+/** No supported backend has confirmed image parts in a tool result. Never stringify them. */
+export function serializeToolText(content: string | ApiChatMessageContentPart[]): string {
+	if (typeof content === 'string') return content;
+	if (content.some((part) => part.type !== ContentPartType.TEXT || part.text === undefined))
+		throw new Error('Tool output contains media not confirmed for this backend; request not sent');
+	return content.map((part) => part.text).join('');
+}
 
 /** Presentation/protocol description, never persisted as if returned by a tool. */
 export function toolExecutionDescription(execution?: ToolCallExecution): string {

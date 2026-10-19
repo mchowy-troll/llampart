@@ -30,23 +30,10 @@ import { isAbortError } from '$lib/utils/abort';
 import { projectToolHistory, toolExecutionDescription } from '$lib/utils/tool-lifecycle';
 import { uuid } from '$lib/utils/uuid';
 import { ToolExecutionUnavailableError } from '$lib/utils/tool-registry';
-import {
-	DEFAULT_AGENTIC_CONFIG,
-	NEWLINE_SEPARATOR,
-	LLM_ERROR_BLOCK_START,
-	LLM_ERROR_BLOCK_END
-} from '$lib/constants';
-import {
-	IMAGE_MIME_TO_EXTENSION,
-	DATA_URI_BASE64_REGEX,
-	MCP_ATTACHMENT_NAME_PREFIX,
-	DEFAULT_IMAGE_EXTENSION
-} from '$lib/constants';
+import { DEFAULT_AGENTIC_CONFIG, LLM_ERROR_BLOCK_START, LLM_ERROR_BLOCK_END } from '$lib/constants';
 import {
 	AttachmentType,
-	ContentPartType,
 	MessageRole,
-	MimeTypePrefix,
 	ToolCallType,
 	ToolSource,
 	ToolPermissionDecision
@@ -73,11 +60,7 @@ import type {
 	AgenticMessageIdentity,
 	ToolExecutionStatus
 } from '$lib/types/agentic';
-import type {
-	ApiChatCompletionToolCall,
-	ApiChatMessageData,
-	ApiChatMessageContentPart
-} from '$lib/types/api';
+import type { ApiChatCompletionToolCall, ApiChatMessageData } from '$lib/types/api';
 import type {
 	ChatMessagePromptProgress,
 	ChatMessageTimings,
@@ -85,11 +68,8 @@ import type {
 	ChatMessageToolCallTiming,
 	ChatMessageAgenticTurnStats
 } from '$lib/types/chat';
-import type {
-	DatabaseMessage,
-	DatabaseMessageExtra,
-	DatabaseMessageExtraImageFile
-} from '$lib/types/database';
+import type { DatabaseMessage, DatabaseMessageExtra } from '$lib/types/database';
+import { extractToolResultImages } from '$lib/utils/tool-result-images';
 
 function createDefaultSession(): AgenticSession {
 	return {
@@ -124,7 +104,7 @@ function toAgenticMessages(messages: ApiChatMessageData[]): AgenticMessage[] {
 			return {
 				role: MessageRole.TOOL,
 				tool_call_id: message.tool_call_id,
-				content: typeof message.content === 'string' ? message.content : ''
+				content: message.content
 			} satisfies AgenticMessage;
 		}
 		return {
@@ -460,7 +440,6 @@ class AgenticStore {
 			onChunk,
 			onReasoningChunk,
 			onToolCallsStreaming,
-			onAttachments,
 			onModel,
 			onAssistantTurnComplete,
 			onToolCallState,
@@ -822,7 +801,7 @@ class AgenticStore {
 					turnStats.toolCalls.push(toolTiming);
 					turnStats.toolsMs += Math.round(toolDurationMs);
 
-					const { cleanedResult, attachments } = this.extractBase64Attachments(result);
+					const { cleanedResult, attachments } = extractToolResultImages(result);
 
 					// Create the tool result message in the DB
 					let toolResultMessage: DatabaseMessage | undefined;
@@ -840,33 +819,44 @@ class AgenticStore {
 					}
 					pending.set(toolCall.id, status);
 
-					if (attachments.length > 0 && toolResultMessage) {
-						onAttachments?.(toolResultMessage.id, attachments);
-					}
 					if (signal?.aborted) {
 						reason = 'stopped';
 						return;
 					}
 
-					// Build content parts for session history (including images for vision models)
-					const contentParts: ApiChatMessageContentPart[] = [
-						{ type: ContentPartType.TEXT, text: cleanedResult }
-					];
-					for (const attachment of attachments) {
-						if (attachment.type === AttachmentType.IMAGE) {
-							// The request validator owns modality policy for the operation model.
-							contentParts.push({
-								type: ContentPartType.IMAGE_URL,
-								image_url: { url: (attachment as DatabaseMessageExtraImageFile).base64Url }
-							});
-						}
+					if (confirmed && attachments.length > 0) {
+						const savedImages =
+							toolResultMessage?.extra?.filter((extra) => extra.type === AttachmentType.IMAGE) ??
+							[];
+						const remaining = savedImages.map((image) => image.base64Url);
+						const hasAllImages = attachments.every((attachment) => {
+							const index = remaining.indexOf(attachment.base64Url);
+							if (index < 0) return false;
+							remaining.splice(index, 1);
+							return true;
+						});
+						if (
+							!toolResultMessage ||
+							toolResultMessage.role !== MessageRole.TOOL ||
+							toolResultMessage.toolCallId !== toolCall.id ||
+							!hasAllImages
+						)
+							throw new Error(
+								'Tool result images require a canonical saved tool record containing every image; the next model request was not sent.'
+							);
 					}
 
-					sessionMessages.push({
-						role: MessageRole.TOOL,
-						tool_call_id: toolCall.id,
-						content: contentParts.length === 1 ? cleanedResult : contentParts
-					});
+					if (toolResultMessage) {
+						sessionMessages.push(
+							ChatService.convertDbMessageToApiChatMessageData(toolResultMessage) as AgenticMessage
+						);
+					} else {
+						sessionMessages.push({
+							role: MessageRole.TOOL,
+							tool_call_id: toolCall.id,
+							content: cleanedResult
+						});
+					}
 				}
 
 				if (turnStats.toolCalls.length > 0) {
@@ -913,54 +903,6 @@ class AgenticStore {
 			type: (call?.type as ToolCallType.FUNCTION) ?? ToolCallType.FUNCTION,
 			function: { name: call?.function?.name ?? '', arguments: call?.function?.arguments ?? '' }
 		}));
-	}
-
-	private extractBase64Attachments(result: string): {
-		cleanedResult: string;
-		attachments: DatabaseMessageExtra[];
-	} {
-		if (!result.trim()) {
-			return { cleanedResult: result, attachments: [] };
-		}
-
-		const lines = result.split(NEWLINE_SEPARATOR);
-		const attachments: DatabaseMessageExtra[] = [];
-		let attachmentIndex = 0;
-
-		const cleanedLines = lines.map((line) => {
-			const trimmedLine = line.trim();
-
-			const match = trimmedLine.match(DATA_URI_BASE64_REGEX);
-			if (!match) {
-				return line;
-			}
-
-			const mimeType = match[1].toLowerCase();
-			const base64Data = match[2];
-
-			if (!base64Data) {
-				return line;
-			}
-
-			attachmentIndex += 1;
-			const name = this.buildAttachmentName(mimeType, attachmentIndex);
-
-			if (mimeType.startsWith(MimeTypePrefix.IMAGE)) {
-				attachments.push({ type: AttachmentType.IMAGE, name, base64Url: trimmedLine });
-
-				return `[Attachment saved: ${name}]`;
-			}
-
-			return line;
-		});
-
-		return { cleanedResult: cleanedLines.join(NEWLINE_SEPARATOR), attachments };
-	}
-
-	private buildAttachmentName(mimeType: string, index: number): string {
-		const extension = IMAGE_MIME_TO_EXTENSION[mimeType] ?? DEFAULT_IMAGE_EXTENSION;
-
-		return `${MCP_ATTACHMENT_NAME_PREFIX}-${Date.now()}-${index}.${extension}`;
 	}
 }
 

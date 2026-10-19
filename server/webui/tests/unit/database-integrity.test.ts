@@ -155,6 +155,10 @@ describeWithChromium('DatabaseService integrity on IndexedDB', () => {
 		});
 	}, 30_000);
 
+	it('round-trips actual tool PNG bytes, duplicate intent, forks and late inactive results in Chromium IndexedDB', async () => {
+		expect(await runScenario('tool-image')).toEqual({ counts: [1, 2, 2], late: true });
+	}, 30_000);
+
 	it('rejects message ID collisions without changing the existing conversation', async () => {
 		const result = await runScenario<{
 			error: string | null;

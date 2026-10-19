@@ -5,7 +5,8 @@ import { planConversationDeletion } from '$lib/utils/conversation-selection';
 import { validateConversationImportRecords } from '$lib/utils/conversation-import-export';
 import { validateConversationGraph } from '$lib/utils/conversation-graph';
 import { LEGACY_MIGRATION_DONE_KEY, type LegacyMessagePlanner } from '$lib/types/legacy-migration';
-import type { McpServerOverride } from '$lib/types/database';
+import type { DatabaseMessageExtra, McpServerOverride } from '$lib/types/database';
+import { AttachmentType } from '$lib/enums/attachment';
 import type {
 	AgenticMessageIdentity,
 	AgenticToolOutcome,
@@ -34,6 +35,54 @@ type ConversationImport = { conv: DatabaseConversation; messages: DatabaseMessag
 
 function nextLastModified(conversation: DatabaseConversation): number {
 	return Math.max(Date.now(), conversation.lastModified + 1);
+}
+
+function sameConfirmedToolResult(
+	persisted: DatabaseMessage,
+	incoming: NonNullable<AgenticToolOutcome['result']>
+): boolean {
+	if (
+		persisted.content === incoming.content &&
+		JSON.stringify(persisted.extra) === JSON.stringify(incoming.extras)
+	)
+		return true;
+	const oldExtras: DatabaseMessageExtra[] = persisted.extra ?? [];
+	const newExtras: DatabaseMessageExtra[] = incoming.extras ?? [];
+	if (!oldExtras.some((extra) => extra.type === AttachmentType.IMAGE)) return false;
+	if (oldExtras.length !== newExtras.length) return false;
+	if (
+		!oldExtras.every((extra, index) => {
+			const next = newExtras[index];
+			return extra.type === AttachmentType.IMAGE && next.type === AttachmentType.IMAGE
+				? extra.base64Url === next.base64Url
+				: JSON.stringify(extra) === JSON.stringify(next);
+		})
+	)
+		return false;
+	if (persisted.content === incoming.content) return true;
+	const normalize = (content: string, extras: DatabaseMessageExtra[]) => {
+		const used = new Set<number>();
+		const text = content.replace(/\[Attachment saved: ([^\]]+)\]/g, (placeholder, name: string) => {
+			const index = extras.findIndex(
+				(extra, i) => !used.has(i) && extra.type === AttachmentType.IMAGE && extra.name === name
+			);
+			if (index < 0) return placeholder;
+			used.add(index);
+			return `[Attachment saved: image-${index}]`;
+		});
+		return { text, used };
+	};
+	const old = normalize(persisted.content, oldExtras);
+	const next = normalize(incoming.content, newExtras);
+	return (
+		old.text === next.text &&
+		oldExtras.every(
+			(extra, index) =>
+				extra.type !== AttachmentType.IMAGE ||
+				extra.name === newExtras[index].name ||
+				(old.used.has(index) && next.used.has(index))
+		)
+	);
 }
 
 async function requireConversation(convId: string): Promise<DatabaseConversation> {
@@ -892,11 +941,7 @@ export class DatabaseService {
 					identity.conversationId,
 					execution.resultMessageId
 				);
-				if (
-					outcome.result &&
-					(result.content !== outcome.result.content ||
-						JSON.stringify(result.extra) !== JSON.stringify(outcome.result.extras))
-				) {
+				if (outcome.result && !sameConfirmedToolResult(result, outcome.result)) {
 					throw new Error('Cannot replace a confirmed tool result');
 				}
 				return { assistant, result };

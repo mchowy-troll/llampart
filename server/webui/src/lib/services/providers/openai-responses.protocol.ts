@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { serializeToolText } from '$lib/utils/tool-lifecycle';
 import type {
 	ProviderChatCompletionInput,
 	ProviderChatCompletionResponse,
@@ -48,8 +49,7 @@ export function buildResponsesBody(input: ProviderChatCompletionInput): Record<s
 			items.push({
 				type: 'function_call_output',
 				call_id: message.tool_call_id,
-				output:
-					typeof message.content === 'string' ? message.content : JSON.stringify(message.content)
+				output: serializeToolText(message.content)
 			});
 			continue;
 		}

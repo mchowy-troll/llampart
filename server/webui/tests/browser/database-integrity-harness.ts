@@ -2,6 +2,7 @@ import { DatabaseService } from '$lib/services/database.service';
 import { runLegacyMigration } from '$lib/utils/legacy-migration';
 import { legacyScenarios } from './legacy-migration-harness';
 import { toolLifecycleScenario } from './tool-lifecycle-harness';
+import { toolImageScenario } from './tool-image-harness';
 import {
 	createConversationExportEnvelope,
 	parseConversationImport
@@ -611,6 +612,7 @@ async function currentNodeOwnership() {
 
 const scenarios: Record<string, () => Promise<unknown>> = {
 	'tool-lifecycle': toolLifecycleScenario,
+	'tool-image': toolImageScenario,
 	...legacyScenarios,
 	'current-node-ownership': currentNodeOwnership,
 	'import-collision': importCollision,

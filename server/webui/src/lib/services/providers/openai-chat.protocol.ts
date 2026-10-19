@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { serializeToolText } from '$lib/utils/tool-lifecycle';
 import type {
 	ProviderChatCompletionInput,
 	ProviderChatCompletionResponse,
@@ -213,7 +214,7 @@ export function buildChatBody(input: ProviderChatCompletionInput): Record<string
 		model: options.model,
 		messages: input.messages.map((message) => ({
 			role: message.role,
-			content: message.content,
+			content: message.role === 'tool' ? serializeToolText(message.content) : message.content,
 			tool_calls: message.tool_calls,
 			tool_call_id: message.tool_call_id,
 			...(!options.excludeReasoningFromContext && message.reasoning_content

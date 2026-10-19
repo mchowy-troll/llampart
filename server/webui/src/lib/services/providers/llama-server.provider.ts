@@ -2,6 +2,7 @@ import { API_CHAT, API_MODELS } from '$lib/constants/api-endpoints';
 import { API_PROVIDER_IDS, API_PROVIDER_LABELS } from '$lib/constants/api-providers';
 import { LLAMA_SERVER_PROVIDER_CAPABILITIES } from '$lib/constants/provider-capabilities';
 import { effectiveLlamaReasoningEffort } from '$lib/utils/chat-template-thinking-detector';
+import { serializeToolText } from '$lib/utils/tool-lifecycle';
 import { ReasoningFormat } from '$lib/enums';
 import { t } from '$lib/i18n';
 import type {
@@ -164,7 +165,7 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 		messages: input.messages.map((msg) => {
 			const mapped: ApiChatCompletionRequest['messages'][0] = {
 				role: msg.role,
-				content: msg.content,
+				content: msg.role === 'tool' ? serializeToolText(msg.content) : msg.content,
 				tool_calls: msg.tool_calls,
 				tool_call_id: msg.tool_call_id
 			};

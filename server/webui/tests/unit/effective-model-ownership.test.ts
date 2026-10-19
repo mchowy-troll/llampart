@@ -9,14 +9,19 @@ import { serverStore } from '$lib/stores/server.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { permissionsStore } from '$lib/stores/permissions.svelte';
-import type { AgenticFlowOptions } from '$lib/types/agentic';
+import type {
+	AgenticFlowOptions,
+	AgenticMessageIdentity,
+	AgenticToolOutcome
+} from '$lib/types/agentic';
 import type { ApiProviderId } from '$lib/constants/api-providers';
 import type { ProviderProtocol } from '$lib/types/provider';
 
 const originalConfig = { ...settingsStore.config };
 const originalRole = serverStore.role;
 const originalProps = serverStore.props;
-const image = 'data:image/png;base64,YQ==';
+const image =
+	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
 const matrix = [
 	['llama-server', 'chat-completions'],
 	['openai-compatible', 'chat-completions'],
@@ -159,7 +164,23 @@ function flow(
 	const callbacks = {
 		onFlowStart: vi.fn(async () => undefined),
 		onAssistantTurnComplete: vi.fn(async () => undefined),
-		onToolCallState: vi.fn(async () => undefined),
+		onToolCallState: vi.fn(
+			async (identity: AgenticMessageIdentity, toolCallId: string, outcome: AgenticToolOutcome) =>
+				outcome.result
+					? ({
+							id: `tool-${toolCallId}`,
+							convId: identity.conversationId,
+							role: MessageRole.TOOL,
+							type: 'text',
+							content: outcome.result.content,
+							extra: outcome.result.extras,
+							toolCallId,
+							parent: identity.assistantMessageId,
+							children: [],
+							timestamp: 1
+						} satisfies DatabaseMessage)
+					: undefined
+		),
 		onFlowComplete: vi.fn(async () => undefined),
 		onError: vi.fn(),
 		createAssistantMessage: vi.fn(
@@ -384,6 +405,81 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 		expect(refresh).toHaveBeenCalledTimes(2);
 		expect(JSON.stringify(payloads)).not.toContain('operationModel');
 	});
+
+	it('preserves a tool image in DB history but refuses generation for an unconfirmed tool-output backend', async () => {
+		await prepare(providerId, protocol, [true, true]);
+		const { fetchMock } = providerIO(protocol, 0);
+		const history: DatabaseMessage[] = [
+			{
+				id: 'assistant',
+				convId: 'synthetic',
+				timestamp: 1,
+				parent: 'user',
+				children: ['result'],
+				role: MessageRole.ASSISTANT,
+				type: 'text',
+				content: '',
+				toolCalls: JSON.stringify([
+					{ id: 'call-1', type: 'function', function: { name: 'synthetic', arguments: '{}' } }
+				])
+			},
+			{
+				id: 'result',
+				convId: 'synthetic',
+				timestamp: 2,
+				parent: 'assistant',
+				children: [],
+				role: MessageRole.TOOL,
+				type: 'text',
+				content: 'description',
+				toolCallId: 'call-1',
+				extra: [{ type: AttachmentType.IMAGE, name: 'synthetic.png', base64Url: image }]
+			}
+		];
+		const before = structuredClone(history);
+		expect(ChatService.convertDbMessageToApiChatMessageData(history[1]).content).toEqual([
+			{ type: 'text', text: 'description' },
+			{ type: 'image_url', image_url: { url: image } }
+		]);
+		await expect(
+			ChatService.sendMessage(history, { model: 'model-B', stream: true })
+		).rejects.toThrow(/tool result images.*not sent/i);
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(history).toEqual(before);
+	});
+
+	it('does not redirect A tool PNG to concurrent B or interrupt B when A continuation is refused', async () => {
+		await prepare(providerId, protocol, [true, true]);
+		const { payloads } = providerIO(protocol, 1);
+		const ready = deferred(),
+			gate = deferred();
+		vi.mocked(toolsStore.executeTool).mockImplementation(async () => {
+			ready.resolve();
+			await gate.promise;
+			return { content: `CONFIRMED_RESULT\n${image}`, isError: false };
+		});
+		const a = flow({ model: 'model-A' }, undefined, 'conversation-A');
+		await ready.promise;
+		const b = flow({ model: 'model-B' }, undefined, 'conversation-B');
+		await b.pending;
+		gate.resolve();
+		await a.pending;
+		expect(payloads.map((body) => body.model)).toEqual(['model-A', 'model-B']);
+		expect(a.callbacks.onToolCallState).toHaveBeenCalledWith(
+			expect.objectContaining({ conversationId: 'conversation-A' }),
+			'call-1',
+			expect.objectContaining({
+				status: 'completed',
+				result: expect.objectContaining({ extras: [expect.objectContaining({ base64Url: image })] })
+			})
+		);
+		expect(a.callbacks.onFlowComplete).toHaveBeenCalledWith(
+			expect.objectContaining({ reason: 'error' })
+		);
+		expect(b.callbacks.onFlowComplete).toHaveBeenCalledWith(
+			expect.objectContaining({ reason: 'completed' })
+		);
+	});
 });
 
 describe('agentic image capability ownership', () => {
@@ -395,8 +491,24 @@ describe('agentic image capability ownership', () => {
 			content: `CONFIRMED_RESULT\n${image}`,
 			isError: false
 		});
-		await flow().pending;
-		expect(JSON.stringify(payloads[1])).toContain(image);
+		const { pending, callbacks } = flow();
+		await pending;
+		expect(payloads).toHaveLength(1);
+		expect(vi.mocked(toolsStore.executeTool)).toHaveBeenCalledTimes(1);
+		expect(callbacks.onToolCallState).toHaveBeenCalledWith(
+			expect.anything(),
+			'call-1',
+			expect.objectContaining({
+				status: 'completed',
+				result: expect.objectContaining({ extras: [expect.objectContaining({ base64Url: image })] })
+			})
+		);
+		expect(callbacks.onFlowComplete).toHaveBeenCalledWith(
+			expect.objectContaining({ reason: 'error' })
+		);
+		expect(callbacks.onError).toHaveBeenCalledWith(
+			expect.objectContaining({ message: expect.stringMatching(/tool result images/i) })
+		);
 	});
 
 	it('does not drop an image from a text-only operation just because another model has vision', async () => {

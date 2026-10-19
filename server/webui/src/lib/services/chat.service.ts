@@ -7,6 +7,7 @@ import type { OperationModel, ProviderRequestContext, ProviderUsage } from '$lib
 import { formatAttachmentText } from '$lib/utils/formatters';
 import { isAbortError } from '$lib/utils/abort';
 import { projectToolHistory } from '$lib/utils/tool-lifecycle';
+import { toolResultContentParts } from '$lib/utils/tool-result-images';
 import {
 	ATTACHMENT_LABEL_PDF_FILE,
 	ATTACHMENT_LABEL_MCP_PROMPT,
@@ -362,6 +363,19 @@ export class ChatService {
 			)
 		)
 			throw new Error('This backend/model explicitly does not support vision input');
+		if (
+			messages.some(
+				(message) =>
+					message.role === MessageRole.TOOL &&
+					Array.isArray(message.content) &&
+					message.content.some(
+						(part: ApiChatMessageContentPart) => part.type === ContentPartType.IMAGE_URL
+					)
+			)
+		)
+			throw new Error(
+				'Tool result images are saved in the conversation, but this backend has no confirmed multimodal tool-output support. The model request was not sent.'
+			);
 	}
 
 	static createProviderRequestContext(): ProviderRequestContext {
@@ -1277,15 +1291,6 @@ export class ChatService {
 	static convertDbMessageToApiChatMessageData(
 		message: DatabaseMessage & { extra?: DatabaseMessageExtra[] }
 	): ApiChatMessageData {
-		// Handle tool result messages (role: 'tool')
-		if (message.role === MessageRole.TOOL && message.toolCallId) {
-			return {
-				role: MessageRole.TOOL,
-				content: message.content,
-				tool_call_id: message.toolCallId
-			};
-		}
-
 		// Parse tool calls for assistant messages
 		let toolCalls: ApiChatCompletionToolCall[] | undefined;
 		if (message.toolCalls) {
@@ -1301,7 +1306,10 @@ export class ChatService {
 				agentic: message.agentic,
 				providerContinuation: message.providerContinuation,
 				role: message.role as MessageRole,
-				content: message.content
+				content: message.content,
+				...(message.role === MessageRole.TOOL && message.toolCallId
+					? { tool_call_id: message.toolCallId }
+					: {})
 			};
 
 			if (message.reasoningContent) {
@@ -1317,24 +1325,18 @@ export class ChatService {
 
 		const contentParts: ApiChatMessageContentPart[] = [];
 
-		if (message.content) {
-			contentParts.push({
-				type: ContentPartType.TEXT,
-				text: message.content
-			});
-		}
-
 		// Include images from all messages
 		const imageFiles = message.extra.filter(
 			(extra: DatabaseMessageExtra): extra is DatabaseMessageExtraImageFile =>
 				extra.type === AttachmentType.IMAGE
 		);
 
-		for (const image of imageFiles) {
-			contentParts.push({
-				type: ContentPartType.IMAGE_URL,
-				image_url: { url: image.base64Url }
-			});
+		if (message.role === MessageRole.TOOL && imageFiles.length) {
+			contentParts.push(...toolResultContentParts(message.content, imageFiles));
+		} else {
+			if (message.content) contentParts.push({ type: ContentPartType.TEXT, text: message.content });
+			for (const image of imageFiles)
+				contentParts.push({ type: ContentPartType.IMAGE_URL, image_url: { url: image.base64Url } });
 		}
 
 		const textFiles = message.extra.filter(
@@ -1455,7 +1457,10 @@ export class ChatService {
 			agentic: message.agentic,
 			providerContinuation: message.providerContinuation,
 			role: message.role as MessageRole,
-			content: contentParts
+			content: contentParts,
+			...(message.role === MessageRole.TOOL && message.toolCallId
+				? { tool_call_id: message.toolCallId }
+				: {})
 		};
 		if (message.reasoningContent) {
 			result.reasoning_content = message.reasoningContent;
