@@ -199,6 +199,10 @@ Legacy installed-backend paths remain for existing releases and the native MCP p
 
 The installer intentionally does not proxy `/*`.
 
+Both the provider namespace and all legacy paths above use the same browser-origin guard, before any upstream request. A nonempty `Origin` must exactly match Caddy's request scheme, host and port (`Origin: null` is rejected). A nonempty `Sec-Fetch-Site` must be `same-origin`; `same-site`, `cross-site` and `none` are rejected even without `Origin`. Clients without either header remain supported. Cross-origin preflight is denied, not answered with permissive CORS. Static Web UI assets are unaffected. Legacy requests retain their existing methods, paths, cookies and authorization headers; the provider namespace still strips cookies and routing metadata.
+
+**Existing installations must regenerate and reload their Caddy configuration using the fixed installer** (`bash install.sh --configure`, preserving the existing port/backend settings, or `--update`). Updating only the Web UI files does not secure an already deployed Caddyfile. Both modes rewrite and validate the dedicated site before reloading. If TLS terminates at another proxy before HTTP Caddy, an external HTTPS `Origin` does not match Caddy's HTTP origin; forwarded headers do not bypass this guard. Such deployments require a separately reviewed ingress configuration, not a relaxed legacy policy.
+
 ## Backend behavior
 
 The backend is separate from llampart.
@@ -323,6 +327,8 @@ Transport verification (local ephemeral mock backends, no installation/deploymen
 
 ```bash
 node tests/transport/caddy-gateway.mjs
+node tests/transport/caddy-origin-guard.mjs
+node tests/transport/caddy-origin-guard.mjs --tls
 node tests/transport/caddy-gateway.mjs --vite
 bash tests/installer/transaction.sh
 ```

@@ -995,6 +995,16 @@ EOF_CADDYFILE
 }
 
 generate_caddy_config() {
+  cat <<'EOF_ORIGIN_GUARD'
+# Shared by the provider namespace and installed-backend legacy aliases.
+(llampart_same_origin) {
+    @cross_site expression {header.Sec-Fetch-Site} != "" && {header.Sec-Fetch-Site} != "same-origin"
+    respond @cross_site "Cross-origin gateway request denied" 403
+    @bad_origin expression {header.Origin} != "" && {header.Origin} != {scheme} + "://" + {hostport}
+    respond @bad_origin "Cross-origin gateway request denied" 403
+}
+
+EOF_ORIGIN_GUARD
   cat <<EOF_CADDY
 # llampart Caddy configuration
 # Managed by llampart install.sh
@@ -1022,10 +1032,7 @@ EOF_CADDY
         route {
             @denied_client not remote_ip private_ranges
             respond @denied_client "Gateway is restricted to the trusted LAN" 403
-            @cross_site expression {header.Sec-Fetch-Site} != "" && {header.Sec-Fetch-Site} != "same-origin"
-            respond @cross_site "Cross-origin gateway request denied" 403
-            @bad_origin expression {header.Origin} != "" && {header.Origin} != {scheme} + "://" + {hostport}
-            respond @bad_origin "Cross-origin gateway request denied" 403
+            import llampart_same_origin
             @endpoint <<CEL
                 ({method} == "GET" && {http.request.uri}.split("?")[0].matches("^/__llampart/api/(llama-server|openai-compatible|vllm)/v1/models$"))
                 || ({method} == "POST" && {http.request.uri}.split("?")[0].matches("^/__llampart/api/(llama-server|openai-compatible|vllm)/v1/chat/completions$"))
@@ -1093,7 +1100,12 @@ EOF_GATEWAY
   cat <<EOF_CADDY
 
     @llampart_api path /props /models /models/* /slots /slots/* /cors-proxy /tools /tools/* /v1/*
-    reverse_proxy @llampart_api ${BACKEND_HOST}:${BACKEND_PORT}
+    handle @llampart_api {
+        route {
+            import llampart_same_origin
+            reverse_proxy ${BACKEND_HOST}:${BACKEND_PORT}
+        }
+    }
 
     file_server
 }
