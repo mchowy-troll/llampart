@@ -21,7 +21,8 @@ sequenceDiagram
 
     Note over UI,API: Send message
     UI->>Chat: sendMessage(content, extras)
-    Chat->>Chat: Lock operation and set per-chat loading
+    Chat->>Chat: Lock operation, capture provider context and operation model before awaits
+    Chat->>Models: Capture capabilities for that model/source once
     opt No active conversation
         Chat->>Conv: createConversation()
         Note over Conv: See conversations-flow.md
@@ -31,7 +32,7 @@ sequenceDiagram
     Chat->>Conv: Add user message and update current node
     Chat->>DB: Create empty assistant child
     Chat->>Conv: Add assistant message
-    Chat->>Chat: Capture provider/address/key/source generation, model override and AbortController
+    Chat->>Chat: Bind assistant AbortController and per-chat loading
     opt Native llama-server ROUTER
         Chat->>Models: Fetch model props if needed (no autoload)
     end
@@ -46,12 +47,12 @@ sequenceDiagram
     end
 
     Note over Svc,API: Shared request path for standard chat and each agentic turn
-    Svc->>Svc: Resolve requested model (compatible fallback uses current selection)
+    Svc->>Svc: Use captured operation model (standalone callers resolve once here)
     Svc->>Svc: Normalize DB messages, attachments and tool IDs
     Svc->>Svc: Add request-local chart / Mermaid / response instructions
-    Svc->>Models: refreshCapabilities(context, model)
-    Models-->>Svc: Source/model snapshot from cached model-list metadata
-    Note over Models: Unknown is not unsupported, no generation probe
+    Svc->>Models: Await operation's captured capability promise
+    Models-->>Svc: Same source/model snapshot for every turn
+    Note over Models: Unknown remains unknown; explicit unsupported image fails without removal
     Svc->>Adapter: buildChatCompletionRequest(input, snapshot)
     alt llama-server OR compatible metadata selects/defaults to Chat Completions
         Adapter-->>Svc: Chat Completions payload and gateway fetch request
@@ -105,7 +106,7 @@ sequenceDiagram
 
     Note over UI,API: Agentic turn continuation (detail)
     loop Until no tool calls, maxTurns, cancellation or error
-        Agent->>Svc: Same provider-aware request path above
+        Agent->>Svc: Same provider-aware request path, model and capabilities above
         Svc-->>Agent: Parsed response and complete function calls
         Agent-->>Chat: Persist assistant turn through callbacks
         opt Response has tool calls

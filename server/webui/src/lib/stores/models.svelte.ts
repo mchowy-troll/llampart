@@ -99,12 +99,51 @@ class ModelsStore {
 		const generation = ++this.capabilityGeneration;
 		this.capabilitySnapshot = null;
 		const sourceKey = this.getModelListSourceKey(context);
-		const snapshot = await createCapabilitySnapshot(
+		const snapshotRequest = createCapabilitySnapshot(
 			context,
 			model,
 			this.loadedModelListSourceKey === sourceKey && model ? this.modelMetadata[model] : undefined
 		);
+		// Native props belong to the captured model, not the first catalog entry.
+		// Capture existing evidence before awaiting; only fill missing props for that same model.
+		let modalities =
+			context.providerId === API_PROVIDER_IDS.LLAMA_SERVER
+				? serverStore.hasCurrentProps && serverStore.isModelMode
+					? normalizeModelModalities(serverStore.props)
+					: model
+						? this.getModelModalities(model)
+						: null
+				: null;
+		if (modalities) modalities = { ...modalities };
+		if (
+			context.providerId === API_PROVIDER_IDS.LLAMA_SERVER &&
+			serverStore.isRouterMode &&
+			model &&
+			!this.getModelProps(model)
+		) {
+			const props = await this.fetchModelProps(model);
+			if (props) {
+				modalities = {
+					vision: modalities?.vision ?? props.modalities?.vision,
+					audio: modalities?.audio ?? props.modalities?.audio,
+					video: modalities?.video ?? props.modalities?.video
+				};
+			}
+		}
+		const snapshot = await snapshotRequest;
 		if (sourceKey !== this.modelListSourceKey) return null;
+		if (modalities) {
+			const features = { ...snapshot.features };
+			for (const name of ['vision', 'audio', 'video'] as const) {
+				const supported = modalities[name];
+				if (typeof supported === 'boolean')
+					features[name] = {
+						state: supported ? 'supported' : 'unsupported',
+						source: 'server-metadata'
+					};
+			}
+			snapshot.features = features;
+		}
 		if (generation === this.capabilityGeneration) this.capabilitySnapshot = snapshot;
 		return snapshot;
 	}
@@ -321,7 +360,8 @@ class ModelsStore {
 	}
 
 	/**
-	 * Check if a model supports vision modality
+	 * UI availability policy, not proof of vision support: unknown stays available.
+	 * Requests use their operation-owned tri-state CapabilitySnapshot instead.
 	 */
 	modelSupportsVision(modelId: string): boolean {
 		if (this.currentRequestContext().providerId !== API_PROVIDER_IDS.LLAMA_SERVER)

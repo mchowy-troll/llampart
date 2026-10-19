@@ -176,6 +176,7 @@ export interface AgenticFlowOptions {
 	assistantMessageId?: string;
 	operationId?: string;
 	providerRequestContext?: ProviderRequestContext;
+	operationModel?: import('./provider').OperationModel;
 	temperature?: number;
 	max_tokens?: number;
 	onStreamCheckpoint?: (checkpoint: ChatStreamCheckpoint) => void | Promise<void>;

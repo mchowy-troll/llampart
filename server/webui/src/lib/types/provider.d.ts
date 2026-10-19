@@ -159,6 +159,15 @@ export interface CapabilitySnapshot {
 	protocol: ProviderProtocol;
 	features: Readonly<Record<string, CapabilityValue>>;
 }
+
+/** Operation-owned selection, including an intentional absence of a wire model.
+ * Capabilities are captured once for this model/source, never the later UI selection. */
+export interface OperationModel {
+	readonly model: string | null;
+	readonly requestContext: ProviderRequestContext;
+	readonly capabilities: Promise<CapabilitySnapshot | null>;
+}
+
 export interface ProviderMetric {
 	name: string;
 	value?: number;

@@ -20,7 +20,7 @@ import { config } from '$lib/stores/settings.svelte';
 import { agenticStore } from '$lib/stores/agentic.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { contextSize, isRouterMode } from '$lib/stores/server.svelte';
-import { selectedModelName, modelsStore } from '$lib/stores/models.svelte';
+import { modelsStore } from '$lib/stores/models.svelte';
 import { isAbortError, withAbortSignal } from '$lib/utils/abort';
 import {
 	filterByLeafNodeId,
@@ -48,10 +48,16 @@ import type {
 import type { ApiProcessingState, DatabaseMessage, DatabaseMessageExtra } from '$lib/types';
 import type { ChatStreamCheckpoint } from '$lib/types/settings';
 import type { McpServerOverride } from '$lib/types/database';
+import type { OperationModel, ProviderRequestContext } from '$lib/types/provider';
 import { ErrorDialogType, MessageRole, MessageType } from '$lib/enums';
 
 interface ConversationStateEntry {
 	lastAccessed: number;
+}
+
+interface GenerationModel {
+	readonly providerRequestContext: ProviderRequestContext;
+	readonly operationModel: OperationModel;
 }
 
 export function resolveHistoricalContextTotal(
@@ -518,6 +524,7 @@ class ChatStore {
 		if (activeConv && this.isChatLoadingInternal(activeConv.id)) return;
 		this.conversationOperationLocks.add(operationKey);
 		let lockedConversationId: string | null = activeConv?.id ?? null;
+		const generationModel = this.captureGenerationModel();
 
 		try {
 			// Cancel any in-flight pre-encode request
@@ -585,7 +592,7 @@ class ChatStore {
 					assistantMessage,
 					undefined,
 					undefined,
-					undefined,
+					generationModel,
 					config().titleGenerationUseLLM && isNewConversation ? content : undefined,
 					perChatOverrides
 				);
@@ -661,33 +668,40 @@ class ChatStore {
 		}
 	}
 
+	private captureGenerationModel(
+		modelOverride?: string | null,
+		messages = conversationsStore.activeMessages
+	): GenerationModel {
+		const providerRequestContext = ChatService.createProviderRequestContext();
+		return {
+			providerRequestContext,
+			operationModel: ChatService.captureOperationModel(
+				providerRequestContext,
+				modelOverride,
+				this.getConversationModel(messages)
+			)
+		};
+	}
+
 	private async streamChatCompletion(
 		allMessages: DatabaseMessage[],
 		assistantMessage: DatabaseMessage,
 		onComplete?: (content: string) => Promise<void>,
 		onError?: (error: Error) => void,
-		modelOverride?: string | null,
+		generationModel?: GenerationModel,
 		firstUserMessageContent?: string,
 		perChatOverrides?: McpServerOverride[]
 	): Promise<void> {
-		let effectiveModel = modelOverride;
-		const providerRequestContext = ChatService.createProviderRequestContext();
+		const requestBinding = generationModel ?? this.captureGenerationModel(undefined, allMessages);
+		const { providerRequestContext, operationModel } = requestBinding;
+		const effectiveModel = operationModel.model;
 		const apiOptions = this.getApiOptions();
 		const abortController = new AbortController();
 		this.abortControllers.set(assistantMessage.convId, abortController);
 
-		if (isRouterMode() && !effectiveModel) {
-			const conversationModel = this.getConversationModel(allMessages);
-			effectiveModel = selectedModelName() || conversationModel;
-		}
-
 		if (isRouterMode() && effectiveModel) {
 			try {
-				if (!modelsStore.getModelProps(effectiveModel))
-					await withAbortSignal(
-						modelsStore.fetchModelProps(effectiveModel),
-						abortController.signal
-					);
+				await withAbortSignal(operationModel.capabilities, abortController.signal);
 			} catch (error) {
 				if (!isAbortError(error)) throw error;
 			}
@@ -703,7 +717,8 @@ class ChatStore {
 			apiOptions.llamaReasoningControl = modelsStore.getReasoningControl(effectiveModel ?? null);
 		}
 
-		const frozenModel = effectiveModel ? normalizeModelName(effectiveModel) : null;
+		// Request identity is exact; historical display normalization stays in recordModel().
+		const frozenModel = effectiveModel;
 		const shouldPreEncode =
 			getApiProvider(providerRequestContext.providerId).capabilities.supportsPreEncode &&
 			Boolean(config().preEncodeConversation);
@@ -762,7 +777,10 @@ class ChatStore {
 
 		const recordModel = (modelName: string | null | undefined, persistImmediately = true): void => {
 			if (!modelName) return;
-			const n = normalizeModelName(modelName);
+			const n =
+				providerRequestContext.providerId === 'llama-server'
+					? normalizeModelName(modelName)
+					: modelName;
 			if (!n || n === resolvedModel) return;
 			resolvedModel = n;
 			updateActiveMessage(currentAssistantMessageId, { model: n });
@@ -986,7 +1004,7 @@ class ChatStore {
 						history.slice(0, -1),
 						terminal,
 						terminal.content,
-						frozenModel,
+						operationModel,
 						excludeReasoningFromPreEncode,
 						providerRequestContext
 					);
@@ -1032,6 +1050,7 @@ class ChatStore {
 					...(frozenModel ? { model: frozenModel } : {}),
 					assistantMessageId: assistantMessage.id,
 					operationId,
+					operationModel,
 					providerRequestContext
 				},
 				callbacks: streamCallbacks,
@@ -1040,7 +1059,12 @@ class ChatStore {
 			});
 			if (agenticResult.handled) {
 				if (firstUserMessageContent) {
-					await this.generateTitleWithLLM(firstUserMessageContent, streamedContent, convId);
+					await this.generateTitleWithLLM(
+						firstUserMessageContent,
+						streamedContent,
+						convId,
+						requestBinding
+					);
 				}
 
 				return;
@@ -1054,6 +1078,7 @@ class ChatStore {
 				...apiOptions,
 				...(frozenModel ? { model: frozenModel } : {}),
 				assistantMessageId: assistantMessage.id,
+				operationModel,
 				providerRequestContext,
 				stream: true,
 				onChunk: streamCallbacks.onChunk,
@@ -1092,14 +1117,19 @@ class ChatStore {
 					if (onComplete) await onComplete(content);
 					if (isRouterMode()) modelsStore.fetchRouterModels().catch(console.error);
 					if (firstUserMessageContent) {
-						await this.generateTitleWithLLM(firstUserMessageContent, content, convId);
+						await this.generateTitleWithLLM(
+							firstUserMessageContent,
+							content,
+							convId,
+							requestBinding
+						);
 					}
 					if (shouldPreEncode) {
 						void this.triggerPreEncode(
 							allMessages,
 							assistantMessage,
 							content,
-							frozenModel,
+							operationModel,
 							excludeReasoningFromPreEncode,
 							providerRequestContext
 						);
@@ -1115,11 +1145,10 @@ class ChatStore {
 	private async generateTitleWithLLM(
 		userContent: string,
 		assistantContent: string,
-		convId: string
+		convId: string,
+		requestBinding: GenerationModel
 	): Promise<void> {
 		try {
-			const effectiveModel =
-				isRouterMode() && selectedModelName() ? selectedModelName() : undefined;
 			const currentConfig = config();
 			const titlePromptTemplate = getLocalizedTitleGenerationPrompt(
 				String(currentConfig.interfaceLanguage || 'en')
@@ -1136,7 +1165,12 @@ class ChatStore {
 				content: titlePrompt
 			};
 
-			const titleResponse = await ChatService.generateTitle(titleMessage, effectiveModel);
+			const titleResponse = await ChatService.generateTitle(
+				titleMessage,
+				requestBinding.operationModel.model,
+				undefined,
+				requestBinding
+			);
 
 			if (!titleResponse) return;
 
@@ -1375,6 +1409,7 @@ class ChatStore {
 		const conversationPath = conversationsStore.activeMessages
 			.slice(0, messageIndex)
 			.concat({ ...messageToUpdate, content: newContent, children: [] });
+		const generationModel = this.captureGenerationModel(undefined, conversationPath);
 		if (this.isChatLoadingInternal(activeConv.id)) await this.stopGenerationForChat(activeConv.id);
 		try {
 			const allMessages = await conversationsStore.getConversationMessages(activeConv.id);
@@ -1405,7 +1440,7 @@ class ChatStore {
 				assistantMessage,
 				undefined,
 				undefined,
-				undefined,
+				generationModel,
 				undefined,
 				perChatOverrides
 			);
@@ -1425,6 +1460,7 @@ class ChatStore {
 		if (!result) return;
 		const { index: messageIndex } = result;
 		const conversationPath = conversationsStore.activeMessages.slice(0, messageIndex);
+		const generationModel = this.captureGenerationModel(undefined, conversationPath);
 		try {
 			const { parentId } = await DatabaseService.truncateBranchForRegeneration(
 				activeConv.id,
@@ -1442,7 +1478,7 @@ class ChatStore {
 				assistantMessage,
 				undefined,
 				undefined,
-				undefined,
+				generationModel,
 				undefined,
 				perChatOverrides
 			);
@@ -1464,6 +1500,10 @@ class ChatStore {
 			if (idx === -1) return;
 			const msg = conversationsStore.activeMessages[idx];
 			if (msg.role !== MessageRole.ASSISTANT) return;
+			const generationModel = this.captureGenerationModel(
+				modelOverride || msg.model,
+				conversationsStore.activeMessages.slice(0, idx)
+			);
 			const allMessages = await conversationsStore.getConversationMessages(activeConv.id);
 			const parentMessage = findMessageById(allMessages, msg.parent);
 			if (!parentMessage) return;
@@ -1490,13 +1530,12 @@ class ChatStore {
 				parentMessage.id,
 				false
 			) as DatabaseMessage[];
-			const modelToUse = modelOverride || msg.model || undefined;
 			await this.streamChatCompletion(
 				conversationPath,
 				newAssistantMessage,
 				undefined,
 				undefined,
-				modelToUse,
+				generationModel,
 				undefined,
 				perChatOverrides
 			);
@@ -1707,6 +1746,13 @@ class ChatStore {
 		if (!result) result = this.getMessageByIdWithRole(messageId, MessageRole.SYSTEM);
 		if (!result) return;
 		const { message: msg } = result;
+		const generationModel =
+			msg.role === MessageRole.USER
+				? this.captureGenerationModel(
+						undefined,
+						conversationsStore.activeMessages.slice(0, result.index)
+					)
+				: undefined;
 		try {
 			const allMessages = await conversationsStore.getConversationMessages(activeConv.id);
 			const rootMessage = allMessages.find((m) => m.type === 'root' && m.parent === null);
@@ -1766,7 +1812,8 @@ class ChatStore {
 				await this.generateResponseForMessage(
 					activeConv.id,
 					messageIdForResponse,
-					perChatOverrides
+					perChatOverrides,
+					generationModel
 				);
 		} catch (error) {
 			console.error('Failed to edit message with branching:', error);
@@ -1776,7 +1823,8 @@ class ChatStore {
 	private async generateResponseForMessage(
 		convId: string,
 		userMessageId: string,
-		perChatOverrides?: McpServerOverride[]
+		perChatOverrides?: McpServerOverride[],
+		generationModel?: GenerationModel
 	): Promise<void> {
 		this.showErrorDialog(null);
 		this.setChatLoading(convId, true);
@@ -1810,7 +1858,7 @@ class ChatStore {
 				assistantMessage,
 				undefined,
 				undefined,
-				undefined,
+				generationModel,
 				undefined,
 				perChatOverrides
 			);
@@ -1951,11 +1999,6 @@ class ChatStore {
 			value !== undefined && value !== null && value !== '';
 		const apiOptions: Record<string, unknown> = { stream: true, timings_per_token: true };
 
-		if (isRouterMode()) {
-			const modelName = selectedModelName();
-			if (modelName) apiOptions.model = modelName;
-		}
-
 		if (currentConfig.systemMessage) apiOptions.systemMessage = currentConfig.systemMessage;
 
 		if (
@@ -2049,7 +2092,7 @@ class ChatStore {
 		allMessages: DatabaseMessage[],
 		assistantMessage: DatabaseMessage,
 		assistantContent: string,
-		model: string | null | undefined,
+		operationModel: OperationModel,
 		excludeReasoning: boolean | undefined,
 		providerRequestContext: import('$lib/types/provider').ProviderRequestContext
 	): Promise<void> {
@@ -2059,7 +2102,11 @@ class ChatStore {
 		const signal = this.preEncodeAbortController.signal;
 
 		try {
-			const allIdle = await ChatService.areAllSlotsIdle(providerRequestContext, model, signal);
+			const allIdle = await ChatService.areAllSlotsIdle(
+				providerRequestContext,
+				operationModel.model,
+				signal
+			);
 			if (!allIdle || signal.aborted) return;
 
 			const messagesWithAssistant: DatabaseMessage[] = [
@@ -2070,9 +2117,10 @@ class ChatStore {
 			await ChatService.preEncode(
 				messagesWithAssistant,
 				providerRequestContext,
-				model,
+				operationModel.model,
 				excludeReasoning,
-				signal
+				signal,
+				operationModel
 			);
 		} catch (err) {
 			if (!isAbortError(err)) {

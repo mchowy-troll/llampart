@@ -94,10 +94,23 @@ source (provider/address/credential hash/protocol); favorites are stored per pro
 selects first, then initiates native router loading if needed. There is no current
 `useModelChangeValidation` hook or automatic “load, validate whole conversation,
 unload on modality mismatch” selection workflow. Attachment controls consult current
-model capability/modalities; `ChatService` also removes historical image parts only
-when native modality information explicitly says `vision === false`.
-Compatible protocol builders reject explicitly unsupported media input rather than
-silently assuming that all historical attachments can be serialized.
+model capability/modalities. Requests use the operation's captured model and capability
+snapshot, not a later selector value or the first catalog entry. An actual image in
+the selected request path with explicit `vision: unsupported` fails before generation
+I/O for both native and compatible providers; it is never silently removed. Stored
+attachments and inactive branches are untouched; browsing and export do not validate
+generation capabilities.
+
+ChatStore captures the operation's provider context and model before asynchronous
+persistence/preparation. Explicit overrides win; branching regeneration defaults to
+the regenerated message's model. Native ROUTER otherwise uses the selector, then the
+last assistant model on the relevant conversation path; compatible providers use the
+selected exact ID. Native MODEL can intentionally omit the wire model. AgenticStore
+reuses this selection and its single capability promise for every turn. Standalone
+service/agent callers resolve through the same helper. Catalog refresh, reordering,
+removal or a selector change never substitutes another model in a running operation.
+A later operation can use the new selection; source changes still cancel through
+the existing source lifecycle rather than continuing on a stale or new endpoint.
 
 Native `isModelLoaded` treats `LOADED` and `SLEEPING` as loaded; polling after a load
 waits specifically for `LOADED`. Model props use a source-scoped TTL cache and
@@ -112,6 +125,8 @@ model-dependent features at **unknown**, applies explicit model-list capability
 declarations (including constraints), and tracks source generation, identity and model.
 `refreshCapabilities()` reads the matching cached model metadata; it does not probe
 generation or fetch an assumed `/props` on compatible backends.
+For native models it captures source/model-specific modalities, fetching missing
+router props without autoload. Native MODEL uses its server props, not `models[0]`.
 
 - llama-server uses Chat Completions and its separate native props/modalities path.
 - vLLM/OpenAI-compatible prefer Chat Completions when declared and default to it
@@ -123,6 +138,9 @@ generation or fetch an assumed `/props` on compatible backends.
   remain available only where input serialization exists: compatible Chat supports
   current image/audio formats, Responses supports images but not current input audio,
   and native video representation remains llama-server-only.
+  In particular, the legacy boolean `modelSupportsVision()` is an optimistic UI
+  availability policy, not proof of `supported`. Request validation uses the
+  operation-owned tri-state evidence; `unknown` stays `unknown` when serialized.
 - Stock vLLM model lists do not prove runtime modalities from architecture or names.
   Explicit `language_model_only: true` metadata overrides positive modality declarations.
   No `/server_info` endpoint or multimodal generation probe is used.

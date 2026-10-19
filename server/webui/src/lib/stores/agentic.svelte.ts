@@ -26,7 +26,6 @@ import { config } from '$lib/stores/settings.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
 import { permissionsStore } from '$lib/stores/permissions.svelte';
-import { modelsStore } from '$lib/stores/models.svelte';
 import { isAbortError } from '$lib/utils/abort';
 import { projectToolHistory, toolExecutionDescription } from '$lib/utils/tool-lifecycle';
 import { uuid } from '$lib/utils/uuid';
@@ -318,7 +317,11 @@ class AgenticStore {
 		const overridesSnapshot = perChatOverrides?.map((override) => ({ ...override }));
 		const toolExecutionScope = mcpStore.createToolExecutionScope(overridesSnapshot);
 		const requestContext =
-			options.providerRequestContext ?? ChatService.createProviderRequestContext();
+			options.operationModel?.requestContext ??
+			options.providerRequestContext ??
+			ChatService.createProviderRequestContext();
+		const operationModel =
+			options.operationModel ?? ChatService.captureOperationModel(requestContext, options.model);
 		const flowController = new AbortController();
 		this.flowControllers.get(conversationId)?.abort();
 		this.flowControllers.set(conversationId, flowController);
@@ -399,7 +402,7 @@ class AgenticStore {
 			await this.executeAgenticLoop({
 				conversationId,
 				messages: normalizedMessages,
-				options,
+				options: { ...options, model: operationModel.model ?? undefined, operationModel },
 				tools,
 				toolEntries,
 				toolExecutionScope,
@@ -482,7 +485,6 @@ class AgenticStore {
 		};
 		const maxTurns = agenticConfig.maxTurns;
 
-		const effectiveModel = options.model || modelsStore.models[0]?.model || '';
 		let assistantMessageId = options.assistantMessageId;
 		const operationId = options.operationId ?? uuid();
 		const identity = (): AgenticMessageIdentity => ({
@@ -852,16 +854,11 @@ class AgenticStore {
 					];
 					for (const attachment of attachments) {
 						if (attachment.type === AttachmentType.IMAGE) {
-							if (modelsStore.modelSupportsVision(effectiveModel)) {
-								contentParts.push({
-									type: ContentPartType.IMAGE_URL,
-									image_url: { url: (attachment as DatabaseMessageExtraImageFile).base64Url }
-								});
-							} else {
-								console.info(
-									`[AgenticStore] Skipping image attachment (model "${effectiveModel}" does not support vision)`
-								);
-							}
+							// The request validator owns modality policy for the operation model.
+							contentParts.push({
+								type: ContentPartType.IMAGE_URL,
+								image_url: { url: (attachment as DatabaseMessageExtraImageFile).base64Url }
+							});
 						}
 					}
 

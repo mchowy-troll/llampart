@@ -3,7 +3,7 @@ import { withChatInstructions } from '$lib/utils/response-preferences';
 import { VllmLiveStatistics } from '$lib/utils/vllm-live-statistics';
 import { getApiProvider } from '$lib/services/providers';
 import type { ApiProviderAdapter } from '$lib/services/providers/provider.types';
-import type { ProviderRequestContext, ProviderUsage } from '$lib/types/provider';
+import type { OperationModel, ProviderRequestContext, ProviderUsage } from '$lib/types/provider';
 import { formatAttachmentText } from '$lib/utils/formatters';
 import { isAbortError } from '$lib/utils/abort';
 import { projectToolHistory } from '$lib/utils/tool-lifecycle';
@@ -17,6 +17,7 @@ import { AttachmentType, ContentPartType, MessageRole } from '$lib/enums';
 import type { ApiChatMessageContentPart, ApiChatCompletionToolCall } from '$lib/types/api';
 import type { DatabaseMessageExtraMcpPrompt, DatabaseMessageExtraMcpResource } from '$lib/types';
 import { modelsStore } from '$lib/stores/models.svelte';
+import { serverStore } from '$lib/stores/server.svelte';
 import { config } from '$lib/stores/settings.svelte';
 import { API_STREAM } from '$lib/constants/api-endpoints';
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
@@ -57,6 +58,28 @@ export class ChatService {
 	private static frozenStreamRequests = new Map<string, FrozenStreamRequest>();
 	private static sourceGeneration = 0;
 	private static readonly optionalStreamEndpointStatuses = new Set([404, 405, 501]);
+
+	/** Resolve once at the owner's synchronous entry, preserving provider-specific priorities. */
+	static captureOperationModel(
+		context: ProviderRequestContext,
+		modelOverride?: string | null,
+		conversationModel?: string | null
+	): OperationModel {
+		let model = modelOverride || null;
+		if (!model) {
+			if (context.providerId === API_PROVIDER_IDS.LLAMA_SERVER && serverStore.isRouterMode) {
+				model = modelsStore.selectedModelName || conversationModel || null;
+			} else if (getApiProvider(context.providerId).capabilities.requiresModelInChatRequest) {
+				model = (modelsStore.selectedModelName || modelsStore.selectedModelId || '').trim() || null;
+			}
+		}
+		const capabilities = modelsStore.refreshCapabilities(context, model);
+		// The owner may still be awaiting persistence/permission when discovery fails.
+		// Keep the rejection for its eventual await, without an unhandled rejection meanwhile.
+		void capabilities.catch(() => undefined);
+		return Object.freeze({ model, requestContext: context, capabilities });
+	}
+
 	/**
 	 * Generates a short conversation title with a small auxiliary LLM request.
 	 * This does not use the conversation system prompt and keeps thinking disabled when supported.
@@ -64,7 +87,8 @@ export class ChatService {
 	static async generateTitle(
 		message: ApiChatMessageData,
 		model?: string | null,
-		signal?: AbortSignal
+		signal?: AbortSignal,
+		requestBinding?: Pick<SettingsChatServiceOptions, 'providerRequestContext' | 'operationModel'>
 	): Promise<string> {
 		let titleResponse = '';
 
@@ -73,6 +97,7 @@ export class ChatService {
 				[message],
 				{
 					model: model || undefined,
+					...requestBinding,
 					stream: true,
 					max_tokens: 64,
 					custom: JSON.stringify({ chat_template_kwargs: { enable_thinking: false } }),
@@ -116,17 +141,13 @@ export class ChatService {
 		signal?: AbortSignal
 	): Promise<string | void> {
 		const requestContext =
-			options.providerRequestContext ?? ChatService.createProviderRequestContext();
+			options.operationModel?.requestContext ??
+			options.providerRequestContext ??
+			ChatService.createProviderRequestContext();
 		if (!ChatService.isProviderRequestContextCurrent(requestContext)) return;
 		const provider = getApiProvider(requestContext.providerId);
-		const selectedProviderModel =
-			(modelsStore.selectedModelName || modelsStore.selectedModelId || '').trim() || undefined;
-		let effectiveOptions: SettingsChatServiceOptions =
-			provider.capabilities.requiresModelInChatRequest && !options.model && selectedProviderModel
-				? { ...options, model: selectedProviderModel }
-				: options;
-		effectiveOptions = {
-			...effectiveOptions,
+		let effectiveOptions: SettingsChatServiceOptions = {
+			...options,
 			protocol: requestContext.protocol ?? 'chat-completions'
 		};
 
@@ -169,31 +190,9 @@ export class ChatService {
 		if (conversationId)
 			normalizedMessages = withChatInstructions(normalizedMessages, { ...config() });
 
-		// Filter out image attachments if the model doesn't support vision
-		if (
-			effectiveOptions.model &&
-			modelsStore.getModelModalities(effectiveOptions.model)?.vision === false
-		) {
-			normalizedMessages.forEach((msg) => {
-				if (Array.isArray(msg.content)) {
-					msg.content = msg.content.filter((part: ApiChatMessageContentPart) => {
-						if (part.type === ContentPartType.IMAGE_URL) {
-							console.info(
-								`[ChatService] Skipping image attachment in message history (model "${effectiveOptions.model}" does not support vision)`
-							);
-
-							return false;
-						}
-
-						return true;
-					});
-					// If only text remains and it's a single part, simplify to string
-					if (msg.content.length === 1 && msg.content[0].type === ContentPartType.TEXT) {
-						msg.content = msg.content[0].text;
-					}
-				}
-			});
-		}
+		const operationModel =
+			options.operationModel ?? ChatService.captureOperationModel(requestContext, options.model);
+		effectiveOptions = { ...effectiveOptions, model: operationModel.model ?? undefined };
 
 		const frozenServerBaseUrl = requestContext.serverBaseUrl;
 		const frozenApiKey = requestContext.apiKey;
@@ -228,10 +227,7 @@ export class ChatService {
 			});
 		}
 
-		const capabilities = await modelsStore.refreshCapabilities(
-			requestContext,
-			effectiveOptions.model ?? null
-		);
+		const capabilities = await operationModel.capabilities;
 		if (!ChatService.isProviderRequestContextCurrent(requestContext) || signal?.aborted) return;
 		effectiveOptions = {
 			...effectiveOptions,
@@ -239,6 +235,7 @@ export class ChatService {
 		};
 		const requestStartedAt = ChatService.getMonotonicNow();
 		try {
+			ChatService.validateImageInput(normalizedMessages, capabilities);
 			const providerRequest = provider.buildChatCompletionRequest({
 				serverBaseUrl: frozenServerBaseUrl,
 				apiKey: frozenApiKey,
@@ -348,6 +345,25 @@ export class ChatService {
 		}
 	}
 
+	/** Unknown is not evidence of support, but retains the existing serializer policy.
+	 * Never silently remove an actual image from the selected request path. */
+	private static validateImageInput(
+		messages: ApiChatMessageData[],
+		capabilities: import('$lib/types/provider').CapabilitySnapshot | null
+	): void {
+		if (
+			capabilities?.features.vision?.state === 'unsupported' &&
+			messages.some(
+				(message) =>
+					Array.isArray(message.content) &&
+					message.content.some(
+						(part: ApiChatMessageContentPart) => part.type === ContentPartType.IMAGE_URL
+					)
+			)
+		)
+			throw new Error('This backend/model explicitly does not support vision input');
+	}
+
 	static createProviderRequestContext(): ProviderRequestContext {
 		const currentConfig = config();
 		return Object.freeze({
@@ -428,9 +444,11 @@ export class ChatService {
 		context: ProviderRequestContext,
 		model?: string | null,
 		excludeReasoning?: boolean,
-		signal?: AbortSignal
+		signal?: AbortSignal,
+		operationModel?: OperationModel
 	): Promise<void> {
-		if (!ChatService.isProviderRequestContextCurrent(context)) return;
+		const requestContext = operationModel?.requestContext ?? context;
+		if (!ChatService.isProviderRequestContextCurrent(requestContext)) return;
 		const normalizedMessages: ApiChatMessageData[] = messages
 			.map((msg) => {
 				if ('id' in msg && 'convId' in msg && 'timestamp' in msg) {
@@ -454,6 +472,7 @@ export class ChatService {
 		const requestMessages = withChatInstructions(projectToolHistory(normalizedMessages), {
 			...config()
 		});
+		const requestModel = operationModel ? operationModel.model : model;
 		const requestBody: Record<string, unknown> = {
 			messages: requestMessages.map((msg: ApiChatMessageData) => {
 				const mapped: Record<string, unknown> = {
@@ -473,20 +492,25 @@ export class ChatService {
 			n_predict: 0
 		};
 
-		if (model) {
-			requestBody.model = model;
+		if (requestModel) {
+			requestBody.model = requestModel;
 		}
 
 		try {
-			const provider = getApiProvider(context.providerId);
+			const provider = getApiProvider(requestContext.providerId);
 			if (!provider.capabilities.supportsPreEncode) return;
-			if (!ChatService.isProviderRequestContextCurrent(context)) return;
+			const capabilities = await (operationModel?.capabilities ??
+				modelsStore.refreshCapabilities(requestContext, requestModel ?? null));
+			if (!ChatService.isProviderRequestContextCurrent(requestContext)) return;
+			ChatService.validateImageInput(requestMessages, capabilities);
 
-			const response = await fetchProviderEndpoint(context, '/v1/chat/completions', {
+			const response = await fetchProviderEndpoint(requestContext, '/v1/chat/completions', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					...(context.apiKey.trim() ? { Authorization: `Bearer ${context.apiKey.trim()}` } : {})
+					...(requestContext.apiKey.trim()
+						? { Authorization: `Bearer ${requestContext.apiKey.trim()}` }
+						: {})
 				},
 				body: JSON.stringify(requestBody),
 				signal

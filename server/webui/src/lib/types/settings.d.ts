@@ -129,6 +129,7 @@ export interface SettingsChatServiceOptions {
 	stream?: boolean;
 	assistantMessageId?: string;
 	providerRequestContext?: ProviderRequestContext;
+	operationModel?: import('./provider').OperationModel;
 	// Model (required in ROUTER mode, optional in MODEL mode)
 	model?: string;
 	// System message to inject
