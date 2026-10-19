@@ -242,6 +242,8 @@ class ConversationsStore {
 	 * Adds a message to the active messages array
 	 */
 	addMessageToActive(message: DatabaseMessage): void {
+		if (this.activeConversation?.id !== message.convId) return;
+		if (this.findMessageIndex(message.id) !== -1) return;
 		this.activeMessages.push(message);
 	}
 
@@ -510,10 +512,12 @@ class ConversationsStore {
 	/**
 	 * Refreshes active messages based on currNode after branch navigation.
 	 */
-	async refreshActiveMessages(): Promise<void> {
-		if (!this.activeConversation) return;
+	async refreshActiveMessages(convId = this.activeConversation?.id): Promise<void> {
+		if (!convId || this.activeConversation?.id !== convId) return;
+		const generation = this.loadGeneration;
 
-		const allMessages = await DatabaseService.getConversationMessages(this.activeConversation.id);
+		const allMessages = await DatabaseService.getConversationMessages(convId);
+		if (generation !== this.loadGeneration || this.activeConversation?.id !== convId) return;
 
 		if (allMessages.length === 0) {
 			this.activeMessages = [];
@@ -667,25 +671,26 @@ class ConversationsStore {
 		if (!this.activeConversation) return;
 		const activeId = this.activeConversation.id;
 		await DatabaseService.updateConversation(activeId, {});
-		await this.refreshConversationTimestamp();
+		await this.refreshConversationTimestamp(activeId);
 	}
 
 	/** Refreshes the in-memory timestamp after a DatabaseService domain mutation. */
-	async refreshConversationTimestamp(): Promise<void> {
-		if (!this.activeConversation) return;
-		const activeId = this.activeConversation.id;
-		const persisted = await DatabaseService.getConversation(activeId);
-		if (!persisted || this.activeConversation?.id !== activeId) return;
+	async refreshConversationTimestamp(convId = this.activeConversation?.id): Promise<void> {
+		if (!convId) return;
+		const persisted = await DatabaseService.getConversation(convId);
+		if (!persisted) return;
 
-		const chatIndex = this.conversations.findIndex((c) => c.id === activeId);
+		const chatIndex = this.conversations.findIndex((c) => c.id === convId);
 
 		if (chatIndex !== -1) {
 			this.conversations[chatIndex].lastModified = persisted.lastModified;
+			this.conversations = sortConversationsForSidebar(this.conversations);
+		}
+		if (this.activeConversation?.id === convId) {
 			this.activeConversation = {
 				...this.activeConversation,
 				lastModified: persisted.lastModified
 			};
-			this.conversations = sortConversationsForSidebar(this.conversations);
 		}
 	}
 
@@ -695,9 +700,18 @@ class ConversationsStore {
 	 */
 	async updateCurrentNode(nodeId: string): Promise<void> {
 		if (!this.activeConversation) return;
+		await this.updateConversationCurrentNode(this.activeConversation.id, nodeId);
+	}
 
-		await DatabaseService.updateCurrentNode(this.activeConversation.id, nodeId);
-		this.activeConversation = { ...this.activeConversation, currNode: nodeId };
+	/** Persists a branch selection for its owner, independently of the current view. */
+	async updateConversationCurrentNode(convId: string, nodeId: string): Promise<void> {
+		await DatabaseService.updateCurrentNode(convId, nodeId);
+		if (this.activeConversation?.id === convId) {
+			this.activeConversation = { ...this.activeConversation, currNode: nodeId };
+		}
+		this.conversations = this.conversations.map((conversation) =>
+			conversation.id === convId ? { ...conversation, currNode: nodeId } : conversation
+		);
 	}
 
 	/**
@@ -713,9 +727,12 @@ class ConversationsStore {
 	 * @param siblingId - The sibling message ID to navigate to
 	 */
 	async navigateToSibling(siblingId: string): Promise<void> {
-		if (!this.activeConversation) return;
+		const convId = this.activeConversation?.id;
+		if (!convId) return;
+		const generation = this.loadGeneration;
 
-		const allMessages = await DatabaseService.getConversationMessages(this.activeConversation.id);
+		const allMessages = await DatabaseService.getConversationMessages(convId);
+		if (generation !== this.loadGeneration || this.activeConversation?.id !== convId) return;
 		const rootMessage = allMessages.find((m) => m.type === 'root' && m.parent === null);
 		const currentFirstUserMessage = this.activeMessages.find(
 			(m) => m.role === MessageRole.USER && m.parent === rootMessage?.id
@@ -723,9 +740,9 @@ class ConversationsStore {
 
 		const currentLeafNodeId = findLeafNode(allMessages, siblingId);
 
-		await DatabaseService.updateCurrentNode(this.activeConversation.id, currentLeafNodeId);
-		this.activeConversation = { ...this.activeConversation, currNode: currentLeafNodeId };
-		await this.refreshActiveMessages();
+		await this.updateConversationCurrentNode(convId, currentLeafNodeId);
+		await this.refreshActiveMessages(convId);
+		if (generation !== this.loadGeneration || this.activeConversation?.id !== convId) return;
 
 		if (rootMessage && this.activeMessages.length > 0) {
 			const newFirstUserMessage = this.activeMessages.find(
@@ -740,7 +757,7 @@ class ConversationsStore {
 					newFirstUserMessage.content.trim() !== currentFirstUserMessage.content.trim())
 			) {
 				await this.updateConversationTitleWithConfirmation(
-					this.activeConversation.id,
+					convId,
 					generateConversationTitle(
 						newFirstUserMessage.content,
 						Boolean(config().titleGenerationUseFirstLine)

@@ -199,6 +199,25 @@ describeWithChromium('DatabaseService integrity on IndexedDB', () => {
 		expect(result.messageError).toMatch(/not found/i);
 	}, 30_000);
 
+	it('atomically rejects foreign or missing current nodes and accepts owned root/interior/leaf nodes', async () => {
+		const result = await runScenario<{
+			errors: Record<string, string | null>;
+			before: unknown;
+			afterRejected: unknown;
+			atomic: boolean;
+			selections: string[];
+			expectedSelections: string[];
+			afterValid: { conversations: DatabaseConversation[] };
+		}>('current-node-ownership');
+		expect(result.errors.foreign).toMatch(/does not belong/);
+		expect(result.errors.missing).toMatch(/not found/);
+		expect(result.errors.missingConversation).toMatch(/not found/);
+		expect(result.afterRejected).toEqual(result.before);
+		expect(result.atomic).toBe(true);
+		expect(result.selections).toEqual(result.expectedSelections);
+		expect(result.afterValid.conversations[0].currNode).toBe('node-a-root');
+	}, 30_000);
+
 	it('commits system-prompt and edit truncation as complete graph mutations', async () => {
 		const result = await runScenario<{
 			beforeTimestamp: number;

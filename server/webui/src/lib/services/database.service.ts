@@ -851,8 +851,16 @@ export class DatabaseService {
 	 * @param nodeId - Message ID to set as current node
 	 */
 	static async updateCurrentNode(convId: string, nodeId: string): Promise<void> {
-		await this.updateConversation(convId, {
-			currNode: nodeId
+		await db.transaction('rw', [db.conversations, db.messages], async () => {
+			const conversation = await requireConversation(convId);
+			await requireOwnedMessage(convId, nodeId);
+			await requireUpdated(
+				await db.conversations.update(convId, {
+					currNode: nodeId,
+					lastModified: nextLastModified(conversation)
+				}),
+				`Conversation ${convId}`
+			);
 		});
 	}
 

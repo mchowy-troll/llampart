@@ -555,7 +555,60 @@ async function migrationRetry() {
 	};
 }
 
+async function currentNodeOwnership() {
+	await DatabaseService.importConversations([graph('node-a'), graph('node-b')]);
+	const before = await snapshot(['node-a', 'node-b']);
+	const errors = {
+		foreign: await captureError(() => DatabaseService.updateCurrentNode('node-a', 'node-b-root')),
+		missing: await captureError(() => DatabaseService.updateCurrentNode('node-a', 'missing')),
+		missingConversation: await captureError(() =>
+			DatabaseService.updateCurrentNode('missing', 'node-a-root')
+		)
+	};
+	const afterRejected = await snapshot(['node-a', 'node-b']);
+	const transactions: IDBTransaction[] = [];
+	const originalGet = IDBObjectStore.prototype.get;
+	const originalPut = IDBObjectStore.prototype.put;
+	try {
+		IDBObjectStore.prototype.get = function (key) {
+			transactions.push(this.transaction);
+			return originalGet.call(this, key);
+		};
+		IDBObjectStore.prototype.put = function (value, key) {
+			transactions.push(this.transaction);
+			return originalPut.call(this, value, key);
+		};
+		await DatabaseService.updateCurrentNode('node-a', 'node-a-root');
+	} finally {
+		IDBObjectStore.prototype.get = originalGet;
+		IDBObjectStore.prototype.put = originalPut;
+	}
+	const child = await DatabaseService.createMessageBranch(
+		message('node-a', 'ignored', 'node-a-root', []),
+		'node-a-root'
+	);
+	const leaf = await DatabaseService.createMessageBranch(
+		message('node-a', 'ignored', child.id, []),
+		child.id
+	);
+	const selections = [];
+	for (const nodeId of [child.id, leaf.id, 'node-a-root']) {
+		await DatabaseService.updateCurrentNode('node-a', nodeId);
+		selections.push((await DatabaseService.getConversation('node-a'))!.currNode);
+	}
+	return {
+		errors,
+		before,
+		afterRejected,
+		atomic: transactions.length >= 3 && new Set(transactions).size === 1,
+		selections,
+		expectedSelections: [child.id, leaf.id, 'node-a-root'],
+		afterValid: await snapshot(['node-a', 'node-b'])
+	};
+}
+
 const scenarios: Record<string, () => Promise<unknown>> = {
+	'current-node-ownership': currentNodeOwnership,
 	'import-collision': importCollision,
 	'import-preflight': importPreflight,
 	'import-write-rollback': importWriteRollback,

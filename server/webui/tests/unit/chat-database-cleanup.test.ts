@@ -203,7 +203,7 @@ describe('ChatStore database cleanup', () => {
 			.mockResolvedValueOnce(tool)
 			.mockResolvedValueOnce(assistant2)
 			.mockResolvedValueOnce(nextUser);
-		vi.spyOn(conversationsStore, 'updateCurrentNode').mockResolvedValue();
+		vi.spyOn(conversationsStore, 'updateConversationCurrentNode').mockResolvedValue();
 		vi.spyOn(conversationsStore, 'refreshConversationTimestamp').mockResolvedValue();
 		const deleteBranch = vi
 			.spyOn(DatabaseService, 'deleteMessageCascading')

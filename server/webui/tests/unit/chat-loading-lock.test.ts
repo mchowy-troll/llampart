@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { chatStore } from '$lib/stores/chat.svelte';
 import { conversationsStore } from '$lib/stores/conversations.svelte';
+import { DatabaseService } from '$lib/services/database.service';
 
 afterEach(() => {
 	vi.restoreAllMocks();
@@ -33,6 +34,7 @@ describe('per-conversation chat operation lock', () => {
 
 	it('keeps the new-conversation lock while the conversation is being created', async () => {
 		vi.spyOn(console, 'error').mockImplementation(() => undefined);
+		vi.spyOn(DatabaseService, 'getConversation').mockResolvedValue(undefined);
 		let releaseCreation!: () => void;
 		const creating = new Promise<void>((resolve) => {
 			releaseCreation = resolve;
