@@ -79,7 +79,7 @@ describe('deriveAgenticSections', () => {
 		expect(sections[1].toolResult).toBe('Found 3 results');
 	});
 
-	it('single turn: pending tool call without result', () => {
+	it('single turn: historical missing tool output is unknown, not still executing', () => {
 		const msg = makeAssistant({
 			toolCalls: JSON.stringify([
 				{ id: 'call_1', type: 'function', function: { name: 'bash', arguments: '{}' } }
@@ -87,7 +87,8 @@ describe('deriveAgenticSections', () => {
 		});
 		const sections = deriveAgenticSections(msg, []);
 		expect(sections).toHaveLength(1);
-		expect(sections[0].type).toBe(AgenticSectionType.TOOL_CALL_PENDING);
+		expect(sections[0].type).toBe(AgenticSectionType.TOOL_CALL);
+		expect(sections[0].toolResult).toContain('unknown');
 		expect(sections[0].toolName).toBe('bash');
 	});
 

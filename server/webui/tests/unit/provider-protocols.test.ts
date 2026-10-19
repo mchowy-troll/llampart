@@ -24,6 +24,7 @@ import {
 	parseConversationImport
 } from '$lib/utils/conversation-import-export';
 import type { ProviderChatCompletionInput, ProviderRequestContext } from '$lib/types/provider';
+import type { ApiChatMessageData } from '$lib/types/api';
 
 const input: ProviderChatCompletionInput = {
 	serverBaseUrl: 'https://example.test/proxy/v1',
@@ -489,6 +490,173 @@ describe('vLLM extensions and honest metrics', () => {
 	});
 });
 
+describe.each([
+	['llama-server', 'chat-completions'],
+	['openai-compatible', 'chat-completions'],
+	['vllm', 'chat-completions'],
+	['openai-compatible', 'responses'],
+	['vllm', 'responses']
+] as const)('%s/%s history projection integration', (providerId, protocol) => {
+	const call = {
+		id: 'call',
+		type: 'function' as const,
+		function: { name: 'test', arguments: '{}' }
+	};
+	const prepare = () => {
+		settingsStore.updateMultipleConfig({
+			apiProvider: providerId,
+			serverBaseUrl: 'http://localhost:8000',
+			apiKey: ''
+		});
+		const refresh = vi
+			.spyOn(modelsStore, 'refreshCapabilities')
+			.mockImplementation((ctx, model) =>
+				createCapabilitySnapshot(
+					ctx,
+					model ?? null,
+					protocol === 'responses' ? { capabilities: { required_protocol: 'responses' } } : {}
+				)
+			);
+		return {
+			refresh,
+			options: {
+				model: 'exact',
+				stream: false,
+				providerRequestContext: ChatService.createProviderRequestContext()
+			}
+		};
+	};
+
+	it.each(['duplicate results', 'duplicate calls', 'incomplete call with actual result'])(
+		'rejects %s before fetch without changing history',
+		async (kind) => {
+			const { refresh, options } = prepare();
+			const history: ApiChatMessageData[] = [
+				{
+					role: 'assistant',
+					content: 'text',
+					tool_calls:
+						kind === 'duplicate calls'
+							? [call, structuredClone(call)]
+							: kind === 'incomplete call with actual result'
+								? [{ ...call, function: { ...call.function, arguments: '{' } }]
+								: [call]
+				},
+				{ role: 'tool', tool_call_id: call.id, content: 'ACTUAL' },
+				...(kind === 'duplicate results'
+					? [{ role: 'tool' as const, tool_call_id: call.id, content: 'SECOND' }]
+					: [])
+			];
+			const before = structuredClone(history),
+				fetch = vi.fn(),
+				complete = vi.fn();
+			vi.stubGlobal('fetch', fetch);
+			await expect(
+				ChatService.sendMessage(history, { ...options, onComplete: complete })
+			).rejects.toThrow(
+				kind === 'incomplete call with actual result'
+					? /matching/
+					: /Ambiguous tool history: duplicate/
+			);
+			expect(fetch).not.toHaveBeenCalled();
+			expect(refresh).not.toHaveBeenCalled();
+			expect(complete).not.toHaveBeenCalled();
+			expect(history).toEqual(before);
+			if (providerId === 'llama-server') {
+				await expect(
+					ChatService.preEncode(history, options.providerRequestContext, 'exact')
+				).rejects.toThrow();
+				expect(fetch).not.toHaveBeenCalled();
+			}
+		}
+	);
+
+	it.each(['two actual results', 'incomplete stopped call', 'historical missing result'])(
+		'serializes %s without retry or mutating history',
+		async (kind) => {
+			const { options } = prepare();
+			const history: ApiChatMessageData[] =
+				kind === 'two actual results'
+					? [
+							{ role: 'assistant', content: 'text', tool_calls: [call, { ...call, id: 'second' }] },
+							{ role: 'tool', tool_call_id: 'second', content: '' },
+							{ role: 'tool', tool_call_id: call.id, content: 'ACTUAL' }
+						]
+					: [
+							{
+								role: 'assistant',
+								content: 'partial',
+								tool_calls: [
+									kind === 'incomplete stopped call'
+										? { ...call, function: { ...call.function, arguments: '{' } }
+										: call
+								]
+							}
+						];
+			const before = structuredClone(history);
+			const fetch = vi
+				.fn()
+				.mockResolvedValue(
+					new Response(
+						JSON.stringify(
+							protocol === 'responses'
+								? finalResponse('completed', [
+										{ type: 'message', content: [{ type: 'output_text', text: 'next' }] }
+									])
+								: { choices: [{ message: { content: 'next' } }] }
+						),
+						{ headers: { 'Content-Type': 'application/json' } }
+					)
+				);
+			vi.stubGlobal('fetch', fetch);
+			await ChatService.sendMessage(history, options);
+			expect(fetch).toHaveBeenCalledTimes(1);
+			const body = JSON.parse(fetch.mock.calls[0][1].body);
+			const calls =
+				protocol === 'responses'
+					? body.input
+							.filter((item: { type: string }) => item.type === 'function_call')
+							.map((item: { call_id: string }) => item.call_id)
+					: body.messages.flatMap((item: { tool_calls?: { id: string }[] }) =>
+							(item.tool_calls ?? []).map((call) => call.id)
+						);
+			expect(calls).toEqual(
+				kind === 'two actual results'
+					? ['call', 'second']
+					: kind === 'incomplete stopped call'
+						? []
+						: ['call']
+			);
+			const outputs =
+				protocol === 'responses'
+					? body.input
+							.filter((item: { type: string }) => item.type === 'function_call_output')
+							.map((item: { call_id: string; output: string }) => ({
+								id: item.call_id,
+								content: item.output
+							}))
+					: body.messages
+							.filter((item: { role: string }) => item.role === 'tool')
+							.map((item: { tool_call_id: string; content: string }) => ({
+								id: item.tool_call_id,
+								content: item.content
+							}));
+			if (kind === 'two actual results')
+				expect(outputs).toEqual([
+					{ id: 'call', content: 'ACTUAL' },
+					{ id: 'second', content: '' }
+				]);
+			else if (kind === 'incomplete stopped call') expect(outputs).toEqual([]);
+			else {
+				expect(outputs).toHaveLength(1);
+				expect(outputs[0].content).toContain('unknown');
+			}
+			if (protocol === 'responses') expect(body.store).toBe(false);
+			expect(history).toEqual(before);
+		}
+	);
+});
+
 describe('stream integration and compatibility', () => {
 	it('aggregates interleaved Chat tool deltas without resetting indices on content', async () => {
 		settingsStore.updateMultipleConfig({
@@ -596,7 +764,7 @@ describe('stream integration and compatibility', () => {
 			})
 		);
 	});
-	it('keeps V1 exports unchanged and readable, stripping only new internal continuation/telemetry', () => {
+	it('exports V2 without connection-bound continuation/telemetry and still reads V1', () => {
 		const continuation = {
 			providerId: context.providerId,
 			protocol: 'responses' as const,
@@ -627,9 +795,12 @@ describe('stream integration and compatibility', () => {
 			],
 			'1.9.0'
 		);
-		expect(exported.formatVersion).toBe(1);
+		expect(exported.formatVersion).toBe(2);
 		expect(JSON.stringify(exported)).not.toContain('opaque');
 		expect(JSON.stringify(exported)).not.toContain('provider');
 		expect(parseConversationImport(exported)[0].messages[0].content).toBe('text');
+		expect(parseConversationImport({ ...exported, formatVersion: 1 })[0].messages[0].content).toBe(
+			'text'
+		);
 	});
 });

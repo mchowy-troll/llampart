@@ -6,6 +6,12 @@ import { validateConversationImportRecords } from '$lib/utils/conversation-impor
 import { validateConversationGraph } from '$lib/utils/conversation-graph';
 import { LEGACY_MIGRATION_DONE_KEY, type LegacyMessagePlanner } from '$lib/types/legacy-migration';
 import type { McpServerOverride } from '$lib/types/database';
+import type {
+	AgenticMessageIdentity,
+	AgenticToolOutcome,
+	AgenticTerminalReason,
+	ToolCallExecution
+} from '$lib/types/agentic';
 
 class LlamacppDatabase extends Dexie {
 	conversations!: EntityTable<DatabaseConversation, string>;
@@ -806,6 +812,198 @@ export class DatabaseService {
 		await requireUpdated(await db.messages.update(id, updates), `Message ${id}`);
 	}
 
+	/** Assistant identity and call registration are committed together, before permission/execution. */
+	static async completeAgenticAssistant(
+		identity: AgenticMessageIdentity,
+		updates: Pick<DatabaseMessage, 'content'> &
+			Partial<
+				Pick<DatabaseMessage, 'reasoningContent' | 'timings' | 'toolCalls' | 'providerContinuation'>
+			>
+	): Promise<DatabaseMessage> {
+		assertNonEmptyId(identity.operationId, 'Agentic operation ID');
+		return db.transaction('rw', [db.conversations, db.messages], async () => {
+			await requireConversation(identity.conversationId);
+			const message = await requireOwnedMessage(
+				identity.conversationId,
+				identity.assistantMessageId
+			);
+			if (
+				message.role !== MessageRole.ASSISTANT ||
+				(message.agentic && message.agentic.operationId !== identity.operationId)
+			) {
+				throw new Error('Invalid agentic assistant identity');
+			}
+			if (message.agentic?.terminalReason) {
+				for (const key of [
+					'content',
+					'reasoningContent',
+					'toolCalls',
+					'providerContinuation'
+				] as const) {
+					if (JSON.stringify(message[key]) !== JSON.stringify(updates[key]))
+						throw new Error('Cannot replace a terminal assistant turn');
+				}
+				return message;
+			}
+			const calls = updates.toolCalls ? (JSON.parse(updates.toolCalls) as { id: string }[]) : [];
+			if (
+				new Set(calls.map((call) => call.id)).size !== calls.length ||
+				calls.some((call) => !call.id)
+			) {
+				throw new Error('Invalid or duplicate tool call identity');
+			}
+			if (message.agentic?.calls.length && message.toolCalls !== updates.toolCalls) {
+				throw new Error('Cannot replace registered tool calls');
+			}
+			const agentic = message.agentic ?? { operationId: identity.operationId, calls: [] };
+			if (!agentic.calls.length)
+				agentic.calls = calls.map((call) => ({ toolCallId: call.id, status: 'not_started' }));
+			const updated = { ...message, ...updates, agentic };
+			await db.messages.put(updated);
+			return updated;
+		});
+	}
+
+	/** No external execution inside this transaction. A confirmed result can supersede unknown, never vice versa. */
+	static async transitionAgenticToolCall(
+		identity: AgenticMessageIdentity,
+		toolCallId: string,
+		outcome: AgenticToolOutcome,
+		parentId: string
+	): Promise<{ assistant: DatabaseMessage; result?: DatabaseMessage }> {
+		return db.transaction('rw', [db.conversations, db.messages], async () => {
+			await requireConversation(identity.conversationId);
+			const assistant = await requireOwnedMessage(
+				identity.conversationId,
+				identity.assistantMessageId
+			);
+			if (
+				assistant.role !== MessageRole.ASSISTANT ||
+				assistant.agentic?.operationId !== identity.operationId
+			) {
+				throw new Error('Invalid agentic operation identity');
+			}
+			const execution = assistant.agentic.calls.find(
+				(call: ToolCallExecution) => call.toolCallId === toolCallId
+			);
+			if (!execution) throw new Error('Unknown tool call identity');
+			if (execution.resultMessageId) {
+				const result = await requireOwnedMessage(
+					identity.conversationId,
+					execution.resultMessageId
+				);
+				if (
+					outcome.result &&
+					(result.content !== outcome.result.content ||
+						JSON.stringify(result.extra) !== JSON.stringify(outcome.result.extras))
+				) {
+					throw new Error('Cannot replace a confirmed tool result');
+				}
+				return { assistant, result };
+			}
+			if (outcome.status === 'completed' && !outcome.result)
+				throw new Error('Completed call requires a confirmed output');
+			if (outcome.result && !['completed', 'error'].includes(outcome.status))
+				throw new Error('Only confirmed outcomes may contain output');
+			if (outcome.result && !['started', 'interrupted_unknown'].includes(execution.status))
+				throw new Error('Cannot confirm an execution that never started');
+			const allowed =
+				execution.status === outcome.status ||
+				(execution.status === 'not_started' &&
+					['started', 'denied', 'error'].includes(outcome.status)) ||
+				(execution.status === 'started' &&
+					['completed', 'error', 'interrupted_unknown'].includes(outcome.status)) ||
+				(execution.status === 'interrupted_unknown' &&
+					['completed', 'error'].includes(outcome.status));
+			if (!allowed || (assistant.agentic.terminalReason && outcome.status === 'started')) {
+				throw new Error(
+					`Invalid tool lifecycle transition: ${execution.status} → ${outcome.status}`
+				);
+			}
+			let result: DatabaseMessage | undefined;
+			if (outcome.result) {
+				let parent = await requireOwnedMessage(identity.conversationId, parentId);
+				const previousCurrentNode = (await requireConversation(identity.conversationId)).currNode;
+				const visited = new Set<string>();
+				while (parent.id !== assistant.id) {
+					if (
+						visited.has(parent.id) ||
+						parent.role !== MessageRole.TOOL ||
+						!parent.parent ||
+						!assistant.agentic.calls.some(
+							(call: ToolCallExecution) => call.resultMessageId === parent.id
+						)
+					) {
+						throw new Error('Tool result parent does not belong to this assistant turn');
+					}
+					visited.add(parent.id);
+					parent = await requireOwnedMessage(identity.conversationId, parent.parent);
+				}
+				result = await this.createMessageBranch(
+					{
+						convId: identity.conversationId,
+						role: MessageRole.TOOL,
+						type: 'text',
+						content: outcome.result.content,
+						extra: outcome.result.extras,
+						toolCallId,
+						toolCalls: '',
+						timestamp: Date.now(),
+						parent: parentId,
+						children: []
+					},
+					parentId
+				);
+				// Preserve existing branches and their causal context. A late result
+				// must not reparent/select a newer user message or continuation.
+				if (previousCurrentNode !== parentId) {
+					await requireUpdated(
+						await db.conversations.update(identity.conversationId, {
+							currNode: previousCurrentNode
+						}),
+						`Conversation ${identity.conversationId}`
+					);
+				}
+			}
+			execution.status = outcome.status;
+			execution.error = outcome.error;
+			if (result) execution.resultMessageId = result.id;
+			await requireUpdated(
+				await db.messages.update(assistant.id, { agentic: assistant.agentic }),
+				`Assistant ${assistant.id}`
+			);
+			return {
+				assistant: await requireOwnedMessage(identity.conversationId, assistant.id),
+				result
+			};
+		});
+	}
+
+	static async finishAgenticTurn(
+		identity: AgenticMessageIdentity,
+		reason: AgenticTerminalReason
+	): Promise<DatabaseMessage> {
+		return db.transaction('rw', [db.conversations, db.messages], async () => {
+			const message = await requireOwnedMessage(
+				identity.conversationId,
+				identity.assistantMessageId
+			);
+			if (
+				message.role !== MessageRole.ASSISTANT ||
+				message.agentic?.operationId !== identity.operationId
+			) {
+				throw new Error('Invalid terminal agentic identity');
+			}
+			if (message.agentic.terminalReason && message.agentic.terminalReason !== reason)
+				throw new Error('Agentic turn already terminated');
+			message.agentic.terminalReason = reason;
+			for (const call of message.agentic.calls)
+				if (call.status === 'started') call.status = 'interrupted_unknown';
+			await db.messages.put(message);
+			return message;
+		});
+	}
+
 	/**
 	 *
 	 *
@@ -1000,6 +1198,17 @@ export class DatabaseService {
 
 				return {
 					...msg,
+					agentic: msg.agentic
+						? {
+								...msg.agentic,
+								calls: msg.agentic.calls.map((call: ToolCallExecution) => ({
+									...call,
+									resultMessageId: call.resultMessageId
+										? idMap.get(call.resultMessageId)
+										: undefined
+								}))
+							}
+						: undefined,
 					id: newId,
 					convId: newConvId,
 					parent: newParent,

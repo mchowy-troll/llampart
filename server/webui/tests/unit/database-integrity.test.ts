@@ -140,6 +140,21 @@ describeWithChromium('DatabaseService integrity on IndexedDB', () => {
 		expect(server.config.cacheDir).not.toBe(resolve(process.cwd(), 'node_modules/.vite'));
 	});
 
+	it('atomically preserves typed tool lifecycle, identity, late results and V2 reimport', async () => {
+		const result = await runScenario<{
+			states: string[];
+			results: string[];
+			version: number;
+			idempotent: boolean;
+		}>('tool-lifecycle');
+		expect(result).toEqual({
+			states: ['completed', 'denied', 'error', 'interrupted_unknown'],
+			results: ['CONFIRMED'],
+			version: 2,
+			idempotent: true
+		});
+	}, 30_000);
+
 	it('rejects message ID collisions without changing the existing conversation', async () => {
 		const result = await runScenario<{
 			error: string | null;

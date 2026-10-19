@@ -28,10 +28,11 @@ import { toolsStore } from '$lib/stores/tools.svelte';
 import { permissionsStore } from '$lib/stores/permissions.svelte';
 import { modelsStore } from '$lib/stores/models.svelte';
 import { isAbortError } from '$lib/utils/abort';
+import { projectToolHistory, toolExecutionDescription } from '$lib/utils/tool-lifecycle';
+import { uuid } from '$lib/utils/uuid';
 import {
 	DEFAULT_AGENTIC_CONFIG,
 	NEWLINE_SEPARATOR,
-	TURN_LIMIT_MESSAGE,
 	LLM_ERROR_BLOCK_START,
 	LLM_ERROR_BLOCK_END
 } from '$lib/constants';
@@ -67,6 +68,11 @@ import type {
 	AgenticFlowOptions
 } from '$lib/types/agentic';
 import type {
+	AgenticTerminalReason,
+	AgenticMessageIdentity,
+	ToolExecutionStatus
+} from '$lib/types/agentic';
+import type {
 	ApiChatCompletionToolCall,
 	ApiChatMessageData,
 	ApiChatMessageContentPart
@@ -90,7 +96,8 @@ function createDefaultSession(): AgenticSession {
 		currentTurn: 0,
 		totalToolCalls: 0,
 		lastError: null,
-		streamingToolCall: null
+		streamingToolCall: null,
+		terminalReason: null
 	};
 }
 
@@ -379,7 +386,8 @@ class AgenticStore {
 			isRunning: true,
 			currentTurn: 0,
 			totalToolCalls: 0,
-			lastError: null
+			lastError: null,
+			terminalReason: null
 		});
 		if (hasMcpConnection) mcpStore.acquireConnection();
 
@@ -445,7 +453,7 @@ class AgenticStore {
 			onAttachments,
 			onModel,
 			onAssistantTurnComplete,
-			createToolResultMessage,
+			onToolCallState,
 			createAssistantMessage,
 			onFlowComplete,
 			onTimings,
@@ -453,7 +461,7 @@ class AgenticStore {
 			onStreamCheckpoint
 		} = callbacks;
 
-		const sessionMessages: AgenticMessage[] = toAgenticMessages(messages);
+		const sessionMessages: AgenticMessage[] = toAgenticMessages(projectToolHistory(messages));
 		let capturedTimings: ChatMessageTimings | undefined;
 		let totalToolCallCount = 0;
 
@@ -469,314 +477,406 @@ class AgenticStore {
 
 		const effectiveModel = options.model || modelsStore.models[0]?.model || '';
 		let assistantMessageId = options.assistantMessageId;
+		const operationId = options.operationId ?? uuid();
+		const identity = (): AgenticMessageIdentity => ({
+			conversationId,
+			operationId,
+			assistantMessageId: assistantMessageId ?? ''
+		});
+		let reason: AgenticTerminalReason = 'completed';
+		const pending = new SvelteMap<string, ToolExecutionStatus>();
+		if (
+			!assistantMessageId ||
+			!callbacks.onFlowStart ||
+			!onAssistantTurnComplete ||
+			!onToolCallState ||
+			!onFlowComplete
+		) {
+			throw new Error('Agentic execution requires owned durable lifecycle callbacks');
+		}
 
-		for (let turn = 0; turn < maxTurns; turn++) {
-			this.updateSession(conversationId, { currentTurn: turn + 1 });
-			agenticTimings.turns = turn + 1;
+		try {
+			await callbacks.onFlowStart?.(identity());
+			for (let turn = 0; turn < maxTurns; turn++) {
+				this.updateSession(conversationId, { currentTurn: turn + 1 });
+				agenticTimings.turns = turn + 1;
 
-			if (signal?.aborted) {
-				onFlowComplete?.(this.buildFinalTimings(capturedTimings, agenticTimings));
-				return;
-			}
-
-			// For turns > 0, create a new assistant message via callback
-			if (turn > 0 && createAssistantMessage) {
-				assistantMessageId = (await createAssistantMessage()).id;
-			}
-
-			let turnContent = '';
-			let turnReasoningContent = '';
-			let turnToolCalls: ApiChatCompletionToolCall[] = [];
-			let lastStreamingToolCallName = '';
-			let lastStreamingToolCallArgsLength = 0;
-			let turnTimings: ChatMessageTimings | undefined;
-			let turnContinuation: import('$lib/types/provider').ProviderContinuation | undefined;
-
-			const turnStats: ChatMessageAgenticTurnStats = {
-				turn: turn + 1,
-				llm: { predicted_n: 0, predicted_ms: 0, prompt_n: 0, prompt_ms: 0 },
-				toolCalls: [],
-				toolsMs: 0
-			};
-
-			try {
-				await ChatService.sendMessage(
-					sessionMessages as ApiChatMessageData[],
-					{
-						...options,
-						providerRequestContext: requestContext,
-						assistantMessageId,
-						stream: true,
-						tools: tools.length > 0 ? tools : undefined,
-						onChunk: (chunk: string) => {
-							turnContent += chunk;
-							onChunk?.(chunk);
-						},
-						onReasoningChunk: (chunk: string) => {
-							turnReasoningContent += chunk;
-							onReasoningChunk?.(chunk);
-						},
-						onToolCallChunk: (serialized: string) => {
-							try {
-								turnToolCalls = JSON.parse(serialized) as ApiChatCompletionToolCall[];
-								onToolCallsStreaming?.(turnToolCalls);
-
-								if (turnToolCalls.length > 0 && turnToolCalls[0]?.function) {
-									const name = turnToolCalls[0].function.name || '';
-									const args = turnToolCalls[0].function.arguments || '';
-									const argsLengthBucket = Math.floor(args.length / 100);
-									if (
-										name !== lastStreamingToolCallName ||
-										argsLengthBucket !== lastStreamingToolCallArgsLength
-									) {
-										lastStreamingToolCallName = name;
-										lastStreamingToolCallArgsLength = argsLengthBucket;
-										this.updateSession(conversationId, {
-											streamingToolCall: { name, arguments: args }
-										});
-									}
-								}
-							} catch {
-								/* Ignore parse errors during streaming */
-							}
-						},
-						onModel,
-						onTimings: (timings?: ChatMessageTimings, progress?: ChatMessagePromptProgress) => {
-							onTimings?.(timings, progress);
-							if (timings) {
-								capturedTimings = timings;
-								turnTimings = timings;
-							}
-						},
-						onStreamCheckpoint,
-						onComplete: (_content, _reasoning, _timings, _tools, continuation) => {
-							turnContinuation = continuation;
-						},
-						onError: (error: Error) => {
-							throw error;
-						}
-					},
-					conversationId,
-					signal
-				);
-				if (signal?.aborted) return;
-
-				this.updateSession(conversationId, { streamingToolCall: null });
-
-				if (turnTimings) {
-					agenticTimings.llm.predicted_n += turnTimings.predicted_n || 0;
-					agenticTimings.llm.predicted_ms += turnTimings.predicted_ms || 0;
-					agenticTimings.llm.prompt_n += turnTimings.prompt_n || 0;
-					agenticTimings.llm.prompt_ms += turnTimings.prompt_ms || 0;
-					turnStats.llm.predicted_n = turnTimings.predicted_n || 0;
-					turnStats.llm.predicted_ms = turnTimings.predicted_ms || 0;
-					turnStats.llm.prompt_n = turnTimings.prompt_n || 0;
-					turnStats.llm.prompt_ms = turnTimings.prompt_ms || 0;
-				}
-			} catch (error) {
 				if (signal?.aborted) {
-					// Save whatever we have for this turn before exiting
+					reason = 'stopped';
+					return;
+				}
+
+				// For turns > 0, create a new assistant message via callback
+				if (turn > 0 && createAssistantMessage) {
+					assistantMessageId = (await createAssistantMessage()).id;
+				}
+				pending.clear();
+
+				let turnContent = '';
+				let turnReasoningContent = '';
+				let turnToolCalls: ApiChatCompletionToolCall[] = [];
+				let acceptingStreamCallbacks = true;
+				let lastStreamingToolCallName = '';
+				let lastStreamingToolCallArgsLength = 0;
+				let turnTimings: ChatMessageTimings | undefined;
+				let turnContinuation: import('$lib/types/provider').ProviderContinuation | undefined;
+
+				const turnStats: ChatMessageAgenticTurnStats = {
+					turn: turn + 1,
+					llm: { predicted_n: 0, predicted_ms: 0, prompt_n: 0, prompt_ms: 0 },
+					toolCalls: [],
+					toolsMs: 0
+				};
+
+				try {
+					await ChatService.sendMessage(
+						sessionMessages as ApiChatMessageData[],
+						{
+							...options,
+							providerRequestContext: requestContext,
+							assistantMessageId,
+							stream: true,
+							tools: tools.length > 0 ? tools : undefined,
+							onChunk: (chunk: string) => {
+								if (!acceptingStreamCallbacks) return;
+								turnContent += chunk;
+								onChunk?.(chunk);
+							},
+							onReasoningChunk: (chunk: string) => {
+								if (!acceptingStreamCallbacks) return;
+								turnReasoningContent += chunk;
+								onReasoningChunk?.(chunk);
+							},
+							onToolCallChunk: (serialized: string) => {
+								if (!acceptingStreamCallbacks) return;
+								try {
+									turnToolCalls = JSON.parse(serialized) as ApiChatCompletionToolCall[];
+									onToolCallsStreaming?.(turnToolCalls);
+
+									if (turnToolCalls.length > 0 && turnToolCalls[0]?.function) {
+										const name = turnToolCalls[0].function.name || '';
+										const args = turnToolCalls[0].function.arguments || '';
+										const argsLengthBucket = Math.floor(args.length / 100);
+										if (
+											name !== lastStreamingToolCallName ||
+											argsLengthBucket !== lastStreamingToolCallArgsLength
+										) {
+											lastStreamingToolCallName = name;
+											lastStreamingToolCallArgsLength = argsLengthBucket;
+											this.updateSession(conversationId, {
+												streamingToolCall: { name, arguments: args }
+											});
+										}
+									}
+								} catch {
+									/* Ignore parse errors during streaming */
+								}
+							},
+							onModel: (model) => {
+								if (acceptingStreamCallbacks) onModel?.(model);
+							},
+							onTimings: (timings?: ChatMessageTimings, progress?: ChatMessagePromptProgress) => {
+								if (!acceptingStreamCallbacks) return;
+								onTimings?.(timings, progress);
+								if (timings) {
+									capturedTimings = timings;
+									turnTimings = timings;
+								}
+							},
+							onStreamCheckpoint: async (checkpoint) => {
+								if (!acceptingStreamCallbacks) return;
+								turnContinuation = checkpoint.providerContinuation;
+								await onStreamCheckpoint?.(checkpoint);
+							},
+							onComplete: (_content, _reasoning, _timings, _tools, continuation) => {
+								if (!acceptingStreamCallbacks) return;
+								turnContinuation = continuation;
+							},
+							onError: (error: Error) => {
+								if (!acceptingStreamCallbacks) return;
+								throw error;
+							}
+						},
+						conversationId,
+						signal
+					);
+					acceptingStreamCallbacks = false;
+					if (signal?.aborted) {
+						await onAssistantTurnComplete?.(
+							identity(),
+							turnContent,
+							turnReasoningContent || undefined,
+							turnTimings,
+							turnToolCalls.length ? this.normalizeToolCalls(turnToolCalls) : undefined,
+							turnContinuation
+						);
+						reason = 'stopped';
+						return;
+					}
+
+					this.updateSession(conversationId, { streamingToolCall: null });
+
+					if (turnTimings) {
+						agenticTimings.llm.predicted_n += turnTimings.predicted_n || 0;
+						agenticTimings.llm.predicted_ms += turnTimings.predicted_ms || 0;
+						agenticTimings.llm.prompt_n += turnTimings.prompt_n || 0;
+						agenticTimings.llm.prompt_ms += turnTimings.prompt_ms || 0;
+						turnStats.llm.predicted_n = turnTimings.predicted_n || 0;
+						turnStats.llm.predicted_ms = turnTimings.predicted_ms || 0;
+						turnStats.llm.prompt_n = turnTimings.prompt_n || 0;
+						turnStats.llm.prompt_ms = turnTimings.prompt_ms || 0;
+					}
+				} catch (error) {
+					acceptingStreamCallbacks = false;
+					if (signal?.aborted) {
+						// Save whatever we have for this turn before exiting
+						await onAssistantTurnComplete?.(
+							identity(),
+							turnContent,
+							turnReasoningContent || undefined,
+							this.buildFinalTimings(capturedTimings, agenticTimings),
+							turnToolCalls.length ? this.normalizeToolCalls(turnToolCalls) : undefined,
+							turnContinuation
+						);
+						reason = 'stopped';
+						return;
+					}
+					const normalizedError = error instanceof Error ? error : new Error('LLM stream error');
+					// Save error as content in the current turn
+					onChunk?.(`${LLM_ERROR_BLOCK_START}${normalizedError.message}${LLM_ERROR_BLOCK_END}`);
 					await onAssistantTurnComplete?.(
+						identity(),
+						turnContent +
+							`${LLM_ERROR_BLOCK_START}${normalizedError.message}${LLM_ERROR_BLOCK_END}`,
+						turnReasoningContent || undefined,
+						this.buildFinalTimings(capturedTimings, agenticTimings),
+						turnToolCalls.length ? this.normalizeToolCalls(turnToolCalls) : undefined,
+						turnContinuation
+					);
+					throw normalizedError;
+				}
+
+				// No tool calls = final turn, save and complete
+				if (turnToolCalls.length === 0) {
+					agenticTimings.perTurn!.push(turnStats);
+
+					const finalTimings = this.buildFinalTimings(capturedTimings, agenticTimings);
+
+					await onAssistantTurnComplete?.(
+						identity(),
+						turnContent,
+						turnReasoningContent || undefined,
+						finalTimings,
+						undefined,
+						turnContinuation
+					);
+
+					if (finalTimings) onTurnComplete?.(finalTimings);
+
+					return;
+				}
+
+				// Normalize and save assistant turn with tool calls
+				const normalizedCalls = this.normalizeToolCalls(turnToolCalls);
+				if (normalizedCalls.length === 0) {
+					await onAssistantTurnComplete?.(
+						identity(),
 						turnContent,
 						turnReasoningContent || undefined,
 						this.buildFinalTimings(capturedTimings, agenticTimings),
-						undefined
+						undefined,
+						turnContinuation
 					);
-					onFlowComplete?.(this.buildFinalTimings(capturedTimings, agenticTimings));
 					return;
 				}
-				const normalizedError = error instanceof Error ? error : new Error('LLM stream error');
-				// Save error as content in the current turn
-				onChunk?.(`${LLM_ERROR_BLOCK_START}${normalizedError.message}${LLM_ERROR_BLOCK_END}`);
+
+				totalToolCallCount += normalizedCalls.length;
+				this.updateSession(conversationId, { totalToolCalls: totalToolCallCount });
+
+				// Save the assistant message with its tool calls
 				await onAssistantTurnComplete?.(
-					turnContent + `${LLM_ERROR_BLOCK_START}${normalizedError.message}${LLM_ERROR_BLOCK_END}`,
-					turnReasoningContent || undefined,
-					this.buildFinalTimings(capturedTimings, agenticTimings),
-					undefined
-				);
-				onFlowComplete?.(this.buildFinalTimings(capturedTimings, agenticTimings));
-				throw normalizedError;
-			}
-
-			// No tool calls = final turn, save and complete
-			if (turnToolCalls.length === 0) {
-				agenticTimings.perTurn!.push(turnStats);
-
-				const finalTimings = this.buildFinalTimings(capturedTimings, agenticTimings);
-
-				await onAssistantTurnComplete?.(
+					identity(),
 					turnContent,
 					turnReasoningContent || undefined,
-					finalTimings,
-					undefined,
+					turnTimings,
+					normalizedCalls,
 					turnContinuation
 				);
+				for (const call of normalizedCalls) pending.set(call.id, 'not_started');
 
-				if (finalTimings) onTurnComplete?.(finalTimings);
-
-				onFlowComplete?.(finalTimings);
-
-				return;
-			}
-
-			// Normalize and save assistant turn with tool calls
-			const normalizedCalls = this.normalizeToolCalls(turnToolCalls);
-			if (normalizedCalls.length === 0) {
-				await onAssistantTurnComplete?.(
-					turnContent,
-					turnReasoningContent || undefined,
-					this.buildFinalTimings(capturedTimings, agenticTimings),
-					undefined
-				);
-				onFlowComplete?.(this.buildFinalTimings(capturedTimings, agenticTimings));
-				return;
-			}
-
-			totalToolCallCount += normalizedCalls.length;
-			this.updateSession(conversationId, { totalToolCalls: totalToolCallCount });
-
-			// Save the assistant message with its tool calls
-			await onAssistantTurnComplete?.(
-				turnContent,
-				turnReasoningContent || undefined,
-				turnTimings,
-				normalizedCalls,
-				turnContinuation
-			);
-
-			// Add assistant message to session history
-			sessionMessages.push({
-				role: MessageRole.ASSISTANT,
-				content: turnContent || undefined,
-				reasoning_content: turnReasoningContent || undefined,
-				providerContinuation: turnContinuation,
-				tool_calls: normalizedCalls
-			});
-
-			// Execute each tool call and create result messages
-			for (const toolCall of normalizedCalls) {
-				if (signal?.aborted) {
-					onFlowComplete?.(this.buildFinalTimings(capturedTimings, agenticTimings));
-					return;
-				}
-
-				const toolStartTime = performance.now();
-				const toolName = toolCall.function.name;
-				const toolEntry = entriesByApiName.get(toolName);
-				if (!toolEntry) throw new Error(`Tool unavailable: ${toolName}`);
-				const permission = await this.requestPermission(conversationId, toolEntry, signal);
-
-				await new Promise((resolve) => setTimeout(resolve, 0));
-
-				if (signal?.aborted) {
-					onFlowComplete?.(this.buildFinalTimings(capturedTimings, agenticTimings));
-					return;
-				}
-
-				let result: string;
-				let toolSuccess = true;
-
-				if (permission === ToolPermissionDecision.DENY) {
-					result = 'Tool execution was denied by the user.';
-					toolSuccess = false;
-				} else {
-					try {
-						const args = this.parseToolArguments(toolCall.function.arguments);
-						const executionResult = await toolsStore.executeTool(
-							toolEntry,
-							args,
-							requestContext,
-							signal
-						);
-						result = executionResult.content;
-						if (executionResult.isError) toolSuccess = false;
-					} catch (error) {
-						if (isAbortError(error)) {
-							onFlowComplete?.(this.buildFinalTimings(capturedTimings, agenticTimings));
-							return;
-						}
-						result = `Error: ${error instanceof Error ? error.message : String(error)}`;
-						toolSuccess = false;
-					}
-				}
-
-				const toolDurationMs = performance.now() - toolStartTime;
-				const toolTiming: ChatMessageToolCallTiming = {
-					name: toolCall.function.name,
-					duration_ms: Math.round(toolDurationMs),
-					success: toolSuccess
-				};
-
-				agenticTimings.toolCalls!.push(toolTiming);
-				agenticTimings.toolCallsCount++;
-				agenticTimings.toolsMs += Math.round(toolDurationMs);
-				turnStats.toolCalls.push(toolTiming);
-				turnStats.toolsMs += Math.round(toolDurationMs);
-
-				if (signal?.aborted) {
-					onFlowComplete?.(this.buildFinalTimings(capturedTimings, agenticTimings));
-					return;
-				}
-
-				const { cleanedResult, attachments } = this.extractBase64Attachments(result);
-
-				// Create the tool result message in the DB
-				let toolResultMessage: DatabaseMessage | undefined;
-				if (createToolResultMessage) {
-					toolResultMessage = await createToolResultMessage(
-						toolCall.id,
-						cleanedResult,
-						attachments.length > 0 ? attachments : undefined
-					);
-				}
-
-				if (attachments.length > 0 && toolResultMessage) {
-					onAttachments?.(toolResultMessage.id, attachments);
-				}
-
-				// Build content parts for session history (including images for vision models)
-				const contentParts: ApiChatMessageContentPart[] = [
-					{ type: ContentPartType.TEXT, text: cleanedResult }
-				];
-				for (const attachment of attachments) {
-					if (attachment.type === AttachmentType.IMAGE) {
-						if (modelsStore.modelSupportsVision(effectiveModel)) {
-							contentParts.push({
-								type: ContentPartType.IMAGE_URL,
-								image_url: { url: (attachment as DatabaseMessageExtraImageFile).base64Url }
-							});
-						} else {
-							console.info(
-								`[AgenticStore] Skipping image attachment (model "${effectiveModel}" does not support vision)`
-							);
-						}
-					}
-				}
-
+				// Add assistant message to session history
 				sessionMessages.push({
-					role: MessageRole.TOOL,
-					tool_call_id: toolCall.id,
-					content: contentParts.length === 1 ? cleanedResult : contentParts
+					role: MessageRole.ASSISTANT,
+					content: turnContent || undefined,
+					reasoning_content: turnReasoningContent || undefined,
+					providerContinuation: turnContinuation,
+					tool_calls: normalizedCalls
 				});
+
+				// Execute each tool call and create result messages
+				for (const toolCall of normalizedCalls) {
+					if (signal?.aborted) {
+						reason = 'stopped';
+						return;
+					}
+
+					const toolStartTime = performance.now();
+					const toolName = toolCall.function.name;
+					const toolEntry = entriesByApiName.get(toolName);
+					if (!toolEntry) throw new Error(`Tool unavailable: ${toolName}`);
+					const permission = await this.requestPermission(conversationId, toolEntry, signal);
+
+					await new Promise((resolve) => setTimeout(resolve, 0));
+
+					if (signal?.aborted) {
+						reason = 'stopped';
+						return;
+					}
+
+					let result: string;
+					let toolSuccess = true;
+					let status: ToolExecutionStatus;
+					let confirmed = false;
+					let executionError: string | undefined;
+
+					if (permission === ToolPermissionDecision.DENY) {
+						status = 'denied';
+						result = toolExecutionDescription({ toolCallId: toolCall.id, status });
+						toolSuccess = false;
+					} else {
+						try {
+							const args = this.parseToolArguments(toolCall.function.arguments);
+							await onToolCallState?.(identity(), toolCall.id, { status: 'started' });
+							pending.set(toolCall.id, 'started');
+							if (signal?.aborted) {
+								reason = 'stopped';
+								return;
+							}
+							const executionResult = await toolsStore.executeTool(
+								toolEntry,
+								args,
+								requestContext,
+								signal
+							);
+							result = executionResult.content;
+							confirmed = true;
+							status = executionResult.isError ? 'error' : 'completed';
+							if (executionResult.isError) toolSuccess = false;
+						} catch (error) {
+							if (pending.get(toolCall.id) === 'started') {
+								await onToolCallState?.(identity(), toolCall.id, {
+									status: 'interrupted_unknown',
+									error: error instanceof Error ? error.message : String(error)
+								});
+								pending.set(toolCall.id, 'interrupted_unknown');
+								if (signal?.aborted || isAbortError(error)) {
+									reason = 'stopped';
+									return;
+								}
+								// A rejected transport is not a confirmed tool failure. Never
+								// ask the model to continue/retry an uncertain external effect.
+								throw error;
+							}
+							status = 'error';
+							executionError = error instanceof Error ? error.message : String(error);
+							result = toolExecutionDescription({
+								toolCallId: toolCall.id,
+								status,
+								error: executionError
+							});
+							toolSuccess = false;
+						}
+					}
+
+					const toolDurationMs = performance.now() - toolStartTime;
+					const toolTiming: ChatMessageToolCallTiming = {
+						name: toolCall.function.name,
+						duration_ms: Math.round(toolDurationMs),
+						success: toolSuccess
+					};
+
+					agenticTimings.toolCalls!.push(toolTiming);
+					agenticTimings.toolCallsCount++;
+					agenticTimings.toolsMs += Math.round(toolDurationMs);
+					turnStats.toolCalls.push(toolTiming);
+					turnStats.toolsMs += Math.round(toolDurationMs);
+
+					const { cleanedResult, attachments } = this.extractBase64Attachments(result);
+
+					// Create the tool result message in the DB
+					let toolResultMessage: DatabaseMessage | undefined;
+					if (onToolCallState) {
+						toolResultMessage = await onToolCallState(identity(), toolCall.id, {
+							status,
+							error: executionError,
+							result: confirmed
+								? {
+										content: cleanedResult,
+										extras: attachments.length > 0 ? attachments : undefined
+									}
+								: undefined
+						});
+					}
+					pending.set(toolCall.id, status);
+
+					if (attachments.length > 0 && toolResultMessage) {
+						onAttachments?.(toolResultMessage.id, attachments);
+					}
+					if (signal?.aborted) {
+						reason = 'stopped';
+						return;
+					}
+
+					// Build content parts for session history (including images for vision models)
+					const contentParts: ApiChatMessageContentPart[] = [
+						{ type: ContentPartType.TEXT, text: cleanedResult }
+					];
+					for (const attachment of attachments) {
+						if (attachment.type === AttachmentType.IMAGE) {
+							if (modelsStore.modelSupportsVision(effectiveModel)) {
+								contentParts.push({
+									type: ContentPartType.IMAGE_URL,
+									image_url: { url: (attachment as DatabaseMessageExtraImageFile).base64Url }
+								});
+							} else {
+								console.info(
+									`[AgenticStore] Skipping image attachment (model "${effectiveModel}" does not support vision)`
+								);
+							}
+						}
+					}
+
+					sessionMessages.push({
+						role: MessageRole.TOOL,
+						tool_call_id: toolCall.id,
+						content: contentParts.length === 1 ? cleanedResult : contentParts
+					});
+				}
+
+				if (turnStats.toolCalls.length > 0) {
+					agenticTimings.perTurn!.push(turnStats);
+
+					const intermediateTimings = this.buildFinalTimings(capturedTimings, agenticTimings);
+					if (intermediateTimings) onTurnComplete?.(intermediateTimings);
+				}
 			}
 
-			if (turnStats.toolCalls.length > 0) {
-				agenticTimings.perTurn!.push(turnStats);
-
-				const intermediateTimings = this.buildFinalTimings(capturedTimings, agenticTimings);
-				if (intermediateTimings) onTurnComplete?.(intermediateTimings);
+			reason = signal?.aborted ? 'stopped' : 'limit';
+		} catch (error) {
+			reason = signal?.aborted ? 'stopped' : 'error';
+			throw error;
+		} finally {
+			for (const [callId, status] of pending) {
+				if (status === 'started')
+					await onToolCallState?.(identity(), callId, { status: 'interrupted_unknown' });
 			}
+			this.updateSession(conversationId, { terminalReason: reason, streamingToolCall: null });
+			await onFlowComplete?.({
+				identity: identity(),
+				reason,
+				timings: this.buildFinalTimings(capturedTimings, agenticTimings)
+			});
 		}
-
-		// Turn limit reached
-		onChunk?.(TURN_LIMIT_MESSAGE);
-		await onAssistantTurnComplete?.(
-			TURN_LIMIT_MESSAGE,
-			undefined,
-			this.buildFinalTimings(capturedTimings, agenticTimings),
-			undefined
-		);
-		onFlowComplete?.(this.buildFinalTimings(capturedTimings, agenticTimings));
 	}
 
 	private buildFinalTimings(

@@ -11,6 +11,42 @@ import type { ChatStreamCheckpoint } from './settings';
 import type { DatabaseMessage, DatabaseMessageExtra, McpServerOverride } from './database';
 import type { ProviderRequestContext } from './provider';
 
+export type ToolExecutionStatus =
+	| 'not_started'
+	| 'denied'
+	| 'started'
+	| 'completed'
+	| 'error'
+	| 'interrupted_unknown';
+
+export type AgenticTerminalReason = 'completed' | 'limit' | 'stopped' | 'error';
+
+export interface ToolCallExecution {
+	toolCallId: string;
+	status: ToolExecutionStatus;
+	resultMessageId?: string;
+	error?: string;
+}
+
+/** Stored on the assistant, never in the actual tool output. No startup recovery. */
+export interface AgenticTurnState {
+	operationId: string;
+	calls: ToolCallExecution[];
+	terminalReason?: AgenticTerminalReason;
+}
+
+export interface AgenticMessageIdentity {
+	conversationId: string;
+	operationId: string;
+	assistantMessageId: string;
+}
+
+export interface AgenticToolOutcome {
+	status: ToolExecutionStatus;
+	error?: string;
+	result?: { content: string; extras?: DatabaseMessageExtra[] };
+}
+
 /**
  * Agentic orchestration configuration.
  */
@@ -72,6 +108,7 @@ export interface AgenticSession {
 	totalToolCalls: number;
 	lastError: Error | null;
 	streamingToolCall: { name: string; arguments: string } | null;
+	terminalReason: AgenticTerminalReason | null;
 }
 
 /**
@@ -85,6 +122,8 @@ export interface AgenticSession {
  * Subsequent messages are created via createToolResultMessage / createAssistantMessage.
  */
 export interface AgenticFlowCallbacks {
+	/** Bind the first placeholder only once the agent has accepted this operation. */
+	onFlowStart?: (identity: AgenticMessageIdentity) => Promise<void>;
 	/** Content chunk for the current assistant message */
 	onChunk?: (chunk: string) => void;
 	/** Reasoning content chunk for the current assistant message */
@@ -97,22 +136,27 @@ export interface AgenticFlowCallbacks {
 	onModel?: (model: string) => void;
 	/** Current assistant turn's streaming is complete - save to DB */
 	onAssistantTurnComplete?: (
+		identity: AgenticMessageIdentity,
 		content: string,
 		reasoningContent: string | undefined,
 		timings: ChatMessageTimings | undefined,
 		toolCalls: ApiChatCompletionToolCall[] | undefined,
 		providerContinuation?: import('./provider').ProviderContinuation
 	) => Promise<void>;
-	/** Create a tool result message in the DB tree */
-	createToolResultMessage?: (
+	/** Atomic lifecycle transition; only confirmed results create tool messages. */
+	onToolCallState?: (
+		identity: AgenticMessageIdentity,
 		toolCallId: string,
-		content: string,
-		extras?: DatabaseMessageExtra[]
-	) => Promise<DatabaseMessage>;
+		outcome: AgenticToolOutcome
+	) => Promise<DatabaseMessage | undefined>;
 	/** Create a new assistant message for the next agentic turn */
 	createAssistantMessage?: () => Promise<DatabaseMessage>;
 	/** Entire agentic flow is complete */
-	onFlowComplete?: (timings?: ChatMessageTimings) => void;
+	onFlowComplete?: (outcome: {
+		identity: AgenticMessageIdentity;
+		reason: AgenticTerminalReason;
+		timings?: ChatMessageTimings;
+	}) => void | Promise<void>;
 	/** Error during flow */
 	onError?: (error: Error) => void | Promise<void>;
 	/** Timing updates during streaming */
@@ -130,6 +174,7 @@ export interface AgenticFlowOptions {
 	stream?: boolean;
 	model?: string;
 	assistantMessageId?: string;
+	operationId?: string;
 	providerRequestContext?: ProviderRequestContext;
 	temperature?: number;
 	max_tokens?: number;

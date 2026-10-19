@@ -2,14 +2,21 @@ import { z } from 'zod';
 import type { ExportedConversation } from '$lib/types/database';
 
 export const CONVERSATION_EXPORT_TYPE = 'llampart-conversations';
-export const CONVERSATION_EXPORT_FORMAT_VERSION = 1;
+export const CONVERSATION_EXPORT_FORMAT_VERSION = 2;
 
 export interface ConversationExportEnvelopeV1 {
 	type: typeof CONVERSATION_EXPORT_TYPE;
-	formatVersion: typeof CONVERSATION_EXPORT_FORMAT_VERSION;
+	formatVersion: 1;
 	appVersion: string;
 	exportedAt: string;
 	conversations: ExportedConversation[];
+}
+
+export interface ConversationExportEnvelopeV2 extends Omit<
+	ConversationExportEnvelopeV1,
+	'formatVersion'
+> {
+	formatVersion: 2;
 }
 
 const nonEmptyString = z.string().trim().min(1);
@@ -152,11 +159,38 @@ const messageShape = {
 	model: z.string().nullable().optional()
 };
 const strictMessageSchema = z.object({ ...messageShape, toolCalls: z.string() }).strict();
+const agenticSchema = z
+	.object({
+		operationId: nonEmptyString,
+		terminalReason: z.enum(['completed', 'limit', 'stopped', 'error']).optional(),
+		calls: z.array(
+			z
+				.object({
+					toolCallId: nonEmptyString,
+					status: z.enum([
+						'not_started',
+						'denied',
+						'started',
+						'completed',
+						'error',
+						'interrupted_unknown'
+					]),
+					resultMessageId: nonEmptyString.optional(),
+					error: z.string().optional()
+				})
+				.strict()
+		)
+	})
+	.strict();
+const messageV2Schema = strictMessageSchema.extend({ agentic: agenticSchema.optional() });
 const legacyMessageSchema = z
 	.object({ ...messageShape, toolCalls: z.string().optional().default('') })
 	.passthrough();
 const strictConversationExportSchema = z
 	.object({ conv: conversationSchema, messages: z.array(strictMessageSchema) })
+	.strict();
+const conversationV2Schema = z
+	.object({ conv: conversationSchema, messages: z.array(messageV2Schema) })
 	.strict();
 const legacyConversationExportSchema = z
 	.object({ conv: conversationSchema.passthrough(), messages: z.array(legacyMessageSchema) })
@@ -164,12 +198,16 @@ const legacyConversationExportSchema = z
 const envelopeSchema = z
 	.object({
 		type: z.literal(CONVERSATION_EXPORT_TYPE),
-		formatVersion: z.literal(CONVERSATION_EXPORT_FORMAT_VERSION),
+		formatVersion: z.literal(1),
 		appVersion: z.string(),
 		exportedAt: z.string(),
 		conversations: z.array(strictConversationExportSchema)
 	})
 	.strict();
+const envelopeV2Schema = envelopeSchema.extend({
+	formatVersion: z.literal(2),
+	conversations: z.array(conversationV2Schema)
+});
 
 function formatImportError(error: z.ZodError): Error {
 	const issue = error.issues[0];
@@ -185,7 +223,48 @@ function parseWithSchema<T>(schema: z.ZodType<T>, value: unknown): T {
 
 /** Runtime-validates records passed directly to the strict database import preflight. */
 export function validateConversationImportRecords(value: unknown): ExportedConversation[] {
-	return parseWithSchema(z.array(strictConversationExportSchema), value) as ExportedConversation[];
+	const records = parseWithSchema(z.array(conversationV2Schema), value) as ExportedConversation[];
+	for (const { messages } of records) {
+		for (const message of messages) {
+			if (!message.agentic) continue;
+			if (message.role !== 'assistant')
+				throw new Error('Tool lifecycle must belong to an assistant');
+			const calls = JSON.parse(message.toolCalls || '[]') as { id: string }[];
+			const ids = message.agentic.calls.map((call) => call.toolCallId);
+			if (
+				new Set(ids).size !== ids.length ||
+				ids.length !== calls.length ||
+				ids.some((id) => !calls.some((call) => call.id === id))
+			) {
+				throw new Error('Invalid lifecycle call identity');
+			}
+			for (const execution of message.agentic.calls) {
+				if (
+					execution.resultMessageId &&
+					(!['completed', 'error'].includes(execution.status) ||
+						!messages.some(
+							(result) =>
+								result.id === execution.resultMessageId &&
+								result.role === 'tool' &&
+								result.toolCallId === execution.toolCallId
+						))
+				) {
+					throw new Error('Invalid lifecycle result identity');
+				}
+				if (execution.resultMessageId) {
+					let node = messages.find((result) => result.id === execution.resultMessageId);
+					const seen = new Set<string>();
+					while (node && node.id !== message.id && node.role === 'tool' && !seen.has(node.id)) {
+						seen.add(node.id);
+						node = messages.find((parent) => parent.id === node!.parent);
+					}
+					if (node?.id !== message.id)
+						throw new Error('Lifecycle result belongs to a different assistant turn');
+				}
+			}
+		}
+	}
+	return records;
 }
 
 function createLegacyRootId(conversationId: string, messages: DatabaseMessage[]): string {
@@ -289,8 +368,8 @@ function parseLegacyConversations(value: unknown): ExportedConversation[] {
 export function createConversationExportEnvelope(
 	conversations: ExportedConversation[],
 	appVersion: string
-): ConversationExportEnvelopeV1 {
-	return {
+): ConversationExportEnvelopeV2 {
+	const envelope: ConversationExportEnvelopeV2 = {
 		type: CONVERSATION_EXPORT_TYPE,
 		formatVersion: CONVERSATION_EXPORT_FORMAT_VERSION,
 		appVersion,
@@ -298,7 +377,7 @@ export function createConversationExportEnvelope(
 		conversations: conversations.map((item) => ({
 			...item,
 			messages: item.messages.map((message) => {
-				// Internal, connection-bound data is not part of the V1 export.
+				// Connection-bound continuation/telemetry remains internal in V2.
 				const exported = { ...message };
 				delete exported.providerContinuation;
 				if (exported.timings) {
@@ -310,19 +389,25 @@ export function createConversationExportEnvelope(
 			})
 		}))
 	};
+	validateConversationImportRecords(envelope.conversations);
+	return envelope;
 }
 
-/** Parses V1 exports and explicitly migrates the shipped single/array V0 shape. */
+/** V2 preserves lifecycle; V1/V0 imports never infer missing execution state. */
 export function parseConversationImport(value: unknown): ExportedConversation[] {
 	if (typeof value === 'object' && value !== null && 'type' in value) {
-		const envelope = value as Partial<ConversationExportEnvelopeV1>;
+		const envelope = value as Partial<ConversationExportEnvelopeV1 | ConversationExportEnvelopeV2>;
 		if (envelope.type !== CONVERSATION_EXPORT_TYPE) {
 			throw new Error('Invalid conversation export type');
 		}
-		if (envelope.formatVersion !== CONVERSATION_EXPORT_FORMAT_VERSION) {
+		if (envelope.formatVersion !== 1 && envelope.formatVersion !== 2) {
 			throw new Error(`Unsupported conversation export version: ${String(envelope.formatVersion)}`);
 		}
-		return parseWithSchema(envelopeSchema, value).conversations as ExportedConversation[];
+		const parsed =
+			envelope.formatVersion === 1
+				? parseWithSchema(envelopeSchema, value)
+				: parseWithSchema(envelopeV2Schema, value);
+		return validateConversationImportRecords(parsed.conversations);
 	}
 
 	return parseLegacyConversations(value);

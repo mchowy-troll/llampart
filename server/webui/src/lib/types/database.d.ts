@@ -1,4 +1,5 @@
 import type { ChatMessageTimings, ChatRole, ChatMessageType } from '$lib/types/chat';
+import type { AgenticTurnState } from '$lib/types/agentic';
 import { AttachmentSource, AttachmentType, ReasoningEffort } from '$lib/enums';
 
 export interface McpServerOverride {
@@ -93,6 +94,7 @@ export type DatabaseMessageExtra =
 	| DatabaseMessageExtraLegacyContext;
 
 export interface DatabaseMessage {
+	agentic?: AgenticTurnState;
 	providerContinuation?: import('./provider').ProviderContinuation;
 	id: string;
 	convId: string;
@@ -128,7 +130,7 @@ export type ExportedConversations = ExportedConversation | ExportedConversation[
 
 export interface ConversationExportEnvelope {
 	type: 'llampart-conversations';
-	formatVersion: 1;
+	formatVersion: 1 | 2;
 	appVersion: string;
 	exportedAt: string;
 	conversations: ExportedConversation[];

@@ -6,6 +6,7 @@ import type { ApiProviderAdapter } from '$lib/services/providers/provider.types'
 import type { ProviderRequestContext, ProviderUsage } from '$lib/types/provider';
 import { formatAttachmentText } from '$lib/utils/formatters';
 import { isAbortError } from '$lib/utils/abort';
+import { projectToolHistory } from '$lib/utils/tool-lifecycle';
 import {
 	ATTACHMENT_LABEL_PDF_FILE,
 	ATTACHMENT_LABEL_MCP_PROMPT,
@@ -162,6 +163,7 @@ export class ChatService {
 				return true;
 			});
 
+		normalizedMessages = projectToolHistory(normalizedMessages);
 		// config() is committed state, never the Settings draft/appearance overlay.
 		// Auxiliary requests (including title generation) have no conversationId.
 		if (conversationId)
@@ -449,7 +451,9 @@ export class ChatService {
 				return true;
 			});
 
-		const requestMessages = withChatInstructions(normalizedMessages, { ...config() });
+		const requestMessages = withChatInstructions(projectToolHistory(normalizedMessages), {
+			...config()
+		});
 		const requestBody: Record<string, unknown> = {
 			messages: requestMessages.map((msg: ApiChatMessageData) => {
 				const mapped: Record<string, unknown> = {
@@ -1270,6 +1274,7 @@ export class ChatService {
 
 		if (!message.extra || message.extra.length === 0) {
 			const result: ApiChatMessageData = {
+				agentic: message.agentic,
 				providerContinuation: message.providerContinuation,
 				role: message.role as MessageRole,
 				content: message.content
@@ -1423,6 +1428,7 @@ export class ChatService {
 		}
 
 		const result: ApiChatMessageData = {
+			agentic: message.agentic,
 			providerContinuation: message.providerContinuation,
 			role: message.role as MessageRole,
 			content: contentParts

@@ -48,6 +48,8 @@ export interface ApiErrorResponse {
 }
 
 export interface ApiChatMessageData {
+	/** Internal history metadata; adapters serialize only protocol fields. */
+	agentic?: import('./agentic').AgenticTurnState;
 	providerContinuation?: import('./provider').ProviderContinuation;
 	role: ChatRole;
 	content: string | ApiChatMessageContentPart[];

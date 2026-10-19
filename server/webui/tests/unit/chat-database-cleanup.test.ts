@@ -126,8 +126,8 @@ describe('ChatStore database cleanup', () => {
 		};
 		const failedAssistant = message('failed-assistant', 'user-message', [], MessageRole.ASSISTANT);
 		const deleteBranch = vi
-			.spyOn(DatabaseService, 'deleteMessageCascading')
-			.mockResolvedValue(['failed-assistant']);
+			.spyOn(DatabaseService, 'deleteEmptyAssistantMessage')
+			.mockResolvedValue({ parentId: 'user-message', lastModified: 2 });
 		vi.spyOn(ChatService, 'sendMessage').mockImplementation(async (_messages, options) => {
 			await options?.onError?.(new Error('stream failed'));
 		});
@@ -177,7 +177,7 @@ describe('ChatStore database cleanup', () => {
 		expect(deleteBranch).toHaveBeenCalledWith('stream-conversation', 'assistant', 'user');
 	});
 
-	it('removes the complete failed multi-turn branch from memory before the next add', async () => {
+	it('preserves completed turns and appends after the current assistant on a later failure', async () => {
 		vi.spyOn(console, 'error').mockImplementation(() => undefined);
 		conversationsStore.activeConversation = {
 			id: 'stream-conversation',
@@ -198,9 +198,20 @@ describe('ChatStore database cleanup', () => {
 			maxToolPreviewLines: 10
 		});
 		vi.spyOn(DatabaseService, 'updateMessage').mockResolvedValue();
+		vi.spyOn(DatabaseService, 'completeAgenticAssistant').mockImplementation(
+			async (identity, updates) => ({
+				...(identity.assistantMessageId === 'assistant' ? assistant : assistant2),
+				...updates,
+				agentic: { operationId: identity.operationId, calls: [] }
+			})
+		);
+		vi.spyOn(DatabaseService, 'transitionAgenticToolCall').mockResolvedValue({
+			assistant,
+			result: tool
+		});
+		vi.spyOn(DatabaseService, 'deleteEmptyAssistantMessage').mockResolvedValue(null);
 		const createBranch = vi
 			.spyOn(DatabaseService, 'createMessageBranch')
-			.mockResolvedValueOnce(tool)
 			.mockResolvedValueOnce(assistant2)
 			.mockResolvedValueOnce(nextUser);
 		vi.spyOn(conversationsStore, 'updateConversationCurrentNode').mockResolvedValue();
@@ -208,10 +219,19 @@ describe('ChatStore database cleanup', () => {
 		const deleteBranch = vi
 			.spyOn(DatabaseService, 'deleteMessageCascading')
 			.mockResolvedValue(['assistant', 'tool', 'assistant-2']);
-		vi.spyOn(agenticStore, 'runAgenticFlow').mockImplementation(async ({ callbacks }) => {
-			await callbacks.createToolResultMessage?.('call', 'result');
+		vi.spyOn(agenticStore, 'runAgenticFlow').mockImplementation(async ({ callbacks, options }) => {
+			const identity = {
+				conversationId: 'stream-conversation',
+				operationId: options!.operationId!,
+				assistantMessageId: 'assistant'
+			};
+			await callbacks.onToolCallState?.(identity, 'call', {
+				status: 'completed',
+				result: { content: 'result' }
+			});
 			await callbacks.createAssistantMessage?.();
 			await callbacks.onAssistantTurnComplete?.(
+				{ ...identity, assistantMessageId: 'assistant-2' },
 				'<!-- llm-error -->failed',
 				undefined,
 				undefined,
@@ -230,14 +250,19 @@ describe('ChatStore database cleanup', () => {
 			}
 		).streamChatCompletion([user], assistant);
 
-		expect(deleteBranch).toHaveBeenCalledWith('stream-conversation', 'assistant', 'user');
-		expect(conversationsStore.activeMessages).toEqual([{ ...user, children: [] }]);
-		expect(conversationsStore.activeConversation.currNode).toBe('user');
+		expect(deleteBranch).not.toHaveBeenCalled();
+		expect(conversationsStore.activeMessages.map((item) => item.id)).toEqual([
+			'user',
+			'assistant',
+			'tool',
+			'assistant-2'
+		]);
+		expect(conversationsStore.activeConversation.currNode).toBe('assistant-2');
 
 		await chatStore.addMessage(MessageRole.USER, 'next');
 		expect(createBranch).toHaveBeenLastCalledWith(
 			expect.objectContaining({ content: 'next' }),
-			'user'
+			'assistant-2'
 		);
 	});
 });

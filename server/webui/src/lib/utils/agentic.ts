@@ -1,5 +1,6 @@
 import { AgenticSectionType, MessageRole } from '$lib/enums';
-import { ATTACHMENT_SAVED_REGEX, NEWLINE_SEPARATOR } from '$lib/constants';
+import { ATTACHMENT_SAVED_REGEX, NEWLINE_SEPARATOR, TURN_LIMIT_MESSAGE } from '$lib/constants';
+import { toolExecutionDescription } from '$lib/utils/tool-lifecycle';
 import type { ApiChatCompletionToolCall } from '$lib/types/api';
 import type {
 	DatabaseMessage,
@@ -67,14 +68,28 @@ function deriveSingleTurnSections(
 	const toolCalls = parseToolCalls(message.toolCalls);
 	for (const tc of toolCalls) {
 		const resultMsg = toolMessages.find((m) => m.toolCallId === tc.id);
+		const execution = message.agentic?.calls.find((call) => call.toolCallId === tc.id);
+		const pending =
+			!resultMsg &&
+			isStreaming &&
+			(!execution || ['not_started', 'started'].includes(execution.status));
+		const resultText = resultMsg
+			? resultMsg.content
+			: pending
+				? undefined
+				: toolExecutionDescription(execution);
 		sections.push({
-			type: resultMsg ? AgenticSectionType.TOOL_CALL : AgenticSectionType.TOOL_CALL_PENDING,
-			content: resultMsg?.content || '',
+			type:
+				resultMsg || !pending ? AgenticSectionType.TOOL_CALL : AgenticSectionType.TOOL_CALL_PENDING,
+			content: resultText || '',
 			toolName: tc.function?.name,
 			toolArgs: tc.function?.arguments,
-			toolResult: resultMsg?.content,
+			toolResult: resultText,
 			toolResultExtras: resultMsg?.extra
 		});
+	}
+	if (message.agentic?.terminalReason === 'limit') {
+		sections.push({ type: AgenticSectionType.TEXT, content: TURN_LIMIT_MESSAGE });
 	}
 
 	// 4. Streaming tool calls (not yet persisted - currently being received)

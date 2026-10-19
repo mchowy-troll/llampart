@@ -1,7 +1,6 @@
 import type { AttachmentSource, ErrorDialogType } from '$lib/enums';
-import type { ApiChatCompletionToolCall } from './api';
-import type { DatabaseMessage, DatabaseMessageExtra } from './database';
-import type { ChatStreamCheckpoint } from './settings';
+import type { DatabaseMessage } from './database';
+import type { AgenticFlowCallbacks } from './agentic';
 export type ChatRole = `${import('$lib/enums').MessageRole}`;
 
 export interface ChatUploadedFile {
@@ -121,31 +120,8 @@ export interface ChatMessageToolCallTiming {
 /**
  * Callbacks for streaming chat responses (used by both agentic and non-agentic paths)
  */
-export interface ChatStreamCallbacks {
-	onChunk?: (chunk: string) => void;
-	onReasoningChunk?: (chunk: string) => void;
-	onToolCallsStreaming?: (toolCalls: ApiChatCompletionToolCall[]) => void;
-	onAttachments?: (messageId: string, extras: DatabaseMessageExtra[]) => void;
-	onModel?: (model: string) => void;
+export interface ChatStreamCallbacks extends AgenticFlowCallbacks {
 	onCompletionId?: (id: string) => void;
-	onTimings?: (timings?: ChatMessageTimings, promptProgress?: ChatMessagePromptProgress) => void;
-	onAssistantTurnComplete?: (
-		content: string,
-		reasoningContent: string | undefined,
-		timings: ChatMessageTimings | undefined,
-		toolCalls: ApiChatCompletionToolCall[] | undefined,
-		providerContinuation?: import('./provider').ProviderContinuation
-	) => Promise<void>;
-	createToolResultMessage?: (
-		toolCallId: string,
-		content: string,
-		extras?: DatabaseMessageExtra[]
-	) => Promise<DatabaseMessage>;
-	createAssistantMessage?: () => Promise<DatabaseMessage>;
-	onFlowComplete?: (timings?: ChatMessageTimings) => void;
-	onError?: (error: Error) => void | Promise<void>;
-	onTurnComplete?: (intermediateTimings: ChatMessageTimings) => void;
-	onStreamCheckpoint?: (checkpoint: ChatStreamCheckpoint) => void | Promise<void>;
 }
 
 /**

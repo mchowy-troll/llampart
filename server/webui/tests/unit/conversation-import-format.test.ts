@@ -11,14 +11,17 @@ const exportedConversation = {
 };
 
 describe('conversation import format', () => {
-	it('round-trips the versioned V1 envelope', () => {
+	it('round-trips V2 and continues to import the V1 envelope', () => {
 		const envelope = createConversationExportEnvelope([exportedConversation], '1.8.2');
 		expect(envelope).toMatchObject({
 			type: 'llampart-conversations',
-			formatVersion: 1,
+			formatVersion: 2,
 			appVersion: '1.8.2'
 		});
 		expect(parseConversationImport(envelope)).toEqual([exportedConversation]);
+		expect(parseConversationImport({ ...envelope, formatVersion: 1 })).toEqual([
+			exportedConversation
+		]);
 	});
 
 	it('canonicalizes historical persisted messages before a nonempty V1 round-trip', () => {
@@ -255,7 +258,7 @@ describe('conversation import format', () => {
 		expect(() =>
 			parseConversationImport({
 				type: 'llampart-conversations',
-				formatVersion: 2,
+				formatVersion: 3,
 				conversations: [exportedConversation]
 			})
 		).toThrow(/version/i);
