@@ -3,6 +3,7 @@ import { CONTEXT_KEY_MESSAGE_EDIT } from '$lib/constants';
 
 export interface MessageEditState {
 	readonly isEditing: boolean;
+	readonly isSaving: boolean;
 	readonly editedContent: string;
 	readonly editedExtras: DatabaseMessageExtra[];
 	readonly editedUploadedFiles: ChatUploadedFile[];

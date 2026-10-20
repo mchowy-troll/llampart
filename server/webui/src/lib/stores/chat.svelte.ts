@@ -90,6 +90,7 @@ class ChatStore {
 	private conversationStateTimestamps = new SvelteMap<string, ConversationStateEntry>();
 	private resumingStreams = new Set<string>();
 	private conversationOperationLocks = new Set<string>();
+	private systemMessageSaveLocks = new Set<string>();
 	private activeConversationId = $state<string | null>(null);
 	private isStreamingActive = $state(false);
 	private isEditModeActive = $state(false);
@@ -465,6 +466,36 @@ class ChatStore {
 			await conversationsStore.refreshConversationTimestamp(activeConv.id);
 		} catch (error) {
 			console.error('Failed to add system prompt:', error);
+		}
+	}
+
+	/** Edits one system prompt in place without changing an in-flight generation's history. */
+	async editSystemMessage(convId: string, messageId: string, newContent: string): Promise<void> {
+		if (this.systemMessageSaveLocks.has(messageId)) {
+			throw new Error('System message save already in progress');
+		}
+		this.systemMessageSaveLocks.add(messageId);
+		try {
+			// Both IDs belong to the edit, never to the selection after an await.
+			const messages = await conversationsStore.getConversationMessages(convId);
+			const message = findMessageById(messages, messageId);
+			if (
+				!message ||
+				message.convId !== convId ||
+				message.role !== MessageRole.SYSTEM ||
+				message.type === MessageType.ROOT
+			) {
+				throw new Error('System message not found in the target conversation');
+			}
+			await DatabaseService.updateConversationMessage(convId, messageId, { content: newContent });
+			if (conversationsStore.activeConversation?.id === convId) {
+				const index = conversationsStore.findMessageIndex(messageId);
+				// Replace only content; preserve current graph metadata and operation snapshots.
+				conversationsStore.updateMessageAtIndex(index, { content: newContent });
+			}
+			await conversationsStore.refreshConversationTimestamp(convId);
+		} finally {
+			this.systemMessageSaveLocks.delete(messageId);
 		}
 	}
 

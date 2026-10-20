@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { base } from '$app/paths';
+	import { toast } from 'svelte-sonner';
+	import { t } from '$lib/i18n';
 	import { getChatActionsContext, setMessageEditContext } from '$lib/contexts';
 	import { chatStore, pendingEditMessageId } from '$lib/stores/chat.svelte';
-	import { conversationsStore } from '$lib/stores/conversations.svelte';
-	import { DatabaseService } from '$lib/services/database.service';
 	import { SYSTEM_MESSAGE_PLACEHOLDER } from '$lib/constants';
 	import { MessageRole, AttachmentType } from '$lib/enums';
 	import ChatMessageAssistant from '$lib/components/app/chat/ChatMessages/ChatMessageAssistant.svelte';
@@ -42,6 +42,7 @@
 	let editedExtras = $derived<DatabaseMessageExtra[]>(message.extra ? [...message.extra] : []);
 	let editedUploadedFiles = $state<ChatUploadedFile[]>([]);
 	let isEditing = $state(false);
+	let isSaving = $state(false);
 	let showDeleteDialog = $state(false);
 	let shouldBranchAfterEdit = $state(false);
 	let textareaElement: HTMLTextAreaElement | undefined = $state();
@@ -51,6 +52,9 @@
 	setMessageEditContext({
 		get isEditing() {
 			return isEditing;
+		},
+		get isSaving() {
+			return isSaving;
 		},
 		get editedContent() {
 			return editedContent;
@@ -109,6 +113,7 @@
 	});
 
 	async function handleCancelEdit() {
+		if (isSaving) return;
 		isEditing = false;
 
 		// If canceling a new system message with placeholder content, remove it without deleting children
@@ -189,25 +194,31 @@
 	}
 
 	async function handleSaveEdit() {
+		if (isSaving) return;
 		if (message.role === MessageRole.SYSTEM) {
-			// System messages: update in place without branching
+			const { convId, id: messageId } = message;
 			const newContent = editedContent.trim();
-
-			// If content is empty, remove without deleting children
-			if (!newContent) {
-				const conversationDeleted = await chatStore.removeSystemPromptPlaceholder(message.id);
-				isEditing = false;
-				if (conversationDeleted) {
-					goto(`${base}/`);
+			isSaving = true;
+			try {
+				// Keep the existing empty-content removal policy (also reachable with Enter).
+				if (!newContent) {
+					const conversationDeleted = await chatStore.removeSystemPromptPlaceholder(messageId);
+					isEditing = false;
+					if (conversationDeleted) {
+						goto(`${base}/`);
+					}
+					return;
 				}
-				return;
+				await chatStore.editSystemMessage(convId, messageId, newContent);
+				isEditing = false;
+			} catch (error) {
+				toast.error(t('common.somethingWentWrong'), {
+					description: error instanceof Error ? error.message : String(error)
+				});
+			} finally {
+				isSaving = false;
 			}
-
-			await DatabaseService.updateMessage(message.id, { content: newContent });
-			const index = conversationsStore.findMessageIndex(message.id);
-			if (index !== -1) {
-				conversationsStore.updateMessageAtIndex(index, { content: newContent });
-			}
+			return;
 		} else if (message.role === MessageRole.USER) {
 			const finalExtras = await getMergedExtras();
 			chatActions.editWithBranching(message, editedContent.trim(), finalExtras);

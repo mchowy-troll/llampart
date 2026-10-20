@@ -49,6 +49,7 @@
 	const editCtx = getMessageEditContext();
 
 	function handleEditKeydown(event: KeyboardEvent) {
+		if (editCtx.isSaving) return;
 		if (event.key === KeyboardKey.ENTER && !event.shiftKey && !isIMEComposing(event)) {
 			event.preventDefault();
 
@@ -108,6 +109,8 @@
 		<div class="w-full max-w-[80%]">
 			<textarea
 				bind:this={textareaElement}
+				disabled={editCtx.isSaving}
+				aria-busy={editCtx.isSaving}
 				value={editCtx.editedContent}
 				class="min-h-[60px] w-full resize-none rounded-2xl px-3 py-2 text-sm {INPUT_CLASSES}"
 				onkeydown={handleEditKeydown}
@@ -116,7 +119,13 @@
 			></textarea>
 
 			<div class="mt-2 flex justify-end gap-2">
-				<Button class="h-8 px-3" onclick={editCtx.cancel} size="sm" variant="outline">
+				<Button
+					class="h-8 px-3"
+					onclick={editCtx.cancel}
+					disabled={editCtx.isSaving}
+					size="sm"
+					variant="outline"
+				>
 					<X class="mr-1 h-3 w-3" />
 
 					{t('common.cancel')}
@@ -125,7 +134,7 @@
 				<Button
 					class="h-8 px-3"
 					onclick={editCtx.save}
-					disabled={!editCtx.editedContent.trim()}
+					disabled={editCtx.isSaving || !editCtx.editedContent.trim()}
 					size="sm"
 				>
 					<Check class="mr-1 h-3 w-3" />
