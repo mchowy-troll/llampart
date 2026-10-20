@@ -8,7 +8,7 @@ export const FROSTED_GLASS_SETTINGS_KEYS = {
 
 export const FROSTED_GLASS_CONFIG_DEFAULT = {
 	frostedGlassWallpaper: DEFAULT_FROSTED_GLASS_WALLPAPER_ID,
-	frostedGlassMilkiness: 50,
+	frostedGlassMilkiness: 75,
 	frostedGlassOpaque: false
 } as const;
 

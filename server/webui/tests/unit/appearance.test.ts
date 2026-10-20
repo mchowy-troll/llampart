@@ -28,15 +28,15 @@ import {
 const defaults = { ...SETTING_CONFIG_DEFAULT } as SettingsConfigType;
 
 describe('appearance settings and material palette', () => {
-	it('keeps existing material alphas and filters with a subtle wallpaper tint', () => {
+	it('defaults to 75 while retaining the existing material curve and filters', () => {
 		expect(defaults).toMatchObject({
-			frostedGlassMilkiness: 50,
+			frostedGlassMilkiness: 75,
 			frostedGlassOpaque: false,
 			fontFamily: 'default',
 			fontVariant: '400',
 			uiScale: '100'
 		});
-		const styles = resolveGlassMaterials(defaults);
+		const styles = resolveGlassMaterials({ ...defaults, frostedGlassMilkiness: 50 });
 		for (const [name, percent] of [
 			['white-140', 14],
 			['white-130', 13],
@@ -104,7 +104,7 @@ describe('appearance settings and material palette', () => {
 		expect(config).toMatchObject({
 			frostedGlassWallpaper: 'frosted-glass-05',
 			futureSetting: true,
-			frostedGlassMilkiness: 50,
+			frostedGlassMilkiness: 75,
 			frostedGlassOpaque: false,
 			uiScale: '90'
 		});

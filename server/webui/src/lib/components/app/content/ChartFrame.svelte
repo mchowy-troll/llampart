@@ -20,6 +20,7 @@
 	import ChartSlice from './ChartSlice.svelte';
 	import { donutTooltipValues } from '$lib/charts/chart-donut-tooltip';
 	import { chartPresentation } from '$lib/charts/chart-presentation';
+	import { chartAxisLayout, categoryAxis } from '$lib/charts/chart-axis-layout';
 	import {
 		STATIC_CHART_POINTS,
 		HOVER_CHART_POINTS,
@@ -28,6 +29,7 @@
 	import { applyChartPalette } from '$lib/themes/frosted-glass/chart-surface';
 	import { curveMonotoneX, curveLinear } from 'd3-shape';
 	import { prefersReducedMotion } from 'svelte/motion';
+	import { VISUALIZATION_LABEL_SIZE } from '$lib/utils/visualization-typography';
 
 	let {
 		spec,
@@ -40,6 +42,68 @@
 	} = $props();
 	let frame: HTMLElement;
 	let plot: HTMLDivElement;
+	let plotWidth = $state(0);
+	let axisMetrics = $state({ size: 0, category: 0, number: 0 });
+	let axisMeasure = $state.raw<(text: string) => number>(() => 0);
+	let numericTicks = $state<string[]>([]);
+	let categoryRows = $state(1);
+
+	function observePlot(node: HTMLDivElement) {
+		const observer = new ResizeObserver(([entry]) => (plotWidth = entry.contentRect.width));
+		observer.observe(node);
+		const labels = new MutationObserver(() => {
+			const values = [...node.querySelectorAll('.chart-value-tick')].map(
+				(n) => n.textContent || ''
+			);
+			if (values.join('\n') !== numericTicks.join('\n')) numericTicks = values;
+			categoryRows = Math.max(
+				1,
+				...[...node.querySelectorAll('.chart-category-tick')].map(
+					(n) => n.querySelectorAll('tspan').length
+				)
+			);
+		});
+		labels.observe(node, { childList: true, characterData: true, subtree: true });
+		return {
+			destroy: () => {
+				observer.disconnect();
+				labels.disconnect();
+			}
+		};
+	}
+
+	$effect(() => {
+		void settingsStore.appearanceConfig;
+		void plotWidth;
+		const current = spec;
+		const renderedNumbers = numericTicks;
+		let disposed = false;
+		void tick().then(async () => {
+			await document.fonts.ready;
+			if (disposed || !frame || !('series' in current)) return;
+			// Measure the rendered label font, not the larger frame title font.
+			const css = getComputedStyle(plot);
+			const context = document.createElement('canvas').getContext('2d');
+			if (!context) return;
+			context.font = `${css.fontStyle} ${css.fontWeight} ${css.fontSize} ${css.fontFamily}`;
+			const measure = (value: string) => context.measureText(value).width;
+			axisMeasure = measure;
+			axisMetrics = {
+				size: parseFloat(css.fontSize),
+				category: Math.max(0, ...current.data.map((row) => measure(String(row[current.xKey])))),
+				number: Math.max(
+					...renderedNumbers.map(measure),
+					measure(axisNumber(0)),
+					...current.data.flatMap((row) =>
+						current.series.map((series) => measure(axisNumber(Number(row[series.key]))))
+					)
+				)
+			};
+		});
+		return () => {
+			disposed = true;
+		};
+	});
 	let hidden = $state<string[]>([]);
 	let exporting = $state(false);
 	let exportError = $state(false);
@@ -101,10 +165,6 @@
 		}))
 	);
 	const numericFormat = (value: number) => formatChartValue(spec, value, getInterfaceLanguage());
-	const axisCategory = (value: unknown) => {
-		const chars = Array.from(String(value));
-		return chars.length > 18 ? chars.slice(0, 17).join('') + '…' : String(value);
-	};
 	const axisNumber = (value: number) =>
 		Math.abs(value) >= 1e6
 			? new Intl.NumberFormat(getInterfaceLanguage(), {
@@ -114,11 +174,44 @@
 				}).format(value)
 			: numericFormat(value);
 	let horizontal = $derived('orientation' in spec && spec.orientation === 'horizontal');
-	let plotPadding = $derived({
-		left: 80,
-		bottom: 'series' in spec && (horizontal ? spec.yLabel : spec.xLabel) ? 60 : 36,
-		top: 16,
-		right: 16
+	let numericX = $derived('xKey' in spec && typeof spec.data[0][spec.xKey] === 'number');
+	// Categorical points sit at band centers. Nearest band-start lookup can
+	// select the adjacent category at that midpoint after font/margin changes.
+	let tooltipContext = $derived(
+		'xKey' in spec && typeof spec.data[0][spec.xKey] === 'string'
+			? { mode: 'bisect-band' as const }
+			: true
+	);
+	let axisLayout = $derived(
+		chartAxisLayout(
+			plotWidth,
+			horizontal,
+			axisMetrics,
+			'series' in spec && !!(horizontal ? spec.yLabel : spec.xLabel),
+			'series' in spec && !!(horizontal ? spec.xLabel : spec.yLabel),
+			'series' in spec ? data.map((row) => String(row[spec.xKey])) : [],
+			axisMeasure,
+			horizontal ? 1 : categoryRows
+		)
+	);
+	let axisGap = $derived(axisLayout.gap);
+	let yTickWidth = $derived(axisLayout.yTickWidth);
+	let plotPadding = $derived(axisLayout.padding);
+	let categoryLabels = $derived(
+		categoryAxis(
+			plotWidth,
+			horizontal,
+			plotPadding,
+			axisLayout.categoryWidth,
+			axisMetrics.size,
+			axisMeasure
+		)
+	);
+	let axisTextProps = $derived({
+		fontSize: axisMetrics.size,
+		capHeight: `${axisMetrics.size * 0.71}px`,
+		// LayerChart resolves em against a fixed base, not the inherited axis font.
+		lineHeight: `${axisMetrics.size * 1.5}px`
 	});
 	let donutTotal = $derived(
 		'valueKey' in spec ? data.reduce((sum, row) => sum + Number(row[spec.valueKey]), 0) : 0
@@ -127,20 +220,33 @@
 		xAxis: {
 			rule: false,
 			tickLength: 0,
-			ticks: 6,
-			tickOcclusion: true,
+			ticks: horizontal || numericX ? axisLayout.ticks : categoryLabels.ticks,
+			tickOcclusion:
+				horizontal || numericX ? { padding: axisGap, priority: 'start-end' as const } : false,
+			tickLabelProps: {
+				...axisTextProps,
+				dy: axisGap + axisMetrics.size * 0.3,
+				class: horizontal || numericX ? 'chart-value-tick' : 'chart-category-tick',
+				truncate: false
+			},
+			labelProps: { ...axisTextProps, dy: -axisGap },
 			label: 'series' in spec ? (horizontal ? spec.yLabel : spec.xLabel) : undefined,
-			format: horizontal ? axisNumber : axisCategory
+			format: horizontal ? axisNumber : numericX ? String : categoryLabels.format
 		},
 		yAxis: {
 			rule: false,
 			tickLength: 0,
-			ticks: 5,
-			tickOcclusion: true,
+			ticks: horizontal ? categoryLabels.ticks : 5,
+			tickOcclusion: horizontal ? false : { padding: axisGap, priority: 'start-end' as const },
 			label: 'series' in spec ? (horizontal ? spec.xLabel : spec.yLabel) : undefined,
-			labelProps: { x: -58 },
-			tickLabelProps: { width: 56, truncate: true },
-			format: horizontal ? axisCategory : axisNumber
+			labelProps: { ...axisTextProps, x: -(yTickWidth + axisGap + axisMetrics.size * 1.5) },
+			tickLabelProps: {
+				...axisTextProps,
+				dx: -axisGap,
+				class: horizontal ? 'chart-category-tick' : 'chart-value-tick',
+				truncate: false
+			},
+			format: horizontal ? categoryLabels.format : axisNumber
 		},
 		svg: { 'aria-label': spec.title || t('charts.title'), role: 'img' as const },
 		grid: { x: horizontal, y: !horizontal },
@@ -211,7 +317,12 @@
 	>
 		{#snippet children({ data })}
 			{#if data}
-				<div class="chart-tooltip-content" style={paletteStyle} role="status">
+				<div
+					class="chart-tooltip-content"
+					style={paletteStyle}
+					style:--llampart-visualization-label-size={VISUALIZATION_LABEL_SIZE}
+					role="status"
+				>
 					{#if 'series' in spec}
 						<strong>{data[spec.xKey]}</strong>
 						{#each visible as entry (entry.key)}
@@ -255,6 +366,7 @@
 		paletteStyle = styles;
 	}}
 	style={paletteStyle}
+	style:--llampart-visualization-label-size={VISUALIZATION_LABEL_SIZE}
 	class={previewMode
 		? 'llampart-chart-renderer chart-live-preview'
 		: 'llampart-visualization-frame llampart-chart-frame llampart-chart-renderer'}
@@ -272,7 +384,7 @@
 			onpreview={() => (previewOpen = true)}
 		/>{/if}
 	{#if spec.description}<div class="chart-description">{spec.description}</div>{/if}
-	<div bind:this={plot} class="chart-plot">
+	<div bind:this={plot} use:observePlot class="chart-plot">
 		{#if 'series' in spec}
 			{#if spec.type === 'bar'}
 				<BarChart
@@ -294,6 +406,7 @@
 				/>
 			{:else if spec.type === 'area'}
 				<AreaChart
+					{tooltipContext}
 					{data}
 					{series}
 					props={chartProps}
@@ -330,6 +443,7 @@
 				</AreaChart>
 			{:else}
 				<LineChart
+					{tooltipContext}
 					rule={false}
 					{data}
 					{series}
@@ -417,13 +531,13 @@
 	}
 	.chart-description {
 		padding: 0.75rem 1rem 0;
-		font-size: 0.875em;
+		font-size: var(--llampart-visualization-label-size);
 	}
 	.chart-plot {
 		height: 20rem;
 		min-width: 0;
 		margin: var(--llampart-visualization-body-space);
-		font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
+		font-size: var(--llampart-visualization-label-size);
 	}
 	.chart-plot :global(text) {
 		font-family: inherit;
@@ -442,7 +556,7 @@
 		stroke-dasharray: none;
 	}
 	.chart-plot :global(.lc-axis text) {
-		opacity: 0.7;
+		opacity: 1;
 	}
 	.chart-plot :global(.lc-highlight-point) {
 		filter: none;
@@ -485,7 +599,7 @@
 		gap: 0.4rem;
 		max-width: 100%;
 		font: inherit;
-		font-size: calc(var(--llampart-text-unit, 1rem) * 0.8);
+		font-size: var(--llampart-visualization-label-size);
 		text-align: left;
 		overflow-wrap: anywhere;
 		cursor: pointer;
@@ -531,7 +645,7 @@
 		border: 1px solid var(--border);
 		border-radius: 0.5rem;
 		font-family: inherit;
-		font-size: calc(var(--llampart-text-unit, 1rem) * 0.8);
+		font-size: var(--llampart-visualization-label-size);
 		line-height: 1.6;
 		text-shadow: none;
 	}

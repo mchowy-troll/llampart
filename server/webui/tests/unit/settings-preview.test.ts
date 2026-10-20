@@ -37,6 +37,19 @@ const originalConfig = { ...settingsStore.config };
 const originalProps = serverStore.props;
 const originalOverrides = [...settingsStore.userOverrides];
 
+it('resets milkiness to 75 and persists it without changing the slider semantics', () => {
+	settingsStore.updateConfig('frostedGlassMilkiness', 23);
+	expect(config().frostedGlassMilkiness).toBe(23);
+	settingsStore.resetParameterToServerDefault('frostedGlassMilkiness');
+	expect(config().frostedGlassMilkiness).toBe(75);
+	expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!).frostedGlassMilkiness).toBe(
+		75
+	);
+	settingsStore.updateConfig('frostedGlassMilkiness', 50);
+	settingsStore.resetConfig();
+	expect(config().frostedGlassMilkiness).toBe(75);
+});
+
 beforeEach(() => {
 	storage.clear();
 	vi.stubGlobal('localStorage', {

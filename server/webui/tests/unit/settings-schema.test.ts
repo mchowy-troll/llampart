@@ -341,7 +341,7 @@ describe('settings runtime schema', () => {
 				fontSize: 'default',
 				fontVariant: '400',
 				uiScale: '100',
-				frostedGlassMilkiness: 50,
+				frostedGlassMilkiness: 75,
 				frostedGlassOpaque: false
 			});
 			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject({

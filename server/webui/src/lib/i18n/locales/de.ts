@@ -5,7 +5,8 @@ export const de: TranslationDictionary = {
 		title: 'Diagramm',
 		preview: 'Diagrammvorschau',
 		preparing: 'Diagramm wird vorbereitet…',
-		invalid: 'Das Diagramm konnte nicht angezeigt werden.',
+		invalid:
+			'Das Diagramm konnte nicht angezeigt werden. Mögliche Ursachen sind ein ungültiges llampart-diagram-Format oder eine Überschreitung der zulässigen Anzahl von Elementen.',
 		export: 'Diagramm exportieren als',
 		exportError: 'Diagramm konnte nicht exportiert werden. Bitte erneut versuchen.'
 	},
@@ -13,7 +14,9 @@ export const de: TranslationDictionary = {
 		preview: 'Diagrammvorschau',
 		title: 'Diagramm',
 		preparing: 'Diagramm wird vorbereitet…',
-		invalid: 'Das Schaubild konnte nicht angezeigt werden.',
+		invalid:
+			'Das Schaubild konnte nicht angezeigt werden. Mögliche Ursachen sind ein ungültiges llampart-chart-Format oder eine Überschreitung der unterstützten Datenlimits.',
+		inspectDefinition: 'Wählen Sie „Code anzeigen“, um die Definition zu prüfen.',
 		export: 'Diagramm exportieren als',
 		exportError: 'Das Diagramm konnte nicht exportiert werden. Bitte erneut versuchen.',
 		legend: 'Diagrammlegende — Reihen umschalten',
@@ -556,7 +559,7 @@ export const de: TranslationDictionary = {
 		serverUnavailable: 'Server nicht verfügbar',
 		authenticationRequired: 'Serverauthentifizierung fehlgeschlagen',
 		connectionUnavailableHelp:
-			'Keine Verbindung zum Server möglich. Laden Sie die Seite neu, wenn der Server wieder verfügbar ist, oder prüfen Sie die Verbindungseinstellungen.',
+			'Laden Sie die Seite neu, wenn die Verbindung wiederhergestellt ist, oder prüfen Sie die Verbindungseinstellungen.',
 		refreshPage: 'Seite neu laden',
 		connectionSettings: 'Verbindungseinstellungen',
 		initializingConnection: 'Verbindung zum llampart-Server wird initialisiert...',

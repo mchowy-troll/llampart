@@ -1,5 +1,8 @@
 import type { DiagramTypography } from './mermaid-presentation';
 
+/** Gantt-only readability exception to the shared donut label size. */
+export const GANTT_LABEL_SIZE_INCREMENT = 1;
+
 export interface ScheduleTask {
 	task: string;
 	section: string;
@@ -69,22 +72,64 @@ export function ganttPresentationSource(
 	);
 }
 
-/** Native Gantt has a fixed 5px outside-label gap, even for rotated milestones.
- * Enforce one measured typographic clearance, only when that gap is too small.
- * Dates, bars, rows and milestone geometry remain entirely native. */
-export function spaceGanttLabels(svg: SVGSVGElement, fontSize: number) {
-	for (const text of svg.querySelectorAll<SVGTextElement>(
-		'text.taskTextOutsideLeft,text.taskTextOutsideRight'
-	)) {
+/** Keep the first/last calendar ticks and only interior labels that actually fit.
+ * Inputs are measured SVG text boxes, not estimates based on date duration. */
+export function ganttTickIndices(boxes: { left: number; right: number }[], gap: number): number[] {
+	if (boxes.length < 2) return boxes.map((_, i) => i);
+	const last = boxes.length - 1;
+	const kept = [0];
+	for (let i = 1; i < last; i++) {
+		if (
+			boxes[i].left >= boxes[kept[kept.length - 1]].right + gap &&
+			boxes[i].right + gap <= boxes[last].left
+		)
+			kept.push(i);
+	}
+	// An extremely narrow axis cannot display both endpoints without overlap.
+	if (boxes[last].left >= boxes[0].right + gap) kept.push(last);
+	return kept;
+}
+
+/** All task names use the existing outside-label style and one typographic gap.
+ * The pre-layout right margin accommodates the longest name, including a task
+ * ending on the final date. Native dates, bars and row assignments are intact. */
+export function spaceGanttLabels(svg: SVGSVGElement, fontSize: number, availableWidth?: number) {
+	for (const text of svg.querySelectorAll<SVGTextElement>('text[id$="-text"]')) {
 		const bar = svg.getElementById(text.id.replace(/-text$/, '')) as SVGGraphicsElement | null;
 		const matrix = text.getScreenCTM();
 		if (!bar || !matrix) continue;
-		const a = bar.getBoundingClientRect(),
-			b = text.getBoundingClientRect();
-		const right = text.classList.contains('taskTextOutsideRight');
+		const a = bar.getBoundingClientRect();
 		const scale = Math.hypot(matrix.a, matrix.b);
-		const missing = fontSize * scale * 0.6 - (right ? b.left - a.right : a.left - b.right);
-		if (missing <= 0) continue;
-		text.setAttribute('dx', String((right ? missing : -missing) / scale));
+		const position = new DOMPoint(a.right + fontSize * scale * 0.6, a.y).matrixTransform(
+			matrix.inverse()
+		);
+		text.setAttribute('x', String(position.x));
+		text.setAttribute('dx', '0');
+		text.setAttribute('text-anchor', 'start');
+		// Keep Mermaid's role-specific outside ink rather than bar-contrast ink.
+		text.setAttribute('class', 'taskTextOutsideRight');
+	}
+
+	for (const axis of svg.querySelectorAll<SVGGElement>('g.grid')) {
+		const ticks = [...axis.querySelectorAll<SVGGElement>('.tick')];
+		const texts = ticks.map((tick) => tick.querySelector('text'));
+		if (texts.some((text) => !text)) continue;
+		const scale = Math.hypot(svg.getScreenCTM()?.a || 1, svg.getScreenCTM()?.b || 0);
+		// The engine measures offscreen at native size. Reserve a readable gap
+		// after the SVG is fitted into the actual message container as well.
+		const fit =
+			availableWidth && availableWidth > 0
+				? Math.min(1, availableWidth / svg.viewBox.baseVal.width)
+				: 1;
+		const kept = new Set(
+			ganttTickIndices(
+				texts.map((text) => text!.getBoundingClientRect()),
+				(fontSize * scale * 0.6) / fit
+			)
+		);
+		for (let i = 0; i < ticks.length; i++) {
+			if (!kept.has(i)) ticks[i].remove();
+			else texts[i]!.setAttribute('dy', `${fontSize * 1.2}`);
+		}
 	}
 }

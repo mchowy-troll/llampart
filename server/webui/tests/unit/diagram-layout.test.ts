@@ -1,24 +1,75 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ganttLayout, ganttPresentationSource } from '$lib/diagrams/gantt-layout';
+import { ganttLayout, ganttPresentationSource, ganttTickIndices } from '$lib/diagrams/gantt-layout';
 import { diagramGroupColors, paintDiagramGroups } from '$lib/diagrams/diagram-groups';
 import { CHART_BASE_COLORS } from '$lib/themes/frosted-glass/chart-palette';
 import {
 	mindmapPresentationSource,
 	statePresentationSource,
-	softenMindmapBranches
+	finishMindmapPresentation,
+	edgeLabelTypography,
+	flowchartSectionPresentation,
+	diagramConfig
 } from '$lib/diagrams/mermaid-presentation';
+import { VISUALIZATION_LABEL_SIZE } from '$lib/utils/visualization-typography';
 
 const font = { family: 'Fira Sans', size: 16, weight: '400', style: 'normal', color: '#111111' };
 const measure = (text: string) => text.length * 9;
+
+it('rounds only Flowchart groups and aligns bold horizontal titles without changing node bounds', () => {
+	const radius = vi.fn();
+	const weight = vi.fn();
+	const transform = vi.fn();
+	const rect = {
+		setAttribute: radius,
+		x: { baseVal: { value: 20 } },
+		y: { baseVal: { value: 30 } }
+	};
+	const label = {
+		querySelectorAll: () => [{ style: { setProperty: weight } }],
+		getBBox: () => ({ x: -5, y: -10 }),
+		setAttribute: transform
+	};
+	const svg = {
+		querySelectorAll: vi.fn(() => [
+			{ querySelector: (s: string) => (s === ':scope > rect' ? rect : label) }
+		])
+	};
+	flowchartSectionPresentation(svg as unknown as SVGSVGElement, font);
+	expect(svg.querySelectorAll).toHaveBeenCalledWith('g.cluster');
+	expect(radius.mock.calls).toEqual([
+		['rx', '8'],
+		['ry', '8']
+	]);
+	expect(weight).toHaveBeenCalledWith('font-weight', '700', 'important');
+	expect(transform).toHaveBeenCalledWith('transform', 'translate(41,52)');
+	expect(diagramConfig(font).themeCSS).toContain('.node rect{rx:8px;ry:8px;');
+});
+
+it('keeps Gantt bar/milestone geometry at the pre-increment size', () => {
+	const old = diagramConfig({ ...font, size: 9.6, labelSize: 9.6 }).gantt!;
+	const next = diagramConfig({ ...font, size: 10.6, labelSize: 9.6 }).gantt!;
+	expect(next.fontSize).toBe(10.6);
+	for (const key of ['barHeight', 'barGap', 'topPadding'] as const)
+		expect(next[key]).toBe(old[key]);
+});
+
+it('shares the existing donut size and scopes the edge override away from nodes and clusters', () => {
+	expect(VISUALIZATION_LABEL_SIZE).toBe('calc(var(--llampart-text-unit, 1rem) * 0.8)');
+	for (const size of [9.6, 12.8, 18]) {
+		expect(edgeLabelTypography('llampart-diagram-1', size)).toBe(
+			`#llampart-diagram-1 .edgeLabel text,#llampart-diagram-1 .edgeLabel tspan{font-size:${size}px!important}`
+		);
+	}
+});
 
 it('removes only the dedicated Mindmap node underline, not node shapes or branches', () => {
 	const remove = vi.fn();
 	const querySelectorAll = vi.fn((selector: string) =>
 		selector === '.mindmap-node > line.node-line-' ? [{ remove }] : []
 	);
-	softenMindmapBranches({ querySelectorAll } as unknown as SVGSVGElement);
+	finishMindmapPresentation({ querySelectorAll } as unknown as SVGSVGElement);
 	expect(remove).toHaveBeenCalledOnce();
-	expect(querySelectorAll).toHaveBeenCalledWith('path.edge[class*="edge-depth-"]');
+	expect(querySelectorAll).toHaveBeenCalledTimes(1);
 });
 const task = (name: string, start = '2026-10-01', end = '2026-10-16') => ({
 	task: name,
@@ -28,6 +79,22 @@ const task = (name: string, start = '2026-10-01', end = '2026-10-16') => ({
 });
 
 describe('native Gantt presentation plan', () => {
+	it('thins real tick boxes at month/year boundaries, retaining the endpoints', () => {
+		// Text, not calendar arithmetic, decides whether 31.07 / 01.08 fit.
+		const boxes = [0, 30, 60, 90, 120].map((left) => ({ left, right: left + 38 }));
+		expect(ganttTickIndices(boxes, 8)).toEqual([0, 2, 4]);
+		expect(ganttTickIndices([], 8)).toEqual([]);
+		expect(ganttTickIndices([{ left: 0, right: 38 }], 8)).toEqual([0]);
+		expect(
+			ganttTickIndices(
+				[
+					{ left: 0, right: 38 },
+					{ left: 46, right: 84 }
+				],
+				8
+			)
+		).toEqual([0, 1]);
+	});
 	it('reserves metric-based section and outside-label space before rendering', () => {
 		const normal = ganttLayout([task('Analiza')], font, measure);
 		const long = ganttLayout(

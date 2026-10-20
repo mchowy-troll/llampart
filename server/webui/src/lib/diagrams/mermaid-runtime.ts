@@ -4,17 +4,21 @@ import {
 	centerStateLabels,
 	mindmapPresentationSource,
 	statePresentationSource,
-	softenMindmapBranches,
+	finishMindmapPresentation,
+	flowchartSectionPresentation,
+	edgeLabelTypography,
 	type DiagramTypography
 } from './mermaid-presentation';
 import {
 	ganttLayout,
+	GANTT_LABEL_SIZE_INCREMENT,
 	ganttPresentationSource,
 	spaceGanttLabels,
 	type ScheduleTask
 } from './gantt-layout';
 import { diagramGroupColors, paintDiagramGroups, type GroupNode } from './diagram-groups';
 import { spaceEdgeLabels } from './edge-label-layout';
+import { MINDMAP_LAYOUT } from './mindmap-layout';
 
 let engine: Promise<typeof import('mermaid')> | undefined;
 let queue: Promise<unknown> = Promise.resolve();
@@ -25,17 +29,28 @@ let serial = 0;
  */
 export function renderDiagram(
 	source: string,
-	font: DiagramTypography,
+	typography: DiagramTypography,
 	signal: AbortSignal,
-	curve: 'rounded' | 'basis' = 'rounded'
+	curve: 'rounded' | 'basis' = 'rounded',
+	availableWidth?: number
 ): Promise<string> {
 	const type = diagramType(source);
+	const font =
+		type === 'gantt'
+			? {
+					...typography,
+					labelSize: typography.labelSize ?? typography.size,
+					size: (typography.labelSize ?? typography.size) + GANTT_LABEL_SIZE_INCREMENT
+				}
+			: typography;
 	const job = queue.then(async () => {
 		signal.throwIfAborted();
 		engine ??= import('mermaid');
 		const { default: mermaid } = await engine;
 		signal.throwIfAborted();
 		await document.fonts.load(`${font.style} ${font.weight} ${font.size}px ${font.family}`);
+		if (type === 'flowchart')
+			await document.fonts.load(`${font.style} 700 ${font.size}px ${font.family}`);
 		await document.fonts.ready;
 		signal.throwIfAborted();
 		const host = document.createElement('div');
@@ -55,7 +70,13 @@ export function renderDiagram(
 			// Native shared ports give terminal transitions a single aligned entry;
 			// ELK retains every edge/arrow. Flowchart routing is unchanged.
 			if (type === 'stateDiagram-v2') config.elk!.mergeEdges = true;
-			if (type === 'mindmap' || type === 'gantt') config.layout = 'dagre';
+			if (type === 'gantt') config.layout = 'dagre';
+			if (type === 'mindmap') {
+				mermaid.registerLayoutLoaders([
+					{ name: MINDMAP_LAYOUT, loader: () => import('./mindmap-layout-adapter') }
+				]);
+				config.layout = MINDMAP_LAYOUT;
+			}
 			mermaid.initialize(config);
 			const canvas = document.createElement('canvas');
 			const context = canvas.getContext('2d');
@@ -108,10 +129,14 @@ export function renderDiagram(
 			const safe = verifiedDiagramSvg(svg);
 			if (groupColors.size) paintDiagramGroups(safe, id, groupColors);
 			host.replaceChildren(safe);
-			if (type === 'mindmap') softenMindmapBranches(safe);
-			if (type === 'gantt') spaceGanttLabels(safe, font.size);
+			if (type === 'flowchart') flowchartSectionPresentation(safe, font);
+			if (type === 'mindmap') finishMindmapPresentation(safe);
+			if (type === 'gantt') spaceGanttLabels(safe, font.size, availableWidth);
 			if (type === 'stateDiagram-v2') centerStateLabels(safe);
 			if (type === 'flowchart' || type === 'stateDiagram-v2') {
+				safe
+					.querySelector('style')
+					?.append(document.createTextNode(edgeLabelTypography(id, font.labelSize ?? font.size)));
 				// Give labels room beyond outer return channels too; this changes the
 				// canvas margin only, never any path or node coordinates.
 				const box = safe.viewBox.baseVal;

@@ -5,7 +5,8 @@ export const it: TranslationDictionary = {
 		title: 'Diagramma',
 		preview: 'Anteprima del diagramma',
 		preparing: 'Preparazione del diagramma…',
-		invalid: 'Impossibile visualizzare il diagramma.',
+		invalid:
+			'Impossibile visualizzare il diagramma. Le possibili cause includono un formato llampart-diagram non valido o il superamento del numero di elementi consentito.',
 		export: 'Esporta diagramma come',
 		exportError: 'Impossibile esportare il diagramma. Riprova.'
 	},
@@ -13,7 +14,9 @@ export const it: TranslationDictionary = {
 		preview: 'Anteprima del grafico',
 		title: 'Grafico',
 		preparing: 'Preparazione del grafico…',
-		invalid: 'Impossibile visualizzare il grafico.',
+		invalid:
+			'Impossibile visualizzare il grafico. Le possibili cause includono un formato llampart-chart non valido o il superamento dei limiti di dati supportati.',
+		inspectDefinition: 'Seleziona «Mostra codice» per verificare la definizione.',
 		export: 'Esporta grafico come',
 		exportError: 'Impossibile esportare il grafico. Riprova.',
 		legend: 'Legenda del grafico — attiva le serie',
@@ -557,7 +560,7 @@ export const it: TranslationDictionary = {
 		serverUnavailable: 'Server non disponibile',
 		authenticationRequired: 'Autenticazione del server non riuscita',
 		connectionUnavailableHelp:
-			'Impossibile connettersi al server. Aggiorna la pagina quando il server è disponibile oppure controlla le impostazioni di connessione.',
+			'Aggiorna la pagina quando la connessione viene ripristinata oppure controlla le impostazioni di connessione.',
 		refreshPage: 'Aggiorna pagina',
 		connectionSettings: 'Impostazioni di connessione',
 		initializingConnection: 'Inizializzazione della connessione al server llampart...',

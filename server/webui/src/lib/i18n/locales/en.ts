@@ -5,7 +5,8 @@ export const en: TranslationDictionary = {
 		title: 'Diagram',
 		preview: 'Preview diagram',
 		preparing: 'Preparing diagram…',
-		invalid: 'Unable to display the diagram.',
+		invalid:
+			'Unable to display the diagram. Possible causes include an invalid llampart-diagram format or exceeding the supported number of elements.',
 		export: 'Export diagram as',
 		exportError: 'Could not export the diagram. Please try again.'
 	},
@@ -13,7 +14,9 @@ export const en: TranslationDictionary = {
 		preview: 'Preview chart',
 		title: 'Chart',
 		preparing: 'Preparing chart…',
-		invalid: 'Unable to display the chart.',
+		invalid:
+			'Unable to display the chart. Possible causes include an invalid llampart-chart format or exceeding the supported data limits.',
+		inspectDefinition: 'Select “Show code” to inspect the definition.',
 		export: 'Export chart as',
 		exportError: 'Could not export this chart. Please try again.',
 		legend: 'Chart legend — toggle series',
@@ -549,7 +552,7 @@ export const en: TranslationDictionary = {
 		serverUnavailable: 'Server unavailable',
 		authenticationRequired: 'Server authentication failed',
 		connectionUnavailableHelp:
-			'Cannot connect to the server. Refresh the page when the server is available, or check the connection settings.',
+			'Refresh the page when the connection is restored, or check the connection settings.',
 		refreshPage: 'Refresh page',
 		connectionSettings: 'Connection settings',
 		initializingConnection: 'Initializing connection to llampart server...',

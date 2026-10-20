@@ -24,7 +24,11 @@
 	<Tooltip.Root>
 		<Tooltip.Trigger>
 			{#snippet child({ props })}
-				<BadgeInfo {...mergeProps(props, { onclick: handleClick })} class={className}>
+				<BadgeInfo
+					{...mergeProps(props, { onclick: handleClick })}
+					class={className}
+					aria-label={tooltipLabel ? `${tooltipLabel}: ${value}` : undefined}
+				>
 					{#snippet icon()}
 						<Icon class="h-3 w-3" />
 					{/snippet}

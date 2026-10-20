@@ -1,7 +1,13 @@
 /** Discover the active local faces from CSSOM; no second font registry. */
 export async function embeddedSvgFonts(families: string, source: HTMLElement): Promise<string> {
 	const names = families.split(',').map((name) => name.trim().replace(/^["']|["']$/g, ''));
-	const used = [source, ...Array.from(source.querySelectorAll('*'))].map((node) => {
+	const nodes: Element[] = [source, ...Array.from(source.querySelectorAll('*'))];
+	// Diagram text lives in open shadow roots; include its actual bold/italic
+	// faces too, without a second font registry or new embedding limits.
+	for (const node of nodes) {
+		if (node.shadowRoot) nodes.push(...Array.from(node.shadowRoot.querySelectorAll('*')));
+	}
+	const used = nodes.map((node) => {
 		const style = getComputedStyle(node);
 		return { weight: Number(style.fontWeight), style: style.fontStyle };
 	});

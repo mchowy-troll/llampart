@@ -219,7 +219,7 @@
 			<BadgeChatStatistic
 				class="bg-transparent"
 				icon={Gauge}
-				tooltipContent={providerDetails}
+				tooltipContent={activeView === ChatMessageStatsView.READING ? providerDetails : undefined}
 				value={providerStats?.tokensPerSecond !== undefined
 					? `${providerStats.approximate ? '≈ ' : ''}${providerStats.tokensPerSecond.toFixed(2)} ${activeView === ChatMessageStatsView.READING ? 'tokens/s' : 't/s'}`
 					: '—'}

@@ -12,7 +12,10 @@
 
 <div class="llampart-visualization-frame llampart-visualization-fallback llampart-{kind}-fallback">
 	<div class="fallback-title">{title}</div>
-	<div role="status">{t(kind === 'diagram' ? 'diagrams.invalid' : 'charts.invalid')}</div>
+	<div role="status" class="fallback-message">
+		<p>{t(kind === 'diagram' ? 'diagrams.invalid' : 'charts.invalid')}</p>
+		{#if kind === 'chart'}<p>{t('charts.inspectDefinition')}</p>{/if}
+	</div>
 	<div class="fallback-actions">
 		<Button bind:ref={trigger} variant="outline" size="sm" onclick={() => (open = true)}
 			>{t('common.showCode')}</Button
@@ -54,6 +57,12 @@
 		margin-bottom: 0.25rem;
 		max-height: 3.5em;
 		overflow: auto;
+	}
+	.fallback-message p {
+		margin: 0;
+	}
+	.fallback-message p + p {
+		margin-top: 0.75em;
 	}
 	.fallback-actions {
 		display: flex;

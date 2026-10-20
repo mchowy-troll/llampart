@@ -5,7 +5,8 @@ export const pl: TranslationDictionary = {
 		title: 'Diagram',
 		preview: 'Podgląd diagramu',
 		preparing: 'Przygotowywanie diagramu…',
-		invalid: 'Nie udało się wyświetlić diagramu.',
+		invalid:
+			'Nie udało się wyświetlić diagramu. Możliwe przyczyny to nieprawidłowy format llampart-diagram lub przekroczenie dopuszczalnej liczby elementów.',
 		export: 'Eksportuj diagram jako',
 		exportError: 'Nie udało się wyeksportować diagramu. Spróbuj ponownie.'
 	},
@@ -13,7 +14,9 @@ export const pl: TranslationDictionary = {
 		preview: 'Podgląd wykresu',
 		title: 'Wykres',
 		preparing: 'Przygotowywanie wykresu…',
-		invalid: 'Nie udało się wyświetlić wykresu.',
+		invalid:
+			'Nie udało się wyświetlić wykresu. Możliwe przyczyny to nieprawidłowy format llampart-chart lub przekroczenie obsługiwanych limitów danych.',
+		inspectDefinition: 'Wybierz „Pokaż kod”, aby sprawdzić definicję.',
 		export: 'Eksportuj wykres jako',
 		exportError: 'Nie udało się wyeksportować wykresu. Spróbuj ponownie.',
 		legend: 'Legenda wykresu — przełącz serie',
@@ -555,7 +558,7 @@ export const pl: TranslationDictionary = {
 		serverUnavailable: 'Serwer niedostępny',
 		authenticationRequired: 'Błąd uwierzytelniania na serwerze',
 		connectionUnavailableHelp:
-			'Nie można połączyć się z serwerem. Odśwież stronę po przywróceniu połączenia lub sprawdź ustawienia serwera.',
+			'Odśwież stronę po przywróceniu połączenia lub sprawdź ustawienia serwera.',
 		refreshPage: 'Odśwież stronę',
 		connectionSettings: 'Ustawienia połączenia',
 		initializingConnection: 'Inicjalizowanie połączenia z serwerem llampart...',

@@ -23,6 +23,12 @@
 	let exporting = $state(false);
 	let exportError = $state(false);
 	let viewportRevision = $state(0);
+	let viewportWidth = $state(0);
+	function observeWidth(node: HTMLDivElement) {
+		const observer = new ResizeObserver(([entry]) => (viewportWidth = entry.contentRect.width));
+		observer.observe(node);
+		return { destroy: () => observer.disconnect() };
+	}
 	let lastTypography = '';
 	let active: AbortController | undefined;
 	let request = 0;
@@ -46,6 +52,7 @@
 		const input = source;
 		const enabled = allowed;
 		void viewportRevision;
+		const width = /^\s*(?:%%[^\n]*\n\s*)*gantt\b/.test(input) ? viewportWidth : undefined;
 		const revision = ++request;
 		let disposed = false;
 		async function update() {
@@ -66,7 +73,7 @@
 				stage = 'module';
 				const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
 				stage = 'render';
-				const result = await renderDiagram(input, font, controller.signal);
+				const result = await renderDiagram(input, font, controller.signal, 'rounded', width);
 				if (!disposed && revision === request && !controller.signal.aborted) svg = result;
 			} catch (error) {
 				if (!disposed && revision === request && !controller.signal.aborted) {
@@ -118,7 +125,7 @@
 	}}
 />
 
-<div bind:this={frame} class="diagram-typography">
+<div bind:this={frame} use:observeWidth class="diagram-typography">
 	{#if invalid}
 		<VisualizationFallback {source} {title} kind="diagram" />
 	{:else if svg}

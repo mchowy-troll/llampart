@@ -1,5 +1,6 @@
 import type { MermaidConfig } from 'mermaid';
 import { chartPalette } from '$lib/themes/frosted-glass/chart-palette';
+import { visualizationLabelSize } from '$lib/utils/visualization-typography';
 import { MAX_DIAGRAM_EDGES, MAX_DIAGRAM_SOURCE } from './mermaid-policy';
 
 export interface DiagramTypography {
@@ -8,6 +9,7 @@ export interface DiagramTypography {
 	weight: string;
 	style: string;
 	color: string;
+	labelSize?: number;
 }
 
 export function diagramTypography(element: HTMLElement): DiagramTypography {
@@ -17,8 +19,37 @@ export function diagramTypography(element: HTMLElement): DiagramTypography {
 		size: parseFloat(css.fontSize),
 		weight: css.fontWeight,
 		style: css.fontStyle,
-		color: css.color
+		color: css.color,
+		labelSize: visualizationLabelSize(element)
 	};
+}
+
+/** Applied after native layout: node/cluster geometry and typography stay intact.
+ * Only edge text changes before the existing measured edge-label spacing pass. */
+export function edgeLabelTypography(id: string, size: number): string {
+	return `#${id} .edgeLabel text,#${id} .edgeLabel tspan{font-size:${size}px!important}`;
+}
+
+const FLOWCHART_CORNER_RADIUS = 8;
+
+/** Presentation only: preserve native group/node bounds and routing. Titles stay
+ * horizontal in the user's face; align measured ink inside the frame. */
+export function flowchartSectionPresentation(svg: SVGSVGElement, font: DiagramTypography) {
+	for (const group of svg.querySelectorAll<SVGGElement>('g.cluster')) {
+		const rect = group.querySelector<SVGRectElement>(':scope > rect');
+		const label = group.querySelector<SVGGElement>(':scope > .cluster-label');
+		if (!rect || !label) continue;
+		rect.setAttribute('rx', String(FLOWCHART_CORNER_RADIUS));
+		rect.setAttribute('ry', String(FLOWCHART_CORNER_RADIUS));
+		for (const text of label.querySelectorAll<SVGElement>('text,tspan'))
+			text.style.setProperty('font-weight', '700', 'important');
+		const bounds = label.getBBox();
+		const inset = font.size;
+		label.setAttribute(
+			'transform',
+			`translate(${rect.x.baseVal.value + inset - bounds.x},${rect.y.baseVal.value + inset * 0.75 - bounds.y})`
+		);
+	}
 }
 
 /** Opaque, gently softened data fills keep contrast independent of wallpaper.
@@ -59,6 +90,7 @@ export function diagramConfig(
 	const fill = (i: number) => diagramFill(colors[i]);
 	const ink = (i: number) => diagramInk(fill(i));
 	const unit = (multiple: number) => Math.ceil(font.size * multiple);
+	const ganttUnit = (multiple: number) => Math.ceil((font.labelSize ?? font.size) * multiple);
 	const variables: Record<string, string | number> = {
 		THEME_COLOR_LIMIT: colors.length,
 		fontFamily: font.family,
@@ -141,11 +173,11 @@ export function diagramConfig(
 		],
 		themeVariables: variables,
 		themeCSS: `text,tspan,.nodeLabel,.label{font-family:${font.family}!important;font-size:${font.size}px!important;font-weight:${font.weight}!important;font-style:${font.style}!important;font-synthesis:none;text-shadow:none}
-		.node rect{rx:8px;ry:8px;stroke-width:1px}
+		.node rect{rx:${FLOWCHART_CORNER_RADIUS}px;ry:${FLOWCHART_CORNER_RADIUS}px;stroke-width:1px}
 		.node polygon,.node circle{stroke-width:1px}
 		.section-root rect,.section-root path{fill:${colors[0]}!important;stroke:none}
 		.section-root text,.section-root tspan{fill:${diagramInk(colors[0])}!important}
-		.edge[class*="edge-depth-"]{stroke-width:${Math.max(4.5, font.size * 0.3)}px;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
+		.edge[class*="edge-depth-"]{stroke-width:3px;stroke-linecap:round;stroke-linejoin:round;opacity:.9}
 		.flowchart-link,.transition{stroke-width:1.5px;stroke-linecap:round;stroke-linejoin:round}
 		.edgeLabel .label rect.background,.edgeLabel .labelBkg,.edgeLabel rect{fill:transparent!important;stroke:none!important;opacity:0!important}
 		.edgeLabel text,.edgeLabel tspan{stroke:none!important;fill:${font.color}}
@@ -181,9 +213,10 @@ export function diagramConfig(
 			numberSectionStyles: colors.length,
 			fontSize: font.size,
 			sectionFontSize: font.size,
-			barHeight: unit(2.2),
-			barGap: unit(1.1),
-			topPadding: unit(4),
+			// Text may grow without stretching bars, rows or milestone diamonds.
+			barHeight: ganttUnit(2.2),
+			barGap: ganttUnit(1.1),
+			topPadding: ganttUnit(4),
 			leftPadding: Math.ceil(font.size * 12),
 			rightPadding: Math.ceil(font.size * 8)
 		},
@@ -276,21 +309,10 @@ export function centerStateLabels(svg: SVGSVGElement) {
 	}
 }
 
-/** Mindmap hardcodes basis and exposes no curve option. Keep native layout and
- * endpoints, replacing each branch's late elbow with one continuous cubic arc.
- * Control points remain inside the endpoint bounds, so the viewport is intact. */
-export function softenMindmapBranches(svg: SVGSVGElement) {
+/** Keep the existing removal of Mermaid's decorative node underline. Paths
+ * now belong to the measured Mindmap layout adapter, not a late SVG rewrite. */
+export function finishMindmapPresentation(svg: SVGSVGElement) {
 	// Mermaid's default rectangular node adds a separate decorative underline.
 	// Remove only that accent, retaining the rounded shape and all branch paths.
 	for (const line of svg.querySelectorAll('.mindmap-node > line.node-line-')) line.remove();
-	for (const path of svg.querySelectorAll<SVGPathElement>('path.edge[class*="edge-depth-"]')) {
-		const a = path.getPointAtLength(0),
-			b = path.getPointAtLength(path.getTotalLength());
-		const dx = b.x - a.x,
-			dy = b.y - a.y;
-		path.setAttribute(
-			'd',
-			`M${a.x},${a.y}C${a.x + dx * 0.15},${a.y + dy * 0.55} ${b.x - dx * 0.15},${b.y - dy * 0.55} ${b.x},${b.y}`
-		);
-	}
 }

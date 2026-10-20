@@ -1686,12 +1686,15 @@
 	}
 
 	div :global(li::marker) {
-		color: var(--muted-foreground);
+		color: currentColor;
+		font-family: inherit;
+		font-size: 1em;
+		font-weight: inherit;
 	}
 
 	/* Nested lists */
-	div :global(ul ul) {
-		list-style-type: circle;
+	div :global(:is(ul, ol) ul) {
+		list-style-type: disc;
 		margin-top: 0.25rem;
 		margin-bottom: 0.25rem;
 	}
@@ -1709,9 +1712,33 @@
 		padding-inline-start: 0;
 	}
 
-	div :global(.task-list-item-checkbox) {
+	div :global(.task-list-item input[type='checkbox']) {
+		appearance: none;
+		display: inline-grid;
+		place-content: center;
+		width: 1em;
+		height: 1em;
+		border: 1px solid var(--muted-foreground);
+		border-radius: 0.2em;
+		background: transparent;
+		vertical-align: -0.125em;
 		margin-right: 0.5rem;
 		margin-top: 0.125rem;
+		opacity: 1;
+	}
+
+	div :global(.task-list-item input[type='checkbox']:checked) {
+		background: var(--muted-foreground);
+		color: var(--background);
+	}
+
+	div :global(.task-list-item input[type='checkbox']:checked::after) {
+		content: '';
+		width: 0.55em;
+		height: 0.3em;
+		border-left: 0.125em solid currentColor;
+		border-bottom: 0.125em solid currentColor;
+		transform: translateY(-0.075em) rotate(-45deg);
 	}
 
 	/* Blockquotes */

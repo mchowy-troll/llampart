@@ -332,7 +332,7 @@ async function assertLabelSpacing() {
 				(path) => {
 					return (
 						/^M[^C]+C[^LCQ]+$/.test(path.getAttribute('d')) &&
-						parseFloat(getComputedStyle(path).strokeWidth) >= 4.5
+						parseFloat(getComputedStyle(path).strokeWidth) === 3
 					);
 				}
 			);
@@ -367,7 +367,7 @@ async function assertLabelSpacing() {
 		assert(schedule.stateCentered, 'State text must be centered in both axes');
 		assert(schedule.outsideClear, 'Gantt outside text must clear bars and rotated milestones');
 		assert(schedule.mindmapRoot, 'Mindmap root must be a native rounded rectangle');
-		assert(schedule.mindmapCurves, 'Mindmap branches must be stronger continuous cubic curves');
+		assert(schedule.mindmapCurves, 'Mindmap branches must be continuous 3px cubic curves');
 		assert(schedule.mindmapCleanNodes, 'Mindmap rectangles must not have decorative underlines');
 		assert(schedule.separated, 'Gantt dates must have breathing room');
 		assert.equal(
@@ -494,7 +494,7 @@ try {
 		['fira-sans', 'default', '400']
 	]) {
 		await settings({ fontFamily: family, fontSize: size, fontVariant: variant });
-		const text = frames.first().locator('.diagram-surface text').first();
+		const text = frames.first().locator('.diagram-surface .node text').first();
 		assert(
 			(await text.evaluate((el) => getComputedStyle(el).fontFamily))
 				.toLowerCase()
@@ -503,6 +503,14 @@ try {
 		if (size !== 'default')
 			assert.equal(await text.evaluate((el) => getComputedStyle(el).fontSize), `${size}px`);
 		assert.equal(await text.evaluate((el) => getComputedStyle(el).fontWeight), variant);
+		assert(
+			(
+				await frames
+					.first()
+					.locator('.cluster-label text')
+					.evaluateAll((nodes) => nodes.map((n) => getComputedStyle(n).fontWeight))
+			).every((weight) => weight === '700')
+		);
 		await assertLabelSpacing();
 		await screenshot(`font-${family}-${size}`);
 		for (const format of ['SVG', 'PNG']) {
@@ -706,7 +714,7 @@ try {
 	);
 	assert.deepEqual(terminalPaths.ends[0], terminalPaths.ends[1], 'Terminal entry must be aligned');
 	console.log(
-		'PASS contextual/native frame titles, no duplicate Gantt title, centered State, shared terminal entry, rounded Mindmap root and stronger cubic branches'
+		'PASS contextual/native frame titles, no duplicate Gantt title, centered State, shared terminal entry, rounded Mindmap root and 3px cubic branches'
 	);
 	await setContent(markdown);
 	await settings({ fontFamily: 'fira-sans', fontSize: 'default' });

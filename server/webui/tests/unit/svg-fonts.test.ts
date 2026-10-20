@@ -35,6 +35,23 @@ function fixture(rules: Face[], weight = '700', style = 'normal', bytes = 4) {
 	return { fetch, source: { querySelectorAll: () => [] } as unknown as HTMLElement };
 }
 describe('local chart font embedding', () => {
+	it('includes bold diagram titles in open shadow roots, but not unused faces', async () => {
+		const { fetch } = fixture(
+			['400', '700', '900'].map((weight) => new Face(weight, 'normal', 'latin')),
+			'400'
+		);
+		const text = { weight: '700' };
+		const host = { shadowRoot: { querySelectorAll: () => [text] } };
+		const source = { querySelectorAll: () => [host] };
+		vi.stubGlobal('getComputedStyle', (node: unknown) => ({
+			fontWeight: node === text ? '700' : '400',
+			fontStyle: 'normal'
+		}));
+		const css = await embeddedSvgFonts('Test Font', source as unknown as HTMLElement);
+		expect(fetch).toHaveBeenCalledTimes(2);
+		expect(css).toContain('font-weight:700');
+		expect(css).not.toContain('font-weight:900');
+	});
 	it('does not let sixteen static faces displace used upright weights', async () => {
 		const rules = ['italic', 'normal'].flatMap((style) =>
 			['400', '500', '600', '700'].flatMap((weight) =>

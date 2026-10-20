@@ -7,10 +7,13 @@ const mocks = vi.hoisted(() => ({
 	append: vi.fn(),
 	remove: vi.fn(),
 	load: vi.fn(),
-	parse: vi.fn()
+	parse: vi.fn(),
+	styleAppend: vi.fn(),
+	spaceEdges: vi.fn()
 }));
 vi.mock('mermaid', () => ({
 	default: {
+		registerLayoutLoaders: vi.fn(),
 		initialize: mocks.initialize,
 		render: mocks.render,
 		mermaidAPI: { getDiagramFromText: mocks.parse }
@@ -20,7 +23,7 @@ vi.mock('$lib/diagrams/mermaid-policy', async (original) => ({
 	...(await original<object>()),
 	verifiedDiagramSvg: mocks.verified
 }));
-vi.mock('$lib/diagrams/edge-label-layout', () => ({ spaceEdgeLabels: () => 0 }));
+vi.mock('$lib/diagrams/edge-label-layout', () => ({ spaceEdgeLabels: mocks.spaceEdges }));
 const font = { family: 'Local Face', size: 16, weight: '400', style: 'normal', color: '#111' };
 function deferred<T>() {
 	let resolve!: (value: T) => void;
@@ -32,9 +35,11 @@ function deferred<T>() {
 beforeEach(() => {
 	vi.resetModules();
 	vi.clearAllMocks();
+	mocks.spaceEdges.mockReturnValue(0);
 	vi.stubGlobal('document', {
 		fonts: { load: mocks.load.mockResolvedValue([]), ready: Promise.resolve() },
 		body: { append: mocks.append },
+		createTextNode: (text: string) => text,
 		createElement: () => ({
 			style: {},
 			getContext: () => ({ measureText: (text: string) => ({ width: text.length * 8 }) }),
@@ -55,12 +60,22 @@ beforeEach(() => {
 		source: svg,
 		viewBox: { baseVal: { x: 0, y: 0, width: 100, height: 100 } },
 		setAttribute: vi.fn(),
+		querySelector: (selector: string) =>
+			selector === 'style' ? { append: mocks.styleAppend } : null,
 		querySelectorAll: () => []
 	}));
 	mocks.render.mockResolvedValue({ svg: '<svg/>' });
 	mocks.parse.mockResolvedValue({
 		db: {
 			getData: () => ({ nodes: [] }),
+			getTasks: () => [
+				{
+					task: 'A',
+					section: 'B',
+					startTime: new Date('2026-10-01'),
+					endTime: new Date('2026-10-02')
+				}
+			],
 			getSubGraphs: () => [],
 			getRootDocV2: () => [],
 			extract: vi.fn()
@@ -70,6 +85,41 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Mermaid async lifecycle', () => {
+	it.each(['flowchart LR\nA -->|Tak| B', 'stateDiagram-v2\nA --> B: Tak'])(
+		'shrinks only edge text after native layout and before spacing: %s',
+		async (source) => {
+			const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
+			await renderDiagram(source, { ...font, labelSize: 12.8 }, new AbortController().signal);
+			expect(mocks.initialize.mock.calls[0][0].fontSize).toBe(16);
+			expect(mocks.styleAppend.mock.calls[0][0]).toContain(
+				'.edgeLabel tspan{font-size:12.8px!important}'
+			);
+			expect(mocks.render.mock.invocationCallOrder[0]).toBeLessThan(
+				mocks.styleAppend.mock.invocationCallOrder[0]
+			);
+			expect(mocks.styleAppend.mock.invocationCallOrder[0]).toBeLessThan(
+				mocks.spaceEdges.mock.invocationCallOrder[0]
+			);
+		}
+	);
+	it('adds only one pixel to Gantt labels and leaves Mindmap at its original size', async () => {
+		const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
+		await renderDiagram(
+			'gantt\ndateFormat YYYY-MM-DD\nA :a,2026-10-01,1d',
+			{ ...font, labelSize: 12.8 },
+			new AbortController().signal
+		);
+		expect(mocks.initialize.mock.calls[0][0].fontSize).toBe(13.8);
+		expect(mocks.initialize.mock.calls[0][0].gantt.fontSize).toBe(13.8);
+		await renderDiagram(
+			'mindmap\n root',
+			{ ...font, labelSize: 12.8 },
+			new AbortController().signal
+		);
+		expect(mocks.initialize.mock.lastCall![0].fontSize).toBe(16);
+		expect(mocks.initialize.mock.lastCall![0].layout).toBe('llampart-mindmap');
+		expect(mocks.styleAppend).not.toHaveBeenCalled();
+	});
 	it('validates original Mindmap syntax before changing only its render-local root', async () => {
 		const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
 		const source = 'mindmap\nroot((Firma))\n  A';
