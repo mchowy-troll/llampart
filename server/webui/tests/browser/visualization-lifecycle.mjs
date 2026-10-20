@@ -58,7 +58,7 @@ try {
 			permissions: ['clipboard-read', 'clipboard-write']
 		});
 		await context.addInitScript(() => {
-			localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+			localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 			if (!localStorage.getItem('LlamaCppWebui.config'))
 				localStorage.setItem(
 					'LlamaCppWebui.config',

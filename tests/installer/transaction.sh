@@ -227,6 +227,10 @@ create_artifact() {
     printf 'fallback\n' > "${artifact_root}/200.html"
   fi
   printf 'asset\n' > "${artifact_root}/_app/app.js"
+  local notice
+  for notice in LICENSE NOTICE THIRD_PARTY_LICENSES.md; do
+    cp "${REPO_ROOT}/$notice" "${artifact_root}/$notice"
+  done
   tar -cJf "${case_dir}/artifact.tar.xz" -C "${case_dir}/artifact" "llampart-webui-v1.8.0"
   sha256sum "${case_dir}/artifact.tar.xz" > "${case_dir}/artifact.sha256"
 }
@@ -408,6 +412,11 @@ run_corrupt_same_digest_repair_scenario() {
     fail "corrupt same-version release was not repaired"
   [[ -f "${case_dir}/root/opt/llampart/releases/v1.8.0/200.html" ]] ||
     fail "repaired release does not match staged artifact"
+  local notice
+  for notice in LICENSE NOTICE THIRD_PARTY_LICENSES.md; do
+    cmp -s "${REPO_ROOT}/$notice" "${case_dir}/root/opt/llampart/releases/v1.8.0/$notice" ||
+      fail "installed distribution notice mismatch: $notice"
+  done
   [[ ! -e "${case_dir}/root/opt/llampart/tmp/replaced-v1.8.0-20260812-120000" ]] ||
     fail "release transaction backup remained after repair"
   pass "corrupt same-version release is repaired from the verified artifact"

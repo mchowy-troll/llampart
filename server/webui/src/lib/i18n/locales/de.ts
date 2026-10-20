@@ -16,7 +16,6 @@ export const de: TranslationDictionary = {
 		preparing: 'Diagramm wird vorbereitet…',
 		invalid:
 			'Das Schaubild konnte nicht angezeigt werden. Mögliche Ursachen sind ein ungültiges llampart-chart-Format oder eine Überschreitung der unterstützten Datenlimits.',
-		inspectDefinition: 'Wählen Sie „Code anzeigen“, um die Definition zu prüfen.',
 		export: 'Diagramm exportieren als',
 		exportError: 'Das Diagramm konnte nicht exportiert werden. Bitte erneut versuchen.',
 		legend: 'Diagrammlegende — Reihen umschalten',

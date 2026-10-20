@@ -139,11 +139,13 @@ llampart is primarily designed for desktop use.
 Clone the repository and install the Web UI dependencies.
 
 ```bash
-git clone https://github.com/mchowy-troll/llampart.git
+git clone --depth 1 https://github.com/mchowy-troll/llampart.git
 cd llampart/server/webui
 npm ci
 npm run dev
 ```
+
+The shallow clone includes the current sources and all five bundled wallpapers, without the repository history. A local build is recommended; use a regular clone without `--depth 1` if you need the full history.
 
 Common validation commands:
 

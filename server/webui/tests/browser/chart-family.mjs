@@ -57,7 +57,7 @@ const markdown = specs
 	.join('\n\n');
 let responseMarkdown = markdown;
 await page.addInitScript(() => {
-	localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	localStorage.setItem(
 		'LlamaCppWebui.config',
 		JSON.stringify({

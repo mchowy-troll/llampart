@@ -38,7 +38,7 @@ try {
 			if (localStorage.getItem('own006-initialized')) return;
 			localStorage.setItem('own006-initialized', '1');
 			localStorage.setItem('llama-webui-migration-v2-done', '1');
-			localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+			localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 			localStorage.setItem(
 				'LlamaCppWebui.config',
 				JSON.stringify({

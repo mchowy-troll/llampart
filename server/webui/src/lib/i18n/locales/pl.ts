@@ -16,7 +16,6 @@ export const pl: TranslationDictionary = {
 		preparing: 'Przygotowywanie wykresu…',
 		invalid:
 			'Nie udało się wyświetlić wykresu. Możliwe przyczyny to nieprawidłowy format llampart-chart lub przekroczenie obsługiwanych limitów danych.',
-		inspectDefinition: 'Wybierz „Pokaż kod”, aby sprawdzić definicję.',
 		export: 'Eksportuj wykres jako',
 		exportError: 'Nie udało się wyeksportować wykresu. Spróbuj ponownie.',
 		legend: 'Legenda wykresu — przełącz serie',

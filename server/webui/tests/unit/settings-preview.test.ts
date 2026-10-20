@@ -18,8 +18,11 @@ import {
 } from '$lib/utils/settings-schema';
 import {
 	CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY,
+	CUSTOM_FROSTED_GLASS_WALLPAPER_ID,
+	DEFAULT_FROSTED_GLASS_WALLPAPER_ID,
 	clearCustomFrostedGlassWallpaperSrc,
 	getCustomFrostedGlassWallpaperSrc,
+	getFrostedGlassWallpaper,
 	setCustomFrostedGlassWallpaperSrc
 } from '$lib/themes/frosted-glass/wallpapers';
 
@@ -36,6 +39,25 @@ const storage = vi.hoisted(() => {
 const originalConfig = { ...settingsStore.config };
 const originalProps = serverStore.props;
 const originalOverrides = [...settingsStore.userOverrides];
+
+it('uses wallpaper 03 for first run, invalid values and reset without changing milkiness', () => {
+	expect(DEFAULT_FROSTED_GLASS_WALLPAPER_ID).toBe('frosted-glass-03');
+	expect(SETTING_CONFIG_DEFAULT.frostedGlassWallpaper).toBe('frosted-glass-03');
+	expect(getFrostedGlassWallpaper('invalid').id).toBe('frosted-glass-03');
+	settingsStore.updateConfig('frostedGlassWallpaper', 'frosted-glass-01');
+	settingsStore.resetConfig();
+	expect(config().frostedGlassWallpaper).toBe('frosted-glass-03');
+	expect(config().frostedGlassMilkiness).toBe(75);
+});
+
+it.each(['frosted-glass-01', 'frosted-glass-02', 'frosted-glass-04', 'frosted-glass-05'])(
+	'preserves the saved wallpaper %s on initialization',
+	(id) => {
+		settingsStore.updateConfig('frostedGlassWallpaper', id);
+		settingsStore.initialize();
+		expect(config().frostedGlassWallpaper).toBe(id);
+	}
+);
 
 it('resets milkiness to 75 and persists it without changing the slider semantics', () => {
 	settingsStore.updateConfig('frostedGlassMilkiness', 23);
@@ -94,7 +116,7 @@ describe('settings preview through the real store', () => {
 		settingsStore.cancelPreview(session);
 		expect(buildResponsePreferenceInstructions(config())).toBe('');
 		const saved = settingsStore.beginPreview();
-		expect(settingsStore.commitPreview(saved, all)).toBe(true);
+		expect(settingsStore.commitPreview(saved, all)).toEqual({ ok: true });
 		expect(config()).toMatchObject(all);
 		settingsStore.initialize();
 		expect(config()).toMatchObject(all);
@@ -219,7 +241,7 @@ describe('settings preview through the real store', () => {
 			keepStatsVisible: true
 		};
 		settingsStore.updatePreview(session, patch);
-		expect(settingsStore.commitPreview(session, patch)).toBe(true);
+		expect(settingsStore.commitPreview(session, patch)).toEqual({ ok: true });
 		expect(settingsStore.isPreviewCurrent(session)).toBe(false);
 		expect(config()).toMatchObject(patch);
 		settingsStore.initialize();
@@ -246,14 +268,20 @@ describe('settings preview through the real store', () => {
 		const old = settingsStore.beginPreview();
 		settingsStore.updatePreview(old, { uiScale: '110' });
 		const current = settingsStore.beginPreview();
-		expect(settingsStore.commitPreview(old, { uiScale: '110' })).toBe(false);
+		expect(settingsStore.commitPreview(old, { uiScale: '110' })).toEqual({
+			ok: false,
+			reason: 'stale'
+		});
 		settingsStore.cancelPreview(old);
 		expect(settingsStore.isPreviewCurrent(current)).toBe(true);
 		settingsStore.updatePreview(current, { uiScale: '105' });
 		settingsStore.forceSyncWithServerDefaults();
 		expect(settingsStore.isPreviewCurrent(current)).toBe(false);
 		expect(settingsStore.appearanceConfig).toEqual(config());
-		expect(settingsStore.commitPreview(current, { uiScale: '105' })).toBe(false);
+		expect(settingsStore.commitPreview(current, { uiScale: '105' })).toEqual({
+			ok: false,
+			reason: 'stale'
+		});
 		settingsStore.resetConfig();
 		expect(config()).toEqual(SETTING_CONFIG_DEFAULT);
 	});
@@ -300,6 +328,122 @@ describe('settings preview through the real store', () => {
 			create.mockRestore();
 			revoke.mockRestore();
 		}
+	});
+
+	it('successfully replaces a custom wallpaper with delete-before-write and reloads it', () => {
+		const key = CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY;
+		setCustomFrostedGlassWallpaperSrc('data:image/png;base64,b2xk');
+		settingsStore.updateConfig('frostedGlassWallpaper', CUSTOM_FROSTED_GLASS_WALLPAPER_ID);
+		const session = settingsStore.beginPreview();
+		const image = 'data:image/png;base64,bmV3';
+		setCustomFrostedGlassWallpaperSrc(image);
+		const order: string[] = [];
+		vi.stubGlobal('localStorage', {
+			getItem: (k: string) => storage.get(k) ?? null,
+			removeItem: (k: string) => {
+				if (k === key) order.push('remove');
+				storage.delete(k);
+			},
+			setItem: (k: string, value: string) => {
+				if (k === key) {
+					order.push('write');
+					expect(storage.has(key)).toBe(false);
+				}
+				storage.set(k, value);
+			}
+		});
+		expect(settingsStore.commitPreview(session, { keepStatsVisible: true })).toEqual({ ok: true });
+		expect(order).toEqual(['remove', 'write']);
+		expect(settingsStore.isPreviewCurrent(session)).toBe(false);
+		settingsStore.initialize();
+		expect(config().keepStatsVisible).toBe(true);
+		expect(getCustomFrostedGlassWallpaperSrc()).toBe(image);
+	});
+
+	it.each(['quota', 'throw', 'verification'])(
+		'reports %s failure, accepts loss of the old image, preserves unrelated drafts and retries',
+		(mode) => {
+			const key = CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY;
+			setCustomFrostedGlassWallpaperSrc('data:image/png;base64,b2xk');
+			settingsStore.updateConfig('frostedGlassWallpaper', CUSTOM_FROSTED_GLASS_WALLPAPER_ID);
+			const before = { ...config() };
+			const session = settingsStore.beginPreview();
+			setCustomFrostedGlassWallpaperSrc('data:image/png;base64,bmV3');
+			settingsStore.updatePreview(session, { uiScale: '110' });
+			const setItem = (k: string, value: string) => storage.set(k, value);
+			vi.stubGlobal('localStorage', {
+				getItem: (k: string) => storage.get(k) ?? null,
+				removeItem: (k: string) => storage.delete(k),
+				setItem: (k: string, value: string) => {
+					if (k !== key) return setItem(k, value);
+					expect(storage.has(key)).toBe(false);
+					if (mode === 'quota') throw new DOMException('quota', 'QuotaExceededError');
+					if (mode === 'throw') throw new Error('storage failure');
+					storage.set(k, 'data:image/png;base64,d3Jvbmc=');
+				}
+			});
+			const fallback = { frostedGlassWallpaper: DEFAULT_FROSTED_GLASS_WALLPAPER_ID };
+			expect(
+				settingsStore.commitPreview(session, { uiScale: '110', keepStatsVisible: true })
+			).toEqual({
+				ok: false,
+				reason: 'resource',
+				messageKey: 'settings.frostedGlassWallpaperSaveError',
+				configPatch: fallback
+			});
+			expect(storage.has(key)).toBe(false);
+			expect(getCustomFrostedGlassWallpaperSrc()).toBeUndefined();
+			expect(config()).toEqual({ ...before, ...fallback });
+			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toEqual(config());
+			expect(settingsStore.appearanceConfig.uiScale).toBe('110');
+			expect(settingsStore.isPreviewCurrent(session)).toBe(true);
+			expect(
+				getFrostedGlassWallpaper(settingsStore.appearanceConfig.frostedGlassWallpaper).id
+			).toBe(DEFAULT_FROSTED_GLASS_WALLPAPER_ID);
+
+			// Cancel/reload must not restore a failed image or save unrelated drafts.
+			settingsStore.cancelPreview(session);
+			settingsStore.initialize();
+			expect(config()).toEqual({ ...before, ...fallback });
+			expect(getCustomFrostedGlassWallpaperSrc()).toBeUndefined();
+			vi.stubGlobal('localStorage', {
+				getItem: (k: string) => storage.get(k) ?? null,
+				setItem,
+				removeItem: (k: string) => storage.delete(k)
+			});
+			const retry = settingsStore.beginPreview();
+			const image = 'data:image/png;base64,cmV0cnk=';
+			setCustomFrostedGlassWallpaperSrc(image);
+			expect(
+				settingsStore.commitPreview(retry, {
+					frostedGlassWallpaper: CUSTOM_FROSTED_GLASS_WALLPAPER_ID,
+					keepStatsVisible: true
+				})
+			).toEqual({ ok: true });
+			expect(getCustomFrostedGlassWallpaperSrc()).toBe(image);
+			expect(config().keepStatsVisible).toBe(true);
+		}
+	);
+
+	it('keeps a committed bundled selection when a new custom upload fails', () => {
+		settingsStore.updateConfig('frostedGlassWallpaper', 'frosted-glass-03');
+		const session = settingsStore.beginPreview();
+		setCustomFrostedGlassWallpaperSrc('data:image/png;base64,bmV3');
+		const savedConfig = storage.get(CONFIG_LOCALSTORAGE_KEY);
+		vi.stubGlobal('localStorage', {
+			getItem: (k: string) => storage.get(k) ?? null,
+			removeItem: (k: string) => storage.delete(k),
+			setItem: () => {
+				throw new Error('storage unavailable');
+			}
+		});
+		expect(settingsStore.commitPreview(session, { keepStatsVisible: true })).toMatchObject({
+			ok: false,
+			reason: 'resource',
+			configPatch: { frostedGlassWallpaper: 'frosted-glass-03' }
+		});
+		expect(storage.get(CONFIG_LOCALSTORAGE_KEY)).toBe(savedConfig);
+		expect(config().frostedGlassWallpaper).toBe('frosted-glass-03');
 	});
 });
 

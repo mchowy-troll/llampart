@@ -90,7 +90,7 @@ const content =
 	'\n\n' +
 	lists;
 await page.addInitScript(() => {
-	localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	if (localStorage.getItem('LlamaCppWebui.config')) return;
 	localStorage.setItem(
 		'LlamaCppWebui.config',
@@ -701,6 +701,8 @@ try {
 		await update({ content: fence(language, source) });
 		const fallback = assistant.locator('.llampart-visualization-fallback');
 		await fallback.waitFor();
+		assert.equal(await fallback.locator('[role="status"] p').count(), 1);
+		assert.equal(await fallback.locator('button').count(), 2);
 		assert(await fallback.evaluate((node) => node.scrollWidth <= node.clientWidth));
 		assert(
 			(await fallback.innerText()).includes(language === 'mermaid' ? 'llampart-diagram' : language)
@@ -714,6 +716,7 @@ try {
 		assert.equal(await page.evaluate(() => navigator.clipboard.readText()), source);
 		await fallback.getByRole('button', { name: 'Pokaż kod', exact: true }).click();
 		await page.getByRole('dialog').waitFor();
+		assert.equal(await page.locator('.visualization-source').textContent(), source);
 		await page.keyboard.press('Escape');
 		await page.getByRole('dialog').waitFor({ state: 'hidden' });
 	}
@@ -732,10 +735,7 @@ try {
 			);
 			const expected = await page.evaluate(async (language) => {
 				const { t } = await import('/src/lib/i18n/index.ts');
-				return [
-					[t('charts.invalid', language), t('charts.inspectDefinition', language)],
-					[t('diagrams.invalid', language)]
-				];
+				return [[t('charts.invalid', language)], [t('diagrams.invalid', language)]];
 			}, language);
 			await page.waitForFunction((expected) => {
 				const messages = [

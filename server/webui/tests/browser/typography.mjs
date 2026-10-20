@@ -64,7 +64,7 @@ const markdown =
 	'\n\n**Pogrubienie** i *kursywa*. `const ł = 1;`\n\n- Lista\n\n| Miasto | Wartość |\n| --- | --- |\n| Łódź | 25 |\n\n$$x^2 + y^2 = z^2$$\n\n' +
 	specs.map((s) => '```llampart-chart\n' + JSON.stringify(s) + '\n```').join('\n\n');
 await page.addInitScript(() => {
-	localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	if (!localStorage.getItem('LlamaCppWebui.config'))
 		localStorage.setItem(
 			'LlamaCppWebui.config',
@@ -154,6 +154,7 @@ async function glyphs(session, selector) {
 }
 async function exports(index, id) {
 	const frame = frames.nth(index);
+	const expectedLabelSize = (await sizes()).legend;
 	for (const format of ['svg', 'png']) {
 		await frame.evaluate((el) => el.scrollIntoView({ block: 'center' }));
 		await page.mouse.move(5, 5);
@@ -187,7 +188,7 @@ async function exports(index, id) {
 						.locator('.lc-axis text')
 						.first()
 						.evaluate((n) => parseFloat(getComputedStyle(n).fontSize)),
-					13.5
+					expectedLabelSize // Export preserves the same visualization label token as the live legend.
 				);
 		} else
 			assert(
@@ -236,8 +237,9 @@ try {
 		);
 		assert.equal(selected.root, 12);
 		assert.equal(selected.plot, initial.plot);
-		assert.equal(selected.axis, 13.5);
-		assert.equal(selected.legend, 14.4);
+		// Axes share the donut legend's label token, not the historical 0.75 scale.
+		assert.equal(selected.legend, selected.body * 0.8);
+		assert.equal(selected.axis, selected.legend);
 		assert.equal(selected.code, initial.code);
 		assert.equal(selected.math, initial.math);
 		for (const key of ['paragraph', 'heading', 'table'])

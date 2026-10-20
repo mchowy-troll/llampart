@@ -25,10 +25,10 @@
 					const requestedWallpaper =
 						typeof config.frostedGlassWallpaper === 'string'
 							? config.frostedGlassWallpaper
-							: 'frosted-glass-02';
+							: 'frosted-glass-03';
 					const wallpaper = knownWallpapers.has(requestedWallpaper)
 						? requestedWallpaper
-						: 'frosted-glass-02';
+						: 'frosted-glass-03';
 
 					document.documentElement.dataset.theme = 'frosted-glass';
 					document.documentElement.classList.add('has-frosted-glass-theme');

@@ -92,7 +92,7 @@ await page.addInitScript(() => {
 				alwaysShowSidebarOnDesktop: true
 			})
 		);
-	localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 });
 await page.route('**/__llampart/api/**', (route) => {
 	const path = new URL(route.request().url()).pathname;

@@ -11,6 +11,20 @@ export interface ThemeRuntimeState {
 	styles: Readonly<Record<string, string>>;
 }
 
+export type ThemePreviewCommitResult =
+	| { ok: true }
+	| {
+			ok: false;
+			messageKey: string;
+			/** Only asset-related selections that must match the remaining stored data. */
+			configPatch: Partial<SettingsConfigType>;
+	  };
+
+export interface ThemeSettingsPreview {
+	commit: (committedConfig: Readonly<SettingsConfigType>) => ThemePreviewCommitResult;
+	cancel: () => void;
+}
+
 export interface ThemeDefinition {
 	id: ColorMode;
 	labelKey: string;
@@ -21,7 +35,7 @@ export interface ThemeDefinition {
 	ownedStyleProperties: readonly string[];
 	runtimeRefreshEvents?: readonly string[];
 	/** Stage theme-owned assets alongside the settings form, without persisting previews. */
-	beginSettingsPreview?: () => { commit: () => void; cancel: () => void };
+	beginSettingsPreview?: () => ThemeSettingsPreview;
 	motion: ThemeMotionProfile;
 	configDefaults: Readonly<Record<string, SettingsConfigValue>>;
 	configInfo: Readonly<Record<string, string>>;

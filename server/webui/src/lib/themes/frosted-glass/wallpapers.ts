@@ -1,4 +1,6 @@
-export const DEFAULT_FROSTED_GLASS_WALLPAPER_ID = 'frosted-glass-02';
+import type { ThemeSettingsPreview } from '../types';
+
+export const DEFAULT_FROSTED_GLASS_WALLPAPER_ID = 'frosted-glass-03';
 export const CUSTOM_FROSTED_GLASS_WALLPAPER_ID = 'frosted-glass-user';
 export const CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY =
 	'llampart:frosted-glass:user-wallpaper';
@@ -65,16 +67,43 @@ export function getCustomWallpaperPreviewSession(): unknown {
 	return wallpaperPreview;
 }
 
-export function beginWallpaperSettingsPreview(): { commit: () => void; cancel: () => void } {
+export function beginWallpaperSettingsPreview(): ThemeSettingsPreview {
 	const draft = { src: getCustomFrostedGlassWallpaperSrc(), changed: false };
 	wallpaperPreview = draft;
 	return {
-		commit: () => {
-			if (wallpaperPreview !== draft) return;
+		commit: (committedConfig) => {
+			if (wallpaperPreview !== draft) {
+				return {
+					ok: false,
+					messageKey: 'settings.frostedGlassWallpaperSaveError',
+					configPatch: {}
+				};
+			}
 			wallpaperPreview = undefined;
-			if (!draft.changed) return;
-			if (draft.src) setCustomFrostedGlassWallpaperSrc(draft.src);
-			else clearCustomFrostedGlassWallpaperSrc();
+			if (!draft.changed) return { ok: true };
+			const saved = draft.src
+				? setCustomFrostedGlassWallpaperSrc(draft.src)
+				: clearCustomFrostedGlassWallpaperSrc();
+			if (saved) return { ok: true };
+
+			// Delete-before-write is intentional: do not retain an old image for rollback.
+			// A failed image must not remain visible as if it had been saved. Keep the
+			// session usable for another upload, with only the actual stored resource.
+			draft.src = getCustomFrostedGlassWallpaperSrc();
+			draft.changed = false;
+			wallpaperPreview = draft;
+			notifyCustomFrostedGlassWallpaperChange();
+			return {
+				ok: false,
+				messageKey: 'settings.frostedGlassWallpaperSaveError',
+				configPatch: {
+					frostedGlassWallpaper:
+						committedConfig.frostedGlassWallpaper === CUSTOM_FROSTED_GLASS_WALLPAPER_ID &&
+						!draft.src
+							? DEFAULT_FROSTED_GLASS_WALLPAPER_ID
+							: committedConfig.frostedGlassWallpaper
+				}
+			};
 		},
 		cancel: () => {
 			if (wallpaperPreview !== draft) return;
@@ -150,20 +179,23 @@ export function setCustomFrostedGlassWallpaperSrc(src: string): boolean {
 	}
 }
 
-export function clearCustomFrostedGlassWallpaperSrc(): void {
+export function clearCustomFrostedGlassWallpaperSrc(): boolean {
 	if (wallpaperPreview) {
 		wallpaperPreview.src = undefined;
 		wallpaperPreview.changed = true;
 		notifyCustomFrostedGlassWallpaperChange();
-		return;
+		return true;
 	}
 	try {
 		clearStoredCustomWallpaperData();
+		if (getCustomFrostedGlassWallpaperSrc() !== undefined) return false;
 	} catch {
-		// Ignore localStorage cleanup errors.
+		notifyCustomFrostedGlassWallpaperChange();
+		return false;
 	}
 
 	notifyCustomFrostedGlassWallpaperChange();
+	return true;
 }
 
 export function getFrostedGlassWallpaper(

@@ -103,13 +103,14 @@ rings. One retry handles positions released by later labels. No opaque rectangle
 or text halos are used. Flowchart/State paths, nodes and markers are untouched.
 Unresolved cases remain visible and are counted and warned, not hidden.
 
-Mindmap keeps its native hierarchy and branch grouping. Its root is a native
+Mindmap keeps its parsed hierarchy and branch grouping. Its root is a native
 rounded rectangle, measured before layout, with a contrasting cyan fill.
-Branches are at least 4.5px thick (scaling with typography), with one continuous
-cubic curve rather than the native late elbow. Only branch paths change;
-native endpoints and node positions after root layout are retained. The native
-renderer exposes no Mindmap curve option. Original syntax is validated before
-any render-local presentation edits; stored Markdown never changes.
+The deterministic `llampart-mindmap` layout adapter places branches on both sides
+of the root and computes node positions and endpoints from measured labels.
+Branches use continuous cubic curves with a fixed 3px stroke rather than the
+native late elbow. The native renderer exposes no Mindmap curve option.
+Original syntax is validated before any render-local presentation edits;
+stored Markdown never changes.
 
 Gantt uses native parsing, dates, durations, dependencies, milestones and row
 layout. Actual font metrics reserve section/long-label margins before rendering;

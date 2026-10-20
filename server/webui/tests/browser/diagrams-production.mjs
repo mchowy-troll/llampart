@@ -58,7 +58,7 @@ await page.addInitScript(() => {
 			askForTitleConfirmation: false
 		})
 	);
-	localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 });
 const sources = [
 	'flowchart LR\nA[Użytkownik] --> B{Lokalnie?}\nB -->|Tak| C[Łódź]\nB -->|Nie| D[Klaster GPU]',
@@ -113,25 +113,50 @@ try {
 	);
 	for (const [i, type] of ['flowchart', 'state', 'gantt', 'mindmap'].entries()) {
 		const frame = page.locator('.llampart-diagram-frame').nth(i);
-		assert(
-			(
-				await frame
-					.locator('text')
-					.first()
-					.evaluate((text) => getComputedStyle(text).fontFamily)
-			).includes('Crimson Text')
-		);
-		assert.equal(
-			await frame
-				.locator('text')
-				.first()
-				.evaluate((text) => getComputedStyle(text).fontSize),
-			'16px'
-		);
+		// Explicit roles: edge labels use visualizationLabelSize (0.8 × text unit),
+		// Gantt uses that label size + 1px; the other families keep the body size.
+		const bodySize = await page
+			.locator('body')
+			.evaluate((n) => parseFloat(getComputedStyle(n).fontSize));
+		const labelSize = bodySize * 0.8;
+		const roles =
+			type === 'gantt'
+				? [
+						['task', 'text[class*="taskText"]'],
+						['section', 'text[class*="sectionTitle"]'],
+						['axis', '.tick text']
+					]
+				: [['node', type === 'mindmap' ? '.mindmap-node text' : '.node text']];
+		if (type === 'flowchart' || type === 'state') roles.push(['edge', '.edgeLabel text']);
+		for (const [role, selector] of roles) {
+			const texts = frame.locator(selector);
+			assert((await texts.count()) > 0, `${type}: missing ${role}`);
+			for (const text of await texts.all()) {
+				const style = await text.evaluate((n) => ({
+					family: getComputedStyle(n).fontFamily,
+					size: parseFloat(getComputedStyle(n).fontSize)
+				}));
+				assert(style.family.includes('Crimson Text'), `${type} ${role}: ${style.family}`);
+				assert.equal(
+					style.size,
+					type === 'gantt' ? labelSize + 1 : role === 'edge' ? labelSize : bodySize,
+					`${type} ${role}`
+				);
+			}
+		}
 		assert.equal(
 			await frame.locator('.diagram-title').innerText(),
 			['Przepływ żądania', 'Generowanie odpowiedzi', 'Plan wdrożenia', 'llampart'][i]
 		);
+		const titleStyle = await frame.locator('.diagram-title').evaluate((n) => ({
+			family: getComputedStyle(n).fontFamily,
+			size: parseFloat(getComputedStyle(n).fontSize),
+			weight: getComputedStyle(n).fontWeight,
+			medium: getComputedStyle(n).getPropertyValue('--llampart-font-medium').trim() || '500'
+		}));
+		assert(titleStyle.family.includes('Crimson Text'));
+		assert.equal(titleStyle.size, bodySize, `${type}: header inherits body typography`);
+		assert.equal(titleStyle.weight, titleStyle.medium, `${type}: header uses medium token`);
 		await frame.getByRole('button', { name: 'Podgląd diagramu', exact: true }).click();
 		const dialog = page.locator('.diagram-preview-dialog-content');
 		await dialog.locator('svg[role="img"]').waitFor();

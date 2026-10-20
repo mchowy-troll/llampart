@@ -81,21 +81,26 @@ The exact dependency versions for this release preparation checkpoint are locked
 in `server/webui/package-lock.json`.
 
 A dependency license review was performed from the lockfile and local installed
-package metadata during public-release preparation. At that checkpoint:
+package metadata during release-readiness remediation. At this checkpoint:
 
 - `server/webui/package.json` declared the Web UI package as MIT-licensed.
-- The lockfile contained 544 `node_modules` package entries.
-- The manifest declared 15 direct runtime dependency names and 40 direct
+- The lockfile contains 669 `node_modules` package entries (including optional platform packages).
+- The manifest declares 19 direct runtime dependency names and 41 direct
   development dependency names.
-- The lockfile audit found 489 transitive package entries.
 - No package entry was marked as `unknown` or `unlicensed`.
 - The most common license fields were MIT, ISC, Apache-2.0, MPL-2.0,
   BSD-3-Clause, and BSD-2-Clause.
 
-One transitive package entry had no `license` field in its package metadata,
-but its tagged upstream source contained MIT license evidence:
+The review was repeated after the targeted security updates to
+`@modelcontextprotocol/sdk@1.32.0` (MIT) and `vite@8.1.6` (MIT).
+The lockfile inventory above remains unchanged in size; the Vite update also
+updates its required Rolldown/platform bindings and supporting dependencies.
+
+Two package entries have no `license` field in lockfile metadata,
+but their installed package directories contain MIT LICENSE files:
 
 - `svelte-toolbelt@0.10.6`
+- `khroma@2.1.0`
 
 If `server/webui/package-lock.json` changes before release, repeat the dependency
 license review using the final lockfile.
@@ -113,4 +118,62 @@ The following framework packages are MIT-licensed open-source projects and are i
 | `@sveltejs/adapter-static`     | MIT     | `https://github.com/sveltejs/kit`                |
 | `@sveltejs/vite-plugin-svelte` | MIT     | `https://github.com/sveltejs/vite-plugin-svelte` |
 
-Their license notices are preserved through npm package metadata and installed package license files. The full npm dependency tree is recorded in `server/webui/package-lock.json`.
+The full npm dependency tree is recorded in `server/webui/package-lock.json`.
+The following framework notices are included here so that static distributions
+do not depend on an installed `node_modules` directory to preserve them.
+
+### Svelte — LICENSE.md
+
+```text
+Copyright (c) 2016-2025 [Svelte Contributors](https://github.com/sveltejs/svelte/graphs/contributors)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+### SvelteKit and adapter-static — LICENSE
+
+```text
+Copyright (c) 2020 [these people](https://github.com/sveltejs/kit/graphs/contributors)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+### vite-plugin-svelte — LICENSE
+
+```text
+MIT License
+
+Copyright (c) 2021 [these people](https://github.com/sveltejs/vite-plugin-svelte/graphs/contributors)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+The release packager stages `LICENSE`, `NOTICE` and this document beside the static
+build, which already contains Mermaid dependency notices and local font licenses.
+The build marker's `artifactDigest` covers only `server/public`; it is not rewritten
+when these documents are added. The final archive SHA-256 covers both the original
+static files and the additional distribution documents.

@@ -16,7 +16,6 @@ export const es: TranslationDictionary = {
 		preparing: 'Preparando gráfico…',
 		invalid:
 			'No se pudo mostrar el gráfico. Las posibles causas incluyen un formato llampart-chart no válido o superar los límites de datos admitidos.',
-		inspectDefinition: 'Selecciona «Mostrar código» para revisar la definición.',
 		export: 'Exportar gráfico como',
 		exportError: 'No se pudo exportar el gráfico. Inténtalo de nuevo.',
 		legend: 'Leyenda del gráfico — alternar series',

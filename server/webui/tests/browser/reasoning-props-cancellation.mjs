@@ -45,7 +45,7 @@ try {
 						alwaysShowSidebarOnDesktop: true
 					})
 				);
-				localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+				localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 			});
 			await page.route('**/__llampart/api/**', async (route) => {
 				const request = route.request();

@@ -85,7 +85,7 @@ let content =
 	'\n\n' +
 	specs.map((s) => fence('llampart-chart', JSON.stringify(s))).join('\n\n');
 await page.addInitScript(() => {
-	localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	localStorage.setItem(
 		'LlamaCppWebui.config',
 		JSON.stringify({
@@ -490,10 +490,7 @@ try {
 			);
 			const expected = await page.evaluate(async (l) => {
 				const { t } = await import('/src/lib/i18n/index.ts');
-				return [
-					[t('diagrams.invalid', l)],
-					[t('charts.invalid', l), t('charts.inspectDefinition', l)]
-				];
+				return [[t('diagrams.invalid', l)], [t('charts.invalid', l)]];
 			}, language);
 			await page.waitForFunction((e) => {
 				const m = [...document.querySelectorAll('.llampart-assistant-markdown .fallback-message')];
@@ -530,6 +527,10 @@ try {
 					);
 					await f.locator('button').nth(0).click();
 					await page.getByRole('dialog').waitFor();
+					assert.equal(
+						await page.locator('.visualization-source').textContent(),
+						i === 0 ? 'flowchart LR\nA[' : '{'
+					);
 					await page.keyboard.press('Escape');
 					await page.getByRole('dialog').waitFor({ state: 'hidden' });
 					fallbacks.push({

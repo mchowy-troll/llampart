@@ -42,7 +42,7 @@ async function setup(mode, { router = false, custom = '', delayedEffort = false 
 					custom
 				})
 			);
-			localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+			localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 			localStorage.setItem('LlamaCppWebui.thinkingEnabledDefault', 'false');
 			localStorage.setItem('LlamaCppWebui.reasoningEffortDefault', 'max');
 		},

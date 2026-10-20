@@ -70,7 +70,7 @@ try {
 		await page.addInitScript(
 			({ fullHeight, fontFamily }) => {
 				if (window.top !== window) return;
-				localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+				localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 				localStorage.setItem(
 					'LlamaCppWebui.config',
 					JSON.stringify({

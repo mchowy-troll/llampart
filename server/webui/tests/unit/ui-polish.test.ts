@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { SETTING_CONFIG_DEFAULT } from '$lib/constants';
 import { parseSettingsStorage, serializeSettingsStorage } from '$lib/utils/settings-schema';
 import { en } from '$lib/i18n/locales/en';
@@ -17,6 +18,25 @@ function text(locale: TranslationDictionary, section: string, key: string): stri
 }
 
 describe('UI polish contracts', () => {
+	it('keeps one fallback paragraph, both source actions and the source dialog without dead copy', () => {
+		const source = readFileSync(
+			new URL('../../src/lib/components/app/content/VisualizationFallback.svelte', import.meta.url),
+			'utf8'
+		);
+		const message = source.match(
+			/<div role="status" class="fallback-message">([\s\S]*?)<\/div>/
+		)![1];
+		expect(message.match(/<p>/g)).toHaveLength(1);
+		expect(message).toContain("kind === 'diagram' ? 'diagrams.invalid' : 'charts.invalid'");
+		expect(source).not.toContain('inspectDefinition');
+		expect(source).not.toContain('.fallback-message p + p');
+		expect(source).toContain("t('common.showCode')");
+		expect(source).toContain("t('common.copyCode')");
+		expect(source).toContain('copyCodeToClipboard(');
+		expect(source).toContain('code={source}');
+		expect(source).toContain('sourceOnly');
+	});
+
 	it('uses 75 only when no milkiness preference was saved', () => {
 		expect(SETTING_CONFIG_DEFAULT.frostedGlassMilkiness).toBe(75);
 		for (const source of [null, '{}'])
@@ -34,10 +54,10 @@ describe('UI polish contracts', () => {
 		(locale) => {
 			expect(text(locale, 'charts', 'invalid')).toContain('llampart-chart');
 			expect(text(locale, 'diagrams', 'invalid')).toContain('llampart-diagram');
-			expect(text(locale, 'charts', 'inspectDefinition')).toContain(
-				text(locale, 'common', 'showCode')
-			);
+			expect(locale.charts).not.toHaveProperty('inspectDefinition');
 			expect(locale.diagrams).not.toHaveProperty('inspectDefinition');
+			expect(text(locale, 'common', 'showCode').length).toBeGreaterThan(0);
+			expect(text(locale, 'common', 'copyCode').length).toBeGreaterThan(0);
 			for (const section of ['charts', 'diagrams']) {
 				expect(text(locale, section, 'invalid')).not.toContain(text(locale, 'common', 'showCode'));
 			}
@@ -53,9 +73,6 @@ describe('UI polish contracts', () => {
 		);
 		expect(text(pl, 'diagrams', 'invalid')).toBe(
 			'Nie udało się wyświetlić diagramu. Możliwe przyczyny to nieprawidłowy format llampart-diagram lub przekroczenie dopuszczalnej liczby elementów.'
-		);
-		expect(text(pl, 'charts', 'inspectDefinition')).toBe(
-			'Wybierz „Pokaż kod”, aby sprawdzić definicję.'
 		);
 	});
 });

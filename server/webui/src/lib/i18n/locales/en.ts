@@ -16,7 +16,6 @@ export const en: TranslationDictionary = {
 		preparing: 'Preparing chart…',
 		invalid:
 			'Unable to display the chart. Possible causes include an invalid llampart-chart format or exceeding the supported data limits.',
-		inspectDefinition: 'Select “Show code” to inspect the definition.',
 		export: 'Export chart as',
 		exportError: 'Could not export this chart. Please try again.',
 		legend: 'Chart legend — toggle series',

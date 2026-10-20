@@ -1093,7 +1093,14 @@
 		}
 
 		try {
-			if (!settingsStore.commitPreview(session, processedConfig)) return;
+			const result = settingsStore.commitPreview(session, processedConfig);
+			if (!result.ok) {
+				if (result.reason === 'resource') {
+					localConfig = { ...localConfig, ...result.configPatch };
+					showSettingsWarning(t(result.messageKey));
+				}
+				return;
+			}
 			previewSession = undefined;
 		} catch (error) {
 			showSettingsWarning(error instanceof Error ? error.message : t('settings.enterValidNumber'));

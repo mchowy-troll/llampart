@@ -19,6 +19,8 @@ PUBLIC_DIR=""
 KEEP_STAGE=0
 SKIP_LOCK_VERSION_CHECK=0
 STAGE_PARENT=""
+PARTIAL_TARBALL=""
+PARTIAL_CHECKSUM=""
 
 BOLD=""
 DIM=""
@@ -316,17 +318,31 @@ confirm_plan() {
   esac
 }
 
+validate_distribution_notices() {
+  local name path
+  for name in LICENSE NOTICE THIRD_PARTY_LICENSES.md; do
+    path="$REPO_DIR/$name"
+    [[ -f "$path" && ! -L "$path" && -r "$path" && -s "$path" ]] || fail "Required distribution notice is missing, unreadable, empty, or not a regular file: $path"
+    grep -q '[^[:space:]]' "$path" || fail "Required distribution notice has no readable content: $path"
+    [[ ! -e "$PUBLIC_DIR/$name" && ! -L "$PUBLIC_DIR/$name" ]] || fail "Static output conflicts with distribution notice: $name"
+  done
+}
+
 create_stage() {
   local package_root="$1"
-  local stage_parent
-  stage_parent="$(mktemp -d)"
-  mkdir -p "$stage_parent/$package_root"
+  mkdir -p "$STAGE_PARENT/$package_root"
 
   # Copy the static build without relying on rsync. This preserves regular files,
   # directories, and symlinks from the generated static output.
-  tar -C "$PUBLIC_DIR" -cf - . | tar -C "$stage_parent/$package_root" -xf -
+  tar -C "$PUBLIC_DIR" -cf - . | tar -C "$STAGE_PARENT/$package_root" -xf -
 
-  printf '%s\n' "$stage_parent"
+  # artifactDigest covers server/public only. Additional source documents are
+  # covered by the archive SHA-256, not by a rewritten build marker.
+  local name
+  for name in LICENSE NOTICE THIRD_PARTY_LICENSES.md; do
+    cp -- "$REPO_DIR/$name" "$STAGE_PARENT/$package_root/$name"
+    cmp -s -- "$REPO_DIR/$name" "$STAGE_PARENT/$package_root/$name" || fail "Staged notice mismatch: $name"
+  done
 }
 
 create_tarball() {
@@ -334,8 +350,14 @@ create_tarball() {
   local package_root="$2"
   local tarball_path="$3"
 
-  # Stable owner/group in the archive avoids leaking local usernames into release assets.
+  # Normalize archive metadata, including fresh staging directories and notices.
+  # Repacking the same validated build must produce identical release bytes.
+  local commit_time
+  commit_time="$(git -C "$REPO_DIR" show -s --format=%ct HEAD)"
   tar -C "$stage_parent" \
+    --sort=name \
+    --format=gnu \
+    --mtime="@${commit_time}" \
     --owner=0 \
     --group=0 \
     --numeric-owner \
@@ -354,6 +376,11 @@ validate_tarball_shape() {
   grep -Fx "$package_root/index.html" "$listing_file" >/dev/null || fail "Packaged tarball is missing ${package_root}/index.html"
   grep -Fx "$package_root/200.html" "$listing_file" >/dev/null || fail "Packaged tarball is missing ${package_root}/200.html"
   grep -F "$package_root/_app/" "$listing_file" >/dev/null || fail "Packaged tarball is missing ${package_root}/_app/"
+  local name
+  for name in LICENSE NOTICE THIRD_PARTY_LICENSES.md; do
+    grep -Fx "$package_root/$name" "$listing_file" >/dev/null || fail "Packaged tarball is missing $name"
+    tar -xOf "$tarball_path" "$package_root/$name" | cmp -s -- "$REPO_DIR/$name" - || fail "Packaged notice mismatch: $name"
+  done
 
   rm -f "$listing_file"
 }
@@ -404,7 +431,8 @@ Archive root:
   ${package_root}/
 
 Behavior:
-  package existing server/public only
+  package existing server/public plus LICENSE, NOTICE, THIRD_PARTY_LICENSES.md
+  build artifactDigest covers server/public; archive SHA-256 covers all packaged files
   do not run npm install, tests, lint, or build
   do not modify repository source files
 PLAN
@@ -469,6 +497,7 @@ main() {
     release_version="$(normalize_version "$package_version")"
   fi
 
+  validate_distribution_notices
   validate_build_provenance "$package_version"
 
   local package_root tarball_name sha_name tarball_path sha_path
@@ -492,9 +521,12 @@ main() {
     [[ ! -e "$sha_path" ]] || fail "Output checksum already exists. Use --force to overwrite: $sha_path"
   fi
 
-  STAGE_PARENT="$(create_stage "$package_root")"
+  STAGE_PARENT="$(mktemp -d)"
 
   cleanup_stage() {
+    if [[ -n "$PARTIAL_TARBALL" ]]; then
+      cleanup_partial_outputs "$PARTIAL_TARBALL" "$PARTIAL_CHECKSUM"
+    fi
     [[ -n "$STAGE_PARENT" ]] || return 0
     if [[ "$KEEP_STAGE" == "1" ]]; then
       warn "Keeping staging directory: $STAGE_PARENT"
@@ -504,6 +536,10 @@ main() {
   }
   trap cleanup_stage EXIT
 
+  create_stage "$package_root"
+
+  PARTIAL_TARBALL="$tarball_path"
+  PARTIAL_CHECKSUM="$sha_path"
   rm -f "$tarball_path" "$sha_path"
   create_tarball "$STAGE_PARENT" "$package_root" "$tarball_path"
   if ! validate_tarball_shape "$tarball_path" "$package_root"; then
@@ -522,6 +558,8 @@ main() {
 
   local sha_value
   sha_value="$(awk '{print $1}' "$sha_path")"
+  PARTIAL_TARBALL=""
+  PARTIAL_CHECKSUM=""
 
   ok "Created release tarball: $tarball_path"
   ok "Created checksum: $sha_path"

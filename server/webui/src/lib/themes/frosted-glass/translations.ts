@@ -20,6 +20,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			frostedGlassWallpaperReplace: 'Replace',
 			frostedGlassWallpaperRemove: 'Remove',
 			frostedGlassWallpaperUserSaved: 'User wallpaper saved.',
+			frostedGlassWallpaperSaveError:
+				'Could not save the wallpaper. The previous custom image may have been removed. Other changes have not been saved. Upload the image again and retry.',
 			frostedGlassWallpaperUserRemoved: 'User wallpaper removed.',
 			frostedGlassWallpaperUploadInvalidType: 'Choose a JPG or PNG file.',
 			frostedGlassWallpaperUploadTooLarge: 'Wallpaper file can be up to 3 MB.',
@@ -53,6 +55,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			frostedGlassWallpaperReplace: 'Zmień',
 			frostedGlassWallpaperRemove: 'Usuń',
 			frostedGlassWallpaperUserSaved: 'Tapeta użytkownika została zapisana.',
+			frostedGlassWallpaperSaveError:
+				'Nie udało się zapisać tapety. Poprzedni własny obraz mógł zostać usunięty. Pozostałe zmiany nie zostały zapisane. Wczytaj obraz ponownie i ponów zapis.',
 			frostedGlassWallpaperUserRemoved: 'Tapeta użytkownika została usunięta.',
 			frostedGlassWallpaperUploadInvalidType: 'Wybierz plik JPG lub PNG.',
 			frostedGlassWallpaperUploadTooLarge: 'Tapeta może mieć maksymalnie 3 MB.',
@@ -87,6 +91,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			frostedGlassWallpaperReplace: 'Ersetzen',
 			frostedGlassWallpaperRemove: 'Entfernen',
 			frostedGlassWallpaperUserSaved: 'Eigenes Hintergrundbild gespeichert.',
+			frostedGlassWallpaperSaveError:
+				'Das Hintergrundbild konnte nicht gespeichert werden. Das vorherige eigene Bild wurde möglicherweise entfernt. Andere Änderungen wurden nicht gespeichert. Lade das Bild erneut hoch und versuche es noch einmal.',
 			frostedGlassWallpaperUserRemoved: 'Eigenes Hintergrundbild entfernt.',
 			frostedGlassWallpaperUploadInvalidType: 'Wählen Sie eine JPG- oder PNG-Datei.',
 			frostedGlassWallpaperUploadTooLarge: 'Das Hintergrundbild darf höchstens 3 MB groß sein.',
@@ -121,6 +127,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			frostedGlassWallpaperReplace: 'Remplacer',
 			frostedGlassWallpaperRemove: 'Supprimer',
 			frostedGlassWallpaperUserSaved: 'Fond utilisateur enregistré.',
+			frostedGlassWallpaperSaveError:
+				'Impossible d’enregistrer le fond. L’image personnalisée précédente a peut-être été supprimée. Les autres modifications n’ont pas été enregistrées. Chargez à nouveau l’image et réessayez.',
 			frostedGlassWallpaperUserRemoved: 'Fond utilisateur supprimé.',
 			frostedGlassWallpaperUploadInvalidType: 'Choisissez un fichier JPG ou PNG.',
 			frostedGlassWallpaperUploadTooLarge: 'Le fond peut faire au maximum 3 Mo.',
@@ -155,6 +163,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			frostedGlassWallpaperReplace: 'Sostituisci',
 			frostedGlassWallpaperRemove: 'Rimuovi',
 			frostedGlassWallpaperUserSaved: 'Sfondo utente salvato.',
+			frostedGlassWallpaperSaveError:
+				'Impossibile salvare lo sfondo. L’immagine personalizzata precedente potrebbe essere stata rimossa. Le altre modifiche non sono state salvate. Carica nuovamente l’immagine e riprova.',
 			frostedGlassWallpaperUserRemoved: 'Sfondo utente rimosso.',
 			frostedGlassWallpaperUploadInvalidType: 'Scegli un file JPG o PNG.',
 			frostedGlassWallpaperUploadTooLarge: 'Lo sfondo può essere al massimo di 3 MB.',
@@ -189,6 +199,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			frostedGlassWallpaperReplace: 'Cambiar',
 			frostedGlassWallpaperRemove: 'Eliminar',
 			frostedGlassWallpaperUserSaved: 'Fondo del usuario guardado.',
+			frostedGlassWallpaperSaveError:
+				'No se pudo guardar el fondo. Es posible que se haya eliminado la imagen personalizada anterior. Los demás cambios no se han guardado. Vuelve a cargar la imagen e inténtalo de nuevo.',
 			frostedGlassWallpaperUserRemoved: 'Fondo del usuario eliminado.',
 			frostedGlassWallpaperUploadInvalidType: 'Elige un archivo JPG o PNG.',
 			frostedGlassWallpaperUploadTooLarge: 'El fondo puede tener como máximo 3 MB.',

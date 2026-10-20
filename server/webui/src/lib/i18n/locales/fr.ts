@@ -16,7 +16,6 @@ export const fr: TranslationDictionary = {
 		preparing: 'Préparation du graphique…',
 		invalid:
 			'Impossible d’afficher le graphique. Les causes possibles sont un format llampart-chart invalide ou un dépassement des limites de données prises en charge.',
-		inspectDefinition: 'Sélectionnez « Afficher le code » pour vérifier la définition.',
 		export: 'Exporter le graphique en',
 		exportError: 'Impossible d’exporter ce graphique. Réessayez.',
 		legend: 'Légende du graphique — activer les séries',

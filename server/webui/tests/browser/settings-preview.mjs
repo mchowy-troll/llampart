@@ -57,7 +57,7 @@ await page.route('**/*', async (route) => {
 await page.addInitScript(
 	({ key, config }) => {
 		if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(config));
-		localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+		localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	},
 	{ key: storageKey, config: initial }
 );
@@ -333,6 +333,156 @@ try {
 		/^data:image\/png;base64,/
 	);
 	console.log('PASS custom wallpaper: upload preview, cancellation and commit');
+
+	// Real Storage methods fail only for the image key, never for unrelated config.
+	for (const mode of ['quota', 'throw', 'verification']) {
+		const committed = JSON.parse(await persisted());
+		await open();
+		await appearance();
+		const nextScale = committed.uiScale === '110' ? '105' : '110';
+		await page.locator('#uiScale').fill(nextScale);
+		await dialog
+			.locator('input[type=file]')
+			.setInputFiles({ name: 'replacement.png', mimeType: 'image/png', buffer: image });
+		await page.waitForFunction(() =>
+			document.documentElement.style
+				.getPropertyValue('--llampart-theme-wallpaper')
+				.includes('data:image/png')
+		);
+		assert.equal(
+			await page.getByText('Tapeta użytkownika została zapisana.', { exact: true }).count(),
+			0
+		);
+		await page.evaluate(
+			({ key, mode }) => {
+				const original = Storage.prototype.setItem;
+				window.restoreWallpaperStorage = () => {
+					Storage.prototype.setItem = original;
+				};
+				Storage.prototype.setItem = function (k, value) {
+					if (k !== key) return original.call(this, k, value);
+					if (this.getItem(key) !== null) throw new Error('Old image was not deleted before write');
+					if (mode === 'quota') throw new DOMException('quota', 'QuotaExceededError');
+					if (mode === 'throw') throw new Error('Storage test failure');
+					return original.call(this, k, 'data:image/png;base64,d3Jvbmc=');
+				};
+			},
+			{ key: wallpaperKey, mode }
+		);
+		await save();
+		const warning = page.getByRole('alertdialog');
+		await warning.waitFor();
+		assert((await warning.textContent()).includes('Nie udało się zapisać tapety.'));
+		assert.equal(await page.evaluate((key) => localStorage.getItem(key), wallpaperKey), null);
+		assert.deepEqual(JSON.parse(await persisted()), {
+			...committed,
+			frostedGlassWallpaper: 'frosted-glass-03'
+		});
+		assert(await dialog.isVisible(), 'No false onSave/close after a failed commit');
+		await warning.getByRole('button', { name: 'Zamknij', exact: true }).click();
+		assert.equal(await page.locator('#uiScale').inputValue(), nextScale);
+		assert(
+			await page
+				.locator('html')
+				.evaluate((n) => n.style.getPropertyValue('--llampart-theme-wallpaper').includes('03.jpg'))
+		);
+		await screenshot(`wallpaper-${mode}-failure`);
+		await page.evaluate(() => window.restoreWallpaperStorage());
+		if (mode !== 'quota') {
+			// Retry in the same session, including the still-unsaved unrelated field.
+			await dialog
+				.locator('input[type=file]')
+				.setInputFiles({ name: 'retry.png', mimeType: 'image/png', buffer: image });
+			await page.waitForFunction(() =>
+				document.documentElement.style
+					.getPropertyValue('--llampart-theme-wallpaper')
+					.includes('data:image/png')
+			);
+			await save();
+			await dialog.waitFor({ state: 'hidden' });
+			assert.equal(JSON.parse(await persisted()).uiScale, nextScale);
+		} else await close('escape');
+		await page.reload();
+		await page.waitForSelector('textarea');
+		assert.equal(
+			JSON.parse(await persisted()).uiScale,
+			mode === 'quota' ? committed.uiScale : nextScale
+		);
+		assert.equal(
+			await page.evaluate((key) => localStorage.getItem(key) !== null, wallpaperKey),
+			mode !== 'quota'
+		);
+		if (mode === 'quota') {
+			assert(
+				await page
+					.locator('html')
+					.evaluate((n) =>
+						n.style.getPropertyValue('--llampart-theme-wallpaper').includes('03.jpg')
+					)
+			);
+			await open();
+			await appearance();
+			await dialog
+				.locator('input[type=file]')
+				.setInputFiles({ name: 'retry.png', mimeType: 'image/png', buffer: image });
+			await page.waitForFunction(() =>
+				document.documentElement.style
+					.getPropertyValue('--llampart-theme-wallpaper')
+					.includes('data:image/png')
+			);
+			await save();
+			await dialog.waitFor({ state: 'hidden' });
+		}
+		console.log(
+			`PASS wallpaper ${mode}: truthful warning, no false success/toast, fallback, unrelated draft, retry and reload`
+		);
+	}
+
+	// A delayed FileReader from a closed session must not stage an image in its successor.
+	const beforeLateUpload = await persisted();
+	await open();
+	await appearance();
+	const beforeLateWallpaper = await page
+		.locator('html')
+		.evaluate((n) => n.style.getPropertyValue('--llampart-theme-wallpaper'));
+	const lateImage = await page.evaluate(() => {
+		const canvas = document.createElement('canvas');
+		canvas.width = canvas.height = 2;
+		const ctx = canvas.getContext('2d');
+		ctx.fillStyle = 'red';
+		ctx.fillRect(0, 0, 2, 2);
+		const original = FileReader.prototype.readAsDataURL;
+		FileReader.prototype.readAsDataURL = function (file) {
+			window.releaseWallpaperRead = () => {
+				FileReader.prototype.readAsDataURL = original;
+				this.addEventListener('loadend', () => {
+					window.wallpaperReadCompleted = true;
+				});
+				original.call(this, file);
+			};
+		};
+		return canvas.toDataURL('image/png').split(',')[1];
+	});
+	await dialog.locator('input[type=file]').setInputFiles({
+		name: 'late.png',
+		mimeType: 'image/png',
+		buffer: Buffer.from(lateImage, 'base64')
+	});
+	await page.waitForFunction(() => typeof window.releaseWallpaperRead === 'function');
+	await close('escape');
+	await open();
+	await appearance();
+	await page.evaluate(() => window.releaseWallpaperRead());
+	await page.waitForFunction(() => window.wallpaperReadCompleted === true);
+	assert.equal(
+		await page
+			.locator('html')
+			.evaluate((n) => n.style.getPropertyValue('--llampart-theme-wallpaper')),
+		beforeLateWallpaper
+	);
+	assert.equal(await persisted(), beforeLateUpload);
+	await close();
+	console.log('PASS late wallpaper read cannot mutate a newer Settings preview session');
 
 	// Exercise the existing file inputs, download links and reload popup in the real UI.
 	async function upload(button, value) {

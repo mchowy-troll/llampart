@@ -45,6 +45,7 @@ import type { ApiProviderId } from '$lib/constants/api-providers';
 import { ParameterSyncService } from '$lib/services/parameter-sync.service';
 import { serverStore } from '$lib/stores/server.svelte';
 import { normalizeThemeId, THEME_REGISTRY } from '$lib/themes/registry';
+import type { ThemePreviewCommitResult, ThemeSettingsPreview } from '$lib/themes/types';
 import { configToParameterRecord, getConfigValue, setConfigValue } from '$lib/utils/config-helpers';
 import { normalizeFloatingPoint } from '$lib/utils/precision';
 import {
@@ -53,6 +54,11 @@ import {
 	serializeSettingsStorage,
 	validateSettingsPatch
 } from '$lib/utils/settings-schema';
+
+export type SettingsPreviewCommitResult =
+	| { ok: true }
+	| { ok: false; reason: 'stale' }
+	| (Extract<ThemePreviewCommitResult, { ok: false }> & { reason: 'resource' });
 
 class SettingsStore {
 	/**
@@ -68,7 +74,7 @@ class SettingsStore {
 	userOverrides = new SvelteSet<string>();
 	private preview = $state<Partial<SettingsConfigType>>({});
 	private previewSession: symbol | undefined;
-	private previewResources: { commit: () => void; cancel: () => void }[] = [];
+	private previewResources: ThemeSettingsPreview[] = [];
 
 	/** Only the appearance runtime reads this overlay. Persistence always uses config. */
 	get appearanceConfig(): SettingsConfigType {
@@ -109,14 +115,31 @@ class SettingsStore {
 		};
 	}
 
-	commitPreview(session: symbol, updates: Partial<SettingsConfigType>): boolean {
-		if (!this.isPreviewCurrent(session)) return false;
+	commitPreview(
+		session: symbol,
+		updates: Partial<SettingsConfigType>
+	): SettingsPreviewCommitResult {
+		if (!this.isPreviewCurrent(session)) return { ok: false, reason: 'stale' };
 		// Validate the entire form before changing any state or theme-owned assets.
 		const patch = validateSettingsPatch(updates, this.config);
+		for (const resource of this.previewResources) {
+			const result = resource.commit(this.config);
+			if (!result.ok) {
+				const recovery = validateSettingsPatch(result.configPatch, this.config);
+				// A failed asset may already have removed its predecessor. Reconcile
+				// only its selection; never save the rest of the pending form here.
+				if (Object.entries(recovery).some(([key, value]) => this.config[key] !== value)) {
+					this.updateMultipleConfig(recovery);
+				}
+				this.updatePreview(session, recovery);
+				return { ...result, configPatch: recovery, reason: 'resource' };
+			}
+		}
+		// This is not an atomic transaction across all localStorage keys. Resources
+		// must succeed before the ordinary configuration persistence is attempted.
 		this.updateMultipleConfig(patch);
-		for (const resource of this.previewResources) resource.commit();
 		this.cancelPreview(session);
-		return true;
+		return { ok: true };
 	}
 
 	cancelPreview(session?: symbol): void {

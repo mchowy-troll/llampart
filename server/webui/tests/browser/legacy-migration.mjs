@@ -181,7 +181,7 @@ try {
 		context = await browser.newContext({ viewport });
 		page = await setup(context);
 		await page.evaluate(async () => {
-			localStorage.setItem('Llampart.aboutDismissedVersion', '1.9.0');
+			localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 			localStorage.setItem(
 				'LlamaCppWebui.config',
 				JSON.stringify({

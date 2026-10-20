@@ -152,7 +152,8 @@
 
 			customWallpaperSrc = src;
 			onWallpaperChange(CUSTOM_FROSTED_GLASS_WALLPAPER_ID);
-			toast.success(t('settings.frostedGlassWallpaperUserSaved'));
+			// Upload only stages the image during Settings preview; Save persists it.
+			if (!session) toast.success(t('settings.frostedGlassWallpaperUserSaved'));
 		} catch {
 			toast.error(t('settings.frostedGlassWallpaperUploadReadError'));
 		}
