@@ -20,6 +20,11 @@ export class SseByteParser {
 	private eventType: string | undefined;
 	private readonly decoder = new TextDecoder();
 
+	// Older llama-server builds emitted `error: <json>` instead of a data
+	// envelope (llama.cpp #16104). Opt in only for that adapter; byte accounting
+	// always uses the original framing, never this normalized representation.
+	constructor(private readonly legacyErrorField = false) {}
+
 	push(chunk: Uint8Array): ParsedSseRecord[] {
 		return this.parse(chunk, false);
 	}
@@ -78,6 +83,7 @@ export class SseByteParser {
 			let value = colon === -1 ? '' : line.slice(colon + 1);
 			if (value.startsWith(' ')) value = value.slice(1);
 			if (field === 'data') this.dataLines.push(value);
+			if (field === 'error' && this.legacyErrorField) this.dataLines.push(`{"error":${value}}`);
 			if (field === 'event') this.eventType = value;
 		}
 

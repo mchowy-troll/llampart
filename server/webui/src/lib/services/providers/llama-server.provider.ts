@@ -5,12 +5,7 @@ import { applyProviderReasoning } from './reasoning';
 import { serializeToolText } from '$lib/utils/tool-lifecycle';
 import { ReasoningFormat } from '$lib/enums';
 import { t } from '$lib/i18n';
-import type {
-	ApiChatCompletionRequest,
-	ApiChatCompletionResponse,
-	ApiChatCompletionStreamChunk,
-	ApiModelListResponse
-} from '$lib/types/api';
+import type { ApiChatCompletionRequest, ApiModelListResponse } from '$lib/types/api';
 import type {
 	ProviderChatCompletionFetchRequest,
 	ProviderChatCompletionInput,
@@ -23,6 +18,7 @@ import type {
 import { isAbsoluteHttpUrl, normalizeProviderBaseUrl } from './provider-url';
 import { buildGatewayRequest, fetchProviderEndpoint } from './provider-transport';
 import type { ApiProviderAdapter } from './provider.types';
+import { readLlamaServerResponse, readLlamaServerStreamChunk } from './llama-server-response';
 
 const PROTECTED_CHAT_REQUEST_KEYS = new Set([
 	'messages',
@@ -285,12 +281,12 @@ function parseLlamaServerChatCompletionStreamData(
 		return { done: true };
 	}
 
-	const parsed: ApiChatCompletionStreamChunk = JSON.parse(data);
+	const parsed = readLlamaServerStreamChunk(data);
 	const choice = parsed.choices?.[0];
 
 	return {
-		content: choice?.delta?.content,
-		reasoningContent: choice?.delta?.reasoning_content,
+		content: choice?.delta.content ?? undefined,
+		reasoningContent: choice?.delta.reasoning_content ?? undefined,
 		toolCalls: choice?.delta?.tool_calls,
 		model: extractModelName(parsed),
 		completionId: parsed.id,
@@ -300,12 +296,12 @@ function parseLlamaServerChatCompletionStreamData(
 }
 
 function parseLlamaServerChatCompletionResponse(data: unknown): ProviderChatCompletionResponse {
-	const parsed = data as ApiChatCompletionResponse;
+	const parsed = readLlamaServerResponse(data);
 	const choice = parsed.choices?.[0];
 
 	return {
 		content: choice?.message?.content || '',
-		reasoningContent: choice?.message?.reasoning_content,
+		reasoningContent: choice?.message?.reasoning_content ?? undefined,
 		toolCalls: choice?.message?.tool_calls,
 		model: extractModelName(data)
 	};

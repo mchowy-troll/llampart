@@ -36,4 +36,42 @@ describe('SseByteParser', () => {
 			{ data: 'partial', bytesParsed: encoder.encode('data: partial\n\n').length }
 		]);
 	});
+
+	it.each(['\n', '\r\n', '\r'])(
+		'normalizes only opted-in historical llama-server errors, with exact offsets for %j',
+		(newline) => {
+			const first = `: ping${newline}${newline}`;
+			const error = `error: {"code":400,"message":"zażółć","type":"invalid_request_error"}${newline}${newline}`;
+			const done = `data: [DONE]${newline}${newline}`;
+			const bytes = encoder.encode(first + error + done);
+			const expected = [
+				{ data: null, bytesParsed: encoder.encode(first).length },
+				{
+					data: '{"error":{"code":400,"message":"zażółć","type":"invalid_request_error"}}',
+					bytesParsed: encoder.encode(first + error).length
+				},
+				{ data: '[DONE]', bytesParsed: bytes.length }
+			];
+			// Every possible split, including CRLF and inside multibyte UTF-8.
+			for (let split = 0; split <= bytes.length; split++) {
+				const parser = new SseByteParser(true);
+				expect([
+					...parser.push(bytes.slice(0, split)),
+					...parser.push(bytes.slice(split)),
+					...parser.finish()
+				]).toEqual(expected);
+			}
+			const standard = new SseByteParser();
+			expect([...standard.push(bytes), ...standard.finish()][1]).toEqual({
+				data: null,
+				bytesParsed: encoder.encode(first + error).length
+			});
+		}
+	);
+	it('preserves malformed historical error data for adapter rejection and does not leak it to the next record', () => {
+		const parser = new SseByteParser(true);
+		expect(
+			parser.push(encoder.encode('error: {broken\n\ndata: [DONE]\n\n')).map((record) => record.data)
+		).toEqual(['{"error":{broken}', '[DONE]']);
+	});
 });

@@ -43,6 +43,7 @@ import {
 } from '$lib/utils/resumable-stream-state';
 import type { ChatStreamResumeSeed, SettingsChatServiceOptions } from '$lib/types/settings';
 import { getReconnectDelay, sleepWithAbort } from '$lib/utils/retry';
+import { LlamaServerBackendError } from '$lib/services/providers/llama-server-response';
 
 interface FrozenStreamRequest {
 	provider: ApiProviderAdapter;
@@ -772,6 +773,7 @@ export class ChatService {
 			);
 		} catch (error) {
 			if (!isAbortError(error)) {
+				if (error instanceof LlamaServerBackendError) ChatService.clearResumableState(state);
 				const normalizedError = error instanceof Error ? error : new Error('Stream resume failed');
 
 				try {
@@ -931,7 +933,7 @@ export class ChatService {
 		while (!abortSignal?.aborted) {
 			const reader = activeResponse.body?.getReader();
 			if (!reader) throw new Error('No response body');
-			const parser = new SseByteParser();
+			const parser = new SseByteParser(provider.id === API_PROVIDER_IDS.LLAMA_SERVER);
 			const baseOffset = resumableState?.bytesReceived ?? 0;
 			const processRecords = async (records: ReturnType<SseByteParser['push']>) => {
 				for (const record of records) {
@@ -944,6 +946,7 @@ export class ChatService {
 								throw new Error('Event after terminal outcome');
 							event = parseStream(record.data, record.eventType);
 						} catch (error) {
+							if (error instanceof LlamaServerBackendError) throw error;
 							throw new StreamProtocolError('Failed to parse provider stream data', {
 								cause: error
 							});
