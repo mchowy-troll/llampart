@@ -860,14 +860,14 @@ class ModelsStore {
 	 * Select a model for new conversations
 	 */
 	async selectModelById(modelId: string): Promise<void> {
-		this.capabilityGeneration++;
-		this.capabilitySnapshot = null;
 		if (!modelId || this.updating) return;
 		if (this.selectedModelId === modelId) return;
 
 		const option = this.models.find((model) => model.id === modelId);
 		if (!option) throw new Error('Selected model is not available');
 
+		this.capabilityGeneration++;
+		this.capabilitySnapshot = null;
 		this.updating = true;
 		this.error = null;
 
