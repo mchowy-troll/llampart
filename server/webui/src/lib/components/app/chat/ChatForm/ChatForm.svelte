@@ -142,7 +142,7 @@
 	let activeModelId = $derived.by(() => {
 		const options = modelOptions();
 
-		if (!isRouter) {
+		if (!isRouter && !usesSelectableModelList) {
 			return options.length > 0 ? options[0].model : null;
 		}
 
