@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { serializeToolText } from '$lib/utils/tool-lifecycle';
+import { applyProviderReasoning } from './reasoning';
 import type {
 	ProviderChatCompletionInput,
 	ProviderChatCompletionResponse,
@@ -167,7 +168,6 @@ const standardParameters = {
 			})
 		})
 	]),
-	reasoning_effort: z.enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']),
 	logprobs: z.boolean(),
 	top_logprobs: z.number().int().min(0).max(20)
 };
@@ -198,17 +198,18 @@ export function customParameters(input: ProviderChatCompletionInput): Record<str
 	return custom;
 }
 
-export function buildChatBody(input: ProviderChatCompletionInput): Record<string, unknown> {
+export function buildChatBody(
+	input: ProviderChatCompletionInput,
+	providerId: 'vllm' | 'openai-compatible' = input.capabilities?.providerId === 'vllm'
+		? 'vllm'
+		: 'openai-compatible',
+	serializeReasoning = true
+): Record<string, unknown> {
 	const { options } = input;
 	const custom = customParameters(input);
 	for (const key of Object.keys(custom))
 		if (input.capabilities?.features[key]?.state === 'unsupported')
 			throw new Error(`Custom parameter is not supported by this backend/model: ${key}`);
-	if (
-		custom.reasoning_effort !== undefined &&
-		input.capabilities?.features.reasoning?.state === 'unsupported'
-	)
-		throw new Error('Custom reasoning_effort is not supported by this backend/model');
 	const body: Record<string, unknown> = {
 		...custom,
 		model: options.model,
@@ -245,21 +246,6 @@ export function buildChatBody(input: ProviderChatCompletionInput): Record<string
 		body.stream_options = { include_usage: true };
 	if (options.tools?.length && input.capabilities?.features.tools?.state !== 'unsupported')
 		body.tools = options.tools;
-	const effortCapability = input.capabilities?.features.reasoning_effort;
-	const enabled = options.enableThinking;
-	const effort = enabled === false ? 'none' : options.reasoningEffort;
-	if (
-		custom.reasoning_effort === undefined &&
-		(options as unknown as Record<string, unknown>).reasoning_effort === undefined &&
-		enabled !== undefined &&
-		effortCapability?.state !== 'unsupported' &&
-		input.capabilities?.features.reasoning?.state !== 'unsupported' &&
-		effort &&
-		(['none', 'low', 'medium', 'high'].includes(effort) ||
-			effortCapability?.values?.includes(effort)) &&
-		(!effortCapability?.values || effortCapability.values.includes(effort))
-	)
-		body.reasoning_effort = effort;
 	for (const [name, schema] of Object.entries(standardParameters)) {
 		let value = Object.hasOwn(custom, name)
 			? custom[name]
@@ -272,11 +258,6 @@ export function buildChatBody(input: ProviderChatCompletionInput): Record<string
 		)
 			value = undefined;
 		const capability = input.capabilities?.features[name];
-		if (
-			name === 'reasoning_effort' &&
-			input.capabilities?.features.reasoning?.state === 'unsupported'
-		)
-			continue;
 		if (value !== undefined && capability?.state !== 'unsupported') {
 			const validated = schema.parse(value);
 			if (capability?.values && !capability.values.includes(validated))
@@ -306,5 +287,12 @@ export function buildChatBody(input: ProviderChatCompletionInput): Record<string
 		delete body.tool_choice;
 		delete body.parallel_tool_calls;
 	}
+	if (serializeReasoning)
+		applyProviderReasoning(
+			{ ...input, options: { ...input.options, protocol: 'chat-completions' } },
+			providerId,
+			body,
+			custom
+		);
 	return body;
 }

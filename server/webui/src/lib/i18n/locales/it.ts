@@ -23,6 +23,8 @@ export const it: TranslationDictionary = {
 		share: 'Quota'
 	},
 	common: {
+		resetFailed:
+			'Impossibile salvare le impostazioni. Il ripristino non è stato completato; riprova.',
 		showCode: 'Mostra codice',
 		saveSettings: 'Salva impostazioni',
 		save: 'Salva',
@@ -39,7 +41,7 @@ export const it: TranslationDictionary = {
 		resetToDefault: 'Ripristina predefiniti',
 		resetSettingsToDefault: 'Ripristina impostazioni predefinite',
 		resetSettingsDescription:
-			"Sei sicuro di voler ripristinare tutte le impostazioni ai valori predefiniti? Questa operazione riporterà tutti i parametri ai valori forniti dall'endpoint /props del server e rimuoverà tutte le tue configurazioni personalizzate.",
+			'Ripristinare TUTTE le impostazioni dell’applicazione? Verranno eliminati anche i server MCP, i profili dei provider, gli indirizzi salvati e le chiavi API, ripristinando l’inglese e l’aspetto predefinito. La cronologia delle conversazioni non viene eliminata. I parametri di generazione usano i valori predefiniti della connessione risultante.',
 		or: 'oppure',
 		openWebsite: 'Apri sito web',
 		searchEllipsis: 'Cerca...',
@@ -171,6 +173,12 @@ export const it: TranslationDictionary = {
 		enterNewConversationName: 'Inserisci un nuovo nome'
 	},
 	settings: {
+		storageSaveError:
+			'Impossibile salvare le impostazioni nel browser. Le modifiche restano aperte; controlla lo spazio disponibile e le autorizzazioni del browser, poi riprova.',
+		storageRollbackError:
+			'Il salvataggio non è riuscito e le impostazioni precedenti non sono state ripristinate completamente. Le modifiche in memoria non sono state confermate. L’archiviazione del browser potrebbe essere incoerente; riprova prima di ricaricare. Gli sfondi vengono salvati separatamente.',
+		concurrentSettingsConflict:
+			'Queste impostazioni sono cambiate fuori dal modulo. Nulla è stato salvato. Chiudi e riapri le impostazioni per verificare i valori attuali prima di modificarli.',
 		sectionGeneral: 'Generale',
 		sectionDisplay: 'Aspetto',
 		sectionSampling: 'Campionamento',
@@ -208,7 +216,11 @@ export const it: TranslationDictionary = {
 		fieldFontFamily: 'Famiglia di caratteri',
 		fieldFontVariant: 'Variante del carattere',
 		fieldFontSize: 'Dimensione del carattere',
-		fontDefault: 'Predefinita',
+		fontDefault: '{font} (predefinita)',
+		fontVariantDefault: '{variant} (predefinita)',
+		fontSizeDefault: '{size} px (predefinita)',
+		propsSyncStorageError:
+			'Impossibile salvare i valori predefiniti del server. Le impostazioni precedenti restano attive. La sincronizzazione potrà essere ritentata al prossimo aggiornamento.',
 		defaultPrefix: 'Predefinito:',
 		resetToDefault: 'Ripristina predefiniti',
 		selected: 'Selezionato',
@@ -438,10 +450,10 @@ export const it: TranslationDictionary = {
 			interfaceLanguage:
 				"L'inglese è la lingua predefinita al primo avvio. Qui puoi scegliere la lingua dell'interfaccia.",
 			uiScale: 'Scala dell’interfaccia desktop dal 90% al 110%, a passi del 5%.',
-			fontFamily: 'Carattere locale. Predefinita conserva la tipografia attuale.',
+			fontFamily: 'Carattere locale. La famiglia di fabbrica è indicata come predefinita.',
 			fontVariant: 'Peso di base reale. Enfasi e caratteri del codice restano invariati.',
 			fontSize:
-				'Dimensione base del testo in px, indipendente dalla scala dell’interfaccia. Predefinita mantiene la dimensione adattiva esistente.',
+				'Dimensione base del testo in px, indipendente dalla scala dell’interfaccia. La dimensione di fabbrica è indicata come predefinita.',
 			pasteLongTextToFileLen:
 				'Quando incolli un testo lungo, verrà convertito in un file. Questo valore controlla la lunghezza. Il valore 0 disabilita questo comportamento.',
 			copyTextAttachmentsAsPlainText:
@@ -623,21 +635,31 @@ export const it: TranslationDictionary = {
 		reasoningEffortTitle: 'Sforzo di reasoning',
 		reasoningLabel: 'Reasoning',
 		reasoningEnabled: 'Attivato',
-		reasoningCustomConflict:
-			'Conflitto nel controllo del reasoning: rimuovi i parametri di reasoning da Custom JSON o seleziona un modello senza controllo automatico. La richiesta non è stata inviata.',
+		reasoningDefault: 'Predefinito / Auto',
+		reasoningUnavailable:
+			'La scelta di ragionamento salvata non è disponibile per questa sorgente/modello/protocollo. Scegli Predefinito/Auto o un’opzione supportata.',
+		reasoningDeclarationTitle: 'Avanzate: dichiara i livelli di sforzo',
+		reasoningDeclarationHint:
+			'Inserisci i valori esatti documentati dal backend, separati da virgole. È una tua dichiarazione, non un rilevamento automatico. Vale solo per questa connessione, modello, protocollo e versione del template/server; non ne verifica l’accettazione.',
+		reasoningDeclarationInvalid:
+			'Inserisci da 1 a 16 nomi distinti (lettere, cifre, punto, trattino o sottolineatura; massimo 64 caratteri ciascuno).',
+		reasoningDeclarationApply: 'Salva dichiarazione',
+		reasoningDeclarationClear: 'Rimuovi dichiarazione',
+		reasoningDeclarationUser: 'Livelli di sforzo dichiarati da te, non verificati automaticamente.',
+		reasoningUnknown:
+			'Il backend non ha dichiarato le capacità di reasoning. Sono mantenute le impostazioni predefinite del server.',
+		reasoningLevelsUnknown:
+			'Il reasoning è supportato, ma il backend non ha dichiarato i livelli di sforzo consentiti.',
 		reasoningConfigureHint: 'Clicca per configurare.',
-		reasoningDisabledTooltip: 'Reasoning disattivato',
 		reasoningEffort: {
+			minimal: 'Minimo',
+			xhigh: 'Molto alto',
 			off: 'Disattivato',
 			low: 'Basso',
 			medium: 'Medio',
 			high: 'Alto',
 			max: 'Max'
 		},
-		reasoningUnlimited: 'Illimitato',
-		reasoningMaxTokensPrefix: 'Max',
-		reasoningMaxTokensSuffix: 'token',
-		reasoningMaxInfo: 'Massimo sforzo di reasoning con uso esteso del contesto',
 		pdfVisionSuggestion:
 			'Puoi abilitare l’elaborazione dei PDF come immagini con i modelli vision.',
 		pdfVisionSuggestionAction: 'Abilita PDF come immagini',

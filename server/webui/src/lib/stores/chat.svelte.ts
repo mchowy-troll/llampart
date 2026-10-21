@@ -49,15 +49,18 @@ import type { ApiProcessingState, DatabaseMessage, DatabaseMessageExtra } from '
 import type { ChatStreamCheckpoint } from '$lib/types/settings';
 import type { McpServerOverride } from '$lib/types/database';
 import type { OperationModel, ProviderRequestContext } from '$lib/types/provider';
+import { ReasoningSelectionUnavailableError } from '$lib/services/providers/reasoning';
+import { t } from '$lib/i18n';
 import { ErrorDialogType, MessageRole, MessageType } from '$lib/enums';
 
 interface ConversationStateEntry {
 	lastAccessed: number;
 }
 
-interface GenerationModel {
+export interface GenerationModel {
 	readonly providerRequestContext: ProviderRequestContext;
 	readonly operationModel: OperationModel;
+	readonly apiOptions: Readonly<Record<string, unknown>>;
 }
 
 export function resolveHistoricalContextTotal(
@@ -237,6 +240,12 @@ class ChatStore {
 
 	private showErrorDialog(state: ErrorDialogState | null): void {
 		this.errorDialogState = state;
+	}
+
+	private getErrorMessage(error: unknown): string {
+		if (error instanceof ReasoningSelectionUnavailableError)
+			return `${t('chat.reasoningUnavailable')} (${error.intent.mode === 'effort' ? error.intent.value : error.intent.mode})`;
+		return error instanceof Error ? error.message : 'Unknown error';
 	}
 
 	dismissErrorDialog(): void {
@@ -555,7 +564,7 @@ class ChatStore {
 		if (activeConv && this.isChatLoadingInternal(activeConv.id)) return;
 		this.conversationOperationLocks.add(operationKey);
 		let lockedConversationId: string | null = activeConv?.id ?? null;
-		const generationModel = this.captureGenerationModel();
+		let generationModel = this.captureGenerationModel();
 
 		try {
 			// Cancel any in-flight pre-encode request
@@ -578,6 +587,15 @@ class ChatStore {
 						? await DatabaseService.getConversation(lockedConversationId)
 						: null);
 			if (!currentConv) return;
+			if (!generationModel.operationModel.conversationId) {
+				generationModel = Object.freeze({
+					...generationModel,
+					operationModel: Object.freeze({
+						...generationModel.operationModel,
+						conversationId: currentConv.id
+					})
+				});
+			}
 			const perChatOverrides = currentConv.mcpServerOverrides?.map(
 				(override: McpServerOverride) => ({ ...override })
 			);
@@ -643,7 +661,7 @@ class ChatStore {
 				).contextInfo;
 				this.showErrorDialog({
 					type: dialogType,
-					message: error instanceof Error ? error.message : 'Unknown error',
+					message: this.getErrorMessage(error),
 					contextInfo
 				});
 			}
@@ -704,29 +722,36 @@ class ChatStore {
 		messages = conversationsStore.activeMessages
 	): GenerationModel {
 		const providerRequestContext = ChatService.createProviderRequestContext();
-		return {
+		return Object.freeze({
 			providerRequestContext,
+			apiOptions: Object.freeze(this.getApiOptions()),
 			operationModel: ChatService.captureOperationModel(
 				providerRequestContext,
 				modelOverride,
-				this.getConversationModel(messages)
+				this.getConversationModel(messages),
+				{
+					conversationId: conversationsStore.activeConversation?.id ?? null,
+					reasoning: conversationsStore.getReasoningIntent(conversationsStore.activeConversation)
+				}
 			)
-		};
+		});
 	}
 
 	private async streamChatCompletion(
 		allMessages: DatabaseMessage[],
 		assistantMessage: DatabaseMessage,
-		onComplete?: (content: string) => Promise<void>,
-		onError?: (error: Error) => void,
-		generationModel?: GenerationModel,
+		onComplete: ((content: string) => Promise<void>) | undefined,
+		onError: ((error: Error) => void) | undefined,
+		generationModel: GenerationModel,
 		firstUserMessageContent?: string,
 		perChatOverrides?: McpServerOverride[]
 	): Promise<void> {
-		const requestBinding = generationModel ?? this.captureGenerationModel(undefined, allMessages);
+		const requestBinding = generationModel;
 		const { providerRequestContext, operationModel } = requestBinding;
+		if (operationModel.conversationId && operationModel.conversationId !== assistantMessage.convId)
+			throw new Error('Generation belongs to a different conversation');
 		const effectiveModel = operationModel.model;
-		const apiOptions = this.getApiOptions();
+		const apiOptions = requestBinding.apiOptions;
 		const abortController = new AbortController();
 		this.abortControllers.set(assistantMessage.convId, abortController);
 
@@ -743,9 +768,6 @@ class ChatStore {
 		) {
 			await this.cancelPendingAssistant(assistantMessage, abortController);
 			return;
-		}
-		if (providerRequestContext.providerId === 'llama-server') {
-			apiOptions.llamaReasoningControl = modelsStore.getReasoningControl(effectiveModel ?? null);
 		}
 
 		// Request identity is exact; historical display normalization stays in recordModel().
@@ -1054,7 +1076,7 @@ class ChatStore {
 				).contextInfo;
 				this.showErrorDialog({
 					type: error.name === 'TimeoutError' ? ErrorDialogType.TIMEOUT : ErrorDialogType.SERVER,
-					message: error.message,
+					message: this.getErrorMessage(error),
 					contextInfo
 				});
 				if (onError) await onError(error);
@@ -1834,7 +1856,7 @@ class ChatStore {
 					activeConv.id,
 					messageIdForResponse,
 					perChatOverrides,
-					generationModel
+					generationModel!
 				);
 		} catch (error) {
 			console.error('Failed to edit message with branching:', error);
@@ -1844,8 +1866,8 @@ class ChatStore {
 	private async generateResponseForMessage(
 		convId: string,
 		userMessageId: string,
-		perChatOverrides?: McpServerOverride[],
-		generationModel?: GenerationModel
+		perChatOverrides: McpServerOverride[] | undefined,
+		generationModel: GenerationModel
 	): Promise<void> {
 		this.showErrorDialog(null);
 		this.setChatLoading(convId, true);
@@ -2092,10 +2114,6 @@ class ChatStore {
 
 		if (providerCapabilities.supportsBackendSampling)
 			apiOptions.backend_sampling = currentConfig.backend_sampling;
-
-		// Shared reasoning intent; adapters own backend-specific payload mapping.
-		apiOptions.enableThinking = conversationsStore.getThinkingEnabled();
-		apiOptions.reasoningEffort = conversationsStore.getReasoningEffort();
 
 		if (currentConfig.custom) apiOptions.custom = currentConfig.custom;
 

@@ -19,6 +19,7 @@ import { settingsStore } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
 import { getDictionary, INTERFACE_LANGUAGES } from '$lib/i18n';
+import { applyTypography, FONT_FAMILIES } from '$lib/utils/typography';
 import {
 	CUSTOM_FROSTED_GLASS_WALLPAPER_ID,
 	CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY
@@ -56,8 +57,11 @@ describe('settings JSON import/export compatibility', () => {
 		frostedGlassOpaque: true
 	};
 	const groups = ['responsePreferences', 'interfaceScale', 'typography', 'frostedGlass'];
-	const importPatch = (settings: Record<string, unknown>, userOverrides?: unknown) =>
-		importApplicationSettings(
+	const importPatch = (settings: Record<string, unknown>, userOverrides?: unknown) => {
+		// Standalone file fixtures must initialize the authoritative in-memory state,
+		// just as opening the application does before a user imports settings.
+		settingsStore.config = parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY) ?? null);
+		return importApplicationSettings(
 			JSON.stringify({
 				type: 'llampart-settings-export',
 				formatVersion: 1,
@@ -65,6 +69,7 @@ describe('settings JSON import/export compatibility', () => {
 				userOverrides
 			})
 		);
+	};
 	const savedConfig = () => parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!);
 	async function exportFile() {
 		let blob: Blob | undefined;
@@ -147,6 +152,115 @@ describe('settings JSON import/export compatibility', () => {
 			showMessageStats: false,
 			temperature: 0.3
 		});
+	});
+
+	it.each([
+		{
+			name: 'both legacy default sentinels',
+			font: { fontFamily: 'default', fontVariant: '400', fontSize: 'default' },
+			effective: { fontFamily: 'merriweather', fontVariant: '400', fontSize: '13' }
+		},
+		{
+			name: 'historical variant sentinel',
+			font: { fontFamily: 'default', fontVariant: 'default', fontSize: 'default' },
+			effective: { fontFamily: 'merriweather', fontVariant: '400', fontSize: '13' }
+		},
+		{
+			name: 'historical variant sentinel with explicit family and size',
+			font: { fontFamily: 'merriweather', fontVariant: 'default', fontSize: '18' },
+			effective: { fontFamily: 'merriweather', fontVariant: '400', fontSize: '18' }
+		},
+		{
+			name: 'explicit family, weight and size',
+			font: { fontFamily: 'fira-sans', fontVariant: '600', fontSize: '18' },
+			effective: { fontFamily: 'fira-sans', fontVariant: '600', fontSize: '18' }
+		},
+		{
+			name: 'explicit non-default Merriweather weight and size',
+			font: { fontFamily: 'merriweather', fontVariant: '700', fontSize: '16' },
+			effective: { fontFamily: 'merriweather', fontVariant: '700', fontSize: '16' }
+		},
+		{
+			name: 'default family with explicit size',
+			font: { fontFamily: 'default', fontVariant: '400', fontSize: '18' },
+			effective: { fontFamily: 'merriweather', fontVariant: '400', fontSize: '18' }
+		},
+		{
+			name: 'explicit family and weight with default size',
+			font: { fontFamily: 'fira-sans', fontVariant: '600', fontSize: 'default' },
+			effective: { fontFamily: 'fira-sans', fontVariant: '600', fontSize: '13' }
+		}
+	])('keeps version-1 typography backward compatible: $name', async ({ font, effective }) => {
+		const storedFont = {
+			...font,
+			fontVariant:
+				font.fontVariant === 'default' ? SETTING_CONFIG_DEFAULT.fontVariant : font.fontVariant
+		};
+		const originalConfig = { ...settingsStore.config };
+		const originalOverrides = [...settingsStore.userOverrides];
+		const expectImportedTypography = () => {
+			// Family/size sentinels survive import/export; the historical variant
+			// follows the existing variant normalization boundary to a concrete weight.
+			expect(JSON.parse(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject(storedFont);
+			expect(savedConfig()).toMatchObject(storedFont);
+			expect(settingsStore.config).toMatchObject(storedFont);
+			const properties = new Map<string, string>();
+			const root = {
+				dataset: {} as Record<string, string>,
+				style: {
+					setProperty: (key: string, value: string) => properties.set(key, value),
+					removeProperty: (key: string) => properties.delete(key)
+				}
+			} as unknown as HTMLElement;
+			const cleanup = applyTypography(root, settingsStore.config);
+			try {
+				expect(root.dataset.llampartFont).toBe(effective.fontFamily);
+				expect(properties.get('--llampart-font-family')).toBe(
+					`"${FONT_FAMILIES[effective.fontFamily as keyof typeof FONT_FAMILIES]}"`
+				);
+				expect(properties.get('--llampart-font-weight')).toBe(effective.fontVariant);
+				expect(properties.get('--llampart-text-unit')).toBe(`${effective.fontSize}px`);
+			} finally {
+				cleanup();
+			}
+		};
+		try {
+			// A literal old export, not regenerated with today's factory defaults.
+			// Import over contrasting preferences to prove that present default keys
+			// are applied rather than treated as missing fields.
+			storage.set(
+				CONFIG_LOCALSTORAGE_KEY,
+				serializeSettingsStorage({
+					...SETTING_CONFIG_DEFAULT,
+					fontFamily: 'crimson-text',
+					fontVariant: '600',
+					fontSize: '20'
+				})
+			);
+			importPatch(font);
+			expectImportedTypography();
+			settingsStore.initialize();
+			expectImportedTypography();
+			const { data, text } = await exportFile();
+			expect(data).toMatchObject({
+				type: 'llampart-settings-export',
+				formatVersion: 1,
+				app: 'llampart',
+				settings: storedFont
+			});
+			settingsStore.updateMultipleConfig({
+				fontFamily: 'crimson-text',
+				fontVariant: '600',
+				fontSize: '20'
+			});
+			importApplicationSettings(text);
+			settingsStore.initialize();
+			expectImportedTypography();
+		} finally {
+			settingsStore.config = originalConfig;
+			settingsStore.userOverrides.clear();
+			for (const key of originalOverrides) settingsStore.userOverrides.add(key);
+		}
 	});
 
 	it('reports only incomplete groups in a partial file and preserves absent fields', () => {
@@ -312,6 +426,9 @@ describe('settings JSON import/export compatibility', () => {
 		(language) => {
 			// Read the actual language dictionary: a fallback translation must not hide a missing key.
 			const settings = getDictionary(language).settings as Record<string, unknown>;
+			expect(settings.fontDefault).toMatch(/^\{font\} \(.+\)$/);
+			expect(settings.fontVariantDefault).toMatch(/^\{variant\} \(.+\)$/);
+			expect(settings.fontSizeDefault).toMatch(/^\{size\} px \(.+\)$/);
 			const messages = settings.importExport as Record<string, unknown>;
 			expect(messages.olderSettingsFile).toBeTypeOf('string');
 			expect(messages.olderSettingsFile).toContain('{sections}');
@@ -337,15 +454,15 @@ describe('settings runtime schema', () => {
 			expect(settingsStore.config.fontVariant).toBe('400');
 			settingsStore.resetConfig();
 			expect(settingsStore.config).toMatchObject({
-				fontFamily: 'default',
-				fontSize: 'default',
+				fontFamily: 'merriweather',
+				fontSize: '13',
 				fontVariant: '400',
 				uiScale: '100',
 				frostedGlassMilkiness: 75,
 				frostedGlassOpaque: false
 			});
 			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject({
-				fontFamily: 'default',
+				fontFamily: 'merriweather',
 				fontVariant: '400'
 			});
 		} finally {
@@ -583,7 +700,7 @@ describe('settings runtime schema', () => {
 		}
 	});
 
-	it('rejects invalid backend settings before reset or sync mutates state', () => {
+	it('rejects invalid backend parameter reset/sync but permits full configuration Reset', () => {
 		const originalConfig = { ...settingsStore.config };
 		const originalOverrides = [...settingsStore.userOverrides];
 		const originalProps = serverStore.props;
@@ -604,12 +721,14 @@ describe('settings runtime schema', () => {
 				/showThoughtInProgress|top_p/
 			);
 			expect(() => settingsStore.syncWithServerDefaults()).toThrow(/showThoughtInProgress|top_p/);
-			expect(() => settingsStore.forceSyncWithServerDefaults()).toThrow(
-				/showThoughtInProgress|top_p/
-			);
 			expect(settingsStore.config).toEqual(beforeConfig);
 			expect([...settingsStore.userOverrides]).toEqual(beforeOverrides);
 			expect(storage).toEqual(beforeStorage);
+			// Full Reset discards the old connection, so its invalid /props must not
+			// prevent restoration of central, correctly typed defaults.
+			settingsStore.resetConfig();
+			expect(settingsStore.config).toEqual(SETTING_CONFIG_DEFAULT);
+			expect([...settingsStore.userOverrides]).toEqual([]);
 		} finally {
 			settingsStore.config = originalConfig;
 			settingsStore.userOverrides.clear();

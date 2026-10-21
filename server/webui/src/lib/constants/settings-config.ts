@@ -1,6 +1,29 @@
 import { API_PROVIDER_IDS, DEFAULT_API_PROVIDER_ID } from './api-providers';
 import { DEFAULT_THEME_ID, THEME_CONFIG_DEFAULTS, THEME_CONFIG_INFO } from '$lib/themes/registry';
 import { TITLE_GENERATION } from './title-generation';
+import {
+	ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY,
+	DISABLED_TOOL_KEYS_LOCALSTORAGE_KEY,
+	DISABLED_TOOLS_LOCALSTORAGE_KEY,
+	MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY,
+	REASONING_PREFERENCE_LOCALSTORAGE_KEY,
+	REASONING_EFFORT_DEFAULT_LOCALSTORAGE_KEY,
+	THINKING_ENABLED_DEFAULT_LOCALSTORAGE_KEY
+} from './localstorage-keys';
+
+/** Global preferences historically stored outside the scalar settings document.
+ * Full Reset restores this central registry too; null removes legacy fallback
+ * keys. Conversation records, streams and resource bytes are deliberately absent.
+ */
+export const GLOBAL_CONFIG_STORAGE_DEFAULT = {
+	[ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY]: '[]',
+	[DISABLED_TOOL_KEYS_LOCALSTORAGE_KEY]: '[]',
+	[DISABLED_TOOLS_LOCALSTORAGE_KEY]: null,
+	[MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY]: '[]',
+	[REASONING_PREFERENCE_LOCALSTORAGE_KEY]: '{"mode":"default"}',
+	[REASONING_EFFORT_DEFAULT_LOCALSTORAGE_KEY]: null,
+	[THINKING_ENABLED_DEFAULT_LOCALSTORAGE_KEY]: null
+} satisfies Record<string, string | null>;
 
 export const SETTING_CONFIG_DEFAULT = {
 	// Note: in order not to introduce breaking changes, please keep the same data type (number, string, etc) if you want to change the default value.
@@ -23,15 +46,16 @@ export const SETTING_CONFIG_DEFAULT = {
 	responsePrefConcise: false,
 	responsePrefExamples: false,
 	responsePrefSteps: false,
+	reasoningLevelDeclarations: '{}',
 	responsePrefUserLanguage: false,
 	showSystemMessage: false,
 	theme: DEFAULT_THEME_ID,
 	...THEME_CONFIG_DEFAULTS,
 	interfaceLanguage: 'en',
 	uiScale: '100',
-	fontFamily: 'default',
+	fontFamily: 'merriweather',
 	fontVariant: '400',
-	fontSize: 'default',
+	fontSize: '13',
 	showThoughtInProgress: true,
 	minimalAgenticIndicators: false,
 	disableReasoningParsing: false,

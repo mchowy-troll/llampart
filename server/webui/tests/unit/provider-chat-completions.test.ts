@@ -1,8 +1,35 @@
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
 import { getApiProvider } from '$lib/services/providers';
-import { MessageRole, ReasoningEffort } from '$lib/enums';
+import { MessageRole } from '$lib/enums';
 import type { SettingsChatServiceOptions } from '$lib/types/settings';
 import { describe, expect, it } from 'vitest';
+import { resolveReasoningCapabilities, resolveReasoning } from '$lib/services/providers/reasoning';
+import type { CapabilitySnapshot } from '$lib/types/provider';
+import type { ReasoningIntent } from '$lib/types/reasoning';
+import { buildChatBody } from '$lib/services/providers/openai-chat.protocol';
+import { buildResponsesBody } from '$lib/services/providers/openai-responses.protocol';
+
+function snapshot(
+	providerId: CapabilitySnapshot['providerId'],
+	values?: string[],
+	protocol: CapabilitySnapshot['protocol'] = 'chat-completions',
+	metadata?: unknown
+): CapabilitySnapshot {
+	const caps: CapabilitySnapshot = {
+		providerId,
+		model: 'model-a',
+		serverBaseUrl: 'http://localhost:8080',
+		sourceGeneration: 1,
+		connectionIdentity: 'source-a',
+		protocol,
+		features: {
+			reasoning: { state: 'supported' },
+			reasoning_effort: { state: 'supported', ...(values ? { values } : {}) }
+		}
+	};
+	caps.reasoning = resolveReasoningCapabilities(caps, metadata);
+	return caps;
+}
 
 const baseInput = {
 	apiKey: 'secret-key',
@@ -19,101 +46,282 @@ const baseInput = {
 };
 
 describe('provider-owned chat completions', () => {
-	const llamaBody = (options: SettingsChatServiceOptions) =>
+	it.each(['vllm', 'openai-compatible'] as const)(
+		'rejects cross-protocol and cross-connection reasoning snapshots for %s',
+		(providerId) => {
+			const caps = snapshot(providerId, ['brief', 'deep']);
+			const input = {
+				...baseInput,
+				serverBaseUrl: caps.serverBaseUrl,
+				capabilities: caps,
+				options: {
+					model: 'model-a',
+					reasoning: { mode: 'effort', value: 'brief' } as ReasoningIntent
+				}
+			};
+			expect(() => buildResponsesBody(input, providerId)).toThrow(/protocol/);
+			const responses = snapshot(providerId, ['brief', 'deep'], 'responses');
+			expect(() => buildChatBody({ ...input, capabilities: responses }, providerId)).toThrow(
+				/protocol/
+			);
+			for (const change of [
+				{ connectionIdentity: 'other-connection' },
+				{ sourceGeneration: 2 },
+				{ protocol: 'responses' as const }
+			]) {
+				const contaminated = { ...caps, reasoning: { ...caps.reasoning!, ...change } };
+				expect(() =>
+					getApiProvider(providerId).buildChatCompletionRequest({
+						...input,
+						capabilities: contaminated
+					})
+				).toThrow(/snapshot/);
+			}
+			expect(() =>
+				getApiProvider(providerId).buildChatCompletionRequest({
+					...input,
+					capabilities: responses,
+					options: { model: 'model-a', custom: '{"reasoning_effort":"brief"}' }
+				})
+			).toThrow(/Responses requires/);
+		}
+	);
+	it.each(['chat-completions', 'responses'] as const)(
+		'vLLM confirmed independent toggle and effort never conflict in %s',
+		(protocol) => {
+			const caps = snapshot('vllm', ['brief', 'deep', 'none'], protocol);
+			caps.features = {
+				...caps.features,
+				enable_thinking: { state: 'supported' },
+				chat_template_kwargs: { state: 'supported' }
+			};
+			caps.reasoning = resolveReasoningCapabilities(caps);
+			const make = (options: SettingsChatServiceOptions) =>
+				JSON.parse(
+					String(
+						getApiProvider('vllm').buildChatCompletionRequest({
+							...baseInput,
+							serverBaseUrl: caps.serverBaseUrl,
+							capabilities: caps,
+							options: { model: 'model-a', ...options }
+						}).init.body
+					)
+				);
+			const effort = make({ reasoning: { mode: 'effort', value: 'deep' } });
+			expect(effort.chat_template_kwargs).toEqual({ enable_thinking: true });
+			expect(protocol === 'responses' ? effort.reasoning : effort.reasoning_effort).toEqual(
+				protocol === 'responses' ? { effort: 'deep' } : 'deep'
+			);
+			const off = make({ reasoning: { mode: 'off' } });
+			expect(off.chat_template_kwargs).toEqual({ enable_thinking: false });
+			expect(off).not.toHaveProperty('reasoning_effort');
+			expect(off).not.toHaveProperty('reasoning');
+			expect(() =>
+				make({
+					reasoning: { mode: 'effort', value: 'deep' },
+					custom: '{"chat_template_kwargs":{"enable_thinking":false}}'
+				})
+			).toThrow(/conflict/);
+			expect(() =>
+				make({
+					reasoning: { mode: 'effort', value: 'deep' },
+					chat_template_kwargs: { enable_thinking: false }
+				})
+			).toThrow(/Custom JSON/);
+		}
+	);
+	it.each(['vllm', 'openai-compatible'] as const)(
+		'only maps Off through explicitly declared none for %s',
+		(providerId) => {
+			for (const protocol of ['chat-completions', 'responses'] as const) {
+				const caps = snapshot(providerId, ['none', 'minimal', 'high'], protocol);
+				const body = JSON.parse(
+					String(
+						getApiProvider(providerId).buildChatCompletionRequest({
+							...baseInput,
+							serverBaseUrl: caps.serverBaseUrl,
+							capabilities: caps,
+							options: { model: 'model-a', reasoning: { mode: 'off' } }
+						}).init.body
+					)
+				);
+				if (protocol === 'responses') expect(body.reasoning).toEqual({ effort: 'none' });
+				else expect(body.reasoning_effort).toBe('none');
+				expect(body).not.toHaveProperty('chat_template_kwargs');
+			}
+		}
+	);
+	const llamaBody = (options: SettingsChatServiceOptions, capabilities?: CapabilitySnapshot) =>
 		JSON.parse(
 			String(
 				getApiProvider('llama-server').buildChatCompletionRequest({
 					...baseInput,
 					serverBaseUrl: 'http://localhost:8080',
-					options
+					options,
+					capabilities
 				}).init.body
 			)
 		);
 
-	it.each([ReasoningEffort.LOW, ReasoningEffort.MEDIUM, ReasoningEffort.HIGH, ReasoningEffort.MAX])(
-		'sends native effort %s without toggle or token budgets even if thinking was disabled',
-		(effort) => {
-			const body = llamaBody({
-				llamaReasoningControl: 'effort',
-				reasoningEffort: effort,
-				enableThinking: false
-			});
-			expect(body.chat_template_kwargs).toEqual({
-				reasoning_effort: effort === 'max' ? 'high' : effort
-			});
-			expect(body).not.toHaveProperty('thinking_budget_tokens');
-			expect(body).not.toHaveProperty('reasoning_effort');
-			expect(body).not.toHaveProperty('enable_thinking');
-			expect(body.reasoning_control).toBe(true);
-			expect(body.reasoning_format).toBe('auto');
-		}
-	);
-	it.each([true, false])('sends toggle %s independently of the stored effort', (enabled) => {
-		const body = llamaBody({
-			llamaReasoningControl: 'toggle',
-			enableThinking: enabled,
-			reasoningEffort: ReasoningEffort.MAX
-		});
-		expect(body.chat_template_kwargs).toEqual({ enable_thinking: enabled });
-		for (const key of ['thinking_budget_tokens', 'reasoning_effort', 'enable_thinking'])
-			expect(body).not.toHaveProperty(key);
-	});
-	it('does not manufacture controls when no template control was detected', () => {
-		const body = llamaBody({ enableThinking: true, reasoningEffort: ReasoningEffort.HIGH });
-		for (const key of [
-			'chat_template_kwargs',
-			'thinking_budget_tokens',
-			'reasoning_effort',
-			'enable_thinking'
-		])
-			expect(body).not.toHaveProperty(key);
-		expect(llamaBody({ llamaReasoningControl: 'effort' }).chat_template_kwargs).toEqual({
-			reasoning_effort: 'medium'
-		});
-	});
-	it.each(['effort', 'toggle'] as const)('merges unrelated Custom JSON with %s control', (mode) => {
-		const body = llamaBody({
-			llamaReasoningControl: mode,
-			enableThinking: true,
-			custom: '{"chat_template_kwargs":{"date":"today"},"vendor_flag":1}'
-		});
-		expect(body.chat_template_kwargs).toEqual({
-			date: 'today',
-			...(mode === 'effort' ? { reasoning_effort: 'medium' } : { enable_thinking: true })
-		});
-		expect(body.vendor_flag).toBe(1);
-		expect(body).not.toHaveProperty('thinking_budget_tokens');
-	});
-	it.each(['effort', 'toggle'] as const)(
-		'rejects conflicting custom controls for %s before building a request',
-		(mode) => {
-			for (const key of [
-				'reasoning_effort',
-				'enable_thinking',
-				'thinking_budget_tokens',
-				'thinking_budget'
-			]) {
-				for (const custom of [{ [key]: false }, { chat_template_kwargs: { [key]: 'high' } }]) {
-					expect(() =>
-						llamaBody({ llamaReasoningControl: mode, custom: JSON.stringify(custom) })
-					).toThrow(/Reasoning control conflict/);
+	it.each(['llama-server', 'vllm', 'openai-compatible'] as const)(
+		'uses the same resolved choices in real %s JSON requests',
+		(providerId) => {
+			for (const protocol of providerId === 'llama-server'
+				? (['chat-completions'] as const)
+				: (['chat-completions', 'responses'] as const)) {
+				const capabilities = snapshot(
+					providerId,
+					['minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'custom-level'],
+					protocol
+				);
+				for (const intent of resolveReasoning(capabilities.reasoning!).choices) {
+					const resolved = resolveReasoning(capabilities.reasoning!, intent);
+					const request = getApiProvider(providerId).buildChatCompletionRequest({
+						...baseInput,
+						serverBaseUrl: capabilities.serverBaseUrl,
+						capabilities,
+						options: { model: 'model-a', reasoning: intent }
+					});
+					const body = JSON.parse(String(request.init.body));
+					for (const [key, value] of Object.entries(resolved.parameters))
+						expect(body[key]).toEqual(value);
+					if (intent.mode === 'default')
+						for (const key of ['reasoning', 'reasoning_effort', 'chat_template_kwargs'])
+							expect(body).not.toHaveProperty(key);
+					for (const key of ['thinking_budget_tokens', 'reasoning_budget'])
+						expect(body).not.toHaveProperty(key);
+					if (providerId !== 'llama-server')
+						expect(body).not.toHaveProperty('chat_template_kwargs');
 				}
 			}
-			expect(() =>
-				llamaBody({ llamaReasoningControl: mode, custom: '{"chat_template_kwargs":null}' })
-			).toThrow(/Reasoning control conflict/);
 		}
 	);
-	it('preserves explicit custom controls in none mode and the reasoning parsing contracts', () => {
-		const body = llamaBody({
-			llamaReasoningControl: 'none',
-			custom: '{"chat_template_kwargs":{"enable_thinking":true}}',
-			disableReasoningParsing: true,
-			excludeReasoningFromContext: true
+	it.each(['llama-server', 'vllm', 'openai-compatible'] as const)(
+		'does not guess levels, Off or historical aliases for %s',
+		(providerId) => {
+			for (const values of [undefined, ['low', 'medium', 'xhigh']])
+				for (const saved of ['high', 'max']) {
+					const capabilities = snapshot(providerId, values);
+					expect(() =>
+						getApiProvider(providerId).buildChatCompletionRequest({
+							...baseInput,
+							serverBaseUrl: capabilities.serverBaseUrl,
+							capabilities,
+							options: {
+								model: 'model-a',
+								enableThinking: true,
+								reasoningEffort: saved as SettingsChatServiceOptions['reasoningEffort']
+							}
+						})
+					).toThrow(/unavailable/);
+				}
+		}
+	);
+	it('serializes native enable_thinking without an effort or budget', () => {
+		const caps = snapshot('llama-server', undefined, 'chat-completions', {
+			chat_template: '{% if enable_thinking %}think{% endif %}'
 		});
-		expect(body.chat_template_kwargs).toEqual({ enable_thinking: true });
-		expect(body.reasoning_control).toBe(true);
-		expect(body.reasoning_format).toBe('none');
+		for (const mode of ['on', 'off'] as const)
+			expect(
+				llamaBody({ model: 'model-a', reasoning: { mode } }, caps).chat_template_kwargs
+			).toEqual({ enable_thinking: mode === 'on' });
+	});
+	it('supports reasoning_strength on legacy servers and the canonical alias on caps-aware servers', () => {
+		const metadata = {
+			chat_template: `{% if reasoning_strength not in ['low', 'xhigh'] %}{{ raise_exception('unsupported') }}{% endif %}`
+		};
+		for (const modern of [false, true]) {
+			const caps = snapshot('llama-server', ['low', 'xhigh'], 'chat-completions', {
+				...metadata,
+				...(modern ? { chat_template_caps: { supports_reasoning_effort: true } } : {})
+			});
+			expect(
+				llamaBody({ model: 'model-a', reasoning: { mode: 'effort', value: 'xhigh' } }, caps)
+					.chat_template_kwargs
+			).toEqual({ [modern ? 'reasoning_effort' : 'reasoning_strength']: 'xhigh' });
+		}
+	});
+	it('only exposes vLLM toggle when kwargs and enable_thinking are both declared', () => {
+		const caps = snapshot('vllm');
+		caps.features = {
+			enable_thinking: { state: 'supported' },
+			chat_template_kwargs: { state: 'supported' }
+		};
+		caps.reasoning = resolveReasoningCapabilities(caps);
+		const body = JSON.parse(
+			String(
+				getApiProvider('vllm').buildChatCompletionRequest({
+					...baseInput,
+					serverBaseUrl: caps.serverBaseUrl,
+					capabilities: caps,
+					options: {
+						model: 'model-a',
+						reasoning: { mode: 'off' },
+						custom: '{"chat_template_kwargs":{"date":"today"}}'
+					}
+				}).init.body
+			)
+		);
+		expect(body.chat_template_kwargs).toEqual({ enable_thinking: false, date: 'today' });
+		expect(body).not.toHaveProperty('reasoning_effort');
+	});
+	it.each(['llama-server', 'vllm', 'openai-compatible'] as const)(
+		'retains conflict protection and rejects stale ownership for %s',
+		(providerId) => {
+			const caps = snapshot(providerId, ['high']);
+			const options = {
+				model: 'model-a',
+				reasoning: { mode: 'effort', value: 'high' } as ReasoningIntent,
+				custom: '{"reasoning_effort":"low"}'
+			};
+			expect(() =>
+				getApiProvider(providerId).buildChatCompletionRequest({
+					...baseInput,
+					serverBaseUrl: caps.serverBaseUrl,
+					capabilities: caps,
+					options
+				})
+			).toThrow(/Reasoning control conflict/);
+			expect(() =>
+				getApiProvider(providerId).buildChatCompletionRequest({
+					...baseInput,
+					serverBaseUrl: caps.serverBaseUrl,
+					capabilities: caps,
+					options: { model: 'model-b' }
+				})
+			).toThrow(/provider\/model\/source/);
+		}
+	);
+	it('keeps unrelated native kwargs and protects managed Default from custom controls', () => {
+		const caps = snapshot('llama-server', ['high']);
+		expect(
+			llamaBody(
+				{
+					model: 'model-a',
+					reasoning: { mode: 'effort', value: 'high' },
+					custom: '{"chat_template_kwargs":{"date":"today"}}'
+				},
+				caps
+			).chat_template_kwargs
+		).toEqual({ date: 'today', reasoning_effort: 'high' });
+		for (const key of [
+			'reasoning_effort',
+			'reasoning_strength',
+			'enable_thinking',
+			'thinking_budget',
+			'thinking_budget_tokens'
+		]) {
+			expect(() =>
+				llamaBody(
+					{
+						model: 'model-a',
+						reasoning: { mode: 'default' },
+						custom: JSON.stringify({ chat_template_kwargs: { [key]: 'high' } })
+					},
+					caps
+				)
+			).toThrow(/Reasoning control conflict/);
+		}
 	});
 	it('builds OpenAI-compatible chat URLs without duplicating /v1', () => {
 		const provider = getApiProvider(API_PROVIDER_IDS.OPENAI_COMPATIBLE);

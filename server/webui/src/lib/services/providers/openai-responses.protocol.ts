@@ -6,12 +6,18 @@ import type {
 	ProviderChatCompletionStreamEvent
 } from '$lib/types/provider';
 import { buildChatBody, customParameters, normalizeOpenAiUsage } from './openai-chat.protocol';
+import { applyProviderReasoning } from './reasoning';
 
 const object = (value: unknown): Record<string, unknown> =>
 	z.record(z.string(), z.unknown()).parse(value);
 const string = (value: unknown): string => z.string().parse(value);
 
-export function buildResponsesBody(input: ProviderChatCompletionInput): Record<string, unknown> {
+export function buildResponsesBody(
+	input: ProviderChatCompletionInput,
+	providerId: 'vllm' | 'openai-compatible' = input.capabilities?.providerId === 'vllm'
+		? 'vllm'
+		: 'openai-compatible'
+): Record<string, unknown> {
 	const custom = customParameters(input);
 	// Unlike Chat Completions, standard Responses has no penalty parameters.
 	// Neutral UI defaults are harmless; explicit Custom JSON remains intentional.
@@ -28,7 +34,11 @@ export function buildResponsesBody(input: ProviderChatCompletionInput): Record<s
 			);
 		}
 	}
-	const chat = buildChatBody(input);
+	const chat = buildChatBody(
+		{ ...input, options: { ...input.options, protocol: 'responses' } },
+		providerId,
+		false
+	);
 	for (const name of Object.keys(penalties)) penalties[name] = chat[name];
 	const items: Record<string, unknown>[] = [];
 	for (const message of input.messages) {
@@ -103,17 +113,10 @@ export function buildResponsesBody(input: ProviderChatCompletionInput): Record<s
 			throw new Error('Response token-limit variants are mutually exclusive');
 		body.max_output_tokens = z.number().int().positive().parse(custom.max_output_tokens);
 	}
-	if (chat.reasoning_effort) body.reasoning = { effort: chat.reasoning_effort, summary: 'auto' };
 	if (custom.reasoning !== undefined) {
-		if (
-			input.capabilities?.features.reasoning?.state === 'unsupported' ||
-			input.capabilities?.features.reasoning_effort?.state === 'unsupported'
-		)
-			throw new Error('Custom reasoning is not supported by this backend/model');
-		if (body.reasoning) throw new Error('Response reasoning variants are mutually exclusive');
 		body.reasoning = z
 			.object({
-				effort: z.enum(['none', 'minimal', 'low', 'medium', 'high', 'xhigh']).optional(),
+				effort: z.string().min(1).optional(),
 				summary: z.enum(['auto', 'concise', 'detailed']).nullable().optional()
 			})
 			.strict()
@@ -181,6 +184,13 @@ export function buildResponsesBody(input: ProviderChatCompletionInput): Record<s
 		)
 			body[key] = value;
 	}
+	if (chat.chat_template_kwargs) body.chat_template_kwargs = chat.chat_template_kwargs;
+	applyProviderReasoning(
+		{ ...input, options: { ...input.options, protocol: 'responses' } },
+		providerId,
+		body,
+		custom
+	);
 	return body;
 }
 

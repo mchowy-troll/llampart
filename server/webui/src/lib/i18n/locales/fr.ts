@@ -23,6 +23,8 @@ export const fr: TranslationDictionary = {
 		share: 'Part'
 	},
 	common: {
+		resetFailed:
+			'Impossible d’enregistrer les paramètres. La réinitialisation n’a pas abouti ; veuillez réessayer.',
 		showCode: 'Afficher le code',
 		saveSettings: 'Enregistrer les paramètres',
 		save: 'Enregistrer',
@@ -39,7 +41,7 @@ export const fr: TranslationDictionary = {
 		resetToDefault: 'Réinitialiser par défaut',
 		resetSettingsToDefault: 'Réinitialiser les paramètres par défaut',
 		resetSettingsDescription:
-			'Êtes-vous sûr de vouloir réinitialiser tous les paramètres à leurs valeurs par défaut ? Cela réinitialisera tous les paramètres aux valeurs fournies par le point de terminaison /props du serveur et supprimera toutes vos configurations personnalisées.',
+			'Réinitialiser TOUS les paramètres de l’application ? Cela supprime aussi les serveurs MCP, profils de fournisseurs, adresses enregistrées et clés API, et rétablit l’anglais et l’apparence par défaut. L’historique des conversations est conservé. Les paramètres de génération utilisent les valeurs par défaut de la connexion résultante.',
 		or: 'ou',
 		openWebsite: 'Ouvrir le site',
 		searchEllipsis: 'Rechercher...',
@@ -172,6 +174,12 @@ export const fr: TranslationDictionary = {
 		enterNewConversationName: 'Entrez un nouveau nom'
 	},
 	settings: {
+		storageSaveError:
+			'Impossible de sauvegarder les paramètres dans le navigateur. Vos modifications restent ouvertes ; vérifiez l’espace disponible et les autorisations du navigateur, puis réessayez.',
+		storageRollbackError:
+			'La sauvegarde a échoué et les paramètres précédents n’ont pas pu être entièrement restaurés. Les modifications en mémoire n’ont pas été validées. Le stockage du navigateur peut être incohérent ; réessayez avant de recharger. Les fonds d’écran sont enregistrés séparément.',
+		concurrentSettingsConflict:
+			'Ces paramètres ont été modifiés hors de ce formulaire. Rien n’a été enregistré. Fermez puis rouvrez les paramètres pour vérifier les valeurs actuelles avant de les modifier.',
 		sectionGeneral: 'Général',
 		sectionDisplay: 'Affichage',
 		sectionSampling: 'Échantillonnage',
@@ -210,7 +218,11 @@ export const fr: TranslationDictionary = {
 		fieldFontFamily: 'Famille de police',
 		fieldFontVariant: 'Variante de police',
 		fieldFontSize: 'Taille de police',
-		fontDefault: 'Par défaut',
+		fontDefault: '{font} (par défaut)',
+		fontVariantDefault: '{variant} (par défaut)',
+		fontSizeDefault: '{size} px (par défaut)',
+		propsSyncStorageError:
+			'Impossible d’enregistrer les valeurs par défaut du serveur. Les paramètres précédents restent actifs. La synchronisation pourra être réessayée lors de la prochaine mise à jour.',
 		defaultPrefix: 'Par défaut :',
 		resetToDefault: 'Réinitialiser par défaut',
 		selected: 'Sélectionné',
@@ -446,10 +458,10 @@ export const fr: TranslationDictionary = {
 			interfaceLanguage:
 				"L'anglais est la langue par défaut au premier lancement. Choisissez ici la langue de l'interface.",
 			uiScale: 'Échelle de l’interface de bureau : 90% à 110%, par pas de 5%.',
-			fontFamily: 'Police locale. Le choix par défaut conserve la typographie actuelle.',
+			fontFamily: 'Police locale. La famille d’usine porte la mention « par défaut ».',
 			fontVariant: 'Graisse de base réelle. Les emphases et polices de code sont conservées.',
 			fontSize:
-				'Taille de base du texte en px, indépendante de l’échelle de l’interface. Par défaut, conserve la taille adaptative existante.',
+				'Taille de base du texte en px, indépendante de l’échelle de l’interface. La taille d’usine porte la mention « par défaut ».',
 			pasteLongTextToFileLen:
 				"Lors du collage d'un long texte, celui-ci sera converti en fichier. Cette valeur permet de contrôler la longueur. La valeur 0 désactive ce comportement.",
 			copyTextAttachmentsAsPlainText:
@@ -631,21 +643,31 @@ export const fr: TranslationDictionary = {
 		reasoningEffortTitle: 'Effort de raisonnement',
 		reasoningLabel: 'Raisonnement',
 		reasoningEnabled: 'Activé',
-		reasoningCustomConflict:
-			'Conflit de contrôle du raisonnement : supprimez les paramètres de raisonnement du Custom JSON ou choisissez un modèle sans contrôle automatique. La requête n’a pas été envoyée.',
+		reasoningDefault: 'Par défaut / Auto',
+		reasoningUnavailable:
+			'Le choix de raisonnement enregistré est indisponible pour cette source/ce modèle/protocole. Choisissez Par défaut/Auto ou une option prise en charge.',
+		reasoningDeclarationTitle: 'Avancé : déclarer les niveaux d’effort',
+		reasoningDeclarationHint:
+			'Saisissez les valeurs exactes documentées par votre backend, séparées par des virgules. Il s’agit de votre déclaration, pas d’une détection automatique. Elle ne concerne que cette connexion, ce modèle, protocole et cette version du modèle de conversation/serveur ; elle ne vérifie pas leur acceptation.',
+		reasoningDeclarationInvalid:
+			'Saisissez de 1 à 16 noms distincts (lettres, chiffres, point, tiret ou soulignement ; 64 caractères maximum chacun).',
+		reasoningDeclarationApply: 'Enregistrer la déclaration',
+		reasoningDeclarationClear: 'Supprimer la déclaration',
+		reasoningDeclarationUser: 'Niveaux d’effort déclarés par vous, sans vérification automatique.',
+		reasoningUnknown:
+			'Le backend n’a pas déclaré ses capacités de raisonnement. Les valeurs par défaut du serveur sont conservées.',
+		reasoningLevelsUnknown:
+			'Le raisonnement est pris en charge, mais le backend n’a pas déclaré les niveaux d’effort autorisés.',
 		reasoningConfigureHint: 'Cliquez pour configurer.',
-		reasoningDisabledTooltip: 'Raisonnement désactivé',
 		reasoningEffort: {
+			minimal: 'Minimal',
+			xhigh: 'Très élevé',
 			off: 'Désactivé',
 			low: 'Faible',
 			medium: 'Moyen',
 			high: 'Élevé',
 			max: 'Max'
 		},
-		reasoningUnlimited: 'Illimité',
-		reasoningMaxTokensPrefix: 'Max.',
-		reasoningMaxTokensSuffix: 'tokens',
-		reasoningMaxInfo: 'Effort de raisonnement maximal avec utilisation étendue du contexte',
 		pdfVisionSuggestion:
 			'Vous pouvez activer le traitement des PDF comme images avec les modèles vision.',
 		pdfVisionSuggestionAction: 'Activer PDF en images',

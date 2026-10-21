@@ -85,10 +85,46 @@ translated into EN, PL, DE, FR, IT and ES. A complete file retains the original
 dialog text. Confirm reloads the app; Cancel only closes the dialog and **does not
 undo the completed import**.
 
-The Settings form's existing Save, Cancel and Reset behavior is unchanged:
-appearance preview is separate from committed settings, Save validates/commits,
-and Cancel discards the draft. Settings import does not access conversation
-history, IndexedDB, or the independent conversation import/export format.
+Import also applies its validated patch to `settingsStore`, so the store stays
+authoritative after dismissing the reload prompt. It never imports MCP servers
+or connection profiles. Settings import does not access conversation history,
+IndexedDB, or the independent conversation import/export format.
+
+## Form sessions, concurrent changes and Reset
+
+`beginPreview()` captures a scalar baseline. `getPreviewChanges()` computes a
+three-way field diff before numeric conversion: opening the form is not an edit.
+Save submits only changed fields, including dependent font/variant changes;
+connection aliases are derived from the latest provider-owned profiles. The store
+merges this patch into its current config, not the old form snapshot. Immediate
+MCP add/edit/remove therefore survive Save, Cancel, Preview and reload unchanged.
+No MCP reconnect is requested when its serialized configuration did not change.
+
+`commitPreview()` rejects conflicting same-field external changes before modifying
+configuration or wallpaper assets. Font family/variant are a dependency pair.
+Save also guards the connection fields read before asynchronous validation; an
+intervening connection edit requires reopening Settings and validating again.
+Unrelated updates (including MCP during validation) are retained. A localized
+conflict warning leaves the draft/preview open; close/reopen establishes a new
+baseline. Cancel discards only the draft and theme resource staging.
+
+Confirmed **full Reset** restores every field from `SETTING_CONFIG_DEFAULT`,
+including theme defaults, English, wallpaper 03, milkiness 75%, fonts, UI Scale,
+MCP (`[]`), Tools/agentic and all provider profiles/addresses/API keys. It clears
+user overrides and the preview session. Unlike ordinary Save, deleting MCP and
+connections is intentional and explained in the confirmation. No manual field
+allowlist is used, so new schema fields also reset. Existing source/MCP lifecycle
+reacts to committed config; no stale server list is copied back into the form.
+Numeric generation defaults remain omitted so the resulting connection's server
+defaults apply. Boolean server parameters use typed values during normal current-
+source `/props` sync, never empty-string sentinels or discarded-source defaults.
+Conversation/IndexedDB data and separate custom wallpaper bytes are not erased.
+The companion central `GLOBAL_CONFIG_STORAGE_DEFAULT` registry resets separately
+persisted tool selections/permissions and new-chat MCP/reasoning defaults (including
+legacy fallbacks). Their owner stores reload preferences without rewriting old
+conversations. Open form metadata is reactive so all labels follow the reset language.
+The confirmation closes only after successful persistence and form refresh; a
+storage error leaves it open.
 
 ## Store lifecycle
 

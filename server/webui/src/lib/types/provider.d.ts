@@ -151,6 +151,7 @@ export interface CapabilityValue {
 	maximum?: number;
 }
 export interface CapabilitySnapshot {
+	reasoning?: import('./reasoning').ReasoningCapabilities;
 	providerId: ApiProviderId;
 	serverBaseUrl: string;
 	sourceGeneration: number;
@@ -163,6 +164,8 @@ export interface CapabilitySnapshot {
 /** Operation-owned selection, including an intentional absence of a wire model.
  * Capabilities are captured once for this model/source, never the later UI selection. */
 export interface OperationModel {
+	readonly conversationId: string | null;
+	readonly reasoning: import('./reasoning').ReasoningIntent;
 	readonly model: string | null;
 	readonly requestContext: ProviderRequestContext;
 	readonly capabilities: Promise<CapabilitySnapshot | null>;

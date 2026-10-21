@@ -49,6 +49,10 @@ export function mapVllmRequest(
 	body: Record<string, unknown>
 ): Record<string, unknown> {
 	const custom = customParameters(input);
+	if ((input.options as unknown as Record<string, unknown>).chat_template_kwargs !== undefined)
+		throw new Error(
+			'Use Custom JSON for explicit chat_template_kwargs; it must pass the shared reasoning conflict boundary'
+		);
 	// This vLLM extension is Chat-only and remains system-owned.
 	if (
 		body.stream &&
@@ -72,11 +76,19 @@ export function mapVllmRequest(
 		const options = input.options as unknown as Record<string, unknown>;
 		const value = Object.hasOwn(custom, name)
 			? custom[name]
-			: (options[name] ?? (name === 'repetition_penalty' ? options.repeat_penalty : undefined));
+			: name === 'chat_template_kwargs'
+				? undefined
+				: (options[name] ?? (name === 'repetition_penalty' ? options.repeat_penalty : undefined));
 		if (name in custom && input.capabilities?.features[name]?.state === 'unsupported')
 			throw new Error(`Custom vLLM parameter is not supported: ${name}`);
 		if (value !== undefined && input.capabilities?.features[name]?.state !== 'unsupported')
-			body[name] = schema.parse(value);
+			body[name] =
+				name === 'chat_template_kwargs'
+					? {
+							...((body[name] as Record<string, unknown>) ?? {}),
+							...(schema.parse(value) as Record<string, unknown>)
+						}
+					: schema.parse(value);
 	}
 	if (
 		body.structured_outputs &&

@@ -45,8 +45,50 @@
 	text-shadow: none;
 }
 .visualization-actions .visualization-preview-action {
-	width: 1.75rem;
-	padding: 0.25rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	min-width: 1.5rem;
+	min-height: 1.5rem;
+	padding: 0;
+	border: none;
+	border-radius: 0.375rem;
+	background: transparent;
+	color: inherit;
+	line-height: 1;
+	cursor: pointer;
+	transition: none;
+}
+
+/* Format downloads only. The ghost surface was transparent at rest and 10% on
+ * hover. Retain 30% of that fill/border intensity without dimming labels, focus
+ * rings or changing geometry (the current ghost border width remains zero). */
+:is(.format-export-action, .table-csv-button, .download-code-btn) {
+	background-color: transparent;
+	border-color: color-mix(in oklch, var(--border) 30%, transparent);
+}
+:is(.format-export-action, .table-csv-button, .download-code-btn):is(
+		:hover,
+		:focus-visible,
+		:active
+	):not(:disabled) {
+	background-color: color-mix(in oklab, var(--muted-foreground) 3%, transparent);
+}
+.visualization-actions .visualization-preview-action:is(:hover, :focus-visible, :active) {
+	background: transparent;
+	color: inherit;
+	transform: none;
+}
+.visualization-actions .visualization-preview-action:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 1px;
+}
+.visualization-actions .visualization-preview-action svg {
+	width: 0.875rem;
+	height: 0.875rem;
+	stroke-width: 2;
 }
 @media (max-width: 480px) {
 	.visualization-header {

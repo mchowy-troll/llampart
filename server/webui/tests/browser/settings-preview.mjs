@@ -10,6 +10,8 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile } from 'node:fs/promises';
 
 assert(process.env.LLAMPART_PLAYWRIGHT_MODULE, 'Set LLAMPART_PLAYWRIGHT_MODULE');
+// Focused post-release regression: Reset + reasoning + eye, no preview suite.
+const resetOnly = process.argv.includes('--reset-only');
 const { chromium } = await import(process.env.LLAMPART_PLAYWRIGHT_MODULE);
 const browser = await chromium.launch({
 	executablePath: process.env.LLAMPART_CHROMIUM || '/usr/bin/chromium',
@@ -24,7 +26,7 @@ page.on('pageerror', (error) => errors.push(error.message));
 const storageKey = 'LlamaCppWebui.config';
 const wallpaperKey = 'llampart:frosted-glass:user-wallpaper';
 const initial = {
-	apiProvider: 'vllm',
+	apiProvider: resetOnly ? 'llama-server' : 'vllm',
 	vllmBaseUrl: 'http://mock.invalid:8000',
 	serverBaseUrl: 'http://mock.invalid:8000',
 	theme: 'frosted-glass',
@@ -36,13 +38,63 @@ const initial = {
 	fontSize: 'default',
 	frostedGlassWallpaper: 'frosted-glass-02',
 	frostedGlassMilkiness: 50,
-	frostedGlassOpaque: false
+	frostedGlassOpaque: false,
+	...(resetOnly
+		? {
+				temperature: 0.2,
+				titleGenerationUseLLM: false,
+				backend_sampling: false,
+				responsePrefCharts: true,
+				uiScale: '105',
+				fontFamily: 'merriweather',
+				fontSize: '18',
+				apiKey: 'mock-key',
+				openAiCompatibleBaseUrl: 'https://saved.invalid/v1',
+				openAiCompatibleApiKey: 'saved-key'
+			}
+		: {})
 };
 let validationMode = 'success';
 let heldRoutes = [];
+let nativeLevels = ['minimal', 'high', 'xhigh', 'max'];
+let smokeEnglish = false;
+const oldPng =
+	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWNgYGD4DwABBAEAHnOcQAAAAABJRU5ErkJggg==';
 const models = { object: 'list', data: [{ id: 'mock/model' }] };
 await page.route('**/*', async (route) => {
 	const url = new URL(route.request().url());
+	if (resetOnly && url.hostname === 'mcp-smoke.invalid')
+		return route.fulfill({ status: 503, body: 'Isolated MCP smoke: no external backend' });
+	if (resetOnly && url.pathname.includes('/__llampart/api/')) {
+		if (url.pathname.endsWith('/chat/completions'))
+			return route.fulfill({
+				contentType: 'text/event-stream',
+				body: 'data: {"choices":[{"delta":{"content":"Synthetic reasoning answer"}}]}\n\ndata: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'
+			});
+		if (url.pathname.endsWith('/props'))
+			return route.fulfill({
+				json: {
+					role: 'model',
+					build_info: 'reset-smoke',
+					model_path: 'mock/model',
+					chat_template: '{{ message.content }}',
+					chat_template_caps: {
+						supports_reasoning_effort: true,
+						...(nativeLevels ? { reasoning_effort_values: nativeLevels } : {})
+					},
+					default_generation_settings: {
+						n_ctx: 8192,
+						params: {
+							temperature: 0.8,
+							backend_sampling: route.request().headers()['x-llampart-host'] === 'mock.invalid'
+						}
+					}
+				}
+			});
+		if (url.pathname.endsWith('/models')) return route.fulfill({ json: models });
+		if (url.pathname.endsWith('/tools')) return route.fulfill({ json: [] });
+		return route.fulfill({ json: { status: 'ok' } });
+	}
 	if (url.pathname.includes('/__llampart/api/') && url.pathname.endsWith('/models')) {
 		if (validationMode === 'hold') {
 			heldRoutes.push(route);
@@ -66,10 +118,22 @@ const dialog = page.locator('.llampart-chat-settings-dialog-content');
 const persisted = () => page.evaluate((key) => localStorage.getItem(key), storageKey);
 const scale = () => page.locator('html').getAttribute('data-llampart-ui-scale');
 async function open() {
-	if (!(await page.locator('button[aria-label="Ustawienia"]').isVisible())) {
-		await page.getByRole('button', { name: 'Przełącz pasek boczny', exact: true }).click();
+	const label = smokeEnglish ? 'Settings' : 'Ustawienia';
+	const settingsButton = page.locator(`button[aria-label="${label}"]`);
+	if (
+		!(await settingsButton.waitFor({ state: 'visible', timeout: 2000 }).then(
+			() => true,
+			() => false
+		))
+	) {
+		await page
+			.getByRole('button', {
+				name: smokeEnglish ? 'Toggle sidebar' : 'Przełącz pasek boczny',
+				exact: true
+			})
+			.click();
 	}
-	await page.locator('button[aria-label="Ustawienia"]').click();
+	await settingsButton.click();
 	await dialog.waitFor({ state: 'visible' });
 }
 async function appearance() {
@@ -78,7 +142,10 @@ async function appearance() {
 async function close(method = 'button') {
 	if (method === 'escape') await page.keyboard.press('Escape');
 	else if (method === 'outside') await page.mouse.click(15, 15);
-	else await dialog.getByRole('button', { name: 'Zamknij', exact: true }).click();
+	else
+		await dialog
+			.getByRole('button', { name: smokeEnglish ? 'Close' : 'Zamknij', exact: true })
+			.click();
 	await dialog.waitFor({ state: 'hidden' });
 }
 async function select(id, name) {
@@ -121,11 +188,321 @@ async function screenshot(name) {
 		await page.screenshot({ path: `${artifacts}/${name}.png`, animations: 'disabled' });
 }
 
-try {
+async function run() {
 	await page.goto(process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40133');
 	await page.waitForSelector('textarea');
 	await page.keyboard.press('Escape');
-	await page.waitForFunction(() => document.documentElement.dataset.llampartUiScale === '100');
+	await page.waitForFunction(
+		(scale) => document.documentElement.dataset.llampartUiScale === scale,
+		initial.uiScale
+	);
+	if (resetOnly) {
+		const base = process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40133';
+		const conversationId = await page.evaluate(async () => {
+			const { db } = await import('/tests/browser/charts-harness.ts');
+			const conversation = await db.createConversation('Isolated ISSUE smoke');
+			const root = await db.createRootMessage(conversation.id);
+			const content = [
+				'| A | B |',
+				'|---|---|',
+				'| 1 | 2 |',
+				'',
+				'```llampart-chart',
+				JSON.stringify({
+					type: 'bar',
+					title: 'Smoke chart',
+					xKey: 'x',
+					series: [{ key: 'y', label: 'Value' }],
+					data: [{ x: 'A', y: 12 }]
+				}),
+				'```',
+				'',
+				'```mermaid',
+				'flowchart LR\nA[Browser] --> B[Preview]',
+				'```'
+			].join('\n');
+			await db.createMessageBranch(
+				{
+					convId: conversation.id,
+					type: 'text',
+					role: 'assistant',
+					timestamp: Date.now(),
+					content,
+					children: [],
+					parent: root,
+					model: 'mock/model'
+				},
+				root
+			);
+			return conversation.id;
+		});
+		await page.goto(`${base}/#/chat/${conversationId}`);
+		await page.locator('.llampart-assistant-markdown').first().waitFor();
+		await page.evaluate(({ key, image }) => localStorage.setItem(key, image), {
+			key: wallpaperKey,
+			image: oldPng
+		});
+		const reasoningButton = page.locator('.llampart-reasoning-trigger');
+		await reasoningButton.click();
+		await page.getByRole('menuitemradio', { name: 'Domyślne / Auto', exact: true }).waitFor();
+		for (const label of ['Minimalny', 'Wysoki', 'Bardzo wysoki', 'Maks.'])
+			await page.getByRole('menuitemradio', { name: label, exact: true }).waitFor();
+		assert.equal(
+			await page.getByRole('menuitemradio', { name: 'Wyłączone', exact: true }).count(),
+			0
+		);
+		await page.getByRole('menuitemradio', { name: 'Bardzo wysoki', exact: true }).click();
+		assert.deepEqual(
+			await page.evaluate(async () =>
+				(await import('/tests/browser/charts-harness.ts')).conversations.getReasoningIntent()
+			),
+			{ mode: 'effort', value: 'xhigh' }
+		);
+		await page.keyboard.press('Escape');
+		const request = page.waitForRequest((request) => request.url().endsWith('/chat/completions'));
+		await page.locator('textarea').first().fill('Synthetic effort smoke');
+		await page.locator('textarea').first().press('Enter');
+		assert.deepEqual((await request).postDataJSON().chat_template_kwargs, {
+			reasoning_effort: 'xhigh'
+		});
+		await page.locator('.llampart-composer-stop-action').waitFor({ state: 'hidden' });
+		const assistant = page.locator('.llampart-assistant-markdown').first();
+		await assistant
+			.locator('.llampart-chart-frame .chart-plot svg')
+			.first()
+			.waitFor({ timeout: 60000 });
+		await assistant.locator('.diagram-surface svg').first().waitFor({ timeout: 60000 });
+		const dimensions = (locator) =>
+			locator.evaluate((el) => {
+				const s = getComputedStyle(el),
+					svg = el.querySelector('svg');
+				return {
+					width: s.width,
+					height: s.height,
+					padding: s.padding,
+					border: s.borderWidth,
+					background: s.backgroundColor,
+					svgWidth: getComputedStyle(svg).width,
+					svgHeight: getComputedStyle(svg).height
+				};
+			});
+		const tableStyle = await dimensions(assistant.locator('.table-preview-button').first());
+		for (const frame of ['.llampart-chart-frame', '.llampart-diagram-frame']) {
+			const eye = assistant.locator(`${frame} .visualization-preview-action`);
+			await eye.scrollIntoViewIfNeeded();
+			assert.deepEqual(await dimensions(eye), tableStyle);
+			await eye.click();
+			await page.getByRole('dialog').waitFor();
+			await page.keyboard.press('Escape');
+		}
+		await screenshot('issues-1920');
+		nativeLevels = undefined;
+		await page.reload();
+		await page.waitForFunction(
+			async (id) =>
+				(await import('/tests/browser/charts-harness.ts')).conversations.activeConversation?.id ===
+				id,
+			conversationId
+		);
+		await reasoningButton.click();
+		await page.getByRole('menuitemradio', { name: 'Domyślne / Auto', exact: true }).waitFor();
+		assert.equal(
+			await page.getByRole('menuitemradio', { name: 'Bardzo wysoki', exact: true }).count(),
+			0
+		);
+		await page
+			.getByText(
+				'Reasoning jest obsługiwany, ale backend nie zadeklarował dozwolonych poziomów wysiłku.',
+				{ exact: true }
+			)
+			.waitFor();
+		await page.getByRole('alert').filter({ hasText: 'Zapisany wybór reasoning' }).waitFor();
+		await page.getByRole('menuitemradio', { name: 'Domyślne / Auto', exact: true }).click();
+		await reasoningButton.click();
+		await page
+			.getByText('Zaawansowane: zadeklaruj poziomy effort', { exact: true })
+			.first()
+			.click();
+		await page.locator('#reasoning-declared-levels').fill('brief, deep');
+		await page.getByRole('button', { name: 'Zapisz deklarację', exact: true }).click();
+		await page.getByRole('menuitemradio', { name: 'deep', exact: true }).click();
+		await page.waitForFunction(
+			async (id) =>
+				(await (await import('/tests/browser/charts-harness.ts')).db.getConversation(id))?.reasoning
+					?.value === 'deep',
+			conversationId
+		);
+		await page.reload();
+		await page.waitForFunction(
+			async (id) =>
+				(await import('/tests/browser/charts-harness.ts')).conversations.activeConversation?.id ===
+				id,
+			conversationId
+		);
+		await reasoningButton.click();
+		assert.equal(
+			await page
+				.getByRole('menuitemradio', { name: 'deep', exact: true })
+				.getAttribute('aria-checked'),
+			'true'
+		);
+		await page
+			.getByText('Poziomy effort zadeklarowane przez Ciebie, bez automatycznej weryfikacji.', {
+				exact: true
+			})
+			.waitFor();
+		assert.equal(
+			Object.keys(JSON.parse(JSON.parse(await persisted()).reasoningLevelDeclarations)).length,
+			1
+		);
+		await page.keyboard.press('Escape');
+		console.log(
+			'PASS ISSUE-03 UI: selected xhigh reaches serialized request; unavailable historical choice is visible; explicit source/model declaration survives reload without aliasing'
+		);
+		await open();
+		await appearance();
+		await page.locator('#uiScale').fill('110');
+		await dialog.getByRole('button', { name: 'MCP', exact: true }).click();
+		await dialog.getByRole('button', { name: 'Dodaj nowy serwer', exact: true }).click();
+		await page.locator('#server-url-new-server').fill('http://mcp-smoke.invalid/mcp');
+		await dialog.getByRole('button', { name: 'Zapisz', exact: true }).click();
+		const mcpBeforeSave = JSON.parse(JSON.parse(await persisted()).mcpServers);
+		assert.equal(mcpBeforeSave.length, 1);
+		assert.equal(mcpBeforeSave[0].url, 'http://mcp-smoke.invalid/mcp');
+		await save();
+		await dialog.waitFor({ state: 'hidden' });
+		await open();
+		await dialog.getByRole('button', { name: 'MCP', exact: true }).click();
+		await dialog
+			.getByText(/mcp-smoke\.invalid/)
+			.first()
+			.waitFor();
+		assert.deepEqual(JSON.parse(JSON.parse(await persisted()).mcpServers), mcpBeforeSave);
+		await close('button');
+		await page.reload();
+		await open();
+		await dialog.getByRole('button', { name: 'MCP', exact: true }).click();
+		await dialog
+			.getByText(/mcp-smoke\.invalid/)
+			.first()
+			.waitFor();
+		assert.deepEqual(JSON.parse(JSON.parse(await persisted()).mcpServers), mcpBeforeSave);
+		assert.equal(JSON.parse(await persisted()).uiScale, '110');
+		await screenshot('mcp-after-save-reopen-reload-1920');
+		console.log(
+			'PASS ISSUE-04: UI Add MCP → bottom Save → reopen → reload; UI + localStorage preserve exact ID/URL and independent UI Scale edit'
+		);
+		await dialog.getByRole('button', { name: 'Edytuj serwer', exact: true }).click();
+		await page
+			.locator(`[id="server-url-${mcpBeforeSave[0].id}"]`)
+			.fill('http://mcp-smoke.invalid/edited');
+		await dialog.getByRole('button', { name: 'Zaktualizuj', exact: true }).click();
+		await save();
+		await dialog.waitFor({ state: 'hidden' });
+		await page.reload();
+		assert.equal(
+			JSON.parse(JSON.parse(await persisted()).mcpServers)[0].url,
+			'http://mcp-smoke.invalid/edited'
+		);
+		await open();
+		await dialog.getByRole('button', { name: 'MCP', exact: true }).click();
+		await dialog.getByRole('button', { name: 'Usuń serwer', exact: true }).click();
+		await page.getByRole('alertdialog').getByRole('button', { name: 'Usuń', exact: true }).click();
+		await save();
+		await dialog.waitFor({ state: 'hidden' });
+		await page.reload();
+		assert.deepEqual(JSON.parse(JSON.parse(await persisted()).mcpServers), []);
+		await open();
+		await dialog.getByRole('button', { name: 'MCP', exact: true }).click();
+		assert.equal(await dialog.getByText(/mcp-smoke\.invalid/).count(), 0);
+		// Leave a configured endpoint for the subsequent full Reset to remove.
+		await dialog.getByRole('button', { name: 'Dodaj nowy serwer', exact: true }).click();
+		await page.locator('#server-url-new-server').fill('http://mcp-smoke.invalid/mcp');
+		await dialog.getByRole('button', { name: 'Zapisz', exact: true }).click();
+		console.log(
+			'PASS ISSUE-04 UI: MCP Edit and Delete → bottom Save → reload preserve their exact results'
+		);
+		await page.evaluate(async () => {
+			const { toolsStore } = await import('/src/lib/stores/tools.svelte.ts');
+			const { permissionsStore } = await import('/src/lib/stores/permissions.svelte.ts');
+			toolsStore.toggleTool('builtin:reset-smoke');
+			permissionsStore.allowTool('builtin:reset-smoke');
+		});
+		await dialog.getByRole('button', { name: 'Model', exact: true }).click();
+		assert.equal(await page.locator('#temperature').inputValue(), '0.2');
+		await dialog.getByRole('button', { name: 'Resetuj', exact: true }).click();
+		const confirmation = page.getByRole('alertdialog');
+		await confirmation.waitFor({ state: 'visible' });
+		assert((await confirmation.textContent()).includes('kluczy API'));
+		assert((await confirmation.textContent()).includes('MCP'));
+		await confirmation.getByRole('button', { name: 'Przywróć domyślne', exact: true }).click();
+		await confirmation.waitFor({ state: 'hidden' });
+		smokeEnglish = true;
+		assert(await dialog.isVisible(), 'the settings form must stay open');
+		await dialog.getByRole('button', { name: 'General', exact: true }).waitFor();
+		const checkFullDefaults = async () => {
+			const result = await page.evaluate(async () => {
+				const { SETTING_CONFIG_DEFAULT, GLOBAL_CONFIG_STORAGE_DEFAULT } =
+					await import('/src/lib/constants/settings-config.ts');
+				const { settings, db, conversations } = await import('/tests/browser/charts-harness.ts');
+				const { toolsStore } = await import('/src/lib/stores/tools.svelte.ts');
+				const { permissionsStore } = await import('/src/lib/stores/permissions.svelte.ts');
+				const { mcpStore } = await import('/src/lib/stores/mcp.svelte.ts');
+				return {
+					current: { ...settings.config },
+					defaults: SETTING_CONFIG_DEFAULT,
+					overrides: [...settings.userOverrides],
+					conversations: (await db.getAllConversations()).map((c) => c.id),
+					stored: JSON.parse(localStorage.getItem('LlamaCppWebui.config')),
+					auxiliaryDefaults: Object.entries(GLOBAL_CONFIG_STORAGE_DEFAULT).every(
+						([key, value]) => localStorage.getItem(key) === value
+					),
+					toolsEnabled: toolsStore.isToolEnabled('builtin:reset-smoke'),
+					permissions: [...permissionsStore.tools],
+					pendingReasoning: conversations.pendingReasoningIntent,
+					pendingMcp: conversations.pendingMcpServerOverrides,
+					connectedServers: mcpStore.connectedServerCount
+				};
+			});
+			assert.deepEqual(result.current, result.defaults);
+			delete result.stored.__llampartSettingsVersion;
+			assert.deepEqual(result.stored, JSON.parse(JSON.stringify(result.defaults)));
+			assert.deepEqual(result.overrides, []);
+			assert.equal(result.auxiliaryDefaults, true);
+			assert.equal(result.toolsEnabled, true);
+			assert.deepEqual(result.permissions, []);
+			assert.deepEqual(result.pendingReasoning, { mode: 'default' });
+			assert.deepEqual(result.pendingMcp, []);
+			assert.equal(result.connectedServers, 0);
+			assert(result.conversations.includes(conversationId));
+		};
+		await page.waitForFunction(() => document.documentElement.dataset.llampartUiScale === '100');
+		await checkFullDefaults();
+		await dialog.getByRole('button', { name: 'MCP', exact: true }).click();
+		assert.equal(await dialog.getByText(/mcp-smoke\.invalid/).count(), 0);
+		await dialog.getByRole('button', { name: 'Appearance', exact: true }).click();
+		assert.equal(await page.locator('#uiScale').inputValue(), '100');
+		assert.match(await page.locator('#fontFamily').textContent(), /Merriweather/);
+		assert.match(await page.locator('#fontVariant').textContent(), /Regular — 400/);
+		assert.match(await page.locator('#fontSize').textContent(), /13 px/);
+		await screenshot('full-reset-english-defaults-1920');
+		await close('button');
+		await page.reload();
+		await page.waitForSelector('textarea');
+		await checkFullDefaults();
+		assert.equal(await page.evaluate((key) => localStorage.getItem(key), wallpaperKey), oldPng);
+		await open();
+		for (const section of ['General', 'Appearance', 'Chat', 'Model', 'MCP', 'Tools', 'Advanced'])
+			await dialog.getByRole('button', { name: section, exact: true }).click();
+		console.log(
+			'PASS ISSUE-02: one FULL Reset restores every schema field, English, appearance, MCP=[], empty profiles/keys and overrides; survives reload; conversation history preserved'
+		);
+		assert.deepEqual(errors, []);
+		console.log(
+			'PASS 1920x1080: ISSUE-01–04 focused smoke, reasoning exact levels and unknown-level Auto, table-equivalent chart/diagram eye and preview clicks; no page errors'
+		);
+		return;
+	}
 	const before = await persisted();
 
 	// A/B: actual field handlers + layout runtime, all supported dialog cancellation paths.
@@ -215,8 +592,9 @@ try {
 	await close();
 	console.log('PASS F: late validation cannot commit or close a newer settings session');
 
-	// Editing the form or confirming Reset while validation is pending also invalidates it.
-	for (const action of ['edit', 'reset']) {
+	// Editing during validation invalidates it. Full Reset (including language and
+	// connection deletion) is covered by the focused branch, not a partial-reset test.
+	{
 		validationMode = 'hold';
 		await open();
 		await appearance();
@@ -226,43 +604,20 @@ try {
 		);
 		await save();
 		await request;
-		if (action === 'edit') await page.locator('#uiScale').fill('105');
-		else {
-			await dialog.getByRole('button', { name: 'Resetuj', exact: true }).click();
-			await page.getByRole('button', { name: 'Przywróć domyślne', exact: true }).click();
-		}
+		await page.locator('#uiScale').fill('105');
 		const savedBeforeResult = await persisted();
 		validationMode = 'success';
 		for (const route of heldRoutes) await route.fulfill({ json: models });
 		heldRoutes = [];
 		await page.waitForTimeout(200);
 		assert.equal(await persisted(), savedBeforeResult);
-		assert.equal(await scale(), action === 'edit' ? '105' : '100');
+		assert.equal(await scale(), '105');
 		assert(await dialog.isVisible());
 		await close();
 	}
-	console.log('PASS additional races: edit/reset during pending connection validation');
+	console.log('PASS additional race: edit during pending connection validation');
 
-	// E: the real confirmation footer resets committed settings and discards the old overlay.
-	await open();
-	await appearance();
-	await preview();
-	await dialog.getByRole('button', { name: 'Resetuj', exact: true }).click();
-	await page.getByRole('button', { name: 'Przywróć domyślne', exact: true }).click();
-	await page.waitForFunction(() => document.documentElement.dataset.llampartUiScale === '100');
-	assert.equal(await page.locator('#uiScale').inputValue(), '100');
-	assert.equal(
-		await page
-			.locator('#fontSize')
-			.textContent()
-			.then((s) => s.trim()),
-		'Domyślna'
-	);
-	await close();
-	assert.equal(await scale(), '100');
-	console.log('PASS E: confirmed reset clears the previous preview');
-
-	// C: real Save validates and commits the complete form; values survive a fresh app load.
+	// C: real Save validates and commits changed fields; values survive a fresh app load.
 	await open();
 	await appearance();
 	await preview();
@@ -296,7 +651,7 @@ try {
 		'400'
 	);
 	await screenshot('committed');
-	console.log('PASS C: whole-form commit, reload and family-only font normalization');
+	console.log('PASS C: changed-field commit, reload and family-only font normalization');
 
 	// Custom image bytes are part of the same preview transaction, not written on upload.
 	await open();
@@ -676,6 +1031,10 @@ try {
 	console.log(
 		'PASS independent conversation import/export and nonempty IndexedDB history unchanged; no page errors'
 	);
+}
+
+try {
+	await run();
 } finally {
 	await browser.close();
 }

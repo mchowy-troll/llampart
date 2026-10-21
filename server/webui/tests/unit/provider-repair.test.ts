@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ContentPartType, ReasoningEffort } from '$lib/enums';
+import { ContentPartType } from '$lib/enums';
 import {
 	connectionProtocol,
 	createCapabilitySnapshot
@@ -149,20 +149,26 @@ describe('automatic protocol contract', () => {
 });
 
 describe('shared reasoning and explicit custom extensions', () => {
-	it('maps composer reasoning for both protocols and excludes confirmed unsupported intent', async () => {
+	it('maps composer reasoning for both protocols and rejects confirmed unsupported intent', async () => {
 		const supported = await createCapabilitySnapshot(context, 'exact', {
 			capabilities: { reasoning_effort: { supported: true, values: ['low', 'none'] } }
 		});
 		const options = {
 			...input.options,
 			enableThinking: true,
-			reasoningEffort: ReasoningEffort.LOW
+			reasoningEffort: 'low'
 		};
 		expect(buildChatBody({ ...input, options, capabilities: supported }).reasoning_effort).toBe(
 			'low'
 		);
+		const responses = await createCapabilitySnapshot(context, 'exact', {
+			capabilities: {
+				required_protocol: 'responses',
+				reasoning_effort: { supported: true, values: ['low', 'none'] }
+			}
+		});
 		expect(
-			buildResponsesBody({ ...input, options, capabilities: supported }).reasoning
+			buildResponsesBody({ ...input, options, capabilities: responses }).reasoning
 		).toMatchObject({ effort: 'low' });
 		expect(
 			buildChatBody({
@@ -174,8 +180,8 @@ describe('shared reasoning and explicit custom extensions', () => {
 		const unsupported = await createCapabilitySnapshot(context, 'exact', {
 			capabilities: { reasoning: false, reasoning_effort: false }
 		});
-		expect(buildChatBody({ ...input, options, capabilities: unsupported })).not.toHaveProperty(
-			'reasoning_effort'
+		expect(() => buildChatBody({ ...input, options, capabilities: unsupported })).toThrow(
+			/unavailable/
 		);
 	});
 	it('passes arbitrary flat backend extensions or explicitly rejects confirmed unsupported ones', async () => {

@@ -1,14 +1,5 @@
 <script lang="ts">
-	import {
-		Pencil,
-		Download,
-		Loader2,
-		Square,
-		GitBranch,
-		Clock,
-		Calendar,
-		Pin
-	} from '@lucide/svelte';
+	import { Pencil, Download, Square, GitBranch, Clock, Calendar, Pin } from '@lucide/svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { FORK_TREE_DEPTH_PADDING } from '$lib/constants';
 	import { getAllLoadingChats } from '$lib/stores/chat.svelte';
@@ -233,9 +224,7 @@
 								tabindex="0"
 								aria-label={t('sidebar.stopGeneration')}
 							>
-								<Loader2 class="loading-icon h-3.5 w-3.5 animate-spin" />
-
-								<Square class="stop-icon hidden h-3 w-3 fill-current text-destructive" />
+								<Square class="stop-icon h-3 w-3 fill-current text-destructive" />
 							</div>
 						</Tooltip.Trigger>
 
@@ -342,28 +331,6 @@
 	.conversation-card-actions :global(.conversation-action-button),
 	.conversation-pin-button {
 		color: var(--llampart-sidebar-conversation-control-foreground);
-	}
-
-	.conversation-item {
-		.stop-button {
-			:global(.stop-icon) {
-				display: none;
-			}
-
-			:global(.loading-icon) {
-				display: block;
-			}
-		}
-
-		&:is(:hover) .stop-button {
-			:global(.stop-icon) {
-				display: block;
-			}
-
-			:global(.loading-icon) {
-				display: none;
-			}
-		}
 	}
 
 	.conversation-timestamp-badge,

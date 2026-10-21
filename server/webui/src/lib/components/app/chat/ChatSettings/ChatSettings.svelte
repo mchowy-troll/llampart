@@ -1,5 +1,12 @@
 <script lang="ts">
-	import { FONT_SIZES, getFontVariants, normalizeFontVariant } from '$lib/utils/typography';
+	import {
+		FONT_SIZES,
+		resolveFontFamily,
+		resolveFontSize,
+		getFontVariants,
+		normalizeFontVariant
+	} from '$lib/utils/typography';
+	import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
 	import { connectionErrorMessage } from '$lib/utils/connection-error-message';
 	import {
 		Settings,
@@ -21,7 +28,7 @@
 	import McpServersSettings from '$lib/components/app/mcp/McpServersSettings.svelte';
 	import { ScrollArea } from '$lib/components/ui/scroll-area';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
-	import { config, settingsStore } from '$lib/stores/settings.svelte';
+	import { config, settingsStore, SettingsPersistenceError } from '$lib/stores/settings.svelte';
 	import {
 		SETTINGS_SECTION_TITLES,
 		type SettingsSectionTitle,
@@ -119,7 +126,7 @@
 		return PROVIDER_CONNECTION_SETTING_KEYS[normalizeProviderId(providerId)];
 	}
 
-	const settingSections: SettingsSectionConfig[] = [
+	let settingSections: SettingsSectionConfig[] = $derived([
 		{
 			title: SETTINGS_SECTION_TITLES.GENERAL,
 			icon: Settings,
@@ -299,30 +306,38 @@
 							label: t('settings.fieldFontFamily'),
 							type: SettingsFieldType.SELECT,
 							options: [
-								{ value: 'default', label: t('settings.fontDefault') },
 								{ value: 'merriweather', label: 'Merriweather' },
 								{ value: 'frank-ruhl-libre', label: 'Frank Ruhl Libre' },
 								{ value: 'crimson-text', label: 'Crimson Text' },
 								{ value: 'libre-caslon-condensed', label: 'Libre Caslon Condensed' },
 								{ value: 'fira-sans', label: 'Fira Sans' }
-							]
+							].map((option) => ({
+								...option,
+								label:
+									option.value === SETTING_CONFIG_DEFAULT.fontFamily
+										? t('settings.fontDefault').replace('{font}', option.label)
+										: option.label
+							}))
 						},
 						{
 							key: SETTINGS_KEYS.FONT_VARIANT,
 							order: 2,
 							label: t('settings.fieldFontVariant'),
 							type: SettingsFieldType.SELECT,
-							options: getFontVariants('merriweather')
+							options: fontVariantOptions(SETTING_CONFIG_DEFAULT.fontFamily)
 						},
 						{
 							key: SETTINGS_KEYS.FONT_SIZE,
 							order: 3,
 							label: t('settings.fieldFontSize'),
 							type: SettingsFieldType.SELECT,
-							options: [
-								{ value: 'default', label: t('settings.fontDefault') },
-								...FONT_SIZES.map((value) => ({ value, label: `${value} px` }))
-							]
+							options: FONT_SIZES.map((value) => ({
+								value,
+								label:
+									value === SETTING_CONFIG_DEFAULT.fontSize
+										? t('settings.fontSizeDefault').replace('{size}', value)
+										: `${value} px`
+							}))
 						}
 					]
 				},
@@ -819,12 +834,20 @@
 				}
 			]
 		}
-	];
+	]);
 
 	let activeSection = $derived<SettingsSectionTitle>(
 		initialSection ?? SETTINGS_SECTION_TITLES.GENERAL
 	);
 	let localConfig: SettingsConfigType = $state({ ...config() });
+	// Project historical sentinels for display only: opening Settings must not
+	// dirty the form or rewrite saved preferences. New choices use concrete IDs.
+	let displayedConfig = $derived({
+		...localConfig,
+		fontFamily: resolveFontFamily(localConfig.fontFamily),
+		fontVariant: normalizeFontVariant(localConfig.fontFamily, localConfig.fontVariant),
+		fontSize: resolveFontSize(localConfig.fontSize)
+	});
 	let previewSession: symbol | undefined;
 	let formRevision = 0;
 
@@ -910,6 +933,17 @@
 		return field;
 	}
 
+	function fontVariantOptions(family: unknown) {
+		return getFontVariants(family).map((option) => ({
+			...option,
+			label:
+				resolveFontFamily(family) === SETTING_CONFIG_DEFAULT.fontFamily &&
+				option.value === SETTING_CONFIG_DEFAULT.fontVariant
+					? t('settings.fontVariantDefault').replace('{variant}', option.label)
+					: option.label
+		}));
+	}
+
 	function getVisibleFields(fields: SettingsFieldConfig[]): SettingsFieldConfig[] {
 		return fields
 			.filter((field) => supportsVisibleForProviders(field.visibleForProviders))
@@ -919,10 +953,7 @@
 				field.key === SETTINGS_KEYS.FONT_VARIANT
 					? {
 							...field,
-							options:
-								localConfig.fontFamily === 'default'
-									? getFontVariants('merriweather').slice(0, 1)
-									: getFontVariants(localConfig.fontFamily)
+							options: fontVariantOptions(localConfig.fontFamily)
 						}
 					: field
 			)
@@ -992,6 +1023,9 @@
 		formRevision += 1;
 		const nextConfig = { ...localConfig, [key]: value };
 		if (key === SETTINGS_KEYS.FONT_FAMILY || key === SETTINGS_KEYS.FONT_VARIANT) {
+			// Editing a projected legacy selection makes the chosen family concrete,
+			// so all its real weights are selectable without migrating untouched data.
+			nextConfig.fontFamily = resolveFontFamily(nextConfig.fontFamily);
 			nextConfig.fontVariant = normalizeFontVariant(nextConfig.fontFamily, nextConfig.fontVariant);
 		}
 
@@ -1014,7 +1048,9 @@
 		if (previewSession) {
 			settingsStore.updatePreview(previewSession, {
 				[key]: nextConfig[key],
-				...(key === SETTINGS_KEYS.FONT_FAMILY ? { fontVariant: nextConfig.fontVariant } : {})
+				...(key === SETTINGS_KEYS.FONT_FAMILY || key === SETTINGS_KEYS.FONT_VARIANT
+					? { fontFamily: nextConfig.fontFamily, fontVariant: nextConfig.fontVariant }
+					: {})
 			});
 		}
 	}
@@ -1046,8 +1082,11 @@
 			}
 		}
 
-		// Convert numeric strings to numbers for numeric fields
-		const processedConfig = { ...localConfig };
+		// Diff before normalization: the form snapshot is not application state.
+		const processedConfig = settingsStore.getPreviewChanges(session, localConfig);
+		// These aliases are projections of provider-owned profile fields, not edits.
+		delete processedConfig.serverBaseUrl;
+		delete processedConfig.apiKey;
 
 		for (const field of NUMERIC_FIELDS) {
 			if (processedConfig[field] !== undefined && processedConfig[field] !== '') {
@@ -1067,15 +1106,18 @@
 			}
 		}
 
-		const providerConnectionKeys = getConnectionKeys(processedConfig.apiProvider);
-		processedConfig[SETTINGS_KEYS.SERVER_BASE_URL] =
-			processedConfig[providerConnectionKeys.serverBaseUrl] ?? '';
-		processedConfig[SETTINGS_KEYS.API_KEY] = processedConfig[providerConnectionKeys.apiKey] ?? '';
+		const candidate = { ...config(), ...processedConfig };
+		const providerConnectionKeys = getConnectionKeys(candidate.apiProvider);
+		const connectionRead = Object.fromEntries(
+			['apiProvider', providerConnectionKeys.serverBaseUrl, providerConnectionKeys.apiKey].map(
+				(key) => [key, config()[key]]
+			)
+		);
 
 		const connectionValidation = await validateConnectionSettings(
-			String(processedConfig[providerConnectionKeys.serverBaseUrl] || ''),
-			String(processedConfig[providerConnectionKeys.apiKey] || ''),
-			String(processedConfig.apiProvider || '')
+			String(candidate[providerConnectionKeys.serverBaseUrl] || ''),
+			String(candidate[providerConnectionKeys.apiKey] || ''),
+			String(candidate.apiProvider || '')
 		);
 		// Closing, resetting, editing or starting another save invalidates this result.
 		if (!active || revision !== formRevision || !settingsStore.isPreviewCurrent(session)) return;
@@ -1093,17 +1135,25 @@
 		}
 
 		try {
-			const result = settingsStore.commitPreview(session, processedConfig);
+			const result = settingsStore.commitPreview(session, processedConfig, connectionRead);
 			if (!result.ok) {
 				if (result.reason === 'resource') {
 					localConfig = { ...localConfig, ...result.configPatch };
 					showSettingsWarning(t(result.messageKey));
 				}
+				if (result.reason === 'conflict')
+					showSettingsWarning(t('settings.concurrentSettingsConflict'));
 				return;
 			}
 			previewSession = undefined;
 		} catch (error) {
-			showSettingsWarning(error instanceof Error ? error.message : t('settings.enterValidNumber'));
+			showSettingsWarning(
+				error instanceof SettingsPersistenceError
+					? t(error.messageKey)
+					: error instanceof Error
+						? error.message
+						: t('settings.enterValidNumber')
+			);
 			return;
 		}
 		onSave?.();
@@ -1168,7 +1218,7 @@
 										layout={group.layout}
 										fillMode={group.fillMode}
 										subgroups={group.subgroups}
-										{localConfig}
+										localConfig={displayedConfig}
 										onConfigChange={handleConfigChange}
 										onThemeChange={handleThemeChange}
 									/>
@@ -1197,7 +1247,7 @@
 										layout={group.layout}
 										fillMode={group.fillMode}
 										subgroups={group.subgroups}
-										{localConfig}
+										localConfig={displayedConfig}
 										onConfigChange={handleConfigChange}
 										onThemeChange={handleThemeChange}
 									/>

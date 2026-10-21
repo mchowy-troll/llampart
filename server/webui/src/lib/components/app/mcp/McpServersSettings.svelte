@@ -11,6 +11,7 @@
 	import { MCP_SERVER_ID_PREFIX } from '$lib/constants';
 	import { HealthCheckStatus } from '$lib/enums';
 	import { t } from '$lib/i18n';
+	import { SettingsPersistenceError } from '$lib/stores/settings.svelte';
 
 	let servers = $derived(mcpStore.getServersSorted());
 
@@ -37,6 +38,7 @@
 	let isAddingServer = $state(false);
 	let newServerUrl = $state('');
 	let newServerHeaders = $state('');
+	let saveError = $state('');
 	let newServerUrlError = $derived.by(() => {
 		if (!newServerUrl.trim()) return t('mcp.urlRequired');
 		try {
@@ -49,6 +51,7 @@
 	});
 
 	function showAddServerForm() {
+		saveError = '';
 		isAddingServer = true;
 		newServerUrl = '';
 		newServerHeaders = '';
@@ -65,12 +68,18 @@
 
 		const newServerId = uuid() ?? `${MCP_SERVER_ID_PREFIX}-${Date.now()}`;
 
-		mcpStore.addServer({
-			id: newServerId,
-			enabled: true,
-			url: newServerUrl.trim(),
-			headers: newServerHeaders.trim() || undefined
-		});
+		try {
+			mcpStore.addServer({
+				id: newServerId,
+				enabled: true,
+				url: newServerUrl.trim(),
+				headers: newServerHeaders.trim() || undefined
+			});
+		} catch (error) {
+			saveError =
+				error instanceof SettingsPersistenceError ? error.messageKey : 'settings.storageSaveError';
+			return;
+		}
 
 		conversationsStore.setMcpServerOverride(newServerId, true);
 
@@ -124,6 +133,7 @@
 						Add
 					</Button>
 				</div>
+				{#if saveError}<p role="alert" class="text-sm text-destructive">{t(saveError)}</p>{/if}
 			</div>
 		</Card.Root>
 	{/if}

@@ -12,6 +12,8 @@
 	import McpServerCardToolsList from '$lib/components/app/mcp/McpServerCard/McpServerCardToolsList.svelte';
 	import McpConnectionLogs from '$lib/components/app/mcp/McpConnectionLogs.svelte';
 	import McpServerInfo from '$lib/components/app/mcp/McpServerInfo.svelte';
+	import { SettingsPersistenceError } from '$lib/stores/settings.svelte';
+	import { t } from '$lib/i18n';
 
 	interface Props {
 		server: MCPServerSettingsEntry;
@@ -56,6 +58,7 @@
 
 	let isEditing = $derived(!server.url.trim());
 	let showDeleteDialog = $state(false);
+	let saveError = $state('');
 	let editFormRef: McpServerCardEditForm | null = $state(null);
 
 	function handleHealthCheck() {
@@ -63,6 +66,7 @@
 	}
 
 	async function startEditing() {
+		saveError = '';
 		isEditing = true;
 		await tick();
 		editFormRef?.setInitialValues(server.url, server.headers || '', server.useProxy || false);
@@ -72,16 +76,23 @@
 		if (server.url.trim()) {
 			isEditing = false;
 		} else {
-			onDelete();
+			confirmDelete();
 		}
 	}
 
 	function saveEditing(url: string, headers: string, useProxy: boolean) {
-		onUpdate({
-			url: url,
-			headers: headers || undefined,
-			useProxy: useProxy
-		});
+		try {
+			onUpdate({
+				url: url,
+				headers: headers || undefined,
+				useProxy: useProxy
+			});
+		} catch (error) {
+			saveError =
+				error instanceof SettingsPersistenceError ? error.messageKey : 'settings.storageSaveError';
+			return;
+		}
+		saveError = '';
 		isEditing = false;
 
 		if (server.enabled && url) {
@@ -90,11 +101,24 @@
 	}
 
 	function handleDeleteClick() {
+		saveError = '';
 		showDeleteDialog = true;
+	}
+
+	function confirmDelete(): boolean {
+		try {
+			onDelete();
+			return true;
+		} catch (error) {
+			saveError =
+				error instanceof SettingsPersistenceError ? error.messageKey : 'settings.storageSaveError';
+			return false;
+		}
 	}
 </script>
 
 <Card.Root class="!gap-3 rounded-2xl border border-border bg-background p-4 shadow-none">
+	{#if saveError}<p role="alert" class="text-sm text-destructive">{t(saveError)}</p>{/if}
 	{#if isEditing}
 		<McpServerCardEditForm
 			bind:this={editFormRef}
@@ -186,5 +210,6 @@
 	bind:open={showDeleteDialog}
 	{displayName}
 	onOpenChange={(open) => (showDeleteDialog = open)}
-	onConfirm={onDelete}
+	errorMessage={saveError ? t(saveError) : ''}
+	onConfirm={confirmDelete}
 />

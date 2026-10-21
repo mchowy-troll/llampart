@@ -23,6 +23,8 @@ export const de: TranslationDictionary = {
 		share: 'Anteil'
 	},
 	common: {
+		resetFailed:
+			'Die Einstellungen konnten nicht gespeichert werden. Das Zurücksetzen wurde nicht abgeschlossen; bitte erneut versuchen.',
 		showCode: 'Code anzeigen',
 		saveSettings: 'Einstellungen speichern',
 		save: 'Speichern',
@@ -39,7 +41,7 @@ export const de: TranslationDictionary = {
 		resetToDefault: 'Auf Standard zurücksetzen',
 		resetSettingsToDefault: 'Einstellungen auf Standard zurücksetzen',
 		resetSettingsDescription:
-			'Sind Sie sicher, dass Sie alle Einstellungen auf die Standardwerte zurücksetzen möchten? Dadurch werden alle Parameter auf die vom /props-Endpunkt des Servers bereitgestellten Werte zurückgesetzt und alle benutzerdefinierten Konfigurationen entfernt.',
+			'ALLE Anwendungseinstellungen zurücksetzen? Dabei werden auch MCP-Server, Anbieterprofile, gespeicherte Serveradressen und API-Schlüssel entfernt sowie Englisch und das Standardaussehen wiederhergestellt. Der Gesprächsverlauf bleibt erhalten. Generierungsparameter verwenden die Vorgaben der daraus resultierenden Serververbindung.',
 		or: 'oder',
 		openWebsite: 'Website öffnen',
 		searchEllipsis: 'Suchen...',
@@ -172,6 +174,12 @@ export const de: TranslationDictionary = {
 		enterNewConversationName: 'Neuen Namen eingeben'
 	},
 	settings: {
+		storageSaveError:
+			'Die Einstellungen konnten nicht im Browserspeicher gespeichert werden. Ihre Änderungen bleiben geöffnet; prüfen Sie freien Speicherplatz und Browserberechtigungen und versuchen Sie es erneut.',
+		storageRollbackError:
+			'Das Speichern ist fehlgeschlagen und die vorherigen gespeicherten Einstellungen konnten nicht vollständig wiederhergestellt werden. Die Änderungen wurden im Arbeitsspeicher nicht übernommen. Der Browserspeicher kann inkonsistent sein; versuchen Sie das Speichern vor dem Neuladen erneut. Hintergrundbilder werden separat gespeichert.',
+		concurrentSettingsConflict:
+			'Diese Einstellungen wurden außerhalb dieses Formulars geändert. Nichts wurde gespeichert. Schließe und öffne die Einstellungen erneut, um die aktuellen Werte vor der nächsten Bearbeitung zu prüfen.',
 		sectionGeneral: 'Allgemein',
 		sectionDisplay: 'Anzeige',
 		sectionSampling: 'Sampling',
@@ -210,7 +218,11 @@ export const de: TranslationDictionary = {
 		fieldFontFamily: 'Schriftfamilie',
 		fieldFontVariant: 'Schriftvariante',
 		fieldFontSize: 'Schriftgröße',
-		fontDefault: 'Standard',
+		fontDefault: '{font} (Standard)',
+		fontVariantDefault: '{variant} (Standard)',
+		fontSizeDefault: '{size} px (Standard)',
+		propsSyncStorageError:
+			'Die Servervorgaben konnten nicht gespeichert werden. Die bisherigen Einstellungen bleiben aktiv. Die Synchronisierung kann bei der nächsten Aktualisierung erneut versucht werden.',
 		defaultPrefix: 'Standard:',
 		resetToDefault: 'Auf Standard zurücksetzen',
 		selected: 'Ausgewählt',
@@ -442,10 +454,10 @@ export const de: TranslationDictionary = {
 			interfaceLanguage:
 				'Wählen Sie die Sprache der Oberfläche. Englisch ist beim ersten Start die Standardsprache.',
 			uiScale: 'Skaliert die Desktop-Oberfläche von 90% bis 110% in 5%-Schritten.',
-			fontFamily: 'Lokale Schrift. Standard bewahrt die bisherige Typografie.',
+			fontFamily: 'Lokale Schrift. Die werkseitige Schriftfamilie ist als Standard gekennzeichnet.',
 			fontVariant: 'Echte Grundstärke. Hervorhebungen und Code-Schriften bleiben erhalten.',
 			fontSize:
-				'Basisschriftgröße in px, unabhängig von der Oberflächenskalierung. Standard behält die bisherige responsive Größe bei.',
+				'Basisschriftgröße in px, unabhängig von der Oberflächenskalierung. Die werkseitige Größe ist als Standard gekennzeichnet.',
 			pasteLongTextToFileLen:
 				'Beim Einfügen von langem Text wird dieser in eine Datei umgewandelt. Mit diesem Wert steuern Sie die Länge. Wert 0 deaktiviert dieses Verhalten.',
 			copyTextAttachmentsAsPlainText:
@@ -624,21 +636,31 @@ export const de: TranslationDictionary = {
 		reasoningEffortTitle: 'Reasoning-Aufwand',
 		reasoningLabel: 'Reasoning',
 		reasoningEnabled: 'Ein',
-		reasoningCustomConflict:
-			'Konflikt bei der Reasoning-Steuerung: Entferne Reasoning-Parameter aus Custom JSON oder wähle ein Modell ohne automatische Steuerung. Die Anfrage wurde nicht gesendet.',
+		reasoningDefault: 'Standard / Auto',
+		reasoningUnavailable:
+			'Die gespeicherte Reasoning-Auswahl ist für diese Quelle/dieses Modell/Protokoll nicht verfügbar. Wählen Sie Standard/Auto oder eine unterstützte Option.',
+		reasoningDeclarationTitle: 'Erweitert: Effort-Stufen angeben',
+		reasoningDeclarationHint:
+			'Geben Sie die vom Backend dokumentierten exakten Werte kommagetrennt ein. Dies ist Ihre Angabe, keine automatische Erkennung. Sie gilt nur für diese Verbindung, dieses Modell, Protokoll und diese Vorlage/Serverversion; die Akzeptanz wird nicht geprüft.',
+		reasoningDeclarationInvalid:
+			'Geben Sie 1–16 eindeutige Stufennamen ein (Buchstaben, Ziffern, Punkt, Bindestrich oder Unterstrich; jeweils höchstens 64 Zeichen).',
+		reasoningDeclarationApply: 'Angabe speichern',
+		reasoningDeclarationClear: 'Angabe entfernen',
+		reasoningDeclarationUser: 'Von Ihnen angegebene Effort-Stufen, nicht automatisch geprüft.',
+		reasoningUnknown:
+			'Das Backend hat keine Reasoning-Fähigkeiten angegeben. Die Servervorgaben bleiben erhalten.',
+		reasoningLevelsUnknown:
+			'Reasoning wird unterstützt, aber das Backend hat keine zulässigen Aufwandsstufen angegeben.',
 		reasoningConfigureHint: 'Zum Konfigurieren klicken.',
-		reasoningDisabledTooltip: 'Reasoning deaktiviert',
 		reasoningEffort: {
+			minimal: 'Minimal',
+			xhigh: 'Sehr hoch',
 			off: 'Aus',
 			low: 'Niedrig',
 			medium: 'Mittel',
 			high: 'Hoch',
 			max: 'Max'
 		},
-		reasoningUnlimited: 'Unbegrenzt',
-		reasoningMaxTokensPrefix: 'Max.',
-		reasoningMaxTokensSuffix: 'Tokens',
-		reasoningMaxInfo: 'Maximaler Reasoning-Aufwand mit erweiterter Kontextnutzung',
 		pdfVisionSuggestion:
 			'Du kannst die Verarbeitung von PDFs als Bilder für Vision-Modelle aktivieren.',
 		pdfVisionSuggestionAction: 'PDF als Bilder aktivieren',

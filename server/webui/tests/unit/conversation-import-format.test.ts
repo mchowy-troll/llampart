@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AttachmentType, ReasoningEffort } from '$lib/enums';
+import { AttachmentType } from '$lib/enums';
 import {
 	createConversationExportEnvelope,
 	parseConversationImport
@@ -33,7 +33,7 @@ describe('conversation import format', () => {
 				lastModified: 2,
 				pinned: true,
 				thinkingEnabled: true,
-				reasoningEffort: ReasoningEffort.HIGH,
+				reasoningEffort: 'high',
 				mcpServerOverrides: [{ serverId: 'mcp', enabled: true }]
 			},
 			messages: [

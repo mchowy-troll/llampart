@@ -21,6 +21,7 @@
  */
 
 import { ChatService } from '$lib/services/chat.service';
+import { requestReasoningIntent } from '$lib/services/providers/reasoning';
 import { getApiProviderCapabilities } from '$lib/services/providers';
 import { config } from '$lib/stores/settings.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
@@ -301,7 +302,11 @@ class AgenticStore {
 			options.providerRequestContext ??
 			ChatService.createProviderRequestContext();
 		const operationModel =
-			options.operationModel ?? ChatService.captureOperationModel(requestContext, options.model);
+			options.operationModel ??
+			ChatService.captureOperationModel(requestContext, options.model, undefined, {
+				conversationId,
+				reasoning: requestReasoningIntent(options)
+			});
 		const flowController = new AbortController();
 		this.flowControllers.get(conversationId)?.abort();
 		this.flowControllers.set(conversationId, flowController);

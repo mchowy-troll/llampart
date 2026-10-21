@@ -3,7 +3,7 @@ import { MessageRole, MessageType } from '$lib/enums';
 import { ChatService } from '$lib/services/chat.service';
 import { DatabaseService } from '$lib/services/database.service';
 import { agenticStore } from '$lib/stores/agentic.svelte';
-import { chatStore } from '$lib/stores/chat.svelte';
+import { chatStore, type GenerationModel } from '$lib/stores/chat.svelte';
 import { conversationsStore } from '$lib/stores/conversations.svelte';
 
 function message(
@@ -118,6 +118,10 @@ describe('ChatStore database cleanup', () => {
 
 	it('cleans up a failed assistant even after another conversation becomes active', async () => {
 		vi.spyOn(console, 'error').mockImplementation(() => undefined);
+		conversationsStore.activeConversation = { id: 'stream-conversation' } as DatabaseConversation;
+		const binding = (
+			chatStore as unknown as { captureGenerationModel(): GenerationModel }
+		).captureGenerationModel();
 		conversationsStore.activeConversation = {
 			id: 'other-conversation',
 			name: 'Other',
@@ -136,10 +140,13 @@ describe('ChatStore database cleanup', () => {
 			chatStore as unknown as {
 				streamChatCompletion: (
 					messages: DatabaseMessage[],
-					assistant: DatabaseMessage
+					assistant: DatabaseMessage,
+					onComplete: undefined,
+					onError: undefined,
+					binding: GenerationModel
 				) => Promise<void>;
 			}
-		).streamChatCompletion([], failedAssistant);
+		).streamChatCompletion([], failedAssistant, undefined, undefined, binding);
 
 		expect(deleteBranch).toHaveBeenCalledWith(
 			'stream-conversation',
@@ -245,10 +252,21 @@ describe('ChatStore database cleanup', () => {
 			chatStore as unknown as {
 				streamChatCompletion: (
 					messages: DatabaseMessage[],
-					assistant: DatabaseMessage
+					assistant: DatabaseMessage,
+					onComplete: undefined,
+					onError: undefined,
+					binding: GenerationModel
 				) => Promise<void>;
 			}
-		).streamChatCompletion([user], assistant);
+		).streamChatCompletion(
+			[user],
+			assistant,
+			undefined,
+			undefined,
+			(
+				chatStore as unknown as { captureGenerationModel(): GenerationModel }
+			).captureGenerationModel()
+		);
 
 		expect(deleteBranch).not.toHaveBeenCalled();
 		expect(conversationsStore.activeMessages.map((item) => item.id)).toEqual([

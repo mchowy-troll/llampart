@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CONFIG_LOCALSTORAGE_KEY, SETTING_CONFIG_DEFAULT } from '$lib/constants';
+import {
+	CONFIG_LOCALSTORAGE_KEY,
+	SETTING_CONFIG_DEFAULT,
+	GLOBAL_CONFIG_STORAGE_DEFAULT
+} from '$lib/constants';
 import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
+import { mcpStore } from '$lib/stores/mcp.svelte';
 import {
 	RESPONSE_PREFERENCES,
 	buildResponsePreferenceInstructions
@@ -96,6 +101,254 @@ afterEach(() => {
 });
 
 describe('settings preview through the real store', () => {
+	it.each(['add', 'edit', 'remove'] as const)(
+		'preserves immediate MCP %s through main Save and reload',
+		(operation) => {
+			if (operation !== 'add')
+				mcpStore.addServer({
+					id: 'mcp-test',
+					url: 'http://mock.invalid/mcp',
+					enabled: true,
+					headers: 'X-Test: kept'
+				});
+			const session = settingsStore.beginPreview();
+			const draft = { ...config() };
+			if (operation === 'add')
+				mcpStore.addServer({
+					id: 'mcp-test',
+					url: 'http://mock.invalid/mcp',
+					enabled: true,
+					headers: 'X-Test: kept'
+				});
+			if (operation === 'edit')
+				mcpStore.updateServer('mcp-test', {
+					url: 'http://edited.invalid/mcp',
+					headers: 'X-Test: edited'
+				});
+			if (operation === 'remove') mcpStore.removeServer('mcp-test');
+			const latest = config().mcpServers;
+			expect(settingsStore.getPreviewChanges(session, draft)).toEqual({});
+			expect(settingsStore.commitPreview(session, draft)).toEqual({ ok: true });
+			expect(config().mcpServers).toBe(latest);
+			settingsStore.initialize();
+			expect(config().mcpServers).toBe(latest);
+			expect(mcpStore.getServers()).toHaveLength(operation === 'remove' ? 0 : 1);
+			if (operation === 'edit')
+				expect(mcpStore.getServers()[0]).toMatchObject({
+					id: 'mcp-test',
+					url: 'http://edited.invalid/mcp',
+					headers: 'X-Test: edited'
+				});
+		}
+	);
+	it('merges independent appearance edits with MCP additions without dirtying the opening snapshot', () => {
+		const session = settingsStore.beginPreview();
+		const draft = { ...config(), fontFamily: 'fira-sans', fontVariant: '700', uiScale: '105' };
+		settingsStore.updatePreview(session, draft);
+		mcpStore.addServer({ id: 'new', url: 'http://mock.invalid/mcp', enabled: true });
+		expect(Object.keys(settingsStore.getPreviewChanges(session, draft)).sort()).toEqual([
+			'fontFamily',
+			'fontVariant',
+			'uiScale'
+		]);
+		expect(
+			settingsStore.commitPreview(session, settingsStore.getPreviewChanges(session, draft))
+		).toEqual({ ok: true });
+		settingsStore.initialize();
+		expect(config()).toMatchObject({
+			fontFamily: 'fira-sans',
+			fontVariant: '700',
+			uiScale: '105'
+		});
+		expect(mcpStore.getServers()[0].id).toBe('new');
+	});
+	it('Cancel/close discards only appearance preview, not immediate MCP writes', () => {
+		const session = settingsStore.beginPreview();
+		settingsStore.updatePreview(session, { uiScale: '110' });
+		mcpStore.addServer({ id: 'new', url: 'http://mock.invalid/mcp', enabled: true });
+		settingsStore.cancelPreview(session);
+		settingsStore.initialize();
+		expect(config().uiScale).toBe('100');
+		expect(mcpStore.getServers()[0].id).toBe('new');
+	});
+	it('preserves MCP updates arriving while Save awaits validation', async () => {
+		const session = settingsStore.beginPreview();
+		const patch = settingsStore.getPreviewChanges(session, { ...config(), uiScale: '105' });
+		let validated!: () => void;
+		const validation = new Promise<void>((resolve) => {
+			validated = resolve;
+		});
+		const save = async () => {
+			await validation;
+			return settingsStore.commitPreview(session, patch);
+		};
+		const pending = save();
+		mcpStore.addServer({ id: 'during-validation', url: 'http://mock.invalid/mcp', enabled: true });
+		validated();
+		expect(await pending).toEqual({ ok: true });
+		settingsStore.initialize();
+		expect(config().uiScale).toBe('105');
+		expect(mcpStore.getServers()[0].id).toBe('during-validation');
+	});
+	it('rejects same-field conflicts before committing config or appearance assets', () => {
+		const session = settingsStore.beginPreview();
+		settingsStore.updatePreview(session, { uiScale: '110' });
+		settingsStore.updateConfig('uiScale', '105');
+		expect(settingsStore.commitPreview(session, { uiScale: '110' })).toEqual({
+			ok: false,
+			reason: 'conflict',
+			keys: ['uiScale']
+		});
+		expect(config().uiScale).toBe('105');
+		expect(settingsStore.isPreviewCurrent(session)).toBe(true);
+		expect(settingsStore.appearanceConfig.uiScale).toBe('110');
+	});
+	it('rejects changed connection read-set after async validation without losing MCP', () => {
+		const session = settingsStore.beginPreview();
+		const expected = {
+			apiProvider: config().apiProvider,
+			llamaServerBaseUrl: config().llamaServerBaseUrl
+		};
+		settingsStore.updateConfig('llamaServerBaseUrl', 'http://changed.invalid');
+		mcpStore.addServer({ id: 'new', url: 'http://mock.invalid/mcp', enabled: true });
+		expect(settingsStore.commitPreview(session, { uiScale: '105' }, expected)).toMatchObject({
+			ok: false,
+			reason: 'conflict'
+		});
+		expect(config().uiScale).toBe('100');
+		expect(mcpStore.getServers()[0].id).toBe('new');
+	});
+	it('keeps provider profiles and MCP across settings import and ordinary Save', () => {
+		mcpStore.addServer({
+			id: 'kept',
+			url: 'http://mock.invalid/mcp',
+			enabled: true,
+			headers: 'X-Key: kept'
+		});
+		settingsStore.updateMultipleConfig({
+			serverBaseUrl: 'http://saved.invalid',
+			apiKey: 'kept',
+			vllmBaseUrl: 'http://vllm.invalid',
+			vllmApiKey: 'kept-vllm'
+		});
+		const mcp = config().mcpServers;
+		const session = settingsStore.beginPreview();
+		const draft = { ...config(), uiScale: '105' };
+		importApplicationSettings(
+			JSON.stringify({
+				type: 'llampart-settings-export',
+				formatVersion: 1,
+				settings: { fontSize: '18', mcpServers: '[]', apiKey: 'discarded' }
+			})
+		);
+		expect(
+			settingsStore.commitPreview(session, settingsStore.getPreviewChanges(session, draft))
+		).toEqual({ ok: true });
+		settingsStore.initialize();
+		expect(config()).toMatchObject({
+			mcpServers: mcp,
+			serverBaseUrl: 'http://saved.invalid',
+			apiKey: 'kept',
+			vllmBaseUrl: 'http://vllm.invalid',
+			vllmApiKey: 'kept-vllm',
+			fontSize: '18',
+			uiScale: '105'
+		});
+	});
+	it('fully resets every central configuration field, MCP, profiles and overrides; preserves assets and reload defaults', () => {
+		serverStore.props = {
+			default_generation_settings: { params: { temperature: 0.8, backend_sampling: true } },
+			ui_settings: { showMessageStats: false }
+		} as unknown as ApiLlamaCppServerProps;
+		settingsStore.updateMultipleConfig({
+			temperature: 0.2,
+			backend_sampling: false,
+			showMessageStats: true,
+			serverBaseUrl: 'http://saved.test',
+			apiKey: 'saved-key',
+			openAiCompatibleBaseUrl: 'https://openai.test/v1',
+			openAiCompatibleApiKey: 'openai-key',
+			vllmBaseUrl: 'http://vllm.test',
+			vllmApiKey: 'vllm-key',
+			responsePrefCharts: true,
+			uiScale: '105',
+			fontFamily: 'merriweather',
+			fontVariant: '700',
+			fontSize: '18',
+			frostedGlassWallpaper: CUSTOM_FROSTED_GLASS_WALLPAPER_ID,
+			frostedGlassMilkiness: 12,
+			frostedGlassOpaque: true,
+			custom: '{"seed":42}'
+		});
+		settingsStore.updateMultipleConfig({
+			interfaceLanguage: 'pl',
+			sendOnEnter: false,
+			agenticMaxTurns: 42,
+			mcpServers: '[{"id":"reset","enabled":true,"url":"http://mock.invalid/mcp"}]'
+		});
+		const image = 'data:image/png;base64,b3JpZ2luYWw=';
+		setCustomFrostedGlassWallpaperSrc(image);
+		storage.set('unrelated-conversations-sentinel', 'untouched-history');
+		const session = settingsStore.beginPreview();
+		settingsStore.updatePreview(session, { uiScale: '110' });
+		settingsStore.resetConfig();
+		expect(config()).toEqual(SETTING_CONFIG_DEFAULT);
+		expect(mcpStore.getServers()).toEqual([]);
+		expect(settingsStore.isPreviewCurrent(session)).toBe(false);
+		expect([...settingsStore.userOverrides]).toEqual([]);
+		expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toEqual(config());
+		const committed = { ...config() };
+		settingsStore.initialize();
+		expect(config()).toEqual(committed);
+		expect(storage.get(CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY)).toBe(image);
+		expect(storage.get('unrelated-conversations-sentinel')).toBe('untouched-history');
+		const refreshed = settingsStore.beginPreview();
+		expect(settingsStore.appearanceConfig).toEqual(config());
+		expect(settingsStore.commitPreview(refreshed, { showMessageStats: true })).toEqual({
+			ok: true
+		});
+	});
+	it('uses only the new source server defaults after full Reset, never invalid boolean sentinels', () => {
+		settingsStore.updateConfig('serverBaseUrl', 'http://discarded.invalid');
+		settingsStore.resetConfig();
+		serverStore.clear();
+		serverStore.props = {
+			default_generation_settings: { params: { temperature: 0.8, backend_sampling: true } }
+		} as unknown as ApiLlamaCppServerProps;
+		settingsStore.syncWithServerDefaults();
+		expect(config().temperature).toBeUndefined();
+		expect(config().backend_sampling).toBe(true);
+		expect([...settingsStore.userOverrides]).toEqual([]);
+		settingsStore.initialize();
+		expect(config().backend_sampling).toBe(true);
+	});
+	it('resets centrally registered global tool permissions and new-chat defaults without clearing unrelated data', () => {
+		for (const key of Object.keys(GLOBAL_CONFIG_STORAGE_DEFAULT)) storage.set(key, 'custom');
+		storage.set('LlamaCppWebui.resumableStreams', 'unrelated');
+		settingsStore.resetConfig();
+		for (const [key, value] of Object.entries(GLOBAL_CONFIG_STORAGE_DEFAULT))
+			expect(storage.get(key) ?? null).toBe(value);
+		expect(storage.get('LlamaCppWebui.resumableStreams')).toBe('unrelated');
+	});
+	it('keeps config, overrides and preview intact when confirmed Reset cannot be persisted', () => {
+		settingsStore.updateConfig('uiScale', '105');
+		const before = { ...config() };
+		const overrides = [...settingsStore.userOverrides];
+		const session = settingsStore.beginPreview();
+		settingsStore.updatePreview(session, { uiScale: '110' });
+		vi.stubGlobal('localStorage', {
+			getItem: (key: string) => storage.get(key) ?? null,
+			setItem: () => {
+				throw new Error('storage failure');
+			},
+			removeItem: () => {}
+		});
+		expect(() => settingsStore.resetConfig()).toThrow('Settings could not be persisted');
+		expect(config()).toEqual(before);
+		expect([...settingsStore.userOverrides]).toEqual(overrides);
+		expect(settingsStore.isPreviewCurrent(session)).toBe(true);
+		expect(settingsStore.appearanceConfig.uiScale).toBe('110');
+	});
 	it('does not inherit response preferences from provider UI defaults', () => {
 		serverStore.props = {
 			ui_settings: { responsePrefCharts: true, responsePrefTables: false }
@@ -103,7 +356,7 @@ describe('settings preview through the real store', () => {
 		settingsStore.updateMultipleConfig({ responsePrefTables: true });
 		settingsStore.syncWithServerDefaults();
 		expect(config()).toMatchObject({ responsePrefCharts: false, responsePrefTables: true });
-		settingsStore.forceSyncWithServerDefaults();
+		settingsStore.resetConfig();
 		expect(config()).toMatchObject({ responsePrefCharts: false, responsePrefTables: false });
 	});
 	it('keeps response preferences draft-only until Save, supports Cancel, reload and Reset', () => {
@@ -120,7 +373,7 @@ describe('settings preview through the real store', () => {
 		expect(config()).toMatchObject(all);
 		settingsStore.initialize();
 		expect(config()).toMatchObject(all);
-		settingsStore.forceSyncWithServerDefaults();
+		settingsStore.resetConfig();
 		for (const { key } of RESPONSE_PREFERENCES) expect(config()[key]).toBe(false);
 	});
 
@@ -218,8 +471,8 @@ describe('settings preview through the real store', () => {
 		const saved = parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!);
 		expect(saved).toMatchObject({
 			uiScale: '100',
-			fontFamily: 'default',
-			fontSize: 'default',
+			fontFamily: 'merriweather',
+			fontSize: '13',
 			fontVariant: '400',
 			keepStatsVisible: true
 		});
@@ -231,7 +484,7 @@ describe('settings preview through the real store', () => {
 		settingsStore.cancelPreview(reopened);
 	});
 
-	it('commits the whole form once, ends preview and survives a reload', () => {
+	it('commits changed form fields once, ends preview and survives a reload', () => {
 		const session = settingsStore.beginPreview();
 		const patch = {
 			uiScale: '105',
@@ -275,7 +528,7 @@ describe('settings preview through the real store', () => {
 		settingsStore.cancelPreview(old);
 		expect(settingsStore.isPreviewCurrent(current)).toBe(true);
 		settingsStore.updatePreview(current, { uiScale: '105' });
-		settingsStore.forceSyncWithServerDefaults();
+		settingsStore.resetConfig();
 		expect(settingsStore.isPreviewCurrent(current)).toBe(false);
 		expect(settingsStore.appearanceConfig).toEqual(config());
 		expect(settingsStore.commitPreview(current, { uiScale: '105' })).toEqual({

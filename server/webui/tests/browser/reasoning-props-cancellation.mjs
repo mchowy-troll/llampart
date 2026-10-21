@@ -197,7 +197,10 @@ try {
 						t.conversations.activeMessages.filter(
 							(message) => ![t.pending.id, t.newAssistant.id].includes(message.id)
 						),
-						t.newAssistant
+						t.newAssistant,
+						undefined,
+						undefined,
+						t.chat.captureGenerationModel()
 					);
 				});
 				await replacementRequest;

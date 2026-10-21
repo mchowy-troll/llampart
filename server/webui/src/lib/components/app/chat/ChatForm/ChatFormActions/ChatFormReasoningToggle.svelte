@@ -1,25 +1,18 @@
 <script lang="ts">
-	import { Check, Info, Lightbulb } from '@lucide/svelte';
+	import { Check, Lightbulb } from '@lucide/svelte';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { buttonVariants } from '$lib/components/ui/button';
 	import { cn } from '$lib/components/ui/utils';
-	import { REASONING_EFFORT_LEVELS } from '$lib/constants';
-	import { ReasoningEffort } from '$lib/enums';
-	import { effectiveLlamaReasoningEffort } from '$lib/utils/chat-template-thinking-detector';
+	import { resolveReasoning, sameReasoningIntent } from '$lib/services/providers/reasoning';
 	import { t } from '$lib/i18n';
-	import {
-		checkModelSupportsThinking,
-		loadedModelIds,
-		modelsStore,
-		propsCacheVersion,
-		supportsThinking
-	} from '$lib/stores/models.svelte';
+	import { loadedModelIds, modelsStore } from '$lib/stores/models.svelte';
 	import { isRouterMode } from '$lib/stores/server.svelte';
 	import { config } from '$lib/stores/settings.svelte';
 	import { chatStore } from '$lib/stores/chat.svelte';
+	import { ChatService } from '$lib/services/chat.service';
 	import { activeMessages, conversationsStore } from '$lib/stores/conversations.svelte';
-	import type { DatabaseMessage, ReasoningEffortLevel } from '$lib/types';
+	import type { DatabaseMessage, ReasoningIntent } from '$lib/types';
 
 	interface Props {
 		class?: string;
@@ -31,32 +24,27 @@
 	let conversationModel = $derived(
 		chatStore.getConversationModel(activeMessages() as DatabaseMessage[])
 	);
-	let controlModel = $derived(modelsStore.selectedModelName || conversationModel);
-	let control = $derived(nativeReasoning ? modelsStore.getReasoningControl(controlModel) : 'none');
-	let thinkingEnabled = $derived(control === 'effort' || conversationsStore.getThinkingEnabled());
-	let currentEffort = $derived(
-		nativeReasoning
-			? effectiveLlamaReasoningEffort(conversationsStore.getReasoningEffort())
-			: conversationsStore.getReasoningEffort()
+	let controlModel = $derived(
+		ChatService.resolveEffectiveModel(
+			ChatService.createProviderRequestContext(),
+			undefined,
+			conversationModel
+		)
 	);
-	let isOff = $derived(!thinkingEnabled);
+	let capabilities = $derived(modelsStore.getReasoningCapabilities(controlModel));
+	let resolved = $derived(resolveReasoning(capabilities, conversationsStore.getReasoningIntent()));
+	let thinkingEnabled = $derived(resolved.selected.mode !== 'off');
 	let subOpen = $state(false);
-	let levels: ReasoningEffortLevel[] = $derived(
-		nativeReasoning
-			? control === 'toggle'
-				? [{ value: 'off', isOff: true }, { value: ReasoningEffort.HIGH }]
-				: REASONING_EFFORT_LEVELS.filter(
-						(level) => !level.isOff && level.value !== ReasoningEffort.MAX
-					)
-			: REASONING_EFFORT_LEVELS.filter(
-					(level) =>
-						level.isOff ||
-						(level.value !== ReasoningEffort.MAX &&
-							(!modelsStore.capabilitySnapshot?.features.reasoning_effort?.values ||
-								modelsStore.capabilitySnapshot.features.reasoning_effort.values.includes(
-									level.value
-								)))
-				)
+	let declaration = $state('');
+	let declarationError = $state('');
+	let controlIdentity = $derived(
+		JSON.stringify([
+			config().apiProvider,
+			config().serverBaseUrl,
+			config().apiKey,
+			controlModel,
+			capabilities.protocol
+		])
 	);
 
 	$effect(() => {
@@ -67,59 +55,44 @@
 		}
 	});
 	$effect(() => {
-		void controlModel;
-		void control;
+		void controlIdentity;
+		declaration = '';
+		declarationError = '';
 		subOpen = false;
 	});
 
-	let modelSupportsThinking = $derived.by(() => {
-		if (nativeReasoning) return control !== 'none';
-		loadedModelIds();
-		propsCacheVersion();
-		const providerSupportsThinking =
-			modelsStore.capabilitySnapshot?.features.reasoning?.state !== 'unsupported';
-
-		if (isRouterMode()) {
-			const modelId = modelsStore.selectedModelName || conversationModel;
-			return checkModelSupportsThinking(modelId ?? '') || providerSupportsThinking;
-		}
-
-		return supportsThinking() || providerSupportsThinking;
-	});
-
 	let tooltipText = $derived(
-		control === 'toggle' && thinkingEnabled
-			? t('chat.reasoningLabel')
-			: thinkingEnabled
-				? `${getLevelLabel({ value: currentEffort })} ${t('chat.reasoningLabel')}`
-				: t('chat.reasoningDisabledTooltip')
+		`${getLevelLabel(resolved.requested)} ${t('chat.reasoningLabel')}${resolved.available ? '' : ` — ${t('chat.reasoningUnavailable')}`}`
 	);
 
-	function isSelected(item: ReasoningEffortLevel): boolean {
-		if (item.isOff) return isOff;
-		if (control === 'toggle') return thinkingEnabled;
-		return thinkingEnabled && currentEffort === item.value;
-	}
-
-	function getLevelLabel(item: ReasoningEffortLevel): string {
-		if (item.isOff) return t('chat.reasoningEffort.off');
-		if (control === 'toggle') return t('chat.reasoningEnabled');
-		return t(`chat.reasoningEffort.${item.value}`);
-	}
-
-	function handleSelection(item: ReasoningEffortLevel) {
-		if (item.isOff) {
-			conversationsStore.setThinkingEnabled(false);
-		} else {
-			conversationsStore.setThinkingEnabled(true);
-			if (control !== 'toggle')
-				conversationsStore.setReasoningEffort(item.value as ReasoningEffort);
+	function saveDeclaration(clear = false) {
+		try {
+			modelsStore.setDeclaredReasoningLevels(
+				controlModel,
+				clear ? null : declaration.split(',').map((value) => value.trim())
+			);
+			declarationError = '';
+		} catch {
+			declarationError = t('chat.reasoningDeclarationInvalid');
 		}
+	}
+
+	function getLevelLabel(item: ReasoningIntent): string {
+		if (item.mode === 'default') return t('chat.reasoningDefault');
+		if (item.mode === 'off') return t('chat.reasoningEffort.off');
+		if (item.mode === 'on') return t('chat.reasoningEnabled');
+		const key = `chat.reasoningEffort.${item.value}`;
+		const translated = t(key);
+		return translated === key ? item.value : translated;
+	}
+
+	function handleSelection(item: ReasoningIntent) {
+		void conversationsStore.setReasoningIntent(item);
 		subOpen = false;
 	}
 </script>
 
-{#if modelSupportsThinking}
+{#if capabilities.availability !== 'unsupported' || !resolved.available}
 	<Tooltip.Root>
 		<Tooltip.Trigger>
 			{#snippet child({ props })}
@@ -156,11 +129,34 @@
 							<p
 								class="my-1 px-3 py-2 text-[13px] font-semibold text-muted-foreground/75 select-none"
 							>
-								{t(control === 'toggle' ? 'chat.reasoningLabel' : 'chat.reasoningEffortTitle')}
+								{t(
+									capabilities.control === 'toggle'
+										? 'chat.reasoningLabel'
+										: 'chat.reasoningEffortTitle'
+								)}
 							</p>
 
-							{#each levels as level (level.value)}
-								{@const selected = isSelected(level)}
+							{#if capabilities.availability === 'unknown' || (capabilities.effort.state === 'supported' && !capabilities.effort.values)}
+								<p class="px-3 pb-2 text-xs text-muted-foreground">
+									{t(
+										capabilities.availability === 'unknown'
+											? 'chat.reasoningUnknown'
+											: 'chat.reasoningLevelsUnknown'
+									)}
+								</p>
+							{/if}
+							{#if !resolved.available}
+								<p role="alert" class="px-3 pb-2 text-xs text-destructive">
+									{t('chat.reasoningUnavailable')} ({getLevelLabel(resolved.requested)})
+								</p>
+							{/if}
+							{#if capabilities.effort.source === 'user'}
+								<p class="px-3 pb-2 text-xs text-muted-foreground">
+									{t('chat.reasoningDeclarationUser')}
+								</p>
+							{/if}
+							{#each resolved.choices as level (`${level.mode}:${level.mode === 'effort' ? level.value : ''}`)}
+								{@const selected = sameReasoningIntent(level, resolved.selected)}
 
 								<DropdownMenu.Item onSelect={() => handleSelection(level)}>
 									{#snippet child({ props })}
@@ -188,21 +184,37 @@
 											</span>
 
 											<span class="flex h-4 w-4 items-center justify-center justify-self-end">
-												{#if level.hasInfo}
-													<Tooltip.Root>
-														<Tooltip.Trigger>
-															<Info class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-														</Tooltip.Trigger>
-														<Tooltip.Content side="left">
-															<p>{t('chat.reasoningMaxInfo')}</p>
-														</Tooltip.Content>
-													</Tooltip.Root>
-												{/if}
 											</span>
 										</button>
 									{/snippet}
 								</DropdownMenu.Item>
 							{/each}
+							{#if capabilities.declarationKey && (!capabilities.effort.values || capabilities.effort.source === 'user')}
+								<details class="px-3 py-2 text-xs">
+									<summary class="cursor-pointer">{t('chat.reasoningDeclarationTitle')}</summary>
+									<p class="my-2 text-muted-foreground">{t('chat.reasoningDeclarationHint')}</p>
+									<label for="reasoning-declared-levels"
+										>{t('chat.reasoningDeclarationTitle')}</label
+									>
+									<input
+										id="reasoning-declared-levels"
+										class="my-2 w-full rounded border bg-background p-2"
+										bind:value={declaration}
+										onkeydown={(event) => event.stopPropagation()}
+									/>
+									<div class="flex gap-3">
+										<button type="button" onclick={() => saveDeclaration()}
+											>{t('chat.reasoningDeclarationApply')}</button
+										>
+										<button type="button" onclick={() => saveDeclaration(true)}
+											>{t('chat.reasoningDeclarationClear')}</button
+										>
+									</div>
+									{#if declarationError}<p role="alert" class="mt-2 text-destructive">
+											{declarationError}
+										</p>{/if}
+								</details>
+							{/if}
 						</DropdownMenu.Content>
 					</DropdownMenu.Root>
 				</span>

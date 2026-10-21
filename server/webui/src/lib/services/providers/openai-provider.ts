@@ -86,7 +86,8 @@ export function createOpenAiProvider(
 		},
 		buildChatCompletionRequest(input) {
 			const protocol = input.capabilities?.protocol ?? 'chat-completions';
-			let body = protocol === 'responses' ? buildResponsesBody(input) : buildChatBody(input);
+			let body =
+				protocol === 'responses' ? buildResponsesBody(input, id) : buildChatBody(input, id);
 			if (extension) body = extension.mapRequest(input, body);
 			return buildGatewayRequest(
 				id,

@@ -6,16 +6,15 @@ import { ModelsService } from '$lib/services/models.service';
 import { PropsService } from '$lib/services/props.service';
 import { getApiProvider } from '$lib/services/providers';
 import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers';
-import { config } from '$lib/stores/settings.svelte';
+import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { TTLCache } from '$lib/utils/cache-ttl';
 import { getModelContextSize } from '$lib/utils/model-information';
 import {
-	detectThinkingSupport,
-	detectReasoningControl,
-	type LlamaReasoningControl,
-	detectThinkingSupportWithReason
-} from '$lib/utils/chat-template-thinking-detector';
+	resolveReasoningCapabilities,
+	readReasoningDeclarations,
+	validateDeclaredReasoningLevels
+} from '$lib/services/providers/reasoning';
 import { throwIfAborted } from '$lib/utils/abort';
 import { sleepWithAbort } from '$lib/utils/retry';
 import { t } from '$lib/i18n';
@@ -99,6 +98,15 @@ class ModelsStore {
 		const generation = ++this.capabilityGeneration;
 		this.capabilitySnapshot = null;
 		const sourceKey = this.getModelListSourceKey(context);
+		const declarations = config().reasoningLevelDeclarations;
+		let reasoningProps =
+			context.providerId === API_PROVIDER_IDS.LLAMA_SERVER
+				? serverStore.hasCurrentProps && serverStore.isModelMode
+					? serverStore.props
+					: model
+						? this.getModelProps(model)
+						: null
+				: null;
 		const snapshotRequest = createCapabilitySnapshot(
 			context,
 			model,
@@ -123,6 +131,7 @@ class ModelsStore {
 		) {
 			const props = await this.fetchModelProps(model);
 			if (props) {
+				reasoningProps = props;
 				modalities = {
 					vision: modalities?.vision ?? props.modalities?.vision,
 					audio: modalities?.audio ?? props.modalities?.audio,
@@ -132,6 +141,8 @@ class ModelsStore {
 		}
 		const snapshot = await snapshotRequest;
 		if (sourceKey !== this.modelListSourceKey) return null;
+		if (context.providerId === API_PROVIDER_IDS.LLAMA_SERVER)
+			snapshot.reasoning = resolveReasoningCapabilities(snapshot, reasoningProps, declarations);
 		if (modalities) {
 			const features = { ...snapshot.features };
 			for (const name of ['vision', 'audio', 'video'] as const) {
@@ -144,6 +155,19 @@ class ModelsStore {
 			}
 			snapshot.features = features;
 		}
+		if (snapshot.reasoning) {
+			if (snapshot.reasoning.effort.values) Object.freeze(snapshot.reasoning.effort.values);
+			Object.freeze(snapshot.reasoning.effort.parameter);
+			Object.freeze(snapshot.reasoning.effort);
+			Object.freeze(snapshot.reasoning.toggle);
+			Object.freeze(snapshot.reasoning);
+		}
+		for (const feature of Object.values(snapshot.features)) {
+			if (feature.values) Object.freeze(feature.values);
+			Object.freeze(feature);
+		}
+		Object.freeze(snapshot.features);
+		Object.freeze(snapshot);
 		if (generation === this.capabilityGeneration) this.capabilitySnapshot = snapshot;
 		return snapshot;
 	}
@@ -390,11 +414,11 @@ class ModelsStore {
 		return this.getModelModalities(modelId)?.video !== false;
 	}
 
-	private currentModelCapability(modelId: string): CapabilitySnapshot | null {
+	private currentModelCapability(modelId: string | null): CapabilitySnapshot | null {
 		const context = this.currentRequestContext();
 		const snapshot = this.capabilitySnapshot;
 		return snapshot &&
-			snapshot.model === (modelId || this.selectedModelName) &&
+			snapshot.model === (modelId || null) &&
 			snapshot.providerId === context.providerId &&
 			this.loadedModelListSourceKey === this.getModelListSourceKey(context)
 			? snapshot
@@ -455,70 +479,44 @@ class ModelsStore {
 	// Thinking Support Detection
 	//
 
-	getReasoningControl(modelId: string | null = this.selectedModelName): LlamaReasoningControl {
-		// Cache reads must invalidate the menu even if props have no modalities.
+	getReasoningCapabilities(modelId: string | null = this.selectedModelName) {
 		void this.propsCacheVersion;
-		if (this.currentProviderId !== API_PROVIDER_IDS.LLAMA_SERVER || !serverStore.hasCurrentProps)
-			return 'none';
-		if (!serverStore.isRouterMode) return detectReasoningControl(serverStore.props?.chat_template);
-		if (!modelId) return 'none';
-		return detectReasoningControl(this.getModelProps(modelId)?.chat_template);
+		const context = this.currentRequestContext();
+		const snapshot = this.currentModelCapability(modelId);
+		const owner = snapshot ?? {
+			...context,
+			model: modelId,
+			sourceGeneration: 0,
+			connectionIdentity: '',
+			protocol: context.protocol ?? 'chat-completions',
+			features: {}
+		};
+		if (context.providerId !== API_PROVIDER_IDS.LLAMA_SERVER)
+			return snapshot?.reasoning ?? resolveReasoningCapabilities(owner);
+		const props = !serverStore.hasCurrentProps
+			? null
+			: serverStore.isModelMode
+				? serverStore.props
+				: modelId
+					? this.getModelProps(modelId)
+					: null;
+		return resolveReasoningCapabilities(owner, props, config().reasoningLevelDeclarations);
 	}
 
-	/**
-	 * Whether the selected model's chat template supports thinking/reasoning controls.
-	 */
-	get supportsThinking(): boolean {
-		if (!serverStore.isRouterMode) {
-			return detectThinkingSupport(serverStore.props?.chat_template ?? '');
-		}
-
-		const modelId = this.selectedModelName;
-		if (!modelId) return false;
-
-		if (this.supportsModelProps && serverStore.isRouterMode && !this.getModelProps(modelId)) {
-			this.fetchModelProps(modelId);
-		}
-
-		const props = this.getModelProps(modelId);
-		return detectThinkingSupport(props?.chat_template ?? '');
-	}
-
-	/**
-	 * Checks whether a specific model supports thinking/reasoning controls.
-	 */
-	checkModelSupportsThinking(modelId: string): boolean {
-		if (!serverStore.isRouterMode) {
-			return detectThinkingSupport(serverStore.props?.chat_template ?? '');
-		}
-
-		if (!modelId) return false;
-
-		if (this.supportsModelProps && serverStore.isRouterMode && !this.getModelProps(modelId)) {
-			this.fetchModelProps(modelId);
-		}
-
-		const props = this.getModelProps(modelId);
-		return detectThinkingSupport(props?.chat_template ?? '');
-	}
-
-	/**
-	 * Detailed thinking support detection result for debugging/UI.
-	 */
-	get thinkingSupportDetails(): { supported: boolean; reason: string } {
-		if (!serverStore.isRouterMode) {
-			return detectThinkingSupportWithReason(serverStore.props?.chat_template ?? '');
-		}
-
-		const modelId = this.selectedModelName;
-		if (!modelId) return { supported: false, reason: 'No model selected' };
-
-		if (serverStore.isRouterMode && !this.getModelProps(modelId)) {
-			this.fetchModelProps(modelId);
-		}
-
-		const props = this.getModelProps(modelId);
-		return detectThinkingSupportWithReason(props?.chat_template ?? '');
+	setDeclaredReasoningLevels(modelId: string | null, values: string[] | null): void {
+		const capabilities = this.getReasoningCapabilities(modelId);
+		if (
+			!capabilities.declarationKey ||
+			capabilities.effort.state !== 'supported' ||
+			(capabilities.effort.values && capabilities.effort.source !== 'user')
+		)
+			throw new Error(t('chat.reasoningDeclarationInvalid'));
+		const declarations = readReasoningDeclarations(config().reasoningLevelDeclarations);
+		if (values === null) delete declarations[capabilities.declarationKey];
+		else declarations[capabilities.declarationKey] = validateDeclaredReasoningLevels(values);
+		if (Object.keys(declarations).length > 32)
+			throw new Error(t('chat.reasoningDeclarationInvalid'));
+		settingsStore.updateConfig('reasoningLevelDeclarations', JSON.stringify(declarations));
 	}
 
 	/**
@@ -1253,7 +1251,4 @@ export const loadingModelIds = () => modelsStore.loadingModelIds;
 export const propsCacheVersion = () => modelsStore.propsCacheVersion;
 export const singleModelName = () => modelsStore.singleModelName;
 export const selectedModelContextSize = () => modelsStore.selectedModelContextSize;
-export const supportsThinking = () => modelsStore.supportsThinking;
-export const checkModelSupportsThinking = (modelId: string) =>
-	modelsStore.checkModelSupportsThinking(modelId);
 export const favoriteModelIds = () => modelsStore.favoriteModelIds;

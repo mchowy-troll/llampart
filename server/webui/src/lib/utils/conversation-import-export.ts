@@ -34,6 +34,14 @@ const conversationSchema = z
 		mcpServerOverrides: z.array(mcpServerOverrideSchema).optional(),
 		thinkingEnabled: z.boolean().optional(),
 		reasoningEffort: z.enum(['low', 'medium', 'high', 'max']).optional(),
+		reasoning: z
+			.discriminatedUnion('mode', [
+				z.object({ mode: z.literal('default') }),
+				z.object({ mode: z.literal('off') }),
+				z.object({ mode: z.literal('on') }),
+				z.object({ mode: z.literal('effort'), value: z.string().min(1) })
+			])
+			.optional(),
 		forkedFromConversationId: z.string().optional()
 	})
 	.strict();

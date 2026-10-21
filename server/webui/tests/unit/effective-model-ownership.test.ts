@@ -9,6 +9,8 @@ import { serverStore } from '$lib/stores/server.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { permissionsStore } from '$lib/stores/permissions.svelte';
+import { conversationsStore } from '$lib/stores/conversations.svelte';
+import { getApiProvider } from '$lib/services/providers';
 import type {
 	AgenticFlowOptions,
 	AgenticMessageIdentity,
@@ -70,6 +72,7 @@ afterEach(() => {
 	serverStore.props = originalProps;
 	modelsStore.resetAllModelState();
 	ChatService.invalidateProviderRequestContexts();
+	conversationsStore.clearActiveConversation();
 });
 
 async function prepare(
@@ -90,6 +93,7 @@ async function prepare(
 		data: ids.map((id, index) => ({
 			id,
 			capabilities: {
+				reasoning_effort: { supported: true, values: index === 0 ? ['low'] : ['high'] },
 				...(vision[index] === undefined ? {} : { vision: vision[index] }),
 				...(protocol === 'responses' ? { required_protocol: 'responses' } : {})
 			}
@@ -205,6 +209,66 @@ function flow(
 }
 
 describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
+	it('serializes A/low across a paused tool result after switching the view and contract to B/high', async () => {
+		await prepare(providerId, protocol);
+		conversationsStore.activeConversation = {
+			id: 'A',
+			reasoning: { mode: 'effort', value: 'low' }
+		} as DatabaseConversation;
+		const context = ChatService.createProviderRequestContext();
+		const operationModel = ChatService.captureOperationModel(context, undefined, undefined, {
+			conversationId: 'A',
+			reasoning: conversationsStore.getReasoningIntent()
+		});
+		const build = vi.spyOn(getApiProvider(providerId), 'buildChatCompletionRequest');
+		const { payloads, fetchMock } = providerIO(protocol);
+		const ready = deferred(),
+			gate = deferred();
+		vi.mocked(toolsStore.executeTool).mockImplementation(async () => {
+			ready.resolve();
+			await gate.promise;
+			return { content: 'CONFIRMED_RESULT', isError: false };
+		});
+		const { pending, callbacks } = flow(
+			{ operationModel, providerRequestContext: context },
+			undefined,
+			'A'
+		);
+		await Promise.race([
+			ready.promise,
+			pending.then(() => {
+				throw new Error(`Ended before tool: ${callbacks.onError.mock.calls}`);
+			})
+		]);
+		conversationsStore.activeConversation = {
+			id: 'B',
+			reasoning: { mode: 'effort', value: 'high' }
+		} as DatabaseConversation;
+		await modelsStore.selectModelById('model-B');
+		gate.resolve();
+		await pending;
+		expect(payloads).toHaveLength(2);
+		for (const body of payloads)
+			expect(body).toMatchObject({
+				model: 'model-A',
+				...(providerId === 'llama-server'
+					? { chat_template_kwargs: { reasoning_effort: 'low' } }
+					: protocol === 'responses'
+						? { reasoning: { effort: 'low' } }
+						: { reasoning_effort: 'low' })
+			});
+		for (const [input] of build.mock.calls) {
+			expect(input.options.operationModel).toBe(operationModel);
+			expect(input.capabilities).toBe(await operationModel.capabilities);
+			expect(input.capabilities?.reasoning?.effort.values).toEqual(['low']);
+		}
+		expect(fetchMock.mock.calls.every(([url]) => String(url).includes(`/api/${providerId}/`))).toBe(
+			true
+		);
+		expect(callbacks.onFlowComplete).toHaveBeenCalledWith(
+			expect.objectContaining({ reason: 'completed' })
+		);
+	});
 	it('keeps A across tool awaits and uses B only for the next operation', async () => {
 		await prepare(providerId, protocol);
 		const { payloads } = providerIO(protocol);
@@ -641,7 +705,16 @@ describe('model defaults and auxiliary requests', () => {
 	it('uses the operation binding for auxiliary title generation', async () => {
 		await prepare('openai-compatible', 'chat-completions');
 		const providerRequestContext = ChatService.createProviderRequestContext();
-		const operationModel = ChatService.captureOperationModel(providerRequestContext);
+		const operationModel = ChatService.captureOperationModel(
+			providerRequestContext,
+			undefined,
+			undefined,
+			{ conversationId: 'A', reasoning: { mode: 'effort', value: 'low' } }
+		);
+		conversationsStore.activeConversation = {
+			id: 'B',
+			reasoning: { mode: 'effort', value: 'high' }
+		} as DatabaseConversation;
 		await modelsStore.selectModelById('model-B');
 		const { payloads } = providerIO('chat-completions', 0);
 		await ChatService.generateTitle({ role: 'user', content: 'title' }, null, undefined, {
@@ -649,19 +722,29 @@ describe('model defaults and auxiliary requests', () => {
 			operationModel
 		});
 		expect(payloads.map((body) => body.model)).toEqual(['model-A']);
+		expect(payloads[0]).not.toHaveProperty('reasoning_effort');
+		expect(payloads[0]).not.toHaveProperty('chat_template_kwargs');
 	});
 
 	it('keeps pre-encode bound to A after a selector change and does not silently drop images', async () => {
 		await prepare('llama-server', 'chat-completions', [true, false]);
 		const context = ChatService.createProviderRequestContext();
-		const operationModel = ChatService.captureOperationModel(context);
+		const operationModel = ChatService.captureOperationModel(context, undefined, undefined, {
+			conversationId: 'A',
+			reasoning: { mode: 'effort', value: 'low' }
+		});
 		await modelsStore.selectModelById('model-B');
 		const { payloads } = providerIO('chat-completions', 0);
 		const history: ApiChatMessageData[] = [
 			{ role: 'user', content: [{ type: 'image_url', image_url: { url: image } }] }
 		];
 		await ChatService.preEncode(history, context, 'model-B', false, undefined, operationModel);
-		expect(payloads[0]).toMatchObject({ model: 'model-A', stream: false, n_predict: 0 });
+		expect(payloads[0]).toMatchObject({
+			model: 'model-A',
+			stream: false,
+			n_predict: 0,
+			chat_template_kwargs: { reasoning_effort: 'low' }
+		});
 		expect(JSON.stringify(payloads[0])).toContain(image);
 		const textOnly = ChatService.captureOperationModel(context, 'model-B');
 		const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

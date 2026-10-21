@@ -8,6 +8,7 @@ import type {
 } from '$lib/types/provider';
 import { normalizeGatewaySource } from './provider-transport';
 import { createSourceFingerprint } from '$lib/utils/resumable-stream-state';
+import { resolveReasoningCapabilities } from './reasoning';
 
 export function connectionProtocol(
 	providerId: string,
@@ -55,6 +56,7 @@ export async function createCapabilitySnapshot(
 		'video',
 		'reasoning',
 		'reasoning_effort',
+		'enable_thinking',
 		'structured_outputs',
 		'response_format',
 		'temperature',
@@ -102,7 +104,7 @@ export async function createCapabilitySnapshot(
 					features[name] = {
 						state: evidence.supported ? 'supported' : 'unsupported',
 						source: 'model-metadata',
-						...(Array.isArray(evidence.values) ? { values: evidence.values } : {}),
+						...(Array.isArray(evidence.values) ? { values: [...evidence.values] } : {}),
 						...(typeof evidence.minimum === 'number' && Number.isFinite(evidence.minimum)
 							? { minimum: evidence.minimum }
 							: {}),
@@ -124,7 +126,7 @@ export async function createCapabilitySnapshot(
 	)
 		for (const name of ['vision', 'audio', 'video'])
 			features[name] = { state: 'unsupported', source: 'server-metadata' };
-	return {
+	const snapshot: CapabilitySnapshot = {
 		providerId: context.providerId,
 		serverBaseUrl: normalizeGatewaySource(context.providerId, context.serverBaseUrl).baseUrl,
 		sourceGeneration: context.sourceGeneration,
@@ -133,6 +135,8 @@ export async function createCapabilitySnapshot(
 		protocol,
 		features
 	};
+	snapshot.reasoning = resolveReasoningCapabilities(snapshot, metadata);
+	return snapshot;
 }
 
 export function sameConnection(

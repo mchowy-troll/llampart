@@ -34,6 +34,7 @@
 					{#snippet child({ props })}
 						<Button
 							{...props}
+							class="format-export-action"
 							variant="ghost"
 							size="sm"
 							disabled={exporting}
@@ -48,13 +49,12 @@
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}
-					<Button
+					<button
 						{...props}
 						class="visualization-preview-action"
-						variant="ghost"
-						size="sm"
+						type="button"
 						aria-label={previewLabel}
-						onclick={onpreview}><Eye size={14} /></Button
+						onclick={onpreview}><Eye size={14} /></button
 					>
 				{/snippet}
 			</Tooltip.Trigger>

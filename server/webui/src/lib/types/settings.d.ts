@@ -2,12 +2,7 @@ import type { SETTING_CONFIG_DEFAULT } from '$lib/constants';
 import type { ChatMessagePromptProgress, ChatMessageTimings } from './chat';
 import type { OpenAIToolDefinition } from './mcp';
 import type { DatabaseMessageExtra } from './database';
-import type {
-	ParameterSource,
-	ReasoningEffort,
-	SyncableParameterType,
-	SettingsFieldType
-} from '$lib/enums';
+import type { ParameterSource, SyncableParameterType, SettingsFieldType } from '$lib/enums';
 import type { Icon } from '@lucide/svelte';
 import type {
 	ProviderCapabilityKey,
@@ -140,9 +135,9 @@ export interface SettingsChatServiceOptions {
 	excludeReasoningFromContext?: boolean;
 	// Enable model thinking/reasoning via chat_template_kwargs
 	enableThinking?: boolean;
-	reasoningEffort?: ReasoningEffort;
-	// Request-local llama-server template control, bound to the frozen model/source.
-	llamaReasoningControl?: import('$lib/utils/chat-template-thinking-detector').LlamaReasoningControl;
+	reasoningEffort?: string;
+	// Neutral intent; interpreted against the operation-owned capability snapshot.
+	reasoning?: import('./reasoning').ReasoningIntent;
 	tools?: OpenAIToolDefinition[];
 	// Generation parameters
 	temperature?: number;

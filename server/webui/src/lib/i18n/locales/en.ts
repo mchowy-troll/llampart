@@ -23,6 +23,7 @@ export const en: TranslationDictionary = {
 		share: 'Share'
 	},
 	common: {
+		resetFailed: 'Settings could not be saved. Reset was not completed; please retry.',
 		showCode: 'Show code',
 		saveSettings: 'Save settings',
 		save: 'Save',
@@ -39,7 +40,7 @@ export const en: TranslationDictionary = {
 		resetToDefault: 'Reset to Default',
 		resetSettingsToDefault: 'Reset Settings to Default',
 		resetSettingsDescription:
-			"Are you sure you want to reset all settings to their default values? This will reset all parameters to the values provided by the server's /props endpoint and remove all your custom configurations.",
+			'Reset ALL application settings to defaults? This also removes MCP servers, provider profiles, saved server addresses and API keys, and restores English and the default appearance. Conversation history is not deleted. Generation parameters use the defaults of the resulting server connection.',
 		or: 'or',
 		openWebsite: 'Open website',
 		searchEllipsis: 'Search...',
@@ -171,6 +172,12 @@ export const en: TranslationDictionary = {
 		enterNewConversationName: 'Enter a new name'
 	},
 	settings: {
+		storageSaveError:
+			'Settings could not be saved to browser storage. Your changes remain open; check available space and browser permissions, then try again.',
+		storageRollbackError:
+			'Saving failed and the previous stored settings could not be fully restored. In-memory settings were not committed. Browser storage may be inconsistent; retry before reloading. Wallpaper assets are saved separately.',
+		concurrentSettingsConflict:
+			'These settings changed outside this form. Nothing was saved. Close and reopen Settings to review the current values before editing again.',
 		sectionGeneral: 'General',
 		sectionDisplay: 'Display',
 		sectionSampling: 'Sampling',
@@ -210,7 +217,11 @@ export const en: TranslationDictionary = {
 		fieldFontFamily: 'Font family',
 		fieldFontVariant: 'Font variant',
 		fieldFontSize: 'Font size',
-		fontDefault: 'Default',
+		fontDefault: '{font} (Default)',
+		fontVariantDefault: '{variant} (Default)',
+		fontSizeDefault: '{size} px (Default)',
+		propsSyncStorageError:
+			'Server defaults could not be saved. Previous settings remain active. Synchronization can be retried on the next update.',
 		defaultPrefix: 'Default:',
 		resetToDefault: 'Reset to default',
 		selected: 'Selected',
@@ -437,10 +448,10 @@ export const en: TranslationDictionary = {
 			interfaceLanguage:
 				'Choose the interface language. English is the default language on first launch.',
 			uiScale: 'Adjust the desktop interface scale based on the automatic responsive setting.',
-			fontFamily: 'Local interface font. Default keeps the existing typography.',
+			fontFamily: 'Local interface font. The factory family is marked as Default.',
 			fontVariant: 'Real base weight. Emphasis and code fonts are preserved.',
 			fontSize:
-				'Base text size in px, independent of interface scale. Default preserves the existing responsive size.',
+				'Base text size in px, independent of interface scale. The factory size is marked as Default.',
 			pasteLongTextToFileLen:
 				'When pasting long text, it will be converted into a file. Set the value to control the length. Value 0 disables this behavior.',
 			copyTextAttachmentsAsPlainText:
@@ -609,21 +620,31 @@ export const en: TranslationDictionary = {
 		reasoningEffortTitle: 'Reasoning effort',
 		reasoningLabel: 'Reasoning',
 		reasoningEnabled: 'Enabled',
-		reasoningCustomConflict:
-			'Reasoning control conflict: remove reasoning parameters from Custom JSON or select a model without automatic controls. The request was not sent.',
+		reasoningDefault: 'Default / Auto',
+		reasoningUnavailable:
+			'Saved reasoning selection is unavailable for this source/model/protocol. Choose Default/Auto or a supported option.',
+		reasoningDeclarationTitle: 'Advanced: declare effort levels',
+		reasoningDeclarationHint:
+			'Enter comma-separated exact values documented by your backend. This is your declaration, not automatic detection. It applies only to this connection, model, protocol and template/server version; it does not verify acceptance.',
+		reasoningDeclarationInvalid:
+			'Enter 1–16 distinct level names (letters, digits, dot, dash or underscore; maximum 64 characters each).',
+		reasoningDeclarationApply: 'Save declaration',
+		reasoningDeclarationClear: 'Remove declaration',
+		reasoningDeclarationUser: 'Effort levels declared by you, not verified automatically.',
+		reasoningUnknown:
+			'The backend has not declared reasoning capabilities. Server defaults are retained.',
+		reasoningLevelsUnknown:
+			'Reasoning is supported, but the backend has not declared allowed effort levels.',
 		reasoningConfigureHint: 'Click to configure.',
-		reasoningDisabledTooltip: 'Disabled Reasoning',
 		reasoningEffort: {
+			minimal: 'Minimal',
+			xhigh: 'Extra high',
 			off: 'Off',
 			low: 'Low',
 			medium: 'Medium',
 			high: 'High',
 			max: 'Max'
 		},
-		reasoningUnlimited: 'Unlimited',
-		reasoningMaxTokensPrefix: 'Max',
-		reasoningMaxTokensSuffix: 'tokens',
-		reasoningMaxInfo: 'Maximum reasoning effort with extended context usage',
 		pdfVisionSuggestion: 'You can enable parsing PDF as images with vision models.',
 		pdfVisionSuggestionAction: 'Enable PDF as images',
 		pdfVisionEnabled: 'PDF parsing as images enabled.',

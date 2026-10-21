@@ -201,6 +201,7 @@ export interface ApiLlamaCppServerProps {
 		video: boolean;
 	};
 	chat_template: string;
+	chat_template_caps?: Record<string, unknown>;
 	bos_token: string;
 	eos_token: string;
 	build_info: string;

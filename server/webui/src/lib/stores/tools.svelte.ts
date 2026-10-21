@@ -90,6 +90,13 @@ class ToolsStore {
 		}
 	}
 
+	/** Reload global selection after confirmed full Reset; never alters chat data. */
+	reloadPreferences(): void {
+		this._disabledTools.clear();
+		this._legacyDisabledToolNames.clear();
+		this.loadDisabledTools();
+	}
+
 	private persistDisabledTools(): void {
 		if (typeof localStorage === 'undefined') return;
 

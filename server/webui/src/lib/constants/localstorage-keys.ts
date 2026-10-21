@@ -4,6 +4,7 @@ export const FAVORITE_MODELS_LOCALSTORAGE_KEY = 'LlamaCppWebui.favoriteModels';
 export const MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY = 'LlamaCppWebui.mcpDefaultEnabled';
 export const THINKING_ENABLED_DEFAULT_LOCALSTORAGE_KEY = 'LlamaCppWebui.thinkingEnabledDefault';
 export const REASONING_EFFORT_DEFAULT_LOCALSTORAGE_KEY = 'LlamaCppWebui.reasoningEffortDefault';
+export const REASONING_PREFERENCE_LOCALSTORAGE_KEY = 'LlamaCppWebui.reasoningPreference';
 export const LLAMPART_ABOUT_DISMISSED_VERSION_KEY = 'Llampart.aboutDismissedVersion';
 export const DISABLED_TOOLS_LOCALSTORAGE_KEY = 'LlamaCppWebui.disabledTools';
 export const DISABLED_TOOL_KEYS_LOCALSTORAGE_KEY = 'LlamaCppWebui.disabledToolKeys';

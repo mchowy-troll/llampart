@@ -5,6 +5,11 @@ class PermissionsStore {
 	private _tools = $state(new SvelteSet<string>());
 
 	constructor() {
+		this.reloadPreferences();
+	}
+
+	reloadPreferences(): void {
+		this._tools.clear();
 		if (typeof localStorage === 'undefined') return;
 
 		try {

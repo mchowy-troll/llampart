@@ -32,7 +32,8 @@ describe('appearance settings and material palette', () => {
 		expect(defaults).toMatchObject({
 			frostedGlassMilkiness: 75,
 			frostedGlassOpaque: false,
-			fontFamily: 'default',
+			fontFamily: 'merriweather',
+			fontSize: '13',
 			fontVariant: '400',
 			uiScale: '100'
 		});
@@ -147,11 +148,20 @@ describe('local typography', () => {
 		return { root, values };
 	}
 
-	it('does not override default or monospace typography', () => {
+	it('resolves both default sentinels to factory typography without touching monospace', () => {
 		const { root, values } = rootFixture();
-		applyTypography(root, { ...defaults, fontVariant: '700' });
-		expect(values.size).toBe(0);
-		expect(root.dataset).toEqual({});
+		applyTypography(root, {
+			...defaults,
+			fontFamily: 'default',
+			fontSize: 'default',
+			fontVariant: '700'
+		});
+		expect(values.get('--llampart-font-family')).toBe('"Llampart Merriweather"');
+		expect(values.get('--llampart-font-weight')).toBe(SETTING_CONFIG_DEFAULT.fontVariant);
+		expect(values.get('--llampart-text-unit')).toBe(`${SETTING_CONFIG_DEFAULT.fontSize}px`);
+		expect(root.dataset.llampartFont).toBe(SETTING_CONFIG_DEFAULT.fontFamily);
+		expect(getFontVariants('default')).toEqual(getFontVariants('merriweather'));
+		expect([...values.keys()].some((key) => key.includes('mono'))).toBe(false);
 	});
 	it('scales fixed-pixel captions relative to rem and updates on resize without changing root size', () => {
 		const { root, values } = rootFixture();
@@ -411,11 +421,12 @@ describe('local typography', () => {
 				/SIL OPEN FONT LICENSE Version 1.1/i
 			);
 	});
-	it.each(FONT_SIZES)('applies %s px without touching root rem or family', (fontSize) => {
+	it.each(FONT_SIZES)('applies %s px without touching root rem or monospace', (fontSize) => {
 		const { root, values } = rootFixture();
-		const cleanup = applyTypography(root, { ...defaults, fontSize });
+		const cleanup = applyTypography(root, { ...defaults, fontFamily: 'default', fontSize });
 		expect(values.get('--llampart-text-unit')).toBe(`${fontSize}px`);
-		expect(values.size).toBe(1);
+		expect(values.has('font-size')).toBe(false);
+		expect([...values.keys()].some((key) => key.includes('mono'))).toBe(false);
 		cleanup();
 		expect(values.size).toBe(0);
 		expect(parseSettingsStorage(serializeSettingsStorage({ ...defaults, fontSize })).fontSize).toBe(
@@ -427,7 +438,7 @@ describe('local typography', () => {
 		(fontSize) => {
 			expect(() => validateSettingsPatch({ fontSize })).toThrow();
 			expect(parseSettingsConfig({ fontSize, temperature: 0.3 })).toMatchObject({
-				fontSize: 'default',
+				fontSize: '13',
 				temperature: 0.3
 			});
 		}

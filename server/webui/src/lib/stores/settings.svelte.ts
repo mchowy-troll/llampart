@@ -36,6 +36,7 @@ import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
 import { SvelteSet } from 'svelte/reactivity';
 import {
 	CONFIG_LOCALSTORAGE_KEY,
+	GLOBAL_CONFIG_STORAGE_DEFAULT,
 	PROVIDER_CONNECTION_SETTING_KEYS,
 	SETTING_CONFIG_DEFAULT,
 	USER_OVERRIDES_LOCALSTORAGE_KEY
@@ -55,9 +56,31 @@ import {
 	validateSettingsPatch
 } from '$lib/utils/settings-schema';
 
+/** localStorage has no multi-key transaction. A failed compensation is explicit. */
+export class SettingsPersistenceError extends Error {
+	readonly messageKey: string;
+	constructor(
+		readonly failedKey: string,
+		cause: unknown,
+		readonly rollbackErrors: readonly string[] = []
+	) {
+		super(
+			rollbackErrors.length
+				? 'Settings persistence failed and rollback was incomplete'
+				: 'Settings could not be persisted',
+			{ cause }
+		);
+		this.name = 'SettingsPersistenceError';
+		this.messageKey = rollbackErrors.length
+			? 'settings.storageRollbackError'
+			: 'settings.storageSaveError';
+	}
+}
+
 export type SettingsPreviewCommitResult =
 	| { ok: true }
 	| { ok: false; reason: 'stale' }
+	| { ok: false; reason: 'conflict'; keys: string[] }
 	| (Extract<ThemePreviewCommitResult, { ok: false }> & { reason: 'resource' });
 
 class SettingsStore {
@@ -74,6 +97,7 @@ class SettingsStore {
 	userOverrides = new SvelteSet<string>();
 	private preview = $state<Partial<SettingsConfigType>>({});
 	private previewSession: symbol | undefined;
+	private previewBaseline: SettingsConfigType | undefined;
 	private previewResources: ThemeSettingsPreview[] = [];
 
 	/** Only the appearance runtime reads this overlay. Persistence always uses config. */
@@ -84,6 +108,7 @@ class SettingsStore {
 	beginPreview(): symbol {
 		this.cancelPreview();
 		this.previewSession = Symbol('settings-preview');
+		this.previewBaseline = { ...this.config };
 		this.previewResources = Object.values(THEME_REGISTRY).flatMap((theme) =>
 			theme.beginSettingsPreview ? [theme.beginSettingsPreview()] : []
 		);
@@ -115,29 +140,77 @@ class SettingsStore {
 		};
 	}
 
+	/** Three-way field diff: an untouched snapshot is never a write. All settings
+	 * values are scalar (structured settings such as MCP are serialized strings).
+	 * Called before form numeric conversion so opening Settings cannot dirty fields.
+	 */
+	getPreviewChanges(
+		session: symbol,
+		draft: Partial<SettingsConfigType>
+	): Partial<SettingsConfigType> {
+		if (!this.isPreviewCurrent(session) || !this.previewBaseline) return {};
+		return Object.fromEntries(
+			Object.entries(draft).filter(([key, value]) => !Object.is(value, this.previewBaseline![key]))
+		);
+	}
+
 	commitPreview(
 		session: symbol,
-		updates: Partial<SettingsConfigType>
+		updates: Partial<SettingsConfigType>,
+		/** Connection read-set captured before async validation, never the whole config. */
+		expected: Partial<SettingsConfigType> = {}
 	): SettingsPreviewCommitResult {
 		if (!this.isPreviewCurrent(session)) return { ok: false, reason: 'stale' };
-		// Validate the entire form before changing any state or theme-owned assets.
-		const patch = validateSettingsPatch(updates, this.config);
-		for (const resource of this.previewResources) {
-			const result = resource.commit(this.config);
+		const changes = this.getPreviewChanges(session, updates);
+		const patch = validateSettingsPatch(changes, this.config);
+		const conflicts = new SvelteSet(
+			Object.keys(patch).filter(
+				(key) =>
+					!Object.is(this.config[key], this.previewBaseline![key]) &&
+					!Object.is(this.config[key], patch[key])
+			)
+		);
+		if ('fontFamily' in changes || 'fontVariant' in changes) {
+			for (const key of ['fontFamily', 'fontVariant']) {
+				if (
+					!Object.is(this.config[key], this.previewBaseline![key]) &&
+					!Object.is(this.config[key], patch[key])
+				)
+					conflicts.add(key);
+			}
+		}
+		for (const [key, value] of Object.entries(expected)) {
+			if (!Object.is(this.config[key], value)) conflicts.add(key);
+		}
+		// Detect conflicts before touching theme-owned resources. No silent same-field
+		// overwrite: the user must close/reopen Settings against the current values.
+		if (conflicts.size) return { ok: false, reason: 'conflict', keys: [...conflicts] };
+		const next = this.prepareUpdate(patch);
+		while (this.previewResources.length) {
+			const result = this.previewResources[0].commit(this.config);
 			if (!result.ok) {
 				const recovery = validateSettingsPatch(result.configPatch, this.config);
-				// A failed asset may already have removed its predecessor. Reconcile
-				// only its selection; never save the rest of the pending form here.
-				if (Object.entries(recovery).some(([key, value]) => this.config[key] !== value)) {
+				// Preserve the established resource recovery policy. Assets are not
+				// participants in configuration/overrides compensation.
+				if (Object.entries(recovery).some(([key, value]) => this.config[key] !== value))
 					this.updateMultipleConfig(recovery);
-				}
 				this.updatePreview(session, recovery);
 				return { ...result, configPatch: recovery, reason: 'resource' };
 			}
+			// A resource has already committed even if config subsequently fails.
+			// Retrying Save must not attempt to commit its ended preview again.
+			this.previewResources.shift();
 		}
-		// This is not an atomic transaction across all localStorage keys. Resources
-		// must succeed before the ordinary configuration persistence is attempted.
-		this.updateMultipleConfig(patch);
+		try {
+			this.commitState(next.config, next.overrides);
+		} catch (error) {
+			// Assets have their established independent commit policy. Reopen only
+			// their preview sessions against the actual stored resources, not old bytes.
+			this.previewResources = Object.values(THEME_REGISTRY).flatMap((theme) =>
+				theme.beginSettingsPreview ? [theme.beginSettingsPreview()] : []
+			);
+			throw error;
+		}
 		this.cancelPreview(session);
 		return { ok: true };
 	}
@@ -148,6 +221,7 @@ class SettingsStore {
 		this.previewResources = [];
 		this.preview = {};
 		this.previewSession = undefined;
+		this.previewBaseline = undefined;
 	}
 
 	/**
@@ -269,11 +343,6 @@ class SettingsStore {
 		try {
 			const savedConfig = parseSettingsStorage(localStorage.getItem(CONFIG_LOCALSTORAGE_KEY));
 			this.config = this.withSyncedProviderConnection(savedConfig);
-
-			if (savedConfig.theme !== this.config.theme || localStorage.getItem('theme') !== null) {
-				localStorage.removeItem('theme');
-				this.saveConfig();
-			}
 		} catch (error) {
 			console.warn('Failed to parse config from localStorage, using defaults:', error);
 			this.config = this.withSyncedProviderConnection({ ...SETTING_CONFIG_DEFAULT });
@@ -288,6 +357,10 @@ class SettingsStore {
 			console.warn('Failed to parse user overrides from localStorage:', error);
 			this.userOverrides.clear();
 		}
+		// Normalize the retired standalone theme key only through the common writer,
+		// after loading overrides. Failure must not be mistaken for a parse failure.
+		if (localStorage.getItem('theme') !== null)
+			this.commitState(this.config, this.userOverrides, { theme: null });
 	}
 
 	/**
@@ -304,49 +377,21 @@ class SettingsStore {
 	 * @param value - The new value for the configuration key
 	 */
 	updateConfig<K extends keyof SettingsConfigType>(key: K, value: SettingsConfigType[K]): void {
-		const updates = validateSettingsPatch(
-			{ [key]: value },
-			this.config
-		) as Partial<SettingsConfigType>;
+		const updates = validateSettingsPatch({ [key]: value }, this.config);
 		if (!(key in updates)) throw new Error(`Unknown setting ${String(key)}`);
-		const validatedValue = updates[key];
-		this.config = this.withSyncedProviderConnection(
-			{
-				...this.config,
-				...updates
-			} as SettingsConfigType,
-			new Set([key as string])
-		);
-
-		if (ParameterSyncService.canSyncParameter(key as string)) {
-			const propsDefaults = this.getServerDefaults();
-			const propsDefault = propsDefaults[key as string];
-
-			if (propsDefault !== undefined) {
-				const normalizedValue = normalizeFloatingPoint(validatedValue);
-				const normalizedDefault = normalizeFloatingPoint(propsDefault);
-
-				if (normalizedValue === normalizedDefault) {
-					this.userOverrides.delete(key as string);
-				} else {
-					this.userOverrides.add(key as string);
-				}
-			}
-		}
-
-		this.saveConfig();
+		this.updateMultipleConfig(updates);
 	}
 
 	/**
 	 * Update multiple configuration settings at once
 	 * @param updates - Object containing the configuration updates
 	 */
-	updateMultipleConfig(updates: Partial<SettingsConfigType>) {
+	private prepareUpdate(updates: Partial<SettingsConfigType>) {
 		const validatedUpdates = validateSettingsPatch(
 			updates,
 			this.config
 		) as Partial<SettingsConfigType>;
-		this.config = this.withSyncedProviderConnection(
+		const config = this.withSyncedProviderConnection(
 			{
 				...this.config,
 				...validatedUpdates
@@ -355,6 +400,7 @@ class SettingsStore {
 		);
 
 		const propsDefaults = this.getServerDefaults();
+		const overrides = new SvelteSet(this.userOverrides);
 
 		for (const [key, value] of Object.entries(validatedUpdates)) {
 			if (ParameterSyncService.canSyncParameter(key)) {
@@ -365,32 +411,76 @@ class SettingsStore {
 					const normalizedDefault = normalizeFloatingPoint(propsDefault);
 
 					if (normalizedValue === normalizedDefault) {
-						this.userOverrides.delete(key);
+						overrides.delete(key);
 					} else {
-						this.userOverrides.add(key);
+						overrides.add(key);
 					}
 				}
 			}
 		}
 
-		this.saveConfig();
+		return { config, overrides };
 	}
 
-	/**
-	 * Save the current configuration to localStorage
-	 */
-	private saveConfig() {
+	updateMultipleConfig(updates: Partial<SettingsConfigType>): void {
+		const next = this.prepareUpdate(updates);
+		this.commitState(next.config, next.overrides);
+	}
+
+	/** Single owner of config, overrides and auxiliary Reset keys (not wallpaper assets).
+	 * Stage/validate first, persist synchronously, then publish memory. External
+	 * tabs may observe intermediate writes: compensation is not browser atomicity. */
+	private commitState(
+		config: SettingsConfigType,
+		overrides: Iterable<string>,
+		extraWrites: Record<string, string | null> = {},
+		publishInPlace = false
+	): void {
+		const keys = [...overrides];
+		this.persistWrites({
+			...extraWrites,
+			[CONFIG_LOCALSTORAGE_KEY]: serializeSettingsStorage(config),
+			[USER_OVERRIDES_LOCALSTORAGE_KEY]: JSON.stringify(keys)
+		});
+		if (publishInPlace) Object.assign(this.config, config);
+		else this.config = config;
+		for (const key of this.userOverrides) if (!keys.includes(key)) this.userOverrides.delete(key);
+		for (const key of keys) if (!this.userOverrides.has(key)) this.userOverrides.add(key);
+	}
+
+	private persistWrites(writes: Record<string, string | null>): void {
 		if (!browser) return;
-
+		const previous: Record<string, string | null> = {};
+		const attempted: string[] = [];
+		let failedKey = '';
+		const write = (key: string, value: string | null) => {
+			if (value === null) localStorage.removeItem(key);
+			else localStorage.setItem(key, value);
+			if (localStorage.getItem(key) !== value) throw new Error('Storage verification failed');
+		};
 		try {
-			localStorage.setItem(CONFIG_LOCALSTORAGE_KEY, serializeSettingsStorage(this.config));
-
-			localStorage.setItem(
-				USER_OVERRIDES_LOCALSTORAGE_KEY,
-				JSON.stringify(Array.from(this.userOverrides))
-			);
+			for (const key of Object.keys(writes)) {
+				failedKey = key;
+				previous[key] = localStorage.getItem(key);
+			}
+			for (const [key, value] of Object.entries(writes)) {
+				failedKey = key;
+				attempted.push(key);
+				write(key, value);
+			}
 		} catch (error) {
-			console.error('Failed to save config to localStorage:', error);
+			const rollbackErrors: string[] = [];
+			for (const key of attempted.reverse()) {
+				const value = previous[key];
+				try {
+					// A native setItem failure leaves its key intact; avoid a needless
+					// compensating write when storage is already at the old value.
+					if (localStorage.getItem(key) !== value) write(key, value);
+				} catch {
+					rollbackErrors.push(key);
+				}
+			}
+			throw new SettingsPersistenceError(failedKey, error, rollbackErrors);
 		}
 	}
 
@@ -401,15 +491,6 @@ class SettingsStore {
 	 *
 	 *
 	 */
-
-	/**
-	 * Reset configuration to defaults
-	 */
-	resetConfig() {
-		this.cancelPreview();
-		this.config = validateSettingsPatch(SETTING_CONFIG_DEFAULT) as SettingsConfigType;
-		this.saveConfig();
-	}
 
 	/**
 	 * Reset all settings to defaults
@@ -438,21 +519,24 @@ class SettingsStore {
 			) as SettingsConfigValue;
 			hasResetValue = true;
 		} else if (serverDefaults[key] !== undefined) {
-			// sampling param known by server: clear it, let server decide
-			resetValue = '';
+			// Numeric sampling parameters may be omitted; booleans need real values.
+			resetValue =
+				typeof getConfigValue(SETTING_CONFIG_DEFAULT, key) === 'boolean' ? serverDefaults[key] : '';
 			hasResetValue = true;
 		} else if (key in SETTING_CONFIG_DEFAULT) {
 			resetValue = getConfigValue(SETTING_CONFIG_DEFAULT, key);
 			hasResetValue = true;
 		}
 
+		let next = this.config;
 		if (hasResetValue) {
 			const updates = validateSettingsPatch({ [key]: resetValue }, this.config);
-			this.config = { ...this.config, ...updates } as SettingsConfigType;
+			next = { ...this.config, ...updates } as SettingsConfigType;
 		}
-
-		this.userOverrides.delete(key);
-		this.saveConfig();
+		this.commitState(
+			next,
+			[...this.userOverrides].filter((value) => value !== key)
+		);
 	}
 
 	/**
@@ -474,16 +558,26 @@ class SettingsStore {
 			: {};
 		const propsDefaults = validateSettingsPatch(this.getServerDefaults(), this.config);
 		if (Object.keys(propsDefaults).length === 0) return;
+		const next = { ...this.config };
+		const overrides = new SvelteSet(this.userOverrides);
 
 		for (const [key, propsValue] of Object.entries(propsDefaults)) {
-			const currentValue = getConfigValue(this.config, key);
+			// Numeric sampling defaults stay omitted. Boolean server parameters cannot
+			// use that sentinel: adopt the current source's actual typed default.
+			if (
+				!overrides.has(key) &&
+				key in (serverStore.defaultParams ?? {}) &&
+				typeof getConfigValue(SETTING_CONFIG_DEFAULT, key) === 'boolean'
+			)
+				setConfigValue(next, key, propsValue);
+			const currentValue = getConfigValue(next, key);
 
 			const normalizedCurrent = normalizeFloatingPoint(currentValue);
 			const normalizedDefault = normalizeFloatingPoint(this.normalizeConfigValue(key, propsValue));
 
 			// if user value matches server, it's not a real override
 			if (normalizedCurrent === normalizedDefault) {
-				this.userOverrides.delete(key);
+				overrides.delete(key);
 			}
 		}
 
@@ -493,56 +587,28 @@ class SettingsStore {
 			for (const [key, value] of Object.entries(validatedWebuiSettings)) {
 				// Response rules belong to the user, not the currently connected provider.
 				if (RESPONSE_PREFERENCES.some((preference) => preference.key === key)) continue;
-				if (!this.userOverrides.has(key) && value !== undefined) {
-					setConfigValue(this.config, key, this.normalizeConfigValue(key, value));
+				if (!overrides.has(key) && value !== undefined) {
+					setConfigValue(next, key, this.normalizeConfigValue(key, value));
 				}
 			}
 		}
 
-		this.saveConfig();
+		// /props synchronization runs in a reactive effect. Preserve config identity
+		// and unchanged dependencies, but publish nothing until persistence succeeds.
+		this.commitState(next, overrides, {}, true);
 	}
 
-	/**
-	 * Reset all parameters to their default values (from props)
-	 * This is used by the "Reset to Default" functionality
-	 * Prioritizes server defaults from /props, falls back to webui defaults
+	/** Full global configuration reset. Central defaults include every theme and
+	 * future schema field. Do not import /props from the connection being discarded:
+	 * empty numeric defaults defer to the new source; its normal sync owns /props.
+	 * Separate wallpaper bytes and conversation/IndexedDB data are not configuration.
 	 */
-	forceSyncWithServerDefaults(): void {
-		const webuiSettings = serverStore.webuiSettings;
-		const validatedWebuiSettings = webuiSettings
-			? validateSettingsPatch(webuiSettings, this.config)
-			: {};
-		const propsDefaults = validateSettingsPatch(this.getServerDefaults(), this.config);
-		const nextConfig = { ...this.config };
-
-		for (const key of ParameterSyncService.getSyncableParameterKeys()) {
-			if (key in validatedWebuiSettings) {
-				// UI setting from admin config: write actual value
-				setConfigValue(
-					nextConfig,
-					key,
-					this.normalizeConfigValue(key, validatedWebuiSettings[key])
-				);
-			} else if (propsDefaults[key] !== undefined) {
-				// sampling param: clear it, let server decide
-				setConfigValue(nextConfig, key, '');
-			} else if (key in SETTING_CONFIG_DEFAULT) {
-				setConfigValue(nextConfig, key, getConfigValue(SETTING_CONFIG_DEFAULT, key));
-			}
-
-			this.userOverrides.delete(key);
-		}
-
-		// Global user-owned preferences are not provider sampling defaults.
-		// Include them in the existing confirmed Reset without making them server-syncable.
-		for (const { key } of RESPONSE_PREFERENCES) {
-			nextConfig[key] = SETTING_CONFIG_DEFAULT[key];
-			this.userOverrides.delete(key);
-		}
-		const normalizedConfig = validateSettingsPatch(nextConfig, this.config);
+	resetConfig(): void {
+		const committed = this.withSyncedProviderConnection(
+			validateSettingsPatch(SETTING_CONFIG_DEFAULT) as SettingsConfigType
+		);
+		this.commitState(committed, [], GLOBAL_CONFIG_STORAGE_DEFAULT);
 		this.cancelPreview();
-		this.config = { ...nextConfig, ...normalizedConfig };
-		this.saveConfig();
 	}
 
 	/**
@@ -608,8 +674,7 @@ class SettingsStore {
 	 * Clear all user overrides (for debugging)
 	 */
 	clearAllUserOverrides(): void {
-		this.userOverrides.clear();
-		this.saveConfig();
+		this.commitState(this.config, []);
 	}
 }
 

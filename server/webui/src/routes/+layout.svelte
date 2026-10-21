@@ -11,13 +11,14 @@
 		DialogChatSettings,
 		DialogAboutLlampart
 	} from '$lib/components/app';
-	import { isLoading } from '$lib/stores/chat.svelte';
+	import { chatStore, isLoading } from '$lib/stores/chat.svelte';
 	import { conversationsStore, activeMessages } from '$lib/stores/conversations.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { isRouterMode, serverStore } from '$lib/stores/server.svelte';
-	import { config, settingsStore } from '$lib/stores/settings.svelte';
-	import { Toaster } from 'svelte-sonner';
+	import { config, settingsStore, SettingsPersistenceError } from '$lib/stores/settings.svelte';
+	import { Toaster, toast } from 'svelte-sonner';
+	import { t } from '$lib/i18n';
 	import { goto } from '$app/navigation';
 	import { modelsStore } from '$lib/stores/models.svelte';
 	import { getApiProvider } from '$lib/services/providers';
@@ -197,11 +198,27 @@
 	});
 
 	// Sync settings when server props are loaded
+	let propsPersistenceErrorNotified: string | undefined;
 	$effect(() => {
 		const serverProps = serverStore.props;
-
-		if (serverProps) {
+		if (!serverProps) {
+			propsPersistenceErrorNotified = undefined;
+			return;
+		}
+		try {
 			settingsStore.syncWithServerDefaults();
+			propsPersistenceErrorNotified = undefined;
+		} catch (error) {
+			if (!(error instanceof SettingsPersistenceError)) throw error;
+			// A failed write publishes no config. Notify once until a successful
+			// sync (or a new source), without making notification reads dependencies.
+			const messageKey = error.rollbackErrors.length
+				? error.messageKey
+				: 'settings.propsSyncStorageError';
+			if (propsPersistenceErrorNotified !== messageKey) {
+				propsPersistenceErrorNotified = messageKey;
+				untrack(() => toast.error(t(messageKey), { id: 'settings-props-persistence' }));
+			}
 		}
 	});
 
@@ -282,12 +299,20 @@
 		});
 	});
 
-	// Set up title update confirmation callback
+	let effectiveCapabilityModel = $derived(
+		ChatService.resolveEffectiveModel(
+			ChatService.createProviderRequestContext(),
+			undefined,
+			chatStore.getConversationModel(activeMessages())
+		)
+	);
+
+	// Discovery uses the same wire model identity as composer/operation capture.
 	$effect(() => {
 		if (!browser) return;
-		const model = modelsStore.selectedModelName;
 		void modelsStore.models;
 		const context = ChatService.createProviderRequestContext();
+		const model = effectiveCapabilityModel;
 		untrack(() => {
 			modelsStore.refreshCapabilities(context, model).catch(() => {
 				/* Connection validation owns user-facing errors. */

@@ -6,10 +6,11 @@
 		open: boolean;
 		displayName: string;
 		onOpenChange: (open: boolean) => void;
-		onConfirm: () => void;
+		onConfirm: () => boolean;
+		errorMessage?: string;
 	}
 
-	let { open = $bindable(), displayName, onOpenChange, onConfirm }: Props = $props();
+	let { open = $bindable(), displayName, onOpenChange, onConfirm, errorMessage }: Props = $props();
 </script>
 
 <AlertDialog.Root bind:open {onOpenChange}>
@@ -23,11 +24,18 @@
 				)}
 			</AlertDialog.Description>
 		</AlertDialog.Header>
+		{#if errorMessage}<p role="alert" class="text-sm text-destructive">{errorMessage}</p>{/if}
 
 		<AlertDialog.Footer>
 			<AlertDialog.Cancel>{t('common.cancel')}</AlertDialog.Cancel>
 
-			<AlertDialog.Action class="bg-[#e7000b] text-white hover:bg-[#d6000a]" onclick={onConfirm}>
+			<AlertDialog.Action
+				class="bg-[#e7000b] text-white hover:bg-[#d6000a]"
+				onclick={(event) => {
+					event.preventDefault();
+					if (onConfirm()) onOpenChange(false);
+				}}
+			>
 				{t('common.delete')}
 			</AlertDialog.Action>
 		</AlertDialog.Footer>

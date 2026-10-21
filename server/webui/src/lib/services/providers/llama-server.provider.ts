@@ -1,7 +1,7 @@
 import { API_CHAT, API_MODELS } from '$lib/constants/api-endpoints';
 import { API_PROVIDER_IDS, API_PROVIDER_LABELS } from '$lib/constants/api-providers';
 import { LLAMA_SERVER_PROVIDER_CAPABILITIES } from '$lib/constants/provider-capabilities';
-import { effectiveLlamaReasoningEffort } from '$lib/utils/chat-template-thinking-detector';
+import { applyProviderReasoning } from './reasoning';
 import { serializeToolText } from '$lib/utils/tool-lifecycle';
 import { ReasoningFormat } from '$lib/enums';
 import { t } from '$lib/i18n';
@@ -155,10 +155,7 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 		custom,
 		timings_per_token,
 		disableReasoningParsing,
-		excludeReasoningFromContext,
-		enableThinking,
-		reasoningEffort,
-		llamaReasoningControl = 'none'
+		excludeReasoningFromContext
 	} = options;
 
 	const requestBody: ApiChatCompletionRequest = {
@@ -186,13 +183,6 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 	requestBody.reasoning_format = disableReasoningParsing
 		? ReasoningFormat.NONE
 		: ReasoningFormat.AUTO;
-
-	const automaticKwargs =
-		llamaReasoningControl === 'effort'
-			? { reasoning_effort: effectiveLlamaReasoningEffort(reasoningEffort) }
-			: llamaReasoningControl === 'toggle'
-				? { enable_thinking: enableThinking ?? false }
-				: {};
 
 	requestBody.reasoning_control = true;
 
@@ -228,13 +218,13 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 	if (backend_sampling !== undefined) requestBody.backend_sampling = backend_sampling;
 	if (timings_per_token !== undefined) requestBody.timings_per_token = timings_per_token;
 
+	let explicitCustom: Record<string, unknown> = {};
 	if (custom) {
 		let customParams: unknown;
 		try {
 			customParams = typeof custom === 'string' ? JSON.parse(custom) : custom;
-		} catch (error) {
-			console.warn('Failed to parse custom parameters:', error);
-			customParams = null;
+		} catch {
+			throw new Error('Custom parameters must be valid JSON');
 		}
 
 		if (customParams !== null) {
@@ -249,34 +239,16 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 					`Custom parameters cannot override protected chat request keys: ${collisions.join(', ')}`
 				);
 			}
-			if (llamaReasoningControl !== 'none') {
-				const params = customParams as Record<string, unknown>;
-				const kwargs = params.chat_template_kwargs;
-				if (
-					kwargs !== undefined &&
-					(!kwargs || typeof kwargs !== 'object' || Array.isArray(kwargs))
-				) {
-					throw new Error(t('chat.reasoningCustomConflict'));
-				}
-				// Explicit controls/budgets of either mechanism could contradict the menu.
-				const keys = [
-					'reasoning_effort',
-					'enable_thinking',
-					'thinking_budget_tokens',
-					'thinking_budget'
-				];
-				if (
-					keys.some((key) => Object.hasOwn(params, key) || (kwargs && Object.hasOwn(kwargs, key)))
-				) {
-					throw new Error(t('chat.reasoningCustomConflict'));
-				}
-			}
+			explicitCustom = customParams as Record<string, unknown>;
 			Object.assign(requestBody, customParams);
 		}
 	}
-	if (llamaReasoningControl !== 'none') {
-		requestBody.chat_template_kwargs = { ...requestBody.chat_template_kwargs, ...automaticKwargs };
-	}
+	applyProviderReasoning(
+		input,
+		'llama-server',
+		requestBody as unknown as Record<string, unknown>,
+		explicitCustom
+	);
 
 	return requestBody;
 }

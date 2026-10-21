@@ -186,7 +186,7 @@ export { PropsService } from './props.service';
  *
  * - **settingsStore**: Primary consumer — calls sync methods during:
  *   - Initial load (`syncWithServerDefaults`)
- *   - Settings reset (`forceSyncWithServerDefaults`)
+ *   - Individual parameter reset (`resetParameterToServerDefault`)
  *   - Parameter info queries (`getParameterInfo`)
  *
  * - **PropsService**: Provides raw server props that feed into extraction

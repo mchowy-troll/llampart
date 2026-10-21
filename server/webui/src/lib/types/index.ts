@@ -51,7 +51,7 @@ export type {
 	FileProcessingResult
 } from './chat.d';
 
-export type { ReasoningEffortLevel, ReasoningEffortOptionValue } from './reasoning';
+export type { ReasoningIntent, ReasoningCapabilities, ResolvedReasoning } from './reasoning';
 
 // Provider types
 export type {

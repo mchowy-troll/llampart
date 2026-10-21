@@ -64,7 +64,7 @@ const finalResponse = (status = 'completed', output: unknown[] = []): Record<str
 });
 
 describe('Chat Completions protocol', () => {
-	it('maps standard parameters, developer, tools, schema and multimodal content without llama flags', () => {
+	it('maps standard parameters, developer, tools, schema and multimodal content without llama flags', async () => {
 		const messages: ProviderChatCompletionInput['messages'] = [
 			...input.messages,
 			{
@@ -79,6 +79,9 @@ describe('Chat Completions protocol', () => {
 		];
 		const body = buildChatBody({
 			...input,
+			capabilities: await createCapabilitySnapshot(context, input.options.model!, {
+				capabilities: { reasoning_effort: { supported: true, values: ['low'] } }
+			}),
 			messages,
 			options: {
 				...input.options,
@@ -190,7 +193,7 @@ describe('capability snapshots and insecure-LAN fingerprint', () => {
 				capabilities,
 				options: { ...input.options, reasoning_effort: 'high' }
 			})
-		).toThrow('not supported');
+		).toThrow(/unavailable|not supported/);
 	});
 	it('computes exact SHA-256 without crypto.subtle and preserves shipped llama source identity', async () => {
 		vi.stubGlobal('crypto', undefined);
@@ -226,9 +229,15 @@ describe('capability snapshots and insecure-LAN fingerprint', () => {
 });
 
 describe('stateless Responses protocol', () => {
-	it('maps instructions, messages, image, tool calls/results, schema and no stateful fallbacks', () => {
+	it('maps instructions, messages, image, tool calls/results, schema and no stateful fallbacks', async () => {
 		const body = buildResponsesBody({
 			...input,
+			capabilities: await createCapabilitySnapshot(context, input.options.model!, {
+				capabilities: {
+					required_protocol: 'responses',
+					reasoning_effort: { supported: true, values: ['low'] }
+				}
+			}),
 			messages: [
 				...input.messages,
 				{

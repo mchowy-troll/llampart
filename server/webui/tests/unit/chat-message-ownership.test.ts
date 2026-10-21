@@ -10,6 +10,8 @@ import { modelsStore } from '$lib/stores/models.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
+import { createCapabilitySnapshot } from '$lib/services/providers/provider-capabilities';
+import { getApiProvider } from '$lib/services/providers';
 import type { McpServerOverride } from '$lib/types/database';
 
 const originalConfig = { ...settingsStore.config };
@@ -100,6 +102,122 @@ afterEach(() => {
 	chatStore.chatLoadingStates.clear();
 	chatStore.chatStreamingStates.clear();
 	chatStore.clearUIState();
+	vi.unstubAllGlobals();
+});
+
+describe.each([
+	['llama-server', 'chat-completions'],
+	['vllm', 'chat-completions'],
+	['openai-compatible', 'chat-completions'],
+	['vllm', 'responses'],
+	['openai-compatible', 'responses']
+] as const)('serialized operation reasoning %s/%s', (providerId, protocol) => {
+	it('captures A/low/model-A/capabilities before persistence await and never reads B/high', async () => {
+		vi.mocked(ChatService.sendMessage).mockRestore();
+		settingsStore.updateMultipleConfig({
+			apiProvider: providerId,
+			serverBaseUrl: 'http://reasoning.test',
+			apiKey: 'operation-key',
+			top_p: 0.7,
+			preEncodeConversation: false
+		});
+		serverStore.role = providerId === 'llama-server' ? ServerRole.ROUTER : null;
+		modelsStore.selectedModelName = 'model-A';
+		conversations[0].reasoning = { mode: 'effort', value: 'low' };
+		conversations[1].reasoning = { mode: 'effort', value: 'high' };
+		await conversationsStore.loadConversation('A');
+		const discovery = vi
+			.spyOn(modelsStore, 'refreshCapabilities')
+			.mockImplementation((context, model) =>
+				createCapabilitySnapshot(context, model ?? null, {
+					capabilities: {
+						...(protocol === 'responses' ? { required_protocol: 'responses' } : {}),
+						reasoning_effort: { supported: true, values: model === 'model-A' ? ['low'] : ['high'] }
+					}
+				})
+			);
+		const build = vi.spyOn(getApiProvider(providerId), 'buildChatCompletionRequest');
+		const requests: {
+			url: string;
+			body: Record<string, unknown>;
+			headers: Record<string, string>;
+		}[] = [];
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (url, init) => {
+				requests.push({
+					url: String(url),
+					body: JSON.parse(String(init.body)),
+					headers: init.headers
+				});
+				const event =
+					protocol === 'responses'
+						? {
+								type: 'response.completed',
+								response: {
+									id: 'response-A',
+									model: 'model-A',
+									status: 'completed',
+									output: [
+										{ type: 'message', content: [{ type: 'output_text', text: 'A answer' }] }
+									]
+								}
+							}
+						: {
+								model: 'model-A',
+								choices: [{ delta: { content: 'A answer' }, finish_reason: 'stop' }]
+							};
+				return new Response(`data: ${JSON.stringify(event)}\n\ndata: [DONE]\n\n`, {
+					headers: { 'Content-Type': 'text/event-stream' }
+				});
+			})
+		);
+		const ready = deferred(),
+			gate = deferred();
+		const create = vi.mocked(DatabaseService.createMessageBranch).getMockImplementation()!;
+		vi.mocked(DatabaseService.createMessageBranch).mockImplementation(async (...args) => {
+			const created = await create(...args);
+			if (created.role === MessageRole.USER) {
+				ready.resolve();
+				await gate.promise;
+			}
+			return created;
+		});
+		const pending = chatStore.sendMessage('Synthetic operation A');
+		await ready.promise;
+		await conversationsStore.loadConversation('B');
+		modelsStore.selectedModelName = 'model-B';
+		settingsStore.updateConfig('top_p', 0.9);
+		gate.resolve();
+		await pending;
+		expect(chatStore.errorDialogState).toBeNull();
+		expect(requests).toHaveLength(1);
+		expect(discovery).toHaveBeenCalledOnce();
+		expect(build.mock.calls[0][0].capabilities).toMatchObject({
+			providerId,
+			model: 'model-A',
+			protocol,
+			reasoning: { effort: { values: ['low'] } }
+		});
+		expect(build.mock.calls[0][0].options.operationModel).toMatchObject({
+			conversationId: 'A',
+			model: 'model-A',
+			reasoning: { mode: 'effort', value: 'low' }
+		});
+		expect(requests[0].body).toMatchObject({
+			model: 'model-A',
+			top_p: 0.7,
+			...(providerId === 'llama-server'
+				? { chat_template_kwargs: { reasoning_effort: 'low' } }
+				: protocol === 'responses'
+					? { reasoning: { effort: 'low' } }
+					: { reasoning_effort: 'low' })
+		});
+		expect(requests[0].url).toContain(`/api/${providerId}/`);
+		expect(requests[0].headers.Authorization).toBe('Bearer operation-key');
+		expect(conversationsStore.getReasoningIntent()).toEqual({ mode: 'effort', value: 'high' });
+		assertOwned('B');
+	});
 });
 
 describe('conversation-owned MCP operation snapshot', () => {

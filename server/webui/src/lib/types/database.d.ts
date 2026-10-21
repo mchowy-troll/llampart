@@ -1,6 +1,6 @@
 import type { ChatMessageTimings, ChatRole, ChatMessageType } from '$lib/types/chat';
 import type { AgenticTurnState } from '$lib/types/agentic';
-import { AttachmentSource, AttachmentType, ReasoningEffort } from '$lib/enums';
+import { AttachmentSource, AttachmentType } from '$lib/enums';
 
 export interface McpServerOverride {
 	serverId: string;
@@ -15,7 +15,8 @@ export interface DatabaseConversation {
 	pinned?: boolean;
 	mcpServerOverrides?: McpServerOverride[];
 	thinkingEnabled?: boolean;
-	reasoningEffort?: ReasoningEffort;
+	reasoningEffort?: string;
+	reasoning?: import('./reasoning').ReasoningIntent;
 	forkedFromConversationId?: string;
 }
 

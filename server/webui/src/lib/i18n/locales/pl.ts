@@ -23,6 +23,7 @@ export const pl: TranslationDictionary = {
 		share: 'Udział'
 	},
 	common: {
+		resetFailed: 'Nie udało się zapisać ustawień. Reset nie został zakończony; spróbuj ponownie.',
 		showCode: 'Pokaż kod',
 		saveSettings: 'Zapisz ustawienia',
 		save: 'Zapisz',
@@ -39,7 +40,7 @@ export const pl: TranslationDictionary = {
 		resetToDefault: 'Przywróć domyślne',
 		resetSettingsToDefault: 'Przywróć ustawienia domyślne',
 		resetSettingsDescription:
-			'Czy na pewno chcesz przywrócić wszystkie ustawienia do wartości domyślnych?',
+			'Przywrócić WSZYSTKIE ustawienia aplikacji do wartości domyślnych? Spowoduje to również usunięcie serwerów MCP, profili providerów, zapisanych adresów serwerów i kluczy API oraz przywrócenie języka angielskiego i domyślnego wyglądu. Historia rozmów nie zostanie usunięta. Parametry generacji będą korzystać z ustawień domyślnych wynikowego połączenia z serwerem.',
 		or: 'lub',
 		openWebsite: 'Otwórz stronę',
 		searchEllipsis: 'Szukaj...',
@@ -171,6 +172,12 @@ export const pl: TranslationDictionary = {
 		enterNewConversationName: 'Wpisz nową nazwę'
 	},
 	settings: {
+		storageSaveError:
+			'Nie udało się zapisać ustawień w pamięci przeglądarki. Zmiany pozostają otwarte; sprawdź wolne miejsce i uprawnienia przeglądarki, a następnie ponów zapis.',
+		storageRollbackError:
+			'Zapis nie powiódł się i nie udało się w pełni odtworzyć poprzednich zapisanych ustawień. Nie zatwierdzono zmian w pamięci aplikacji. Pamięć przeglądarki może być niespójna; ponów zapis przed odświeżeniem. Zasoby tapety są zapisywane osobno.',
+		concurrentSettingsConflict:
+			'Te ustawienia zmieniły się poza formularzem. Nic nie zapisano. Zamknij i ponownie otwórz Ustawienia, aby sprawdzić bieżące wartości przed kolejną edycją.',
 		sectionGeneral: 'Ogólne',
 		sectionDisplay: 'Wygląd',
 		sectionSampling: 'Sampling',
@@ -209,7 +216,11 @@ export const pl: TranslationDictionary = {
 		fieldFontFamily: 'Rodzina czcionek',
 		fieldFontVariant: 'Odmiana czcionki',
 		fieldFontSize: 'Wielkość czcionki',
-		fontDefault: 'Domyślna',
+		fontDefault: '{font} (domyślna)',
+		fontVariantDefault: '{variant} (domyślna)',
+		fontSizeDefault: '{size} px (domyślny)',
+		propsSyncStorageError:
+			'Nie udało się zapisać wartości domyślnych serwera. Poprzednie ustawienia pozostają aktywne. Synchronizację można ponowić przy następnej aktualizacji.',
 		defaultPrefix: 'Domyślnie:',
 		resetToDefault: 'Przywróć domyślne',
 		selected: 'Wybrano',
@@ -441,10 +452,10 @@ export const pl: TranslationDictionary = {
 			interfaceLanguage:
 				'Wybierz język interfejsu. Przy pierwszym uruchomieniu domyślny jest angielski.',
 			uiScale: 'Skala interfejsu desktopowego, od 90% do 110% co 5%.',
-			fontFamily: 'Lokalna czcionka interfejsu. Domyślna zachowuje dotychczasową typografię.',
+			fontFamily: 'Lokalna czcionka interfejsu. Fabryczna rodzina ma dopisek „domyślna”.',
 			fontVariant: 'Rzeczywista grubość bazowa. Wyróżnienia i czcionki kodu pozostają zachowane.',
 			fontSize:
-				'Bazowy rozmiar tekstu w px, niezależny od skali interfejsu. Domyślna zachowuje dotychczasowy responsywny rozmiar.',
+				'Bazowy rozmiar tekstu w px, niezależny od skali interfejsu. Fabryczny rozmiar ma dopisek „domyślny”.',
 			pasteLongTextToFileLen:
 				'Przy wklejaniu długiego tekstu zostanie on zamieniony na plik. Tą wartością sterujesz długością. Wartość 0 wyłącza to zachowanie.',
 			copyTextAttachmentsAsPlainText:
@@ -618,21 +629,32 @@ export const pl: TranslationDictionary = {
 		reasoningEffortTitle: 'Wysiłek Reasoning',
 		reasoningLabel: 'Reasoning',
 		reasoningEnabled: 'Włączone',
-		reasoningCustomConflict:
-			'Konflikt sterowania Reasoning: usuń parametry reasoning z Custom JSON lub wybierz model bez automatycznego sterowania. Żądanie nie zostało wysłane.',
+		reasoningDefault: 'Domyślne / Auto',
+		reasoningUnavailable:
+			'Zapisany wybór reasoning jest niedostępny dla tego źródła/modelu/protokołu. Wybierz Domyślne/Auto lub obsługiwaną opcję.',
+		reasoningDeclarationTitle: 'Zaawansowane: zadeklaruj poziomy effort',
+		reasoningDeclarationHint:
+			'Podaj dokładne wartości udokumentowane przez backend, oddzielone przecinkami. To Twoja deklaracja, nie automatyczne wykrywanie. Dotyczy tylko tego połączenia, modelu, protokołu oraz szablonu/wersji serwera; nie weryfikuje akceptacji.',
+		reasoningDeclarationInvalid:
+			'Podaj 1–16 różnych nazw poziomów (litery, cyfry, kropka, myślnik lub podkreślenie; maksymalnie 64 znaki każda).',
+		reasoningDeclarationApply: 'Zapisz deklarację',
+		reasoningDeclarationClear: 'Usuń deklarację',
+		reasoningDeclarationUser:
+			'Poziomy effort zadeklarowane przez Ciebie, bez automatycznej weryfikacji.',
+		reasoningUnknown:
+			'Backend nie zadeklarował możliwości reasoning. Zachowano domyślne ustawienia serwera.',
+		reasoningLevelsUnknown:
+			'Reasoning jest obsługiwany, ale backend nie zadeklarował dozwolonych poziomów wysiłku.',
 		reasoningConfigureHint: 'Kliknij, aby skonfigurować.',
-		reasoningDisabledTooltip: 'Reasoning wyłączone',
 		reasoningEffort: {
+			minimal: 'Minimalny',
+			xhigh: 'Bardzo wysoki',
 			off: 'Wyłączone',
 			low: 'Niski',
 			medium: 'Średni',
 			high: 'Wysoki',
 			max: 'Maks.'
 		},
-		reasoningUnlimited: 'Bez limitu',
-		reasoningMaxTokensPrefix: 'Maks.',
-		reasoningMaxTokensSuffix: 'tokenów',
-		reasoningMaxInfo: 'Maksymalny wysiłek Reasoning z rozszerzonym użyciem kontekstu',
 		pdfVisionSuggestion: 'Możesz włączyć przetwarzanie PDF-ów jako obrazów dla modeli vision.',
 		pdfVisionSuggestionAction: 'Włącz PDF jako obrazy',
 		pdfVisionEnabled: 'Przetwarzanie PDF-ów jako obrazów zostało włączone.',

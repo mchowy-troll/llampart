@@ -4,6 +4,7 @@ import {
 	USER_OVERRIDES_LOCALSTORAGE_KEY
 } from '$lib/constants';
 import type { SettingsConfigValue } from '$lib/types';
+import { settingsStore } from '$lib/stores/settings.svelte';
 import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
 import {
 	parseSettingsStorage,
@@ -144,7 +145,7 @@ export function importApplicationSettings(fileText: string): SettingsImportResul
 		Object.keys(NEW_SETTINGS_GROUPS) as (keyof typeof NEW_SETTINGS_GROUPS)[]
 	).filter((group) => NEW_SETTINGS_GROUPS[group].some((key) => !Object.hasOwn(fileSettings, key)));
 
-	const currentConfig = getStoredConfig();
+	const currentConfig = settingsStore.config;
 	const candidateSettings: Record<string, unknown> = {};
 
 	for (const [key, value] of Object.entries(parsed.settings)) {
@@ -166,6 +167,12 @@ export function importApplicationSettings(fileText: string): SettingsImportResul
 		CONFIG_LOCALSTORAGE_KEY,
 		serializeSettingsStorage({ ...currentConfig, ...importedSettings } as SettingsConfigType)
 	);
+	localStorage.setItem(USER_OVERRIDES_LOCALSTORAGE_KEY, JSON.stringify(nextOverrides));
+	// Imports are committed changes too. Keep the existing store authoritative so a
+	// later form Save cannot resurrect its pre-import snapshot (including MCP).
+	settingsStore.updateMultipleConfig(importedSettings);
+	settingsStore.userOverrides.clear();
+	for (const key of nextOverrides) settingsStore.userOverrides.add(key);
 	localStorage.setItem(USER_OVERRIDES_LOCALSTORAGE_KEY, JSON.stringify(nextOverrides));
 	return { missingSettingsGroups };
 }
