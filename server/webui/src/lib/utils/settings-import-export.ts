@@ -9,7 +9,6 @@ import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
 import {
 	parseSettingsStorage,
 	parseUserOverrides,
-	serializeSettingsStorage,
 	validateSettingsPatch
 } from '$lib/utils/settings-schema';
 
@@ -158,21 +157,11 @@ export function importApplicationSettings(fileText: string): SettingsImportResul
 				(key): key is string => typeof key === 'string' && EXPORTABLE_CONFIG_KEY_SET.has(key)
 			)
 		: [];
-	const existingOverrides = getStoredUserOverrides().filter(
+	const existingOverrides = [...settingsStore.userOverrides].filter(
 		(key) => !EXPORTABLE_CONFIG_KEY_SET.has(key)
 	);
 	const nextOverrides = [...new Set([...existingOverrides, ...importedOverrides])];
 
-	localStorage.setItem(
-		CONFIG_LOCALSTORAGE_KEY,
-		serializeSettingsStorage({ ...currentConfig, ...importedSettings } as SettingsConfigType)
-	);
-	localStorage.setItem(USER_OVERRIDES_LOCALSTORAGE_KEY, JSON.stringify(nextOverrides));
-	// Imports are committed changes too. Keep the existing store authoritative so a
-	// later form Save cannot resurrect its pre-import snapshot (including MCP).
-	settingsStore.updateMultipleConfig(importedSettings);
-	settingsStore.userOverrides.clear();
-	for (const key of nextOverrides) settingsStore.userOverrides.add(key);
-	localStorage.setItem(USER_OVERRIDES_LOCALSTORAGE_KEY, JSON.stringify(nextOverrides));
+	settingsStore.commitImportedSettings(importedSettings, nextOverrides);
 	return { missingSettingsGroups };
 }

@@ -12,6 +12,7 @@
 	import { ISO_DATE_TIME_SEPARATOR } from '$lib/constants';
 	import { parseConversationImport } from '$lib/utils/conversation-import-export';
 	import { conversationsStore, conversations } from '$lib/stores/conversations.svelte';
+	import { SettingsPersistenceError } from '$lib/stores/settings.svelte';
 	import { toast } from 'svelte-sonner';
 	import { t } from '$lib/i18n';
 	import { SvelteMap } from 'svelte/reactivity';
@@ -182,7 +183,8 @@
 					showSettingsReloadDialog = true;
 				} catch (err) {
 					console.error('Settings import failed:', err);
-					alert(t('settings.importExport.failedToImportSettingsCheckFormat'));
+					if (err instanceof SettingsPersistenceError) toast.error(t(err.messageKey));
+					else alert(t('settings.importExport.failedToImportSettingsCheckFormat'));
 				}
 			};
 

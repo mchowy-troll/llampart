@@ -427,6 +427,19 @@ class SettingsStore {
 		this.commitState(next.config, next.overrides);
 	}
 
+	/** Import is a partial committed update, not a form snapshot. The file's
+	 * overrides replace the exportable overrides, rather than being inferred from
+	 * the currently connected server's defaults. Keep active preview baselines:
+	 * independent draft edits survive, conflicting edits cannot undo the import. */
+	commitImportedSettings(updates: Partial<SettingsConfigType>, overrides: Iterable<string>): void {
+		const patch = validateSettingsPatch(updates, this.config);
+		const next = this.withSyncedProviderConnection(
+			{ ...this.config, ...patch } as SettingsConfigType,
+			new Set(Object.keys(patch))
+		);
+		this.commitState(next, new Set(overrides));
+	}
+
 	/** Single owner of config, overrides and auxiliary Reset keys (not wallpaper assets).
 	 * Stage/validate first, persist synchronously, then publish memory. External
 	 * tabs may observe intermediate writes: compensation is not browser atomicity. */

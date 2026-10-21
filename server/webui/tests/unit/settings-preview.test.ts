@@ -255,6 +255,36 @@ describe('settings preview through the real store', () => {
 			uiScale: '105'
 		});
 	});
+	it.each(['Save', 'Cancel'])(
+		'does not let a conflicting old draft %s undo an import or immediate MCP update',
+		(action) => {
+			const session = settingsStore.beginPreview();
+			const draft = { ...config(), fontSize: '20', uiScale: '105' };
+			settingsStore.updatePreview(session, draft);
+			mcpStore.addServer({ id: 'after-open', url: 'http://synthetic.invalid/mcp', enabled: true });
+			importApplicationSettings(
+				JSON.stringify({
+					type: 'llampart-settings-export',
+					formatVersion: 1,
+					settings: { fontSize: '18' }
+				})
+			);
+			const imported = { ...config() };
+			if (action === 'Save') {
+				expect(settingsStore.commitPreview(session, draft)).toEqual({
+					ok: false,
+					reason: 'conflict',
+					keys: ['fontSize']
+				});
+				expect(settingsStore.isPreviewCurrent(session)).toBe(true);
+			}
+			settingsStore.cancelPreview(session);
+			expect(config()).toEqual(imported);
+			settingsStore.initialize();
+			expect(config()).toEqual(imported);
+			expect(mcpStore.getServers()[0].id).toBe('after-open');
+		}
+	);
 	it('fully resets every central configuration field, MCP, profiles and overrides; preserves assets and reload defaults', () => {
 		serverStore.props = {
 			default_generation_settings: { params: { temperature: 0.8, backend_sampling: true } },

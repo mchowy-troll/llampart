@@ -31,7 +31,16 @@ import {
 	MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY
 } from '$lib/constants/localstorage-keys';
 
-const storage = new Map<string, string>();
+vi.mock('$app/environment', () => ({ browser: true }));
+const storage = vi.hoisted(() => {
+	const values = new Map<string, string>();
+	vi.stubGlobal('localStorage', {
+		getItem: (key: string) => values.get(key) ?? null,
+		setItem: (key: string, value: string) => values.set(key, value),
+		removeItem: (key: string) => values.delete(key)
+	});
+	return values;
+});
 
 afterEach(() => {
 	vi.unstubAllGlobals();
@@ -44,6 +53,7 @@ beforeEach(() => {
 		setItem: (key: string, value: string) => storage.set(key, value),
 		removeItem: (key: string) => storage.delete(key)
 	});
+	settingsStore.initialize();
 });
 
 describe('settings JSON import/export compatibility', () => {
@@ -60,7 +70,7 @@ describe('settings JSON import/export compatibility', () => {
 	const importPatch = (settings: Record<string, unknown>, userOverrides?: unknown) => {
 		// Standalone file fixtures must initialize the authoritative in-memory state,
 		// just as opening the application does before a user imports settings.
-		settingsStore.config = parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY) ?? null);
+		settingsStore.initialize();
 		return importApplicationSettings(
 			JSON.stringify({
 				type: 'llampart-settings-export',
@@ -129,6 +139,7 @@ describe('settings JSON import/export compatibility', () => {
 			expect(data.settings).toMatchObject({ ...newSettings, ...preferences });
 			for (const { key } of RESPONSE_PREFERENCES) expect(data.settings[key]).toBeTypeOf('boolean');
 			storage.clear();
+			settingsStore.initialize();
 			expect(importApplicationSettings(text)).toEqual({ missingSettingsGroups: [] });
 			expect(savedConfig()).toEqual(parseSettingsStorage(serializeSettingsStorage(values)));
 			expect(JSON.parse(storage.get(USER_OVERRIDES_LOCALSTORAGE_KEY)!)).toEqual(data.userOverrides);
@@ -372,7 +383,19 @@ describe('settings JSON import/export compatibility', () => {
 				},
 				['theme', 'apiKey', 'agenticMaxTurns', 'unknown', 4]
 			);
-			expect(savedConfig()).toMatchObject({ ...excluded, apiProvider });
+			const activeProfile = {
+				'llama-server': ['http://llama.invalid', 'llama-secret'],
+				vllm: ['http://vllm.invalid', 'vllm-secret'],
+				'openai-compatible': ['http://openai.invalid', 'openai-secret']
+			}[apiProvider]!;
+			// Real browser initialization and commits project aliases from the active
+			// profile; the excluded provider-owned profiles themselves stay unchanged.
+			expect(savedConfig()).toMatchObject({
+				...excluded,
+				apiProvider,
+				serverBaseUrl: activeProfile[0],
+				apiKey: activeProfile[1]
+			});
 			expect(savedConfig()).not.toHaveProperty('vllmProtocol');
 			expect(savedConfig()).not.toHaveProperty('openAiCompatibleProtocol');
 			expect(JSON.parse(storage.get(USER_OVERRIDES_LOCALSTORAGE_KEY)!)).toEqual([
