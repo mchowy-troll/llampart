@@ -61,6 +61,8 @@ export async function createCapabilitySnapshot(
 		'response_format',
 		'temperature',
 		'top_p',
+		'stop',
+		'seed',
 		'presence_penalty',
 		'frequency_penalty',
 		'max_tokens',

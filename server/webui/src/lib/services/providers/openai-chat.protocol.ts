@@ -141,7 +141,7 @@ export function parseChatResponse(data: unknown): ProviderChatCompletionResponse
 	};
 }
 
-const standardParameters = {
+export const standardParameters = {
 	temperature: z.number().finite().min(0).max(2),
 	top_p: z.number().finite().min(0).max(1),
 	presence_penalty: z.number().finite().min(-2).max(2),

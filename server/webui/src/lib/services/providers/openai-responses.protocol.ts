@@ -5,7 +5,12 @@ import type {
 	ProviderChatCompletionResponse,
 	ProviderChatCompletionStreamEvent
 } from '$lib/types/provider';
-import { buildChatBody, customParameters, normalizeOpenAiUsage } from './openai-chat.protocol';
+import {
+	buildChatBody,
+	customParameters,
+	normalizeOpenAiUsage,
+	standardParameters
+} from './openai-chat.protocol';
 import { applyProviderReasoning } from './reasoning';
 
 const object = (value: unknown): Record<string, unknown> =>
@@ -162,6 +167,14 @@ export function buildResponsesBody(
 	// Backend extensions stay flat. Standard Chat-only fields need an explicit error,
 	// not silent loss during translation to Responses.
 	for (const [key, value] of Object.entries(custom)) {
+		if (providerId === 'vllm' && (key === 'stop' || key === 'seed')) {
+			// buildChatBody already checks unsupported, values and numeric ranges.
+			// Reuse its validated value and schemas (Zod 4 int is a safe integer),
+			// rejecting even explicitly supplied undefined instead of silently omitting it.
+			// Only Custom JSON opts in; do not introduce Settings defaults here.
+			body[key] = standardParameters[key].parse(chat[key]);
+			continue;
+		}
 		if (['stop', 'logprobs', 'seed'].includes(key))
 			throw new Error(`Custom parameter is not supported by Responses serialization: ${key}`);
 		if (
