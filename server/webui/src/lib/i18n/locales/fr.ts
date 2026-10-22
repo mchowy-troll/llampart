@@ -171,6 +171,9 @@ export const fr: TranslationDictionary = {
 		stopGeneration: 'Arrêter la génération',
 		moreActions: 'Plus d’actions',
 		editConversationNameTitle: 'Modifier le nom de la conversation',
+		failedToRenameConversation:
+			'Le nom de la conversation n’a pas pu être enregistré. Veuillez réessayer.',
+		savingConversationName: 'Enregistrement…',
 		enterNewConversationName: 'Entrez un nouveau nom'
 	},
 	settings: {

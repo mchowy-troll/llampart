@@ -628,11 +628,17 @@ class ChatStore {
 					allExtras,
 					currentConv.id
 				);
-				if (isNewConversation && content)
-					await conversationsStore.updateConversationName(
-						currentConv.id,
-						generateConversationTitle(content, Boolean(config().titleGenerationUseFirstLine))
-					);
+				if (isNewConversation && content) {
+					await conversationsStore
+						.updateConversationName(
+							currentConv.id,
+							generateConversationTitle(content, Boolean(config().titleGenerationUseFirstLine))
+						)
+						.catch((error) => {
+							// Naming is best-effort: the user message is already persisted.
+							console.warn('Failed to name new conversation:', error);
+						});
+				}
 				const assistantMessage = await this.createAssistantMessage(currentConv.id, userMessage.id);
 				conversationsStore.addMessageToActive(assistantMessage);
 				const history = await conversationsStore.getConversationMessages(currentConv.id);
@@ -1468,10 +1474,12 @@ class ChatStore {
 				conversationsStore.activeMessages = conversationPath;
 			}
 			if (isFirstUserMessage && newContent.trim())
-				await conversationsStore.updateConversationTitleWithConfirmation(
-					activeConv.id,
-					generateConversationTitle(newContent, Boolean(config().titleGenerationUseFirstLine))
-				);
+				await conversationsStore
+					.updateConversationTitleWithConfirmation(
+						activeConv.id,
+						generateConversationTitle(newContent, Boolean(config().titleGenerationUseFirstLine))
+					)
+					.catch((error) => console.warn('Failed to update conversation title:', error));
 			await conversationsStore.refreshConversationTimestamp(activeConv.id);
 			this.setChatLoading(activeConv.id, true);
 			this.clearChatStreaming(activeConv.id);
@@ -1763,10 +1771,12 @@ class ChatStore {
 			const rootMessage = allMessages.find((m) => m.type === 'root' && m.parent === null);
 
 			if (rootMessage && msg.parent === rootMessage.id && newContent.trim()) {
-				await conversationsStore.updateConversationTitleWithConfirmation(
-					activeConv.id,
-					generateConversationTitle(newContent, Boolean(config().titleGenerationUseFirstLine))
-				);
+				await conversationsStore
+					.updateConversationTitleWithConfirmation(
+						activeConv.id,
+						generateConversationTitle(newContent, Boolean(config().titleGenerationUseFirstLine))
+					)
+					.catch((error) => console.warn('Failed to update conversation title:', error));
 			}
 
 			await conversationsStore.refreshConversationTimestamp(activeConv.id);
@@ -1846,10 +1856,12 @@ class ChatStore {
 
 			await conversationsStore.refreshConversationTimestamp(activeConv.id);
 			if (isFirstUserMessage && newContent.trim())
-				await conversationsStore.updateConversationTitleWithConfirmation(
-					activeConv.id,
-					generateConversationTitle(newContent, Boolean(config().titleGenerationUseFirstLine))
-				);
+				await conversationsStore
+					.updateConversationTitleWithConfirmation(
+						activeConv.id,
+						generateConversationTitle(newContent, Boolean(config().titleGenerationUseFirstLine))
+					)
+					.catch((error) => console.warn('Failed to update conversation title:', error));
 			await conversationsStore.refreshActiveMessages(activeConv.id);
 			if (msg.role === MessageRole.USER)
 				await this.generateResponseForMessage(

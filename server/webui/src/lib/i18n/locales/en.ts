@@ -169,6 +169,8 @@ export const en: TranslationDictionary = {
 		stopGeneration: 'Stop generation',
 		moreActions: 'More actions',
 		editConversationNameTitle: 'Edit Conversation Name',
+		failedToRenameConversation: 'The conversation name could not be saved. Please try again.',
+		savingConversationName: 'Saving…',
 		enterNewConversationName: 'Enter a new name'
 	},
 	settings: {

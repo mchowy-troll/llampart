@@ -536,6 +536,7 @@ class ConversationsStore {
 	 * Updates the name of a conversation.
 	 * @param convId - The conversation ID to update
 	 * @param name - The new name for the conversation
+	 * @throws Persistence errors; in-memory names change only after the transaction commits.
 	 */
 	async updateConversationName(convId: string, name: string): Promise<void> {
 		try {
@@ -553,6 +554,7 @@ class ConversationsStore {
 			}
 		} catch (error) {
 			console.error('Failed to update conversation name:', error);
+			throw error;
 		}
 	}
 
@@ -619,6 +621,7 @@ class ConversationsStore {
 	 * @param convId - The conversation ID to update
 	 * @param newTitle - The new title content
 	 * @returns True if title was updated, false if cancelled
+	 * @throws Persistence/confirmation errors (not a user cancellation).
 	 */
 	async updateConversationTitleWithConfirmation(
 		convId: string,
@@ -629,7 +632,7 @@ class ConversationsStore {
 
 			if (currentConfig.askForTitleConfirmation && this.titleUpdateConfirmationCallback) {
 				const conversation = await DatabaseService.getConversation(convId);
-				if (!conversation) return false;
+				if (!conversation) throw new Error(`Conversation ${convId} not found`);
 
 				const shouldUpdate = await this.titleUpdateConfirmationCallback(
 					conversation.name,
@@ -642,7 +645,7 @@ class ConversationsStore {
 			return true;
 		} catch (error) {
 			console.error('Failed to update conversation title with confirmation:', error);
-			return false;
+			throw error;
 		}
 	}
 
@@ -744,7 +747,10 @@ class ConversationsStore {
 						newFirstUserMessage.content,
 						Boolean(config().titleGenerationUseFirstLine)
 					)
-				);
+				).catch((error) => {
+					// The branch has already changed; a title failure must not undo navigation.
+					console.warn('Failed to update branch title:', error);
+				});
 			}
 		}
 	}

@@ -14,6 +14,8 @@
 		X
 	} from '@lucide/svelte';
 	import { toast } from 'svelte-sonner';
+	import { onDestroy } from 'svelte';
+	import { ConversationRenameState } from './conversation-rename.svelte';
 	import ChatSidebarConversationItem from '$lib/components/app/chat/ChatSidebar/ChatSidebarConversationItem.svelte';
 	import DialogConfirmation from '$lib/components/app/dialogs/DialogConfirmation.svelte';
 	import { Checkbox } from '$lib/components/ui/checkbox';
@@ -82,9 +84,13 @@
 	let selectedConversationIds = $state<string[]>([]);
 	let selectionAnchorId = $state<string | null>(null);
 	let bulkDeleteTargetIds = $state<string[]>([]);
-	let showEditDialog = $state(false);
 	let selectedConversation = $state<DatabaseConversation | null>(null);
-	let editedName = $state('');
+	const rename = new ConversationRenameState();
+	onDestroy(() => rename.reset());
+	let renameInput = $state<HTMLInputElement | null>(null);
+	$effect(() => {
+		if (rename.hasError && !rename.pending) renameInput?.focus();
+	});
 	let sidebarSearchInput: HTMLInputElement | null = $state(null);
 	let sidebarViewportWidth = $state(0);
 	let isCompactSidebar = $derived(Boolean(config().compactSidebar));
@@ -184,9 +190,7 @@
 	async function handleEditConversation(id: string) {
 		const conversation = conversations().find((conv) => conv.id === id);
 		if (conversation) {
-			selectedConversation = conversation;
-			editedName = conversation.name;
-			showEditDialog = true;
+			rename.openFor(conversation);
 		}
 	}
 
@@ -369,15 +373,6 @@
 				}
 			}, 100);
 		}
-	}
-
-	function handleConfirmEdit() {
-		if (!editedName.trim() || !selectedConversation) return;
-
-		showEditDialog = false;
-
-		conversationsStore.updateConversationName(selectedConversation.id, editedName);
-		selectedConversation = null;
 	}
 
 	export function activateSearchMode() {
@@ -797,31 +792,41 @@
 </DialogConfirmation>
 
 <DialogConfirmation
-	bind:open={showEditDialog}
+	bind:open={rename.open}
 	title={t('sidebar.editConversationNameTitle')}
 	description=""
-	confirmText={t('common.save')}
+	confirmText={rename.pending ? t('sidebar.savingConversationName') : t('common.save')}
 	cancelText={t('common.cancel')}
 	icon={Pencil}
-	onConfirm={handleConfirmEdit}
-	onCancel={() => {
-		showEditDialog = false;
-		selectedConversation = null;
-	}}
-	onKeydown={(e) => {
-		if (e.key === 'Enter') {
-			e.preventDefault();
-			e.stopImmediatePropagation();
-			handleConfirmEdit();
-		}
-	}}
+	confirmOnEnter={false}
+	pending={rename.pending}
+	confirmDisabled={!rename.name.trim()}
+	onConfirm={() => rename.save()}
+	onCancel={() => rename.cancel()}
 >
 	<Input
 		class="text-foreground"
 		placeholder={t('sidebar.enterNewConversationName')}
+		bind:ref={renameInput}
+		aria-label={t('sidebar.enterNewConversationName')}
+		aria-invalid={rename.hasError}
+		aria-describedby={rename.hasError ? 'conversation-rename-error' : undefined}
+		readonly={rename.pending}
+		onkeydown={(event) => {
+			if (event.key === 'Enter' && !event.isComposing) {
+				event.preventDefault();
+				event.stopPropagation();
+				void rename.save();
+			}
+		}}
 		type="text"
-		bind:value={editedName}
+		bind:value={rename.name}
 	/>
+	{#if rename.hasError}
+		<p id="conversation-rename-error" role="alert" class="text-sm text-destructive">
+			{t('sidebar.failedToRenameConversation')}
+		</p>
+	{/if}
 </DialogConfirmation>
 
 <style>

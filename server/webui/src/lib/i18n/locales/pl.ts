@@ -169,6 +169,8 @@ export const pl: TranslationDictionary = {
 		stopGeneration: 'Zatrzymaj generowanie',
 		moreActions: 'Więcej akcji',
 		editConversationNameTitle: 'Edytuj nazwę rozmowy',
+		failedToRenameConversation: 'Nie udało się zapisać nazwy rozmowy. Spróbuj ponownie.',
+		savingConversationName: 'Zapisywanie…',
 		enterNewConversationName: 'Wpisz nową nazwę'
 	},
 	settings: {

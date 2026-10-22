@@ -171,6 +171,9 @@ export const de: TranslationDictionary = {
 		stopGeneration: 'Generierung stoppen',
 		moreActions: 'Weitere Aktionen',
 		editConversationNameTitle: 'Unterhaltungsnamen bearbeiten',
+		failedToRenameConversation:
+			'Der Unterhaltungsname konnte nicht gespeichert werden. Bitte erneut versuchen.',
+		savingConversationName: 'Wird gespeichert…',
 		enterNewConversationName: 'Neuen Namen eingeben'
 	},
 	settings: {

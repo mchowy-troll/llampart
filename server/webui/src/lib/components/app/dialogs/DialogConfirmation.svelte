@@ -16,6 +16,10 @@
 		onCancel: () => void;
 		onKeydown?: (event: KeyboardEvent) => void;
 		children?: Snippet;
+		/** Disable content-wide Enter when a child input handles submission. */
+		confirmOnEnter?: boolean;
+		pending?: boolean;
+		confirmDisabled?: boolean;
 	}
 
 	let {
@@ -29,26 +33,34 @@
 		onConfirm,
 		onCancel,
 		onKeydown,
-		children
+		children,
+		confirmOnEnter = true,
+		pending = false,
+		confirmDisabled = false
 	}: Props = $props();
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === KeyboardKey.ENTER) {
+		if (confirmOnEnter && event.key === KeyboardKey.ENTER) {
 			event.preventDefault();
-			onConfirm();
+			if (!pending && !confirmDisabled) onConfirm();
 		}
 		onKeydown?.(event);
 	}
 
 	function handleOpenChange(newOpen: boolean) {
-		if (!newOpen) {
+		if (!newOpen && !pending) {
 			onCancel();
 		}
 	}
 </script>
 
 <AlertDialog.Root {open} onOpenChange={handleOpenChange}>
-	<AlertDialog.Content onkeydown={handleKeydown}>
+	<AlertDialog.Content
+		onkeydown={handleKeydown}
+		onEscapeKeydown={(event) => {
+			if (pending) event.preventDefault();
+		}}
+	>
 		<AlertDialog.Header>
 			<AlertDialog.Title class="flex items-center gap-2">
 				{#if icon}
@@ -68,8 +80,15 @@
 		{/if}
 
 		<AlertDialog.Footer>
-			<AlertDialog.Cancel onclick={onCancel}>{cancelText}</AlertDialog.Cancel>
+			<AlertDialog.Cancel disabled={pending} onclick={onCancel}>
+				{#snippet child({ props })}
+					<!-- Bits UI guards cancellation but does not forward disabled to this button. -->
+					<button {...props} disabled={pending}>{cancelText}</button>
+				{/snippet}
+			</AlertDialog.Cancel>
 			<AlertDialog.Action
+				disabled={pending || confirmDisabled}
+				aria-busy={pending}
 				onclick={onConfirm}
 				class={variant === 'destructive' ? 'bg-[#e7000b] text-white hover:bg-[#d6000a]' : ''}
 			>

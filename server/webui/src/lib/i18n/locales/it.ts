@@ -170,6 +170,8 @@ export const it: TranslationDictionary = {
 		stopGeneration: 'Ferma generazione',
 		moreActions: 'Altre azioni',
 		editConversationNameTitle: 'Modifica nome conversazione',
+		failedToRenameConversation: 'Impossibile salvare il nome della conversazione. Riprova.',
+		savingConversationName: 'Salvataggio…',
 		enterNewConversationName: 'Inserisci un nuovo nome'
 	},
 	settings: {
