@@ -24,6 +24,10 @@ export function buildResponsesBody(
 		: 'openai-compatible'
 ): Record<string, unknown> {
 	const custom = customParameters(input);
+	// Responses has no n, even when Chat accepts 1/null. Reject before shared
+	// validation/normalization and before the extension-copy loop can reintroduce it.
+	if (Object.hasOwn(custom, 'n') || Object.hasOwn(input.options, 'n'))
+		throw new Error('Responses API does not support n; remove the parameter');
 	// Unlike Chat Completions, standard Responses has no penalty parameters.
 	// Neutral UI defaults are harmless; explicit Custom JSON remains intentional.
 	const penalties: Record<string, unknown> = {};

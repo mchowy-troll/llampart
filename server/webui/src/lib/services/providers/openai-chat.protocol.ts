@@ -9,6 +9,8 @@ import type {
 } from '$lib/types/provider';
 
 const nonnegative = z.number().finite().nonnegative();
+// A generation owns only choice 0; tool-call indices remain independent.
+const choiceIndex = z.literal(0, { error: 'Chat Completions requires choice index 0' }).optional();
 const tool = z.object({
 	index: z.number().int().nonnegative().max(1024).optional(),
 	id: z.string().optional(),
@@ -30,13 +32,16 @@ const chunk = z
 	.object({
 		id: z.string().optional(),
 		model: z.string().optional(),
-		choices: z.array(
-			z.object({
-				index: z.number().int().nonnegative().optional(),
-				delta,
-				finish_reason: z.string().nullable().optional()
-			})
-		),
+		choices: z
+			.array(
+				z.object({
+					index: choiceIndex,
+					delta,
+					finish_reason: z.string().nullable().optional()
+				})
+			)
+			.max(1, 'Chat Completions supports only one choice')
+			.default([]),
 		usage: z.unknown().optional()
 	})
 	.passthrough();
@@ -45,8 +50,14 @@ const response = z
 		id: z.string().optional(),
 		model: z.string().optional(),
 		choices: z
-			.array(z.object({ message: delta, finish_reason: z.string().nullable().optional() }))
-			.min(1),
+			.array(
+				z.object({
+					index: choiceIndex,
+					message: delta,
+					finish_reason: z.string().nullable().optional()
+				})
+			)
+			.length(1, 'Chat Completions requires exactly one choice'),
 		usage: z.unknown().optional()
 	})
 	.passthrough();
@@ -224,6 +235,21 @@ export function buildChatBody(
 		})),
 		stream: Boolean(options.stream)
 	};
+	// Presence matters: explicit undefined must not become an omitted/default n.
+	// Custom JSON takes precedence over direct request options, as for other parameters.
+	if (Object.hasOwn(custom, 'n') || Object.hasOwn(options, 'n')) {
+		if (input.capabilities?.features.n?.state === 'unsupported')
+			throw new Error('Parameter is not supported by this backend/model: n');
+		const n = Object.hasOwn(custom, 'n')
+			? custom.n
+			: (options as unknown as Record<string, unknown>).n;
+		if (n !== null && n !== 1)
+			throw new Error(
+				'Chat Completions supports only one choice: n must be 1 or null (or omitted)'
+			);
+		if (n === 1) body.n = 1;
+		else delete body.n;
+	}
 	if (!options.model) throw new Error('This provider requires an exact model ID');
 	for (const message of input.messages) {
 		if (!Array.isArray(message.content)) continue;
