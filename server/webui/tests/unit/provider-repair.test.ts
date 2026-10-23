@@ -1,3 +1,4 @@
+import '../fixtures/verified-backend';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ContentPartType } from '$lib/enums';
 import {

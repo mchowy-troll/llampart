@@ -4,7 +4,7 @@
 	import '../app.css';
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import {
 		ChatSidebar,
 		DialogConversationTitleUpdate,
@@ -307,14 +307,45 @@
 		)
 	);
 
-	// Discovery uses the same wire model identity as composer/operation capture.
+	onMount(() => {
+		const refresh = () => {
+			if (document.visibilityState === 'visible')
+				void modelsStore.refreshBackend().catch(() => undefined);
+		};
+		window.addEventListener('focus', refresh);
+		window.addEventListener('online', refresh);
+		document.addEventListener('visibilitychange', refresh);
+		return () => {
+			window.removeEventListener('focus', refresh);
+			window.removeEventListener('online', refresh);
+			document.removeEventListener('visibilitychange', refresh);
+		};
+	});
+
+	let lastConnectionStatus: string | undefined;
+	$effect(() => {
+		const status = currentProviderConnectionStatus;
+		if (status === 'connected' && lastConnectionStatus !== 'connected')
+			untrack(() => {
+				void modelsStore.refreshBackend().catch(() => undefined);
+			});
+		lastConnectionStatus = status;
+	});
+
+	let lastCapabilityOwner = '';
+	// Catalog/props updates only rebuild snapshots; actual source/model changes
+	// also verify HTTP metadata. No effect feeds a forced refresh back into itself.
 	$effect(() => {
 		if (!browser) return;
 		void modelsStore.models;
+		void serverStore.backendSignature;
 		const context = ChatService.createProviderRequestContext();
 		const model = effectiveCapabilityModel;
+		const owner = JSON.stringify([modelsStore.modelListSourceKey, model]);
+		const verify = owner !== lastCapabilityOwner;
+		lastCapabilityOwner = owner;
 		untrack(() => {
-			modelsStore.refreshCapabilities(context, model).catch(() => {
+			modelsStore.refreshCapabilities(context, model, verify).catch(() => {
 				/* Connection validation owns user-facing errors. */
 			});
 		});

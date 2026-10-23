@@ -52,6 +52,7 @@ export class ModelsService {
 		signal?: AbortSignal
 	): Promise<ApiRouterModelsListResponse> {
 		return apiFetch<ApiRouterModelsListResponse>(API_MODELS.LIST, {
+			cache: 'no-store',
 			context,
 			apiKey: context.apiKey,
 			signal

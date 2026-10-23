@@ -13,6 +13,7 @@ import { getModelContextSize } from '$lib/utils/model-information';
 import { throwIfAborted } from '$lib/utils/abort';
 import { sleepWithAbort } from '$lib/utils/retry';
 import { t } from '$lib/i18n';
+import { backendIdentity, sameMetadata } from '$lib/utils/backend-identity';
 import type { ModelReferenceResolution } from '$lib/types/models';
 import type { ProviderConnectionContext } from '$lib/types/provider';
 import type { CapabilitySnapshot, ProviderRequestContext } from '$lib/types/provider';
@@ -85,19 +86,109 @@ class ModelsStore {
 	capabilitySnapshot = $state<CapabilitySnapshot | null>(null);
 	private capabilityGeneration = 0;
 	private modelMetadata: Record<string, unknown> = {};
+	private verifiedServerSignature: string | null = null;
+	private verificationRequests = new Map<string, Promise<void>>();
+	private verificationGeneration = 0;
+
+	/** Event-driven freshness barrier; coalesces concurrent checks, never polls.
+	 * An operation keeps its synchronous owner, but cannot bind capabilities until
+	 * this check succeeds. Previously captured operations keep their frozen snapshot.
+	 */
+	verifyBackend(context: ProviderRequestContext, model: string | null): Promise<void> {
+		const key = `${context.sourceGeneration}:${this.getSourceModelKey(context, model ?? '')}`;
+		const existing = this.verificationRequests.get(key);
+		if (existing) return existing;
+		const source = this.getModelListSourceKey(context);
+		const generation = this.verificationGeneration;
+		let metadataGeneration: number | undefined;
+		const current = () =>
+			generation === this.verificationGeneration &&
+			source === this.modelListSourceKey &&
+			(metadataGeneration === undefined || metadataGeneration === this.requestGeneration);
+		const request = (async () => {
+			if (!current()) throw new Error('Backend source changed before verification');
+			// Ordinary discovery started before this barrier cannot certify freshness.
+			// Concurrent barriers may share the same mandatory catalog generation.
+			const catalog = this.fetch(true, true, true);
+			metadataGeneration = this.requestGeneration;
+			await catalog;
+			if (!current()) throw new Error('Backend source changed during verification');
+			if (model && !this.hasModel(model)) throw new Error('Selected model is no longer available');
+			if (context.providerId === API_PROVIDER_IDS.LLAMA_SERVER) {
+				if (!serverStore.hasCurrentProps)
+					throw new Error(serverStore.error ?? 'Backend properties unavailable');
+				if (serverStore.isRouterMode && model) {
+					await this.fetchRouterModels(context, undefined, false);
+					if (!current()) throw new Error('Backend source changed during verification');
+					const props = await this.fetchModelProps(model, true);
+					if (!props) throw new Error('Current model properties unavailable');
+				}
+			}
+			if (!current()) throw new Error('Backend source changed during verification');
+		})()
+			.catch((error) => {
+				if (current()) this.invalidateBackendMetadata();
+				throw error;
+			})
+			.finally(() => {
+				if (this.verificationRequests.get(key) === request) this.verificationRequests.delete(key);
+			});
+		this.verificationRequests.set(key, request);
+		return request;
+	}
+
+	async refreshBackend(): Promise<void> {
+		// Share the operation/source generation owner; a fabricated UI generation
+		// would make snapshots indistinguishable after a provider/credential switch.
+		const { ChatService } = await import('$lib/services/chat.service');
+		const context = ChatService.createProviderRequestContext();
+		const model =
+			context.providerId === API_PROVIDER_IDS.LLAMA_SERVER && serverStore.isModelMode
+				? null
+				: this.selectedModelName;
+		await this.verifyBackend(context, model);
+		await this.refreshCapabilities(context, model);
+	}
+
+	private invalidateBackendMetadata(): void {
+		this.capabilityGeneration++;
+		this.capabilitySnapshot = null;
+		this.modelPropsCache.clear();
+		this.modelPropsRequests.clear();
+		this.modelMetadata = {};
+		this.models = this.models.map((model) => ({ ...model, modalities: undefined }));
+		this.propsCacheVersion++;
+	}
 
 	async refreshCapabilities(
 		context: ProviderRequestContext,
-		model = this.selectedModelName
+		model = this.selectedModelName,
+		verify = false
 	): Promise<CapabilitySnapshot | null> {
-		const generation = ++this.capabilityGeneration;
-		this.capabilitySnapshot = null;
 		const sourceKey = this.getModelListSourceKey(context);
-		const snapshotRequest = createCapabilitySnapshot(
-			context,
-			model,
-			this.loadedModelListSourceKey === sourceKey && model ? this.modelMetadata[model] : undefined
-		);
+		if (verify) await this.verifyBackend(context, model);
+		if (
+			verify &&
+			context.providerId === API_PROVIDER_IDS.LLAMA_SERVER &&
+			serverStore.isRouterMode &&
+			!model
+		)
+			throw new Error('Select a current router model');
+		if (
+			sourceKey !== this.modelListSourceKey ||
+			this.error ||
+			(context.providerId === API_PROVIDER_IDS.LLAMA_SERVER && serverStore.error)
+		)
+			return null;
+		// Verification may invalidate the previous backend and its publication
+		// generation. Claim the UI ticket afterwards, only for the current owner;
+		// an inactive operation must not cancel a selected model's pending binding.
+		const ownsSelection = () =>
+			sourceKey === this.modelListSourceKey &&
+			(model === this.selectedModelName || (model === null && serverStore.isModelMode));
+		const generation = ownsSelection() ? ++this.capabilityGeneration : null;
+		if (!verify && generation !== null) this.capabilitySnapshot = null;
+		const metadataGeneration = this.requestGeneration;
 		// Native props belong to the captured model, not the first catalog entry.
 		// Capture existing evidence before awaiting; only fill missing props for that same model.
 		let modalities =
@@ -124,7 +215,30 @@ class ModelsStore {
 				};
 			}
 		}
-		const snapshot = await snapshotRequest;
+		const props =
+			context.providerId === API_PROVIDER_IDS.LLAMA_SERVER
+				? serverStore.isModelMode && serverStore.hasCurrentProps
+					? serverStore.props
+					: model
+						? this.getModelProps(model)
+						: null
+				: null;
+		const snapshot = await createCapabilitySnapshot(
+			context,
+			model,
+			this.loadedModelListSourceKey === sourceKey && model ? this.modelMetadata[model] : undefined
+		);
+		if (verify && metadataGeneration !== this.requestGeneration)
+			throw new Error('Backend metadata changed during capability binding');
+		snapshot.backendIdentity = props
+			? backendIdentity(props)
+			: backendIdentity(model ? this.modelMetadata[model] : null);
+		const toolSupport = props?.chat_template_caps?.supports_tool_calls;
+		if (typeof toolSupport === 'boolean')
+			snapshot.features = {
+				...snapshot.features,
+				tools: { state: toolSupport ? 'supported' : 'unsupported', source: 'server-metadata' }
+			};
 		if (sourceKey !== this.modelListSourceKey) return null;
 		if (modalities) {
 			const features = { ...snapshot.features };
@@ -144,7 +258,13 @@ class ModelsStore {
 		}
 		Object.freeze(snapshot.features);
 		Object.freeze(snapshot);
-		if (generation === this.capabilityGeneration) this.capabilitySnapshot = snapshot;
+		if (
+			generation !== null &&
+			generation === this.capabilityGeneration &&
+			metadataGeneration === this.requestGeneration &&
+			ownsSelection()
+		)
+			this.capabilitySnapshot = snapshot;
 		return snapshot;
 	}
 
@@ -156,6 +276,8 @@ class ModelsStore {
 	favoriteModelIds = $state<Set<string>>(this.loadFavoritesFromStorage());
 	private loadedModelListSourceKey: string | null = null;
 	private fetchPromise: Promise<void> | null = null;
+	private fetchSourceKey: string | null = null;
+	private fetchIsVerification = false;
 	private requestGeneration = 0;
 	private routerMetadataSourceKey: string | null = null;
 	private routerMetadataPromise: Promise<void> | null = null;
@@ -501,12 +623,17 @@ class ModelsStore {
 	 * Fetch list of models from server and detect server role
 	 * Also fetches modalities for MODEL mode (single model)
 	 */
-	fetch(force = false): Promise<void> {
-		if (this.fetchPromise) return this.fetchPromise;
-
+	fetch(force = false, background = false, verification = false): Promise<void> {
 		const context = this.currentRequestContext();
 		const provider = getApiProvider(context.providerId);
 		const sourceKey = this.getModelListSourceKey(context);
+		if (
+			this.fetchPromise &&
+			this.fetchSourceKey === sourceKey &&
+			(!verification || this.fetchIsVerification)
+		)
+			return this.fetchPromise;
+		this.fetchSourceKey = sourceKey;
 		const sourceChanged = this.loadedModelListSourceKey !== sourceKey;
 
 		if (sourceChanged) {
@@ -521,22 +648,40 @@ class ModelsStore {
 		if (this.models.length > 0 && !force && !sourceChanged) return Promise.resolve();
 
 		const generation = ++this.requestGeneration;
-		this.loading = true;
+		this.fetchIsVerification = verification;
+		// Old per-model requests cannot populate this catalog generation. Do not
+		// let a forced verification join one of those obsolete requests either.
+		this.modelPropsRequests.clear();
+		this.routerMetadataPromise = null;
+		// Freshness must not block an already rendered selector from closing
+		// after a selection; initial discovery still owns the loading UI.
+		if (!background || this.models.length === 0) this.loading = true;
 		this.error = null;
 
 		const request: { promise: Promise<void> | null } = { promise: null };
 		const fetchPromise = (async () => {
 			try {
-				if (provider.capabilities.supportsServerProps && !serverStore.props) {
-					await serverStore.fetch(context);
+				if (provider.capabilities.supportsServerProps && (force || !serverStore.hasCurrentProps)) {
+					await serverStore.fetch(context, background, verification);
 					if (generation !== this.requestGeneration) return;
+					if (!serverStore.hasCurrentProps)
+						throw new Error(serverStore.error ?? 'Backend properties unavailable');
+					if (this.verifiedServerSignature !== serverStore.backendSignature) {
+						this.invalidateBackendMetadata();
+						this.routerModels = [];
+						this.routerMetadataSourceKey = null;
+						this.routerMetadataPromise = null;
+						this.verifiedServerSignature = serverStore.backendSignature;
+					}
 				}
 
 				const response = await ModelsService.list(context);
 				if (generation !== this.requestGeneration || sourceKey !== this.modelListSourceKey) return;
-				this.modelMetadata = Object.fromEntries(
+				const metadata = Object.fromEntries(
 					response.data.map((item: ApiModelDataEntry) => [item.id, item])
 				);
+				const metadataChanged = !sameMetadata(this.modelMetadata, metadata);
+				this.modelMetadata = metadata;
 
 				const models: ModelOption[] = response.data.map(
 					(item: ApiModelDataEntry, index: number) => {
@@ -568,7 +713,14 @@ class ModelsStore {
 					}
 				);
 
-				this.models = models;
+				if (
+					metadataChanged ||
+					!sameMetadata(
+						this.models.map((model) => ({ ...model, modalities: undefined })),
+						models
+					)
+				)
+					this.models = models;
 
 				// WORKAROUND: In MODEL mode, /props returns modalities for the single model,
 				// but /v1/models doesn't include modalities. We bridge this gap here.
@@ -604,8 +756,9 @@ class ModelsStore {
 
 				this.loadedModelListSourceKey = sourceKey;
 			} catch (error) {
-				if (generation !== this.requestGeneration) return;
+				if (generation !== this.requestGeneration || sourceKey !== this.modelListSourceKey) return;
 
+				this.invalidateBackendMetadata();
 				this.models = [];
 				this.error = error instanceof Error ? error.message : 'Failed to load models';
 				throw error;
@@ -628,7 +781,8 @@ class ModelsStore {
 	 */
 	fetchRouterModels(
 		context: ProviderConnectionContext = this.currentRequestContext(),
-		signal?: AbortSignal
+		signal?: AbortSignal,
+		refreshModalities = true
 	): Promise<void> {
 		if (!this.supportsModelLoadUnload) return Promise.resolve();
 		const sourceKey = this.getModelListSourceKey(context);
@@ -644,6 +798,9 @@ class ModelsStore {
 				if (generation !== this.requestGeneration || sourceKey !== this.modelListSourceKey) return;
 				this.routerModels = response.data;
 				this.routerMetadataSourceKey = sourceKey;
+				// Verification owns the exact selected model's forced props check. It
+				// must neither prefetch all cached models nor auto-select another owner.
+				if (!refreshModalities) return;
 				await this.fetchModalitiesForLoadedModels();
 				if (generation !== this.requestGeneration || sourceKey !== this.modelListSourceKey) return;
 
@@ -683,7 +840,7 @@ class ModelsStore {
 	 * @param modelId - Model identifier to fetch props for
 	 * @returns Props data or null if fetch failed or model not loaded
 	 */
-	async fetchModelProps(modelId: string): Promise<ApiLlamaCppServerProps | null> {
+	async fetchModelProps(modelId: string, force = false): Promise<ApiLlamaCppServerProps | null> {
 		if (!this.supportsModelProps) return null;
 		const generation = this.requestGeneration;
 		const context = this.currentRequestContext();
@@ -691,7 +848,7 @@ class ModelsStore {
 		const cacheKey = this.getSourceModelKey(context, modelId);
 
 		const cached = this.modelPropsCache.get(cacheKey);
-		if (cached) return cached;
+		if (cached && !force) return cached;
 
 		if (serverStore.isRouterMode && !this.isModelLoaded(modelId)) {
 			return null;
@@ -707,9 +864,18 @@ class ModelsStore {
 				if (generation !== this.requestGeneration || sourceKey !== this.modelListSourceKey)
 					return null;
 				this.modelPropsCache.set(cacheKey, props);
+				if (force) {
+					this.models = this.models.map((model) =>
+						model.model === modelId
+							? { ...model, modalities: normalizeModelModalities(props) }
+							: model
+					);
+				}
 				this.propsCacheVersion++;
 				return props;
 			} catch (error) {
+				if (force && generation === this.requestGeneration && sourceKey === this.modelListSourceKey)
+					this.modelPropsCache.delete(cacheKey);
 				console.warn(`Failed to fetch props for model ${modelId}:`, error);
 				return null;
 			} finally {
@@ -729,6 +895,8 @@ class ModelsStore {
 	 */
 	async fetchModalitiesForLoadedModels(): Promise<void> {
 		if (!this.supportsModelProps) return;
+		const sourceKey = this.modelListSourceKey;
+		const generation = this.requestGeneration;
 
 		const loadedModelIds = this.loadedModelIds;
 		if (loadedModelIds.length === 0) return;
@@ -737,6 +905,7 @@ class ModelsStore {
 
 		try {
 			const results = await Promise.all(propsPromises);
+			if (sourceKey !== this.modelListSourceKey || generation !== this.requestGeneration) return;
 
 			// Update models with modalities
 			this.models = this.models.map((model) => {
@@ -763,9 +932,12 @@ class ModelsStore {
 	 */
 	async updateModelModalities(modelId: string): Promise<void> {
 		if (!this.supportsModelProps) return;
+		const sourceKey = this.modelListSourceKey;
+		const generation = this.requestGeneration;
 
 		try {
 			const props = await this.fetchModelProps(modelId);
+			if (sourceKey !== this.modelListSourceKey || generation !== this.requestGeneration) return;
 			if (!props?.modalities) return;
 
 			const modalities = normalizeModelModalities(props);
@@ -817,7 +989,9 @@ class ModelsStore {
 	 * @param modelName - Model name to select (e.g., "ggml-org/GLM-4.7-Flash-GGUF")
 	 */
 	selectModelByName(modelName: string): void {
-		if (modelName !== this.selectedModelName) {
+		// In native MODEL mode this only synchronizes a historical display name.
+		// The effective wire owner remains null (the server's single current model).
+		if (modelName !== this.selectedModelName && this.usesSelectableModelList) {
 			this.capabilityGeneration++;
 			this.capabilitySnapshot = null;
 		}
@@ -1128,6 +1302,9 @@ class ModelsStore {
 	}
 
 	clear(): void {
+		this.verificationGeneration++;
+		this.verificationRequests.clear();
+		this.verifiedServerSignature = null;
 		this.capabilityGeneration++;
 		this.capabilitySnapshot = null;
 		this.modelMetadata = {};

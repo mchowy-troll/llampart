@@ -409,6 +409,7 @@ async function listLlamaServerModels(
 		{ ...input, providerId: API_PROVIDER_IDS.LLAMA_SERVER },
 		API_MODELS.LIST,
 		{
+			cache: 'no-store',
 			headers: buildHeaders(input.apiKey)
 		},
 		fetchImpl

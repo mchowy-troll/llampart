@@ -135,6 +135,7 @@ async function session(provider) {
 			return refresh.apply(this, args);
 		};
 	});
+	await page.waitForLoadState('networkidle');
 	return { context, page, errors, payloads, requests, backend };
 }
 

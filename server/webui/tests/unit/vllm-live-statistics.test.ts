@@ -1,3 +1,4 @@
+import '../fixtures/verified-backend';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { VllmLiveStatistics } from '$lib/utils/vllm-live-statistics';
 import { getProviderStatistics } from '$lib/utils/provider-statistics';

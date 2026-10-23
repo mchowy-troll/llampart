@@ -4,6 +4,8 @@ import { ServerRole } from '$lib/enums';
 import { getApiProvider } from '$lib/services/providers';
 import { config } from '$lib/stores/settings.svelte';
 import type { ProviderConnectionContext } from '$lib/types/provider';
+import { sameConnection } from '$lib/services/providers/provider-capabilities';
+import { backendIdentity } from '$lib/utils/backend-identity';
 
 /**
  * serverStore - Server connection state, configuration, and role detection
@@ -37,6 +39,9 @@ class ServerStore {
 	private fetchPromise: Promise<void> | null = null;
 	private requestGeneration = 0;
 	private propsContext = $state<ProviderConnectionContext | null>(null);
+	private fetchContext: ProviderConnectionContext | null = null;
+	private fetchIsVerification = false;
+	backendSignature = $state<string | null>(null);
 
 	/**
 	 *
@@ -71,6 +76,8 @@ class ServerStore {
 	get hasCurrentProps(): boolean {
 		const current = this.currentRequestContext();
 		return (
+			current.providerId === 'llama-server' &&
+			!this.error &&
 			!!this.props &&
 			(!this.propsContext ||
 				(this.propsContext.providerId === current.providerId &&
@@ -97,12 +104,27 @@ class ServerStore {
 		});
 	}
 
-	fetch(context: ProviderConnectionContext = this.currentRequestContext()): Promise<void> {
-		if (this.fetchPromise) return this.fetchPromise;
+	fetch(
+		context: ProviderConnectionContext = this.currentRequestContext(),
+		background = false,
+		verification = false
+	): Promise<void> {
+		if (context.providerId !== 'llama-server') return Promise.resolve();
+		if (
+			this.fetchPromise &&
+			this.fetchContext &&
+			sameConnection(context, this.fetchContext) &&
+			(!verification || this.fetchIsVerification)
+		)
+			return this.fetchPromise;
 
 		const requestContext = Object.freeze({ ...context });
+		this.fetchContext = requestContext;
+		this.fetchIsVerification = verification;
 		const generation = ++this.requestGeneration;
-		this.loading = true;
+		// A freshness check must not replace an existing composer with the initial
+		// loading splash (which would discard draft/menu/attachment component state).
+		if (!background) this.loading = true;
 		this.error = null;
 
 		const request: { promise: Promise<void> | null } = { promise: null };
@@ -120,11 +142,19 @@ class ServerStore {
 
 				this.props = props;
 				this.propsContext = requestContext;
+				this.backendSignature = backendIdentity(props);
 				this.error = null;
 				this.detectRole(props);
 			} catch (error) {
-				if (generation !== this.requestGeneration) return;
+				if (
+					generation !== this.requestGeneration ||
+					!sameConnection(requestContext, this.currentRequestContext())
+				)
+					return;
 
+				this.props = null;
+				this.propsContext = null;
+				this.backendSignature = null;
 				this.error = this.getErrorMessage(error);
 				console.error('Error fetching server properties:', error);
 			} finally {
@@ -174,6 +204,8 @@ class ServerStore {
 		this.loading = false;
 		this.role = null;
 		this.fetchPromise = null;
+		this.fetchContext = null;
+		this.backendSignature = null;
 	}
 
 	/**

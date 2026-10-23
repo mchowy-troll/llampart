@@ -1,3 +1,4 @@
+import '../fixtures/verified-backend';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AttachmentType, MessageRole, ServerRole, ToolSource } from '$lib/enums';
 import { ChatService } from '$lib/services/chat.service';
@@ -412,7 +413,9 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 		await prepare(providerId, protocol, [false, true]);
 		const context = ChatService.createProviderRequestContext();
 		const operationModel = ChatService.captureOperationModel(context);
-		// Even a mutation before the native props promise resolves cannot replace captured evidence.
+		// The freshness barrier binds evidence before the first request. Once bound,
+		// subsequent catalog mutations cannot replace the operation's frozen evidence.
+		await operationModel.capabilities;
 		if (modelsStore.models[0].modalities) modelsStore.models[0].modalities.vision = true;
 		await modelsStore.selectModelById('model-B');
 		await modelsStore.refreshCapabilities(context, 'model-B');

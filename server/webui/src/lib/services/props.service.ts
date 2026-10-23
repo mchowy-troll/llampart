@@ -29,6 +29,7 @@ export class PropsService {
 		}
 
 		return apiFetchWithParams<ApiLlamaCppServerProps>('/props', params, {
+			cache: 'no-store',
 			context,
 			authOnly: true,
 			apiKey: context.apiKey
@@ -56,6 +57,7 @@ export class PropsService {
 		}
 
 		return apiFetchWithParams<ApiLlamaCppServerProps>('/props', params, {
+			cache: 'no-store',
 			context,
 			authOnly: true,
 			apiKey: context.apiKey,

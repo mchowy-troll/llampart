@@ -70,6 +70,7 @@
 
 		conversationsStore.clearActiveConversation();
 		chatStore.clearUIState();
+		void modelsStore.refreshBackend().catch(() => undefined);
 
 		if (
 			isRouterMode() &&

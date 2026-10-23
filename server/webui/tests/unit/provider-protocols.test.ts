@@ -1,3 +1,4 @@
+import '../fixtures/verified-backend';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { ContentPartType } from '$lib/enums';

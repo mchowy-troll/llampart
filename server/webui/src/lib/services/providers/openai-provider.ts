@@ -53,7 +53,7 @@ export function createOpenAiProvider(
 		const response = await fetchProviderEndpoint(
 			{ ...input, providerId: id },
 			'/v1/models',
-			{ headers: { Accept: 'application/json' } },
+			{ cache: 'no-store', headers: { Accept: 'application/json' } },
 			fetchImpl
 		);
 		if (!response.ok) throw new Error(`Model discovery failed (${response.status})`);

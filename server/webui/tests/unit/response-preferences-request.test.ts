@@ -1,3 +1,4 @@
+import '../fixtures/verified-backend';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatService } from '$lib/services/chat.service';
 import { settingsStore } from '$lib/stores/settings.svelte';

@@ -1,3 +1,4 @@
+import '../fixtures/verified-backend';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ChatService } from '$lib/services/chat.service';
 import { MessageRole } from '$lib/enums';

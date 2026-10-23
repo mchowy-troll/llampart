@@ -271,6 +271,12 @@ class ConversationsStore {
 	 * @returns The ID of the created conversation
 	 */
 	async createConversation(name?: string): Promise<string> {
+		// Metadata refresh is non-destructive. Generation has its own mandatory
+		// freshness barrier and must not rely on a successful background refresh.
+		if (browser)
+			void import('$lib/stores/models.svelte')
+				.then(({ modelsStore }) => modelsStore.refreshBackend())
+				.catch(() => undefined);
 		this.loadGeneration += 1;
 		const conversationName = name || `Chat ${new Date().toLocaleString()}`;
 		const conversation = await DatabaseService.createConversation(conversationName);

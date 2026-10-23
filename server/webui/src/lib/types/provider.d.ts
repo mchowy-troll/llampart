@@ -150,6 +150,8 @@ export interface CapabilityValue {
 	maximum?: number;
 }
 export interface CapabilitySnapshot {
+	/** Observable backend/model/template signature, distinct from source identity. */
+	backendIdentity?: string;
 	providerId: ApiProviderId;
 	serverBaseUrl: string;
 	sourceGeneration: number;

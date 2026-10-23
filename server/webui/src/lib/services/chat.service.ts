@@ -5,7 +5,7 @@ import { getApiProvider } from '$lib/services/providers';
 import type { ApiProviderAdapter } from '$lib/services/providers/provider.types';
 import type { OperationModel, ProviderRequestContext, ProviderUsage } from '$lib/types/provider';
 import { formatAttachmentText } from '$lib/utils/formatters';
-import { isAbortError } from '$lib/utils/abort';
+import { isAbortError, withAbortSignal } from '$lib/utils/abort';
 import { projectToolHistory } from '$lib/utils/tool-lifecycle';
 import { toolResultContentParts } from '$lib/utils/tool-result-images';
 import {
@@ -69,7 +69,7 @@ export class ChatService {
 		selection?: { conversationId: string | null }
 	): OperationModel {
 		const model = ChatService.resolveEffectiveModel(context, modelOverride, conversationModel);
-		const capabilities = modelsStore.refreshCapabilities(context, model);
+		const capabilities = modelsStore.refreshCapabilities(context, model, true);
 		// Discovery can finish while the operation still awaits persistence/permission.
 		void capabilities.catch(() => undefined);
 		return Object.freeze({
@@ -251,22 +251,21 @@ export class ChatService {
 			} satisfies ResumableStreamState;
 		}
 
-		if (resumableState) {
-			saveResumableStreamState(resumableState);
-			ChatService.frozenStreamRequests.set(resumableState.streamIdentity, {
-				provider,
-				context: requestContext
-			});
-		}
-
-		const capabilities = await operationModel.capabilities;
-		if (!ChatService.isProviderRequestContextCurrent(requestContext) || signal?.aborted) return;
-		effectiveOptions = {
-			...effectiveOptions,
-			protocol: capabilities?.protocol ?? 'chat-completions'
-		};
-		const requestStartedAt = ChatService.getMonotonicNow();
 		try {
+			const capabilities = await withAbortSignal(operationModel.capabilities, signal);
+			if (!ChatService.isProviderRequestContextCurrent(requestContext) || signal?.aborted) return;
+			effectiveOptions = {
+				...effectiveOptions,
+				protocol: capabilities?.protocol ?? 'chat-completions'
+			};
+			if (resumableState) {
+				saveResumableStreamState(resumableState);
+				ChatService.frozenStreamRequests.set(resumableState.streamIdentity, {
+					provider,
+					context: requestContext
+				});
+			}
+			const requestStartedAt = ChatService.getMonotonicNow();
 			ChatService.validateImageInput(normalizedMessages, capabilities);
 			const providerRequest = provider.buildChatCompletionRequest({
 				serverBaseUrl: frozenServerBaseUrl,
