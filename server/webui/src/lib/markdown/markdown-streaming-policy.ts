@@ -20,7 +20,7 @@ export function detectIncompleteChartBlock(markdown: string): IncompleteCodeBloc
 	return scanChartFences(markdown).pending;
 }
 
-export type IncompleteMathDelimiter = '$$' | '\\[';
+export type IncompleteMathDelimiter = '$$' | '\\[' | '$' | '\\(';
 
 export type IncompleteMathBlock = {
 	delimiter: IncompleteMathDelimiter;
@@ -64,70 +64,61 @@ function isStandaloneDelimiter(markdown: string, index: number, delimiterLength:
 }
 
 /**
- * Detects an unfinished display math block at the streaming tail.
+ * Detects an unfinished math expression at the streaming tail.
  *
  * The detector is intentionally conservative:
- * - only standalone `$$` or `\[` display-math delimiters count;
+ * - standalone or compact display delimiters and non-currency inline openers count;
  * - complete fenced/inline code is ignored;
  * - escaped delimiters are ignored;
  * - completed display math returns null.
  */
 export function detectIncompleteMathBlock(markdown: string): IncompleteMathBlock | null {
-	if (!markdown.includes('$$') && !markdown.includes('\\[')) {
+	if (!markdown.includes('$') && !markdown.includes('\\[') && !markdown.includes('\\(')) {
 		return null;
 	}
 
 	const maskedMarkdown = preserveOffsetsWithoutCode(markdown);
-	let pendingDollarOpeningIndex: number | null = null;
-	let pendingBracketOpeningIndex: number | null = null;
+	let pending: IncompleteMathBlock | null = null;
 
 	for (let index = 0; index < maskedMarkdown.length; index++) {
-		if (
-			maskedMarkdown.startsWith('$$', index) &&
-			!isEscaped(maskedMarkdown, index) &&
-			isStandaloneDelimiter(maskedMarkdown, index, 2)
-		) {
-			pendingDollarOpeningIndex = pendingDollarOpeningIndex === null ? index : null;
-			index += 1;
+		if (isEscaped(maskedMarkdown, index)) continue;
+		if (pending) {
+			const closing =
+				pending.delimiter === '\\['
+					? '\\]'
+					: pending.delimiter === '\\('
+						? '\\)'
+						: pending.delimiter;
+			if (maskedMarkdown.startsWith(closing, index)) {
+				pending = null;
+				index += closing.length - 1;
+			}
 			continue;
 		}
-
-		if (
-			maskedMarkdown.startsWith('\\[', index) &&
-			!isEscaped(maskedMarkdown, index) &&
-			isStandaloneDelimiter(maskedMarkdown, index, 2)
+		let delimiter: IncompleteMathDelimiter | null = null;
+		if (maskedMarkdown.startsWith('$$', index)) {
+			if (
+				isStandaloneDelimiter(maskedMarkdown, index, 2) ||
+				/\S/.test(maskedMarkdown[index + 2] ?? '')
+			)
+				delimiter = '$$';
+			else index++;
+		} else if (maskedMarkdown.startsWith('\\[', index)) {
+			delimiter = '\\[';
+		} else if (maskedMarkdown.startsWith('\\(', index)) {
+			delimiter = '\\(';
+		} else if (
+			maskedMarkdown[index] === '$' &&
+			!/[A-Za-z0-9_$-]/.test(maskedMarkdown[index - 1] ?? '') &&
+			/[^\s\d$]/.test(maskedMarkdown[index + 1] ?? '')
 		) {
-			pendingBracketOpeningIndex = index;
-			index += 1;
-			continue;
+			delimiter = '$';
 		}
-
-		if (
-			pendingBracketOpeningIndex !== null &&
-			maskedMarkdown.startsWith('\\]', index) &&
-			!isEscaped(maskedMarkdown, index) &&
-			isStandaloneDelimiter(maskedMarkdown, index, 2)
-		) {
-			pendingBracketOpeningIndex = null;
-			index += 1;
+		if (delimiter) {
+			pending = { delimiter, body: markdown.slice(index + delimiter.length), openingIndex: index };
+			index += delimiter.length - 1;
 		}
 	}
 
-	if (pendingDollarOpeningIndex !== null) {
-		return {
-			delimiter: '$$',
-			body: markdown.slice(pendingDollarOpeningIndex + 2),
-			openingIndex: pendingDollarOpeningIndex
-		};
-	}
-
-	if (pendingBracketOpeningIndex !== null) {
-		return {
-			delimiter: '\\[',
-			body: markdown.slice(pendingBracketOpeningIndex + 2),
-			openingIndex: pendingBracketOpeningIndex
-		};
-	}
-
-	return null;
+	return pending;
 }

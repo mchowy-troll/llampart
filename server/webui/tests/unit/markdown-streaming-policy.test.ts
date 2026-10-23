@@ -30,6 +30,24 @@ describe('markdown-streaming-policy', () => {
 		expect(detectIncompleteMathBlock('\\[\na = b\n\\]')).toBeNull();
 	});
 
+	it.each([
+		['Wzór: $$\\int_', '$$', 6],
+		['Wynik $E=mc', '$', 6],
+		['Pole \\(A=\\pi', '\\(', 5],
+		['Suma \\[\\sum_', '\\[', 5]
+	])('detects compact streaming math: %s', (markdown, delimiter, openingIndex) => {
+		expect(detectIncompleteMathBlock(markdown)).toMatchObject({ delimiter, openingIndex });
+	});
+
+	it.each([
+		'Wzór: $$\\int_0^1 x^2\\,dx=\\frac{1}{3}$$',
+		'Wynik $E=mc^2$ i \\(A=\\pi r^2\\).',
+		'Suma \\[x+y\\] i cena $5.99',
+		'Cena $5.99, druga $10.00. `\\(x` oraz `$$\\int_`.'
+	])('leaves completed math, code and currency to their existing renderers: %s', (markdown) => {
+		expect(detectIncompleteMathBlock(markdown)).toBeNull();
+	});
+
 	it('ignores currency and inline dollar text', () => {
 		expect(detectIncompleteMathBlock('Price is $19.99 and user$name is text.')).toBeNull();
 		expect(detectIncompleteMathBlock('This is not standalone $$ math')).toBeNull();

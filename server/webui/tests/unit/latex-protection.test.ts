@@ -1,5 +1,7 @@
 /* eslint-disable no-irregular-whitespace */
 import { describe, it, expect, test } from 'vitest';
+import { remark } from 'remark';
+import remarkMath from 'remark-math';
 import { hasRenderableMath, maskInlineLaTeX, preprocessLaTeX } from '$lib/utils/latex-protection';
 
 describe('maskInlineLaTeX', () => {
@@ -248,8 +250,42 @@ $$`
 		const output = preprocessLaTeX(input);
 
 		expect(output).toBe(
-			'Some line ...\nAlgebra: \n$$x = \\frac{-b \\pm \\sqrt{\\,b^{2}-4ac\\,}}{2a}$$\n'
+			'Some line ...\nAlgebra: \n$$\nx = \\frac{-b \\pm \\sqrt{\\,b^{2}-4ac\\,}}{2a}\n$$'
 		);
+	});
+
+	test.each([
+		String.raw`\[\frac{a}{b}\]`,
+		String.raw`$$\sum_{n=1}^{N} n$$`,
+		String.raw`Wzór: \[\int_0^1 x\,dx\] Dalszy tekst.`,
+		String.raw`Wzór: $$\begin{pmatrix}a & b \\ c & d\end{pmatrix}$$ Koniec.`
+	])('parses explicit display as a math block, not inlineMath: %s', (source) => {
+		const tree = remark().use(remarkMath).parse(preprocessLaTeX(source));
+		expect(tree.children.filter((node) => node.type === 'math')).toHaveLength(1);
+		const serialized = JSON.stringify(tree);
+		expect(serialized).not.toContain('"type":"inlineMath"');
+	});
+
+	test('keeps both inline syntaxes inside their sentence', () => {
+		const source = String.raw`Przed $x^2$ oraz \(y^2\) po.`;
+		const tree = remark().use(remarkMath).parse(preprocessLaTeX(source));
+		expect(tree.children).toHaveLength(1);
+		expect(JSON.stringify(tree).match(/"type":"inlineMath"/g)).toHaveLength(2);
+	});
+
+	test('normalizes compact display inside a quote without losing quote membership', () => {
+		const tree = remark().use(remarkMath).parse(preprocessLaTeX('> $$x^2$$\n> Dalej.'));
+		expect(tree.children).toHaveLength(1);
+		expect(tree.children[0]).toMatchObject({
+			type: 'blockquote',
+			children: [{ type: 'math', value: 'x^2' }, { type: 'paragraph' }]
+		});
+	});
+
+	test('does not normalize display delimiters in code or demote prose into a table cell', () => {
+		const source = 'Przed `$$x$$`\n\n```tex\n\\[x\\]\n$$y$$\n```';
+		expect(preprocessLaTeX(source)).toBe(source);
+		expect(preprocessLaTeX(String.raw`Przed \[x\] | po.`)).toContain('$$\nx\n$$');
 	});
 
 	test('converts \\[ ... \\] in table-cells', () => {

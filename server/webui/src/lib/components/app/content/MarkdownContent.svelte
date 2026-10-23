@@ -148,7 +148,7 @@
 	const transformCache = new SvelteMap<string, string>();
 	const chartCache = new SvelteMap<string, ChartResult>();
 	let previousContent = '';
-	let previousChartPolicy = '';
+	let previousRenderPolicy = '';
 
 	const themeStyleId = `highlight-theme-${(window.idxThemeStyle = (window.idxThemeStyle ?? 0) + 1)}`;
 
@@ -297,10 +297,12 @@
 		};
 
 		if (n.position?.start?.offset != null && n.position?.end?.offset != null) {
-			return `${n.type}-${n.position.start.offset}-${n.position.end.offset}`;
+			// Normalization can keep offsets identical while changing raw text to math.
+			// Positions identify DOM blocks, not their transformed content or node types.
+			return `${n.type}-${n.position.start.offset}-${n.position.end.offset}:${JSON.stringify(node)}`;
 		}
 
-		return `${n.type}-idx${index}`;
+		return `${n.type}-idx${index}:${JSON.stringify(node)}`;
 	}
 
 	/**
@@ -753,10 +755,10 @@
 
 	async function processMarkdown(markdown: string, revision: number) {
 		const current = () => !destroyed && revision === markdownRevision;
-		const chartPolicy = `${allowCharts}:${chartLimit}:${diagramLimit}`;
-		if (chartPolicy !== previousChartPolicy) {
+		const renderPolicy = `${allowCharts}:${chartLimit}:${diagramLimit}:${disableMath}:${isStreaming}`;
+		if (renderPolicy !== previousRenderPolicy) {
 			previousContent = '';
-			previousChartPolicy = chartPolicy;
+			previousRenderPolicy = renderPolicy;
 		}
 		// Early exit if content unchanged (can happen with rapid coalescing)
 		if (markdown && markdown === previousContent) {
@@ -802,11 +804,12 @@
 			return;
 		}
 
-		const pendingMathBlock = disableMath
-			? null
-			: detectIncompleteMathBlock(
-					withoutClosedMermaidFences(allowCharts ? withoutClosedChartFences(markdown) : markdown)
-				);
+		const pendingMathBlock =
+			disableMath || !isStreaming
+				? null
+				: detectIncompleteMathBlock(
+						withoutClosedMermaidFences(allowCharts ? withoutClosedChartFences(markdown) : markdown)
+					);
 
 		if (pendingMathBlock) {
 			const prefixMarkdown = markdown.slice(0, pendingMathBlock.openingIndex);
@@ -1136,6 +1139,8 @@
 		void allowCharts;
 		void chartLimit;
 		void diagramLimit;
+		void disableMath;
+		void isStreaming;
 		updateRenderedBlocks(content);
 	});
 
@@ -1397,27 +1402,34 @@
 		gap: 0.5rem;
 		margin: 0.5rem 0;
 		color: hsl(var(--muted-foreground));
-		font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
-		line-height: 1.35;
+		font-size: 1em;
+		line-height: 1.5;
 	}
 
 	.markdown-math-pending__symbol {
 		font-weight: 600;
 	}
 
-	:global(.katex-display) {
+	.llampart-markdown-content :global(.katex-display) {
 		display: block;
 		max-width: 100%;
 		overflow-x: auto;
 		overflow-y: hidden;
-		margin: 0.75rem 0;
-		padding-bottom: 0.125rem;
+		margin: 1em 0;
+		/* Leave room for glyph ink beyond KaTeX's positioning boxes when the
+		 * formula itself is a horizontal scrollport. Do not alter its metrics. */
+		padding-block: 0.125em;
+		text-align: left;
 		-webkit-overflow-scrolling: touch;
 	}
 
-	:global(.katex-display > .katex) {
-		display: inline-block;
+	.llampart-markdown-content :global(.katex-display > .katex) {
+		display: block;
 		min-width: max-content;
+		/* The wrapper inherits message size: scale exactly once, without changing
+		 * KaTeX's internal metrics or the native size of inline equations. */
+		font-size: 1.2em;
+		text-align: left;
 	}
 
 	:global(.markdown-rendered-preview-dialog-content) {
@@ -2537,13 +2549,13 @@
 	   their own font family, size and line height. MarkdownContent owns this because
 	   it owns markdown presentation resets. */
 	div.markdown-inherit-typography,
-	div.markdown-inherit-typography :global(*) {
+	div.markdown-inherit-typography :global(*:not(.katex, .katex *)) {
 		font-size: inherit !important;
 		line-height: inherit !important;
 	}
 
 	div.markdown-inherit-typography,
-	div.markdown-inherit-typography :global(*:not(code, code *, pre)) {
+	div.markdown-inherit-typography :global(*:not(code, code *, pre, .katex, .katex *)) {
 		font-family: inherit !important;
 	}
 
@@ -2598,9 +2610,9 @@
 	div.markdown-inherit-typography :global(pre),
 	div.markdown-inherit-typography :global(pre code),
 	div.markdown-inherit-typography :global(.code-block-wrapper),
-	div.markdown-inherit-typography :global(.code-block-wrapper *),
+	div.markdown-inherit-typography :global(.code-block-wrapper *:not(.katex, .katex *)),
 	div.markdown-inherit-typography :global(.markdown-rendered-code-block),
-	div.markdown-inherit-typography :global(.markdown-rendered-code-block *) {
+	div.markdown-inherit-typography :global(.markdown-rendered-code-block *:not(.katex, .katex *)) {
 		font-size: inherit !important;
 		line-height: inherit !important;
 	}

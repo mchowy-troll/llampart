@@ -375,6 +375,7 @@
 							<MarkdownContent
 								content={section.content}
 								attachments={message?.extra}
+								{isStreaming}
 								inheritTypography
 							/>
 						</div>

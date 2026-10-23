@@ -1,9 +1,4 @@
-import {
-	CODE_BLOCK_REGEXP,
-	LATEX_MATH_AND_CODE_PATTERN,
-	LATEX_LINEBREAK_REGEXP,
-	MHCHEM_PATTERN_MAP
-} from '$lib/constants';
+import { CODE_BLOCK_REGEXP, LATEX_MATH_AND_CODE_PATTERN, MHCHEM_PATTERN_MAP } from '$lib/constants';
 
 /**
  * Replaces inline LaTeX expressions enclosed in `$...$` with placeholders, avoiding dollar signs
@@ -217,24 +212,18 @@ export function preprocessLaTeX(content: string): string {
 	// Step 2: Protect existing LaTeX expressions
 	const latexExpressions: string[] = [];
 
-	// Match \S...\[...\] and protect them and insert a line-break.
+	// A table cell cannot contain a block. Keep the existing cell-only fallback,
+	// but never demote an explicit display delimiter just because prose follows it.
 	content = content.replace(/([\S].*?)\\\[([\s\S]*?)\\\](.*)/g, (match, group1, group2, group3) => {
 		// Check if there are characters following the formula (display-formula in a table-cell?)
 		if (group1.endsWith('\\')) {
 			return match; // Backslash before \[, do nothing.
 		}
-		const hasSuffix = /\S/.test(group3);
-		let optBreak;
-
-		if (hasSuffix) {
+		if (/^\s*\|/.test(group1) && /\|/.test(group3)) {
 			latexExpressions.push(`\\(${group2.trim()}\\)`); // Convert into inline.
-			optBreak = '';
-		} else {
-			latexExpressions.push(`\\[${group2}\\]`);
-			optBreak = '\n';
+			return `${group1}<<LATEX_${latexExpressions.length - 1}>>${group3}`;
 		}
-
-		return `${group1}${optBreak}<<LATEX_${latexExpressions.length - 1}>>${optBreak}${group3}`;
+		return match;
 	});
 
 	// Match \(...\), \[...\], $$...$$ and protect them
@@ -257,17 +246,7 @@ export function preprocessLaTeX(content: string): string {
 
 	// Step 4: Restore protected LaTeX expressions (they are valid)
 	content = content.replace(/<<LATEX_(\d+)>>/g, (_, index) => {
-		let expr = latexExpressions[parseInt(index)];
-		const match = expr.match(LATEX_LINEBREAK_REGEXP);
-		if (match) {
-			// Katex: The $$-delimiters should be in their own line
-			// if there are \\-line-breaks.
-			const formula = match[1];
-			const prefix = formula.startsWith('\n') ? '' : '\n';
-			const suffix = formula.endsWith('\n') ? '' : '\n';
-			expr = '$$' + prefix + formula + suffix + '$$';
-		}
-		return expr;
+		return latexExpressions[parseInt(index)];
 	});
 
 	// Step 5: Apply additional escaping functions (brackets and mhchem)
@@ -294,13 +273,7 @@ export function preprocessLaTeX(content: string): string {
 			}
 		);
 
-	// Step 7: Restore code blocks
-	// This happens AFTER all LaTeX conversions to preserve code content
-	content = content.replace(/<<CODE_BLOCK_(\d+)>>/g, (_, index) => {
-		return codeBlocks[parseInt(index)];
-	});
-
-	// Step 8: Restore blockquote markers
+	// Step 7: Restore blockquote markers before adding display-only line breaks.
 	if (blockquoteMarkers.size > 0) {
 		const finalLines = content.split('\n');
 		const restoredLines = finalLines.map((line, index) => {
@@ -309,6 +282,28 @@ export function preprocessLaTeX(content: string): string {
 		});
 		content = restoredLines.join('\n');
 	}
+
+	// remark-math parses $$x$$ as inlineMath, even on an otherwise empty line.
+	// Both explicit display syntaxes need delimiter-only lines. Do this while
+	// code is still protected, preserving inline $...$ / \(...\), quote prefixes
+	// and the table-cell fallback. Existing multiline displays remain unchanged.
+	content = content.replace(/(?<!\\)\$\$([\s\S]*?)\$\$/g, (match, formula, offset) => {
+		const lineStart = content.lastIndexOf('\n', offset - 1) + 1;
+		const before = content.slice(lineStart, offset);
+		const after = content.slice(offset + match.length).split('\n', 1)[0];
+		if (/^\s*(?:>\s*)*\|/.test(before) && after.includes('|')) return match;
+		const quote = before.match(/^\s*(?:>\s*)+/)?.[0] ?? '';
+		const breakBefore = before.slice(quote.length).trim() ? `\n${quote}` : '';
+		const breakAfter = after.trim() ? `\n${quote}` : '';
+		const open = formula.startsWith('\n') ? '' : `\n${quote}`;
+		const close = /\n[\t ]*(?:>[\t ]*)*$/.test(formula) ? '' : `\n${quote}`;
+		return `${breakBefore}$$${open}${formula}${close}$$${breakAfter}`;
+	});
+
+	// Step 8: Restore code only AFTER every math conversion.
+	content = content.replace(/<<CODE_BLOCK_(\d+)>>/g, (_, index) => {
+		return codeBlocks[parseInt(index)];
+	});
 
 	return content;
 }
