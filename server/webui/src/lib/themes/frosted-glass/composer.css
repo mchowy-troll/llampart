@@ -610,6 +610,33 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	background-color: var(--llampart-composer-send-background) !important;
 }
 
+/* Recording owns its red state rather than inheriting the generic glass action fill. */
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	button.llampart-composer-record-button[data-recording='true'] {
+	background: var(--color-red-500) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	button.llampart-composer-record-button[data-recording='true']:hover {
+	background: var(--color-red-600) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	button.llampart-composer-record-button[data-recording='true']
+	svg {
+	color: white !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-chat-input-frame
+	button.llampart-composer-record-button:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
 /* Composer menu content, search, option and MCP list surfaces are owned globally in src/app.css. */
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-composer-switch,
