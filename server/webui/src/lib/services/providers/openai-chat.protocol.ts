@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { serializeToolText } from '$lib/utils/tool-lifecycle';
-import { applyProviderReasoning } from './reasoning';
+import { validateCustomReasoning } from './custom-reasoning';
+import { validateRequestOwnership } from './provider-capabilities';
 import type {
 	ProviderChatCompletionInput,
 	ProviderChatCompletionResponse,
@@ -214,8 +215,9 @@ export function buildChatBody(
 	providerId: 'vllm' | 'openai-compatible' = input.capabilities?.providerId === 'vllm'
 		? 'vllm'
 		: 'openai-compatible',
-	serializeReasoning = true
+	validateChatCustom = true
 ): Record<string, unknown> {
+	validateRequestOwnership(input, providerId);
 	const { options } = input;
 	const custom = customParameters(input);
 	for (const key of Object.keys(custom))
@@ -313,12 +315,6 @@ export function buildChatBody(
 		delete body.tool_choice;
 		delete body.parallel_tool_calls;
 	}
-	if (serializeReasoning)
-		applyProviderReasoning(
-			{ ...input, options: { ...input.options, protocol: 'chat-completions' } },
-			providerId,
-			body,
-			custom
-		);
+	if (validateChatCustom) validateCustomReasoning(custom, providerId, 'chat-completions');
 	return body;
 }

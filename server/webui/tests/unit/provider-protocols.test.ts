@@ -88,12 +88,11 @@ describe('Chat Completions protocol', () => {
 				max_completion_tokens: 123,
 				seed: 0,
 				stop: ['end'],
-				reasoning_effort: 'low',
 				response_format: { type: 'json_object' },
 				tools: [{ type: 'function', function: { name: 'test', parameters: { type: 'object' } } }],
 				tool_choice: 'required',
 				parallel_tool_calls: false,
-				custom: '{"return_progress":true,"top_k":40}'
+				custom: '{"return_progress":true,"top_k":40,"reasoning_effort":"low"}'
 			}
 		});
 		expect(body).toMatchObject({
@@ -181,19 +180,19 @@ describe('capability snapshots and insecure-LAN fingerprint', () => {
 				...input.options,
 				max_tokens: 20,
 				tools: [{ type: 'function', function: { name: 'test', parameters: {} } }],
-				reasoning_effort: 'low'
+				custom: '{"reasoning_effort":"low"}'
 			}
 		});
 		expect(body).toHaveProperty('max_completion_tokens', 20);
 		expect(body).not.toHaveProperty('tools');
 		expect(body).not.toHaveProperty('max_tokens');
-		expect(() =>
+		expect(
 			buildChatBody({
 				...input,
 				capabilities,
-				options: { ...input.options, reasoning_effort: 'high' }
+				options: { ...input.options, custom: '{"reasoning_effort":"high"}' }
 			})
-		).toThrow(/unavailable|not supported/);
+		).toHaveProperty('reasoning_effort', 'high');
 	});
 	it('computes exact SHA-256 without crypto.subtle and preserves shipped llama source identity', async () => {
 		vi.stubGlobal('crypto', undefined);
@@ -253,7 +252,7 @@ describe('stateless Responses protocol', () => {
 				...input.options,
 				instructions: 'specific',
 				max_tokens: 32,
-				reasoning_effort: 'low',
+				custom: '{"reasoning":{"effort":"low"}}',
 				tools: [{ type: 'function', function: { name: 'test', parameters: { type: 'object' } } }],
 				tool_choice: { type: 'function', function: { name: 'test' } },
 				response_format: {

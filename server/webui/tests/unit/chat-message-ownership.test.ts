@@ -111,8 +111,8 @@ describe.each([
 	['openai-compatible', 'chat-completions'],
 	['vllm', 'responses'],
 	['openai-compatible', 'responses']
-] as const)('serialized operation reasoning %s/%s', (providerId, protocol) => {
-	it('captures A/low/model-A/capabilities before persistence await and never reads B/high', async () => {
+] as const)('serialized operation ownership %s/%s', (providerId, protocol) => {
+	it('captures model-A/capabilities before persistence await and ignores legacy preferences', async () => {
 		vi.mocked(ChatService.sendMessage).mockRestore();
 		settingsStore.updateMultipleConfig({
 			apiProvider: providerId,
@@ -196,26 +196,22 @@ describe.each([
 		expect(build.mock.calls[0][0].capabilities).toMatchObject({
 			providerId,
 			model: 'model-A',
-			protocol,
-			reasoning: { effort: { values: ['low'] } }
+			protocol
 		});
 		expect(build.mock.calls[0][0].options.operationModel).toMatchObject({
 			conversationId: 'A',
-			model: 'model-A',
-			reasoning: { mode: 'effort', value: 'low' }
+			model: 'model-A'
 		});
 		expect(requests[0].body).toMatchObject({
 			model: 'model-A',
-			top_p: 0.7,
-			...(providerId === 'llama-server'
-				? { chat_template_kwargs: { reasoning_effort: 'low' } }
-				: protocol === 'responses'
-					? { reasoning: { effort: 'low' } }
-					: { reasoning_effort: 'low' })
+			top_p: 0.7
 		});
+		expect(requests[0].body).not.toHaveProperty('reasoning_effort');
+		expect(requests[0].body).not.toHaveProperty('reasoning');
+		expect(requests[0].body).not.toHaveProperty('chat_template_kwargs');
 		expect(requests[0].url).toContain(`/api/${providerId}/`);
 		expect(requests[0].headers.Authorization).toBe('Bearer operation-key');
-		expect(conversationsStore.getReasoningIntent()).toEqual({ mode: 'effort', value: 'high' });
+		expect(build.mock.calls[0][0].options.operationModel).not.toHaveProperty('reasoning');
 		assertOwned('B');
 	});
 });

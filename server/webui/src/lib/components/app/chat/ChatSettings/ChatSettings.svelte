@@ -784,15 +784,8 @@
 					layout: 'two-column',
 					fields: [
 						{
-							key: SETTINGS_KEYS.DISABLE_REASONING_PARSING,
-							requiredProviderCapabilities: ['supportsLlamaReasoningControls'],
-							order: 1,
-							label: t('settings.fieldDisableServerSideThinkingExtraction'),
-							type: SettingsFieldType.CHECKBOX
-						},
-						{
 							key: SETTINGS_KEYS.EXCLUDE_REASONING_FROM_CONTEXT,
-							order: 2,
+							order: 1,
 							label: t('settings.fieldStripThinkingFromMessageHistory'),
 							type: SettingsFieldType.CHECKBOX
 						}

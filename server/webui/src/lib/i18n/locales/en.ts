@@ -286,7 +286,6 @@ export const en: TranslationDictionary = {
 		fieldMaxLinesPerToolPreview: 'Max lines per tool preview',
 		fieldShowToolCallInProgress: 'Show tool call in progress',
 		fieldPreFillKvCacheAfterResponse: 'Pre-fill KV cache after response',
-		fieldDisableServerSideThinkingExtraction: 'Disable server-side thinking extraction',
 		fieldStripThinkingFromMessageHistory: 'Strip thinking from message history',
 		fieldCustomJson: 'Custom JSON',
 		groupConnection: 'Connection',
@@ -506,8 +505,6 @@ export const en: TranslationDictionary = {
 			showThoughtInProgress: 'Expand Reasoning by default while messages are being generated.',
 			minimalAgenticIndicators:
 				'Replace Reasoning and Tools panels with small animated indicators in the message footer while they are active.',
-			disableReasoningParsing:
-				'Send reasoning_format=none so the server returns thinking inline instead of extracting it separately.',
 			excludeReasoningFromContext:
 				'Remove thinking from previous messages before sending them back. When disabled, thinking is returned through reasoning_content.',
 			keepStatsVisible: 'Keep processing statistics visible after generation finishes.',
@@ -619,34 +616,6 @@ export const en: TranslationDictionary = {
 		askAnything: 'Ask anything...',
 		openPicker: 'Open picker',
 		stopRecording: 'Stop recording',
-		reasoningEffortTitle: 'Reasoning effort',
-		reasoningLabel: 'Reasoning',
-		reasoningEnabled: 'Enabled',
-		reasoningDefault: 'Default / Auto',
-		reasoningUnavailable:
-			'Saved reasoning selection is unavailable for this source/model/protocol. Choose Default/Auto or a supported option.',
-		reasoningDeclarationTitle: 'Advanced: declare effort levels',
-		reasoningDeclarationHint:
-			'Enter comma-separated exact values documented by your backend. This is your declaration, not automatic detection. It applies only to this connection, model, protocol and template/server version; it does not verify acceptance.',
-		reasoningDeclarationInvalid:
-			'Enter 1–16 distinct level names (letters, digits, dot, dash or underscore; maximum 64 characters each).',
-		reasoningDeclarationApply: 'Save declaration',
-		reasoningDeclarationClear: 'Remove declaration',
-		reasoningDeclarationUser: 'Effort levels declared by you, not verified automatically.',
-		reasoningUnknown:
-			'The backend has not declared reasoning capabilities. Server defaults are retained.',
-		reasoningLevelsUnknown:
-			'Reasoning is supported, but the backend has not declared allowed effort levels.',
-		reasoningConfigureHint: 'Click to configure.',
-		reasoningEffort: {
-			minimal: 'Minimal',
-			xhigh: 'Extra high',
-			off: 'Off',
-			low: 'Low',
-			medium: 'Medium',
-			high: 'High',
-			max: 'Max'
-		},
 		pdfVisionSuggestion: 'You can enable parsing PDF as images with vision models.',
 		pdfVisionSuggestionAction: 'Enable PDF as images',
 		pdfVisionEnabled: 'PDF parsing as images enabled.',

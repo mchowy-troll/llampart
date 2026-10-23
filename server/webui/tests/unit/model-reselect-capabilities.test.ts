@@ -75,8 +75,6 @@ describe('AUD-008: selection only invalidates capabilities for an accepted chang
 				vision === undefined ? 'unknown' : vision ? 'supported' : 'unsupported'
 			);
 			expect(modelsStore.modelSupportsVision('model-A')).toBe(vision !== false);
-			expect(modelsStore.getReasoningCapabilities()).toBe(snapshot?.reasoning);
-			expect(snapshot?.reasoning?.effort.values).toEqual(['low']);
 			expect(snapshot?.features.tools.state).toBe('unsupported');
 			expect(discovery).not.toHaveBeenCalled();
 		}
@@ -147,7 +145,6 @@ describe('AUD-008: selection only invalidates capabilities for an accepted chang
 		);
 		expect(snapshotB?.model).toBe('model-B');
 		expect(snapshotB?.features.vision.state).toBe('supported');
-		expect(snapshotB?.reasoning?.effort.values).toEqual(['high']);
 		gate.resolve();
 		expect((await pendingA)?.model).toBe('model-A');
 		expect(modelsStore.capabilitySnapshot).toBe(snapshotB);

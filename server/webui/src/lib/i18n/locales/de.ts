@@ -288,7 +288,6 @@ export const de: TranslationDictionary = {
 		fieldMaxLinesPerToolPreview: 'Maximale Zeilen pro Tool-Vorschau',
 		fieldShowToolCallInProgress: 'Tool-Aufruf während der Ausführung anzeigen',
 		fieldPreFillKvCacheAfterResponse: 'KV-Cache nach der Antwort vorfüllen',
-		fieldDisableServerSideThinkingExtraction: 'Server-side extraction reasoning deaktivieren',
 		fieldStripThinkingFromMessageHistory: 'Reasoning aus dem Nachrichtenverlauf entfernen',
 		fieldCustomJson: 'Benutzerdefiniertes JSON',
 		groupConnection: 'Verbindung',
@@ -512,8 +511,6 @@ export const de: TranslationDictionary = {
 			showThoughtInProgress: 'Reasoning während der Generierung standardmäßig erweitern.',
 			minimalAgenticIndicators:
 				'Ersetzt Reasoning- und Tools-Bereiche durch kleine animierte Anzeigen in der Nachrichtenfußzeile, solange sie aktiv sind.',
-			disableReasoningParsing:
-				'Sendet reasoning_format=none, sodass der Server Thinking inline statt separat zurückgibt.',
 			excludeReasoningFromContext:
 				'Entfernt Thinking aus früheren Nachrichten, bevor sie erneut gesendet werden.',
 			keepStatsVisible: 'Verarbeitungsstatistiken nach Abschluss der Generierung sichtbar lassen.',
@@ -636,34 +633,6 @@ export const de: TranslationDictionary = {
 		askAnything: 'Frag irgendetwas...',
 		openPicker: 'Auswahl öffnen',
 		stopRecording: 'Aufnahme stoppen',
-		reasoningEffortTitle: 'Reasoning-Aufwand',
-		reasoningLabel: 'Reasoning',
-		reasoningEnabled: 'Ein',
-		reasoningDefault: 'Standard / Auto',
-		reasoningUnavailable:
-			'Die gespeicherte Reasoning-Auswahl ist für diese Quelle/dieses Modell/Protokoll nicht verfügbar. Wählen Sie Standard/Auto oder eine unterstützte Option.',
-		reasoningDeclarationTitle: 'Erweitert: Effort-Stufen angeben',
-		reasoningDeclarationHint:
-			'Geben Sie die vom Backend dokumentierten exakten Werte kommagetrennt ein. Dies ist Ihre Angabe, keine automatische Erkennung. Sie gilt nur für diese Verbindung, dieses Modell, Protokoll und diese Vorlage/Serverversion; die Akzeptanz wird nicht geprüft.',
-		reasoningDeclarationInvalid:
-			'Geben Sie 1–16 eindeutige Stufennamen ein (Buchstaben, Ziffern, Punkt, Bindestrich oder Unterstrich; jeweils höchstens 64 Zeichen).',
-		reasoningDeclarationApply: 'Angabe speichern',
-		reasoningDeclarationClear: 'Angabe entfernen',
-		reasoningDeclarationUser: 'Von Ihnen angegebene Effort-Stufen, nicht automatisch geprüft.',
-		reasoningUnknown:
-			'Das Backend hat keine Reasoning-Fähigkeiten angegeben. Die Servervorgaben bleiben erhalten.',
-		reasoningLevelsUnknown:
-			'Reasoning wird unterstützt, aber das Backend hat keine zulässigen Aufwandsstufen angegeben.',
-		reasoningConfigureHint: 'Zum Konfigurieren klicken.',
-		reasoningEffort: {
-			minimal: 'Minimal',
-			xhigh: 'Sehr hoch',
-			off: 'Aus',
-			low: 'Niedrig',
-			medium: 'Mittel',
-			high: 'Hoch',
-			max: 'Max'
-		},
 		pdfVisionSuggestion:
 			'Du kannst die Verarbeitung von PDFs als Bilder für Vision-Modelle aktivieren.',
 		pdfVisionSuggestionAction: 'PDF als Bilder aktivieren',

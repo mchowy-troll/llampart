@@ -110,7 +110,6 @@ export interface SettingsChatServiceOptions {
 	tool_choice?: 'none' | 'auto' | 'required' | { type: 'function'; function: { name: string } };
 	parallel_tool_calls?: boolean;
 	response_format?: Record<string, unknown>;
-	reasoning_effort?: string;
 	min_tokens?: number;
 	stop_token_ids?: number[];
 	ignore_eos?: boolean;
@@ -129,15 +128,8 @@ export interface SettingsChatServiceOptions {
 	model?: string;
 	// System message to inject
 	systemMessage?: string;
-	// Disable reasoning parsing (use 'none' instead of 'auto')
-	disableReasoningParsing?: boolean;
 	// Strip reasoning content from context before sending
 	excludeReasoningFromContext?: boolean;
-	// Enable model thinking/reasoning via chat_template_kwargs
-	enableThinking?: boolean;
-	reasoningEffort?: string;
-	// Neutral intent; interpreted against the operation-owned capability snapshot.
-	reasoning?: import('./reasoning').ReasoningIntent;
 	tools?: OpenAIToolDefinition[];
 	// Generation parameters
 	temperature?: number;

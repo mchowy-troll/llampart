@@ -209,7 +209,7 @@ function flow(
 }
 
 describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
-	it('serializes A/low across a paused tool result after switching the view and contract to B/high', async () => {
+	it('serializes model A across a paused tool result after switching the view to model B', async () => {
 		await prepare(providerId, protocol);
 		conversationsStore.activeConversation = {
 			id: 'A',
@@ -217,8 +217,7 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 		} as DatabaseConversation;
 		const context = ChatService.createProviderRequestContext();
 		const operationModel = ChatService.captureOperationModel(context, undefined, undefined, {
-			conversationId: 'A',
-			reasoning: conversationsStore.getReasoningIntent()
+			conversationId: 'A'
 		});
 		const build = vi.spyOn(getApiProvider(providerId), 'buildChatCompletionRequest');
 		const { payloads, fetchMock } = providerIO(protocol);
@@ -248,19 +247,16 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 		gate.resolve();
 		await pending;
 		expect(payloads).toHaveLength(2);
-		for (const body of payloads)
-			expect(body).toMatchObject({
-				model: 'model-A',
-				...(providerId === 'llama-server'
-					? { chat_template_kwargs: { reasoning_effort: 'low' } }
-					: protocol === 'responses'
-						? { reasoning: { effort: 'low' } }
-						: { reasoning_effort: 'low' })
-			});
+		for (const body of payloads) {
+			expect(body.model).toBe('model-A');
+			expect(body).not.toHaveProperty('reasoning_effort');
+			expect(body).not.toHaveProperty('reasoning');
+			expect(body).not.toHaveProperty('chat_template_kwargs');
+		}
 		for (const [input] of build.mock.calls) {
 			expect(input.options.operationModel).toBe(operationModel);
 			expect(input.capabilities).toBe(await operationModel.capabilities);
-			expect(input.capabilities?.reasoning?.effort.values).toEqual(['low']);
+			expect(input.capabilities?.model).toBe('model-A');
 		}
 		expect(fetchMock.mock.calls.every(([url]) => String(url).includes(`/api/${providerId}/`))).toBe(
 			true
@@ -709,7 +705,7 @@ describe('model defaults and auxiliary requests', () => {
 			providerRequestContext,
 			undefined,
 			undefined,
-			{ conversationId: 'A', reasoning: { mode: 'effort', value: 'low' } }
+			{ conversationId: 'A' }
 		);
 		conversationsStore.activeConversation = {
 			id: 'B',
@@ -730,8 +726,7 @@ describe('model defaults and auxiliary requests', () => {
 		await prepare('llama-server', 'chat-completions', [true, false]);
 		const context = ChatService.createProviderRequestContext();
 		const operationModel = ChatService.captureOperationModel(context, undefined, undefined, {
-			conversationId: 'A',
-			reasoning: { mode: 'effort', value: 'low' }
+			conversationId: 'A'
 		});
 		await modelsStore.selectModelById('model-B');
 		const { payloads } = providerIO('chat-completions', 0);
@@ -742,9 +737,9 @@ describe('model defaults and auxiliary requests', () => {
 		expect(payloads[0]).toMatchObject({
 			model: 'model-A',
 			stream: false,
-			n_predict: 0,
-			chat_template_kwargs: { reasoning_effort: 'low' }
+			n_predict: 0
 		});
+		expect(payloads[0]).not.toHaveProperty('chat_template_kwargs');
 		expect(JSON.stringify(payloads[0])).toContain(image);
 		const textOnly = ChatService.captureOperationModel(context, 'model-B');
 		const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);

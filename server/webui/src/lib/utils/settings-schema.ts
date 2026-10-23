@@ -129,7 +129,9 @@ export function parseSettingsConfig(
 			key === 'openAiCompatibleProtocol' ||
 			key === 'vllmProtocol' ||
 			key === 'disableOpenAiCompatibleTools' ||
-			key === 'frostedGlassWallpaperMilky'
+			key === 'frostedGlassWallpaperMilky' ||
+			key === 'disableReasoningParsing' ||
+			key === 'reasoningLevelDeclarations'
 		)
 			continue;
 		const schema = knownSettingsShape[key] ?? primitiveSettingSchema;

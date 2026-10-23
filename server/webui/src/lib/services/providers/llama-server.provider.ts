@@ -1,9 +1,9 @@
 import { API_CHAT, API_MODELS } from '$lib/constants/api-endpoints';
 import { API_PROVIDER_IDS, API_PROVIDER_LABELS } from '$lib/constants/api-providers';
 import { LLAMA_SERVER_PROVIDER_CAPABILITIES } from '$lib/constants/provider-capabilities';
-import { applyProviderReasoning } from './reasoning';
+import { validateCustomReasoning } from './custom-reasoning';
+import { validateRequestOwnership } from './provider-capabilities';
 import { serializeToolText } from '$lib/utils/tool-lifecycle';
-import { ReasoningFormat } from '$lib/enums';
 import { t } from '$lib/i18n';
 import type { ApiChatCompletionRequest, ApiModelListResponse } from '$lib/types/api';
 import type {
@@ -124,6 +124,7 @@ async function readModelListResponse(response: Response): Promise<ApiModelListRe
 }
 
 function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCompletionRequest {
+	validateRequestOwnership(input, 'llama-server');
 	const { options } = input;
 	const {
 		stream,
@@ -150,7 +151,6 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 		backend_sampling,
 		custom,
 		timings_per_token,
-		disableReasoningParsing,
 		excludeReasoningFromContext
 	} = options;
 
@@ -175,12 +175,6 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 	};
 
 	if (options.model) requestBody.model = options.model;
-
-	requestBody.reasoning_format = disableReasoningParsing
-		? ReasoningFormat.NONE
-		: ReasoningFormat.AUTO;
-
-	requestBody.reasoning_control = true;
 
 	if (temperature !== undefined) requestBody.temperature = temperature;
 	if (max_tokens !== undefined) {
@@ -239,12 +233,7 @@ function buildLlamaServerChatBody(input: ProviderChatCompletionInput): ApiChatCo
 			Object.assign(requestBody, customParams);
 		}
 	}
-	applyProviderReasoning(
-		input,
-		'llama-server',
-		requestBody as unknown as Record<string, unknown>,
-		explicitCustom
-	);
+	validateCustomReasoning(explicitCustom, 'llama-server', 'chat-completions');
 
 	return requestBody;
 }

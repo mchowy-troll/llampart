@@ -50,9 +50,7 @@ export function mapVllmRequest(
 ): Record<string, unknown> {
 	const custom = customParameters(input);
 	if ((input.options as unknown as Record<string, unknown>).chat_template_kwargs !== undefined)
-		throw new Error(
-			'Use Custom JSON for explicit chat_template_kwargs; it must pass the shared reasoning conflict boundary'
-		);
+		throw new Error('Use Custom JSON for explicit chat_template_kwargs');
 	// This vLLM extension is Chat-only and remains system-owned.
 	if (
 		body.stream &&

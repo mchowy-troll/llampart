@@ -24,12 +24,6 @@ import { API_STREAM } from '$lib/constants/api-endpoints';
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
 import { fetchProviderEndpoint } from '$lib/services/providers/provider-transport';
 import { connectionProtocol } from '$lib/services/providers/provider-capabilities';
-import {
-	resolveReasoning,
-	requestReasoningIntent,
-	applyProviderReasoning
-} from '$lib/services/providers/reasoning';
-import type { ReasoningIntent } from '$lib/types/reasoning';
 import { createStreamIdentity, buildStreamRequestUrl } from '$lib/utils/stream-identity';
 import { SseByteParser } from '$lib/utils/sse-byte-parser';
 import {
@@ -72,7 +66,7 @@ export class ChatService {
 		context: ProviderRequestContext,
 		modelOverride?: string | null,
 		conversationModel?: string | null,
-		selection?: { conversationId: string | null; reasoning: ReasoningIntent }
+		selection?: { conversationId: string | null }
 	): OperationModel {
 		const model = ChatService.resolveEffectiveModel(context, modelOverride, conversationModel);
 		const capabilities = modelsStore.refreshCapabilities(context, model);
@@ -82,8 +76,7 @@ export class ChatService {
 			model,
 			requestContext: context,
 			capabilities,
-			conversationId: selection?.conversationId ?? null,
-			reasoning: Object.freeze({ ...(selection?.reasoning ?? { mode: 'default' }) })
+			conversationId: selection?.conversationId ?? null
 		});
 	}
 
@@ -106,7 +99,7 @@ export class ChatService {
 
 	/**
 	 * Generates a short conversation title with a small auxiliary LLM request.
-	 * This does not use the conversation system prompt and keeps thinking disabled when supported.
+	 * This does not use the conversation system prompt; backend generation defaults are preserved.
 	 */
 	static async generateTitle(
 		message: ApiChatMessageData,
@@ -123,20 +116,12 @@ export class ChatService {
 				ChatService.createProviderRequestContext();
 			const operation =
 				requestBinding?.operationModel ?? ChatService.captureOperationModel(context, model);
-			const capabilities = await operation.capabilities;
-			// Auxiliary request owns its intent; never reuse conversation effort or
-			// inject provider-specific kwargs through Custom JSON.
-			const reasoning: ReasoningIntent =
-				capabilities?.reasoning &&
-				resolveReasoning(capabilities.reasoning, { mode: 'off' }).available
-					? { mode: 'off' }
-					: { mode: 'default' };
 			await ChatService.sendMessage(
 				[message],
 				{
 					model: model || undefined,
 					providerRequestContext: context,
-					operationModel: Object.freeze({ ...operation, conversationId: null, reasoning }),
+					operationModel: Object.freeze({ ...operation, conversationId: null }),
 					stream: true,
 					max_tokens: 64,
 					onChunk: (chunk: string) => {
@@ -231,16 +216,14 @@ export class ChatService {
 		const operationModel =
 			options.operationModel ??
 			ChatService.captureOperationModel(requestContext, options.model, undefined, {
-				conversationId: conversationId ?? null,
-				reasoning: requestReasoningIntent(options)
+				conversationId: conversationId ?? null
 			});
 		if (operationModel.conversationId && operationModel.conversationId !== conversationId)
 			throw new Error('Request belongs to a different conversation');
 		effectiveOptions = {
 			...effectiveOptions,
 			operationModel,
-			model: operationModel.model ?? undefined,
-			reasoning: operationModel.reasoning ?? effectiveOptions.reasoning
+			model: operationModel.model ?? undefined
 		};
 
 		const frozenServerBaseUrl = requestContext.serverBaseUrl;
@@ -565,22 +548,6 @@ export class ChatService {
 				modelsStore.refreshCapabilities(requestContext, requestModel ?? null));
 			if (!ChatService.isProviderRequestContextCurrent(requestContext)) return;
 			ChatService.validateImageInput(requestMessages, capabilities);
-			applyProviderReasoning(
-				{
-					serverBaseUrl: requestContext.serverBaseUrl,
-					apiKey: requestContext.apiKey,
-					messages: requestMessages,
-					capabilities: capabilities ?? undefined,
-					options: {
-						model: requestModel ?? undefined,
-						operationModel,
-						reasoning: operationModel?.reasoning ?? { mode: 'default' }
-					}
-				},
-				requestContext.providerId,
-				requestBody,
-				{}
-			);
 
 			const response = await fetchProviderEndpoint(requestContext, '/v1/chat/completions', {
 				method: 'POST',

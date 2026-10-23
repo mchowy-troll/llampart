@@ -51,8 +51,6 @@ export type {
 	FileProcessingResult
 } from './chat.d';
 
-export type { ReasoningIntent, ReasoningCapabilities, ResolvedReasoning } from './reasoning';
-
 // Provider types
 export type {
 	ProviderCapabilities,

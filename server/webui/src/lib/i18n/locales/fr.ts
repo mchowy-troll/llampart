@@ -290,7 +290,6 @@ export const fr: TranslationDictionary = {
 		fieldMaxLinesPerToolPreview: 'Nombre maximal de lignes dans l’aperçu de l’outil',
 		fieldShowToolCallInProgress: 'Afficher l’appel d’outil en cours',
 		fieldPreFillKvCacheAfterResponse: 'Préremplir le cache KV après la réponse',
-		fieldDisableServerSideThinkingExtraction: 'Désactiver server-side extraction reasoning',
 		fieldStripThinkingFromMessageHistory: 'Retirer Reasoning de l’historique des messages',
 		fieldCustomJson: 'JSON personnalisé',
 		groupConnection: 'Connexion',
@@ -515,8 +514,6 @@ export const fr: TranslationDictionary = {
 			showThoughtInProgress: 'Développe Reasoning par défaut pendant la génération des messages.',
 			minimalAgenticIndicators:
 				'Remplace les panneaux Reasoning et Tools par de petits indicateurs animés dans le pied du message lorsqu’ils sont actifs.',
-			disableReasoningParsing:
-				'Envoie reasoning_format=none pour que le serveur renvoie le raisonnement inline au lieu de l’extraire séparément.',
 			excludeReasoningFromContext:
 				'Retire le raisonnement des messages précédents avant leur renvoi.',
 			keepStatsVisible:
@@ -643,34 +640,6 @@ export const fr: TranslationDictionary = {
 		askAnything: 'Demandez n’importe quoi...',
 		openPicker: 'Ouvrir le sélecteur',
 		stopRecording: 'Arrêter l’enregistrement',
-		reasoningEffortTitle: 'Effort de raisonnement',
-		reasoningLabel: 'Raisonnement',
-		reasoningEnabled: 'Activé',
-		reasoningDefault: 'Par défaut / Auto',
-		reasoningUnavailable:
-			'Le choix de raisonnement enregistré est indisponible pour cette source/ce modèle/protocole. Choisissez Par défaut/Auto ou une option prise en charge.',
-		reasoningDeclarationTitle: 'Avancé : déclarer les niveaux d’effort',
-		reasoningDeclarationHint:
-			'Saisissez les valeurs exactes documentées par votre backend, séparées par des virgules. Il s’agit de votre déclaration, pas d’une détection automatique. Elle ne concerne que cette connexion, ce modèle, protocole et cette version du modèle de conversation/serveur ; elle ne vérifie pas leur acceptation.',
-		reasoningDeclarationInvalid:
-			'Saisissez de 1 à 16 noms distincts (lettres, chiffres, point, tiret ou soulignement ; 64 caractères maximum chacun).',
-		reasoningDeclarationApply: 'Enregistrer la déclaration',
-		reasoningDeclarationClear: 'Supprimer la déclaration',
-		reasoningDeclarationUser: 'Niveaux d’effort déclarés par vous, sans vérification automatique.',
-		reasoningUnknown:
-			'Le backend n’a pas déclaré ses capacités de raisonnement. Les valeurs par défaut du serveur sont conservées.',
-		reasoningLevelsUnknown:
-			'Le raisonnement est pris en charge, mais le backend n’a pas déclaré les niveaux d’effort autorisés.',
-		reasoningConfigureHint: 'Cliquez pour configurer.',
-		reasoningEffort: {
-			minimal: 'Minimal',
-			xhigh: 'Très élevé',
-			off: 'Désactivé',
-			low: 'Faible',
-			medium: 'Moyen',
-			high: 'Élevé',
-			max: 'Max'
-		},
 		pdfVisionSuggestion:
 			'Vous pouvez activer le traitement des PDF comme images avec les modèles vision.',
 		pdfVisionSuggestionAction: 'Activer PDF en images',

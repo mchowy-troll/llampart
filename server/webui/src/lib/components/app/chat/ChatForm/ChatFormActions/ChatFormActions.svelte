@@ -4,7 +4,6 @@
 	import ChatFormActionAttachmentsDropdown from '$lib/components/app/chat/ChatForm/ChatFormActions/ChatFormActionAttachmentsDropdown.svelte';
 	import ChatFormActionRecord from '$lib/components/app/chat/ChatForm/ChatFormActions/ChatFormActionRecord.svelte';
 	import ChatFormActionSubmit from '$lib/components/app/chat/ChatForm/ChatFormActions/ChatFormActionSubmit.svelte';
-	import ChatFormReasoningToggle from '$lib/components/app/chat/ChatForm/ChatFormActions/ChatFormReasoningToggle.svelte';
 	import McpServersSelector from '$lib/components/app/mcp/McpServersSelector.svelte';
 	import ModelsSelector from '$lib/components/app/models/ModelsSelector.svelte';
 	import { SETTINGS_SECTION_TITLES } from '$lib/constants';
@@ -59,11 +58,6 @@
 	let canUseToolCalling = $derived(
 		providerCapabilities.supportsOpenAiToolCalls === true &&
 			modelsStore.capabilitySnapshot?.features.tools?.state !== 'unsupported'
-	);
-	let canUseLlamaReasoningControls = $derived(
-		providerCapabilities.supportsLlamaReasoningControls === true ||
-			(modelsStore.capabilitySnapshot?.features.reasoning?.state !== 'unsupported' &&
-				modelsStore.capabilitySnapshot?.features.reasoning_effort?.state !== 'unsupported')
 	);
 	let canShowModelDrivenAttachmentOptions = $derived(
 		providerCapabilities.supportsModelProps === true ||
@@ -259,10 +253,6 @@
 			forceForegroundText
 			useGlobalSelection
 		/>
-
-		{#if canUseLlamaReasoningControls}
-			<ChatFormReasoningToggle class="ml-1.5" />
-		{/if}
 	</div>
 
 	{#if isLoading}

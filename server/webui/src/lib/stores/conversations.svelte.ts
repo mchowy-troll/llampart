@@ -29,8 +29,6 @@ import { runLegacyMigration } from '$lib/utils/legacy-migration';
 import { generateConversationTitle } from '$lib/utils/text';
 import type { ConversationExportEnvelope, McpServerOverride } from '$lib/types/database';
 import { MessageRole } from '$lib/enums';
-import type { ReasoningIntent } from '$lib/types/reasoning';
-import { legacyReasoningIntent, parseReasoningIntent } from '$lib/services/providers/reasoning';
 import {
 	ISO_DATE_TIME_SEPARATOR,
 	ISO_DATE_TIME_SEPARATOR_REPLACEMENT,
@@ -42,10 +40,7 @@ import {
 	ISO_TIME_SEPARATOR_REPLACEMENT,
 	NON_ALPHANUMERIC_REGEX,
 	MULTIPLE_UNDERSCORE_REGEX,
-	MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY,
-	THINKING_ENABLED_DEFAULT_LOCALSTORAGE_KEY,
-	REASONING_EFFORT_DEFAULT_LOCALSTORAGE_KEY,
-	REASONING_PREFERENCE_LOCALSTORAGE_KEY
+	MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY
 } from '$lib/constants';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import packageJson from '../../../package.json';
@@ -102,9 +97,6 @@ class ConversationsStore {
 	/** Pending MCP server overrides for new conversations (before first message) */
 	pendingMcpServerOverrides = $state<McpServerOverride[]>(ConversationsStore.loadMcpDefaults());
 
-	/** Neutral preference for new chats. Historical fields are read, never migrated. */
-	pendingReasoningIntent = $state<ReasoningIntent>(ConversationsStore.loadReasoningDefault());
-
 	/** Load MCP default overrides from localStorage */
 	private static loadMcpDefaults(): McpServerOverride[] {
 		if (typeof globalThis.localStorage === 'undefined') return [];
@@ -135,28 +127,11 @@ class ConversationsStore {
 		}
 	}
 
-	private static loadReasoningDefault(): ReasoningIntent {
-		try {
-			if (typeof globalThis.localStorage === 'undefined') return { mode: 'default' };
-			const saved = localStorage.getItem(REASONING_PREFERENCE_LOCALSTORAGE_KEY);
-			if (saved) return parseReasoningIntent(JSON.parse(saved)) ?? { mode: 'default' };
-			const enabled = localStorage.getItem(THINKING_ENABLED_DEFAULT_LOCALSTORAGE_KEY);
-			const effort = localStorage.getItem(REASONING_EFFORT_DEFAULT_LOCALSTORAGE_KEY);
-			return legacyReasoningIntent(
-				enabled === null ? undefined : enabled === 'true',
-				effort ?? undefined
-			);
-		} catch {
-			return { mode: 'default' };
-		}
-	}
-
 	/** Refresh new-chat defaults only. Existing conversation preferences/history
 	 * retain ownership of their historical values and are never rewritten by Reset.
 	 */
 	reloadGlobalPreferences(): void {
 		this.pendingMcpServerOverrides = ConversationsStore.loadMcpDefaults();
-		this.pendingReasoningIntent = ConversationsStore.loadReasoningDefault();
 	}
 
 	/** Callback for title update confirmation dialog */
@@ -300,11 +275,6 @@ class ConversationsStore {
 		const conversationName = name || `Chat ${new Date().toLocaleString()}`;
 		const conversation = await DatabaseService.createConversation(conversationName);
 
-		conversation.reasoning = { ...this.pendingReasoningIntent };
-		await DatabaseService.updateConversation(conversation.id, {
-			reasoning: { ...this.pendingReasoningIntent }
-		});
-
 		if (this.pendingMcpServerOverrides.length > 0) {
 			// Deep clone to plain objects (Svelte 5 $state uses Proxies which can't be cloned to IndexedDB)
 			const plainOverrides = this.pendingMcpServerOverrides.map((o) => ({
@@ -367,7 +337,6 @@ class ConversationsStore {
 		this.activeMessages = [];
 		// reload defaults so new chats inherit persisted state
 		this.pendingMcpServerOverrides = ConversationsStore.loadMcpDefaults();
-		this.pendingReasoningIntent = ConversationsStore.loadReasoningDefault();
 	}
 
 	/**
@@ -897,33 +866,6 @@ class ConversationsStore {
 	clearPendingMcpServerOverrides(): void {
 		this.pendingMcpServerOverrides = [];
 		this.saveMcpDefaults();
-	}
-
-	getReasoningIntent(conversation = this.activeConversation): ReasoningIntent {
-		if (!conversation) return this.pendingReasoningIntent;
-		return (
-			parseReasoningIntent(conversation.reasoning) ??
-			(conversation.thinkingEnabled !== undefined || conversation.reasoningEffort !== undefined
-				? legacyReasoningIntent(conversation.thinkingEnabled, conversation.reasoningEffort)
-				: this.pendingReasoningIntent)
-		);
-	}
-
-	async setReasoningIntent(intent: ReasoningIntent): Promise<void> {
-		const reasoning = parseReasoningIntent(intent);
-		if (!reasoning) throw new Error('Invalid reasoning preference');
-		if (!this.activeConversation) {
-			this.pendingReasoningIntent = reasoning;
-			if (typeof globalThis.localStorage !== 'undefined')
-				localStorage.setItem(REASONING_PREFERENCE_LOCALSTORAGE_KEY, JSON.stringify(reasoning));
-			return;
-		}
-		const id = this.activeConversation.id;
-		this.activeConversation = { ...this.activeConversation, reasoning };
-		await DatabaseService.updateConversation(id, { reasoning });
-		this.conversations = this.conversations.map((conversation) =>
-			conversation.id === id ? { ...conversation, reasoning } : conversation
-		);
 	}
 
 	/**

@@ -86,7 +86,6 @@ export const SETTINGS_KEYS = {
 	// Performance
 	PRE_ENCODE_CONVERSATION: 'preEncodeConversation',
 	// Developer
-	DISABLE_REASONING_PARSING: 'disableReasoningParsing',
 	EXCLUDE_REASONING_FROM_CONTEXT: 'excludeReasoningFromContext',
 	CUSTOM: 'custom'
 } as const;

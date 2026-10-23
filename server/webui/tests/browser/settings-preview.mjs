@@ -242,29 +242,11 @@ async function run() {
 			key: wallpaperKey,
 			image: oldPng
 		});
-		const reasoningButton = page.locator('.llampart-reasoning-trigger');
-		await reasoningButton.click();
-		await page.getByRole('menuitemradio', { name: 'Domyślne / Auto', exact: true }).waitFor();
-		for (const label of ['Minimalny', 'Wysoki', 'Bardzo wysoki', 'Maks.'])
-			await page.getByRole('menuitemradio', { name: label, exact: true }).waitFor();
-		assert.equal(
-			await page.getByRole('menuitemradio', { name: 'Wyłączone', exact: true }).count(),
-			0
-		);
-		await page.getByRole('menuitemradio', { name: 'Bardzo wysoki', exact: true }).click();
-		assert.deepEqual(
-			await page.evaluate(async () =>
-				(await import('/tests/browser/charts-harness.ts')).conversations.getReasoningIntent()
-			),
-			{ mode: 'effort', value: 'xhigh' }
-		);
-		await page.keyboard.press('Escape');
+		assert.equal(await page.locator('.llampart-reasoning-trigger').count(), 0);
 		const request = page.waitForRequest((request) => request.url().endsWith('/chat/completions'));
 		await page.locator('textarea').first().fill('Synthetic effort smoke');
 		await page.locator('textarea').first().press('Enter');
-		assert.deepEqual((await request).postDataJSON().chat_template_kwargs, {
-			reasoning_effort: 'xhigh'
-		});
+		assert.equal((await request).postDataJSON().chat_template_kwargs, undefined);
 		await page.locator('.llampart-composer-stop-action').waitFor({ state: 'hidden' });
 		const assistant = page.locator('.llampart-assistant-markdown').first();
 		await assistant
@@ -304,61 +286,7 @@ async function run() {
 				id,
 			conversationId
 		);
-		await reasoningButton.click();
-		await page.getByRole('menuitemradio', { name: 'Domyślne / Auto', exact: true }).waitFor();
-		assert.equal(
-			await page.getByRole('menuitemradio', { name: 'Bardzo wysoki', exact: true }).count(),
-			0
-		);
-		await page
-			.getByText(
-				'Reasoning jest obsługiwany, ale backend nie zadeklarował dozwolonych poziomów wysiłku.',
-				{ exact: true }
-			)
-			.waitFor();
-		await page.getByRole('alert').filter({ hasText: 'Zapisany wybór reasoning' }).waitFor();
-		await page.getByRole('menuitemradio', { name: 'Domyślne / Auto', exact: true }).click();
-		await reasoningButton.click();
-		await page
-			.getByText('Zaawansowane: zadeklaruj poziomy effort', { exact: true })
-			.first()
-			.click();
-		await page.locator('#reasoning-declared-levels').fill('brief, deep');
-		await page.getByRole('button', { name: 'Zapisz deklarację', exact: true }).click();
-		await page.getByRole('menuitemradio', { name: 'deep', exact: true }).click();
-		await page.waitForFunction(
-			async (id) =>
-				(await (await import('/tests/browser/charts-harness.ts')).db.getConversation(id))?.reasoning
-					?.value === 'deep',
-			conversationId
-		);
-		await page.reload();
-		await page.waitForFunction(
-			async (id) =>
-				(await import('/tests/browser/charts-harness.ts')).conversations.activeConversation?.id ===
-				id,
-			conversationId
-		);
-		await reasoningButton.click();
-		assert.equal(
-			await page
-				.getByRole('menuitemradio', { name: 'deep', exact: true })
-				.getAttribute('aria-checked'),
-			'true'
-		);
-		await page
-			.getByText('Poziomy effort zadeklarowane przez Ciebie, bez automatycznej weryfikacji.', {
-				exact: true
-			})
-			.waitFor();
-		assert.equal(
-			Object.keys(JSON.parse(JSON.parse(await persisted()).reasoningLevelDeclarations)).length,
-			1
-		);
-		await page.keyboard.press('Escape');
-		console.log(
-			'PASS ISSUE-03 UI: selected xhigh reaches serialized request; unavailable historical choice is visible; explicit source/model declaration survives reload without aliasing'
-		);
+		assert.equal(await page.locator('.llampart-reasoning-trigger').count(), 0);
 		await open();
 		await appearance();
 		await page.locator('#uiScale').fill('110');
@@ -459,7 +387,6 @@ async function run() {
 					),
 					toolsEnabled: toolsStore.isToolEnabled('builtin:reset-smoke'),
 					permissions: [...permissionsStore.tools],
-					pendingReasoning: conversations.pendingReasoningIntent,
 					pendingMcp: conversations.pendingMcpServerOverrides,
 					connectedServers: mcpStore.connectedServerCount
 				};
@@ -471,7 +398,6 @@ async function run() {
 			assert.equal(result.auxiliaryDefaults, true);
 			assert.equal(result.toolsEnabled, true);
 			assert.deepEqual(result.permissions, []);
-			assert.deepEqual(result.pendingReasoning, { mode: 'default' });
 			assert.deepEqual(result.pendingMcp, []);
 			assert.equal(result.connectedServers, 0);
 			assert(result.conversations.includes(conversationId));

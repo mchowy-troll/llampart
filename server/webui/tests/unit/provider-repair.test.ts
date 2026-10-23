@@ -149,17 +149,16 @@ describe('automatic protocol contract', () => {
 });
 
 describe('shared reasoning and explicit custom extensions', () => {
-	it('maps composer reasoning for both protocols and rejects confirmed unsupported intent', async () => {
+	it('uses only explicit Custom JSON and does not constrain efforts to discovered values', async () => {
 		const supported = await createCapabilitySnapshot(context, 'exact', {
 			capabilities: { reasoning_effort: { supported: true, values: ['low', 'none'] } }
 		});
 		const options = {
 			...input.options,
-			enableThinking: true,
-			reasoningEffort: 'low'
+			custom: '{"reasoning_effort":"high"}'
 		};
 		expect(buildChatBody({ ...input, options, capabilities: supported }).reasoning_effort).toBe(
-			'low'
+			'high'
 		);
 		const responses = await createCapabilitySnapshot(context, 'exact', {
 			capabilities: {
@@ -168,20 +167,24 @@ describe('shared reasoning and explicit custom extensions', () => {
 			}
 		});
 		expect(
-			buildResponsesBody({ ...input, options, capabilities: responses }).reasoning
-		).toMatchObject({ effort: 'low' });
+			buildResponsesBody({
+				...input,
+				options: { ...input.options, custom: '{"reasoning":{"effort":"high"}}' },
+				capabilities: responses
+			}).reasoning
+		).toMatchObject({ effort: 'high' });
 		expect(
 			buildChatBody({
 				...input,
 				capabilities: supported,
-				options: { ...options, enableThinking: false }
+				options: input.options
 			}).reasoning_effort
-		).toBe('none');
+		).toBeUndefined();
 		const unsupported = await createCapabilitySnapshot(context, 'exact', {
 			capabilities: { reasoning: false, reasoning_effort: false }
 		});
 		expect(() => buildChatBody({ ...input, options, capabilities: unsupported })).toThrow(
-			/unavailable/
+			/not supported/
 		);
 	});
 	it('passes arbitrary flat backend extensions or explicitly rejects confirmed unsupported ones', async () => {

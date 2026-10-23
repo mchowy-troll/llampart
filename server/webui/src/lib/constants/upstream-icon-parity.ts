@@ -60,15 +60,15 @@ export const UPSTREAM_ICON_PARITY = [
 		icon: 'Lightbulb',
 		component: Lightbulb,
 		upstreamOwner: 'composer-actions',
-		status: UPSTREAM_ICON_PARITY_STATUS.CONNECTED,
-		plannedFor: 'Reasoning effort composer control'
+		status: UPSTREAM_ICON_PARITY_STATUS.UNCONNECTED,
+		plannedFor: 'inventory only; generation controls withdrawn'
 	},
 	{
 		icon: 'LightbulbOff',
 		component: LightbulbOff,
 		upstreamOwner: 'composer-actions',
-		status: UPSTREAM_ICON_PARITY_STATUS.CONNECTED,
-		plannedFor: 'Reasoning effort composer control'
+		status: UPSTREAM_ICON_PARITY_STATUS.UNCONNECTED,
+		plannedFor: 'inventory only; generation controls withdrawn'
 	},
 	{
 		icon: 'ListRestart',

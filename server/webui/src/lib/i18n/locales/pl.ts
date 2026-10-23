@@ -285,7 +285,6 @@ export const pl: TranslationDictionary = {
 		fieldMaxLinesPerToolPreview: 'Maksymalna liczba linii podglądu narzędzia',
 		fieldShowToolCallInProgress: 'Pokazuj wywołanie narzędzia w trakcie',
 		fieldPreFillKvCacheAfterResponse: 'Wstępnie wypełnij cache KV po odpowiedzi',
-		fieldDisableServerSideThinkingExtraction: 'Wyłącz server-side extraction reasoning',
 		fieldStripThinkingFromMessageHistory: 'Usuwaj reasoning z historii wiadomości',
 		fieldCustomJson: 'Własny JSON',
 		groupConnection: 'Połączenie',
@@ -510,8 +509,6 @@ export const pl: TranslationDictionary = {
 			showThoughtInProgress: 'Domyślnie rozwijaj Reasoning podczas generowania wiadomości.',
 			minimalAgenticIndicators:
 				'Zastępuje panele Reasoning i Tools małymi animowanymi wskaźnikami w stopce wiadomości, gdy są aktywne.',
-			disableReasoningParsing:
-				'Wyślij reasoning_format=none, aby serwer zwracał rozumowanie inline zamiast wydzielać je osobno.',
 			excludeReasoningFromContext:
 				'Usuń rozumowanie z poprzednich wiadomości przed wysłaniem ich z powrotem.',
 			keepStatsVisible: 'Pozostaw statystyki przetwarzania widoczne po zakończeniu generowania.',
@@ -628,35 +625,6 @@ export const pl: TranslationDictionary = {
 		askAnything: 'Zapytaj o cokolwiek...',
 		openPicker: 'Otwórz wybór',
 		stopRecording: 'Zatrzymaj nagrywanie',
-		reasoningEffortTitle: 'Wysiłek Reasoning',
-		reasoningLabel: 'Reasoning',
-		reasoningEnabled: 'Włączone',
-		reasoningDefault: 'Domyślne / Auto',
-		reasoningUnavailable:
-			'Zapisany wybór reasoning jest niedostępny dla tego źródła/modelu/protokołu. Wybierz Domyślne/Auto lub obsługiwaną opcję.',
-		reasoningDeclarationTitle: 'Zaawansowane: zadeklaruj poziomy effort',
-		reasoningDeclarationHint:
-			'Podaj dokładne wartości udokumentowane przez backend, oddzielone przecinkami. To Twoja deklaracja, nie automatyczne wykrywanie. Dotyczy tylko tego połączenia, modelu, protokołu oraz szablonu/wersji serwera; nie weryfikuje akceptacji.',
-		reasoningDeclarationInvalid:
-			'Podaj 1–16 różnych nazw poziomów (litery, cyfry, kropka, myślnik lub podkreślenie; maksymalnie 64 znaki każda).',
-		reasoningDeclarationApply: 'Zapisz deklarację',
-		reasoningDeclarationClear: 'Usuń deklarację',
-		reasoningDeclarationUser:
-			'Poziomy effort zadeklarowane przez Ciebie, bez automatycznej weryfikacji.',
-		reasoningUnknown:
-			'Backend nie zadeklarował możliwości reasoning. Zachowano domyślne ustawienia serwera.',
-		reasoningLevelsUnknown:
-			'Reasoning jest obsługiwany, ale backend nie zadeklarował dozwolonych poziomów wysiłku.',
-		reasoningConfigureHint: 'Kliknij, aby skonfigurować.',
-		reasoningEffort: {
-			minimal: 'Minimalny',
-			xhigh: 'Bardzo wysoki',
-			off: 'Wyłączone',
-			low: 'Niski',
-			medium: 'Średni',
-			high: 'Wysoki',
-			max: 'Maks.'
-		},
 		pdfVisionSuggestion: 'Możesz włączyć przetwarzanie PDF-ów jako obrazów dla modeli vision.',
 		pdfVisionSuggestionAction: 'Włącz PDF jako obrazy',
 		pdfVisionEnabled: 'Przetwarzanie PDF-ów jako obrazów zostało włączone.',

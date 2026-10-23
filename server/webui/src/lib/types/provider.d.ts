@@ -39,7 +39,6 @@ export interface ProviderCapabilities {
 	supportsRepeatPenalty: boolean;
 	supportsSamplerOrder: boolean;
 	supportsBackendSampling: boolean;
-	supportsLlamaReasoningControls: boolean;
 	supportsOpenAiToolCalls: boolean;
 	supportsBuiltinToolsEndpoint: boolean;
 	supportsVisionInput: boolean | 'unknown';
@@ -151,7 +150,6 @@ export interface CapabilityValue {
 	maximum?: number;
 }
 export interface CapabilitySnapshot {
-	reasoning?: import('./reasoning').ReasoningCapabilities;
 	providerId: ApiProviderId;
 	serverBaseUrl: string;
 	sourceGeneration: number;
@@ -165,7 +163,6 @@ export interface CapabilitySnapshot {
  * Capabilities are captured once for this model/source, never the later UI selection. */
 export interface OperationModel {
 	readonly conversationId: string | null;
-	readonly reasoning: import('./reasoning').ReasoningIntent;
 	readonly model: string | null;
 	readonly requestContext: ProviderRequestContext;
 	readonly capabilities: Promise<CapabilitySnapshot | null>;

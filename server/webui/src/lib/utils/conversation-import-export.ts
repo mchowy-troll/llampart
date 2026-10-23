@@ -32,19 +32,9 @@ const conversationSchema = z
 		lastModified: finiteNumber,
 		pinned: z.boolean().optional(),
 		mcpServerOverrides: z.array(mcpServerOverrideSchema).optional(),
-		thinkingEnabled: z.boolean().optional(),
-		reasoningEffort: z.enum(['low', 'medium', 'high', 'max']).optional(),
-		reasoning: z
-			.discriminatedUnion('mode', [
-				z.object({ mode: z.literal('default') }),
-				z.object({ mode: z.literal('off') }),
-				z.object({ mode: z.literal('on') }),
-				z.object({ mode: z.literal('effort'), value: z.string().min(1) })
-			])
-			.optional(),
 		forkedFromConversationId: z.string().optional()
 	})
-	.strict();
+	.strip();
 const toolCallTimingSchema = z
 	.object({ name: z.string(), duration_ms: finiteNumber, success: z.boolean() })
 	.strict();

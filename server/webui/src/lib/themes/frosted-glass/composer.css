@@ -294,13 +294,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-chat-input-fr
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-chat-input-frame
-	svg.llampart-reasoning-trigger-icon-disabled {
-	color: #e7000b !important;
-	stroke: #e7000b !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-chat-input-frame
 	[data-slot='badge'],
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-chat-input-frame .badge {
 	background: var(--llampart-glass-white-220, rgba(255, 255, 255, 0.22)) !important;
@@ -438,18 +431,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	box-shadow: none !important;
 }
 
-/* ChatFormReasoningToggle.svelte */
-/* llampart-reasoning-off-icon-red */
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-reasoning-trigger-icon-disabled,
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-reasoning-trigger-icon-disabled
-	* {
-	color: #e7000b !important;
-	stroke: #e7000b !important;
-	stroke-width: 2.35 !important;
-	opacity: 1 !important;
-}
-
 /* ChatScreen.svelte */
 html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-chat-form::after {
 	background-color: transparent;
@@ -575,16 +556,10 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-chat-input-frame
-	button.llampart-reasoning-trigger,
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-chat-input-frame
 	button.llampart-composer-model-button,
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-chat-input-frame
-	button.llampart-composer-model-button:is(:hover, :focus-visible, :active, [data-state='open']),
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-chat-input-frame
-	button.llampart-reasoning-trigger:is(:hover, :focus-visible, :active, [data-state='open']) {
+	button.llampart-composer-model-button:is(:hover, :focus-visible, :active, [data-state='open']) {
 	width: 2rem !important;
 	height: 2rem !important;
 	min-width: 2rem !important;

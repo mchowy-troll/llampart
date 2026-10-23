@@ -48,7 +48,6 @@ describe('api provider registry', () => {
 		expect(openAiCapabilities.supportsModelProps).toBe(false);
 		expect(openAiCapabilities.supportsTopK).toBe(false);
 		expect(openAiCapabilities.supportsPreEncode).toBe(false);
-		expect(openAiCapabilities.supportsLlamaReasoningControls).toBe(false);
 		expect(openAiCapabilities.supportsOpenAiToolCalls).toBe(true);
 		expect(openAiCapabilities.supportsBuiltinToolsEndpoint).toBe(false);
 		expect(getApiProviderCapabilities(API_PROVIDER_IDS.VLLM).supportsOpenAiToolCalls).toBe(true);

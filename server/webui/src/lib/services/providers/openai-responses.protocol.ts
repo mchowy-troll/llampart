@@ -11,7 +11,7 @@ import {
 	normalizeOpenAiUsage,
 	standardParameters
 } from './openai-chat.protocol';
-import { applyProviderReasoning } from './reasoning';
+import { validateCustomReasoning } from './custom-reasoning';
 
 const object = (value: unknown): Record<string, unknown> =>
 	z.record(z.string(), z.unknown()).parse(value);
@@ -202,12 +202,7 @@ export function buildResponsesBody(
 			body[key] = value;
 	}
 	if (chat.chat_template_kwargs) body.chat_template_kwargs = chat.chat_template_kwargs;
-	applyProviderReasoning(
-		{ ...input, options: { ...input.options, protocol: 'responses' } },
-		providerId,
-		body,
-		custom
-	);
+	validateCustomReasoning(custom, providerId, 'responses');
 	return body;
 }
 

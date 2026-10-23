@@ -6,9 +6,34 @@ import type {
 	ProviderRequestContext,
 	ProviderCapabilityKey
 } from '$lib/types/provider';
+import type { ProviderChatCompletionInput } from '$lib/types/provider';
+import type { ApiProviderId } from '$lib/constants/api-providers';
 import { normalizeGatewaySource } from './provider-transport';
 import { createSourceFingerprint } from '$lib/utils/resumable-stream-state';
-import { resolveReasoningCapabilities } from './reasoning';
+
+/** Request ownership is independent of any particular generation parameter. */
+export function validateRequestOwnership(
+	input: ProviderChatCompletionInput,
+	providerId: ApiProviderId
+): void {
+	const operation = input.options.operationModel;
+	const snapshot = input.capabilities;
+	if (
+		operation &&
+		(operation.requestContext.providerId !== providerId ||
+			operation.requestContext.serverBaseUrl !== input.serverBaseUrl ||
+			operation.requestContext.apiKey !== input.apiKey ||
+			(snapshot && operation.requestContext.sourceGeneration !== snapshot.sourceGeneration))
+	)
+		throw new Error('Request does not belong to this operation');
+	if (
+		snapshot &&
+		(snapshot.providerId !== providerId ||
+			snapshot.model !== (input.options.model ?? null) ||
+			snapshot.serverBaseUrl !== normalizeGatewaySource(providerId, input.serverBaseUrl).baseUrl)
+	)
+		throw new Error('Capabilities do not belong to this provider/model/source');
+}
 
 export function connectionProtocol(
 	providerId: string,
@@ -137,7 +162,6 @@ export async function createCapabilitySnapshot(
 		protocol,
 		features
 	};
-	snapshot.reasoning = resolveReasoningCapabilities(snapshot, metadata);
 	return snapshot;
 }
 

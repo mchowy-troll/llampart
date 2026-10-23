@@ -165,16 +165,6 @@ async function preview(page, unsupported) {
 	return dialog;
 }
 
-async function reasoning(page, effort) {
-	await page.locator('.llampart-reasoning-trigger').click();
-	const labels = (await page.getByRole('menuitemradio').allTextContents()).map((label) =>
-		label.trim()
-	);
-	assert.deepEqual(labels, ['Default / Auto', effort]);
-	await page.keyboard.press('Escape');
-	return labels;
-}
-
 async function finish(s, label, observations) {
 	assert.deepEqual(s.errors, [], label);
 	const rejections = await s.page.evaluate(() => aud008Rejections);
@@ -198,7 +188,7 @@ try {
 			const { page } = s;
 			// Native router may initially have no selection; always exercise the actual selector.
 			await select(page, 'model-A', 'unsupported');
-			const beforeReasoning = await reasoning(page, 'Low');
+			assert.equal(await page.locator('.llampart-reasoning-trigger').count(), 0);
 			await page.locator('input[type=file]').first().setInputFiles({
 				name: 'aud-008.pdf',
 				mimeType: 'application/pdf',
@@ -237,14 +227,12 @@ try {
 			assert.equal(same.id, 'model-A');
 			assert.equal(same.name, 'model-A');
 			assert.deepEqual(same.snapshot, mark.snapshot);
-			assert.deepEqual(await reasoning(page, 'Low'), beforeReasoning);
 			const afterDialog = await preview(page, true);
 			assert.deepEqual(await afterDialog.boundingBox(), beforeGeometry);
 			if (out && reselect)
 				await page.screenshot({ path: `${out}/${provider}-A-after-reselect.png` });
 			await page.keyboard.press('Escape');
 			await select(page, 'model-B', 'supported');
-			await reasoning(page, 'High');
 			await preview(page, false);
 			if (out && reselect) await page.screenshot({ path: `${out}/${provider}-B-supported.png` });
 			await page.keyboard.press('Escape');

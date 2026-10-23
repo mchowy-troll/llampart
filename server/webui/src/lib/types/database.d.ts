@@ -14,9 +14,6 @@ export interface DatabaseConversation {
 	name: string;
 	pinned?: boolean;
 	mcpServerOverrides?: McpServerOverride[];
-	thinkingEnabled?: boolean;
-	reasoningEffort?: string;
-	reasoning?: import('./reasoning').ReasoningIntent;
 	forkedFromConversationId?: string;
 }
 

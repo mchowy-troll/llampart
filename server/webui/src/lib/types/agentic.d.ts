@@ -175,9 +175,6 @@ export interface AgenticFlowOptions {
 	operationId?: string;
 	providerRequestContext?: ProviderRequestContext;
 	operationModel?: import('./provider').OperationModel;
-	reasoning?: import('./reasoning').ReasoningIntent;
-	enableThinking?: boolean;
-	reasoningEffort?: string;
 	temperature?: number;
 	max_tokens?: number;
 	onStreamCheckpoint?: (checkpoint: ChatStreamCheckpoint) => void | Promise<void>;

@@ -49,8 +49,6 @@ import type { ApiProcessingState, DatabaseMessage, DatabaseMessageExtra } from '
 import type { ChatStreamCheckpoint } from '$lib/types/settings';
 import type { McpServerOverride } from '$lib/types/database';
 import type { OperationModel, ProviderRequestContext } from '$lib/types/provider';
-import { ReasoningSelectionUnavailableError } from '$lib/services/providers/reasoning';
-import { t } from '$lib/i18n';
 import { ErrorDialogType, MessageRole, MessageType } from '$lib/enums';
 
 interface ConversationStateEntry {
@@ -243,8 +241,6 @@ class ChatStore {
 	}
 
 	private getErrorMessage(error: unknown): string {
-		if (error instanceof ReasoningSelectionUnavailableError)
-			return `${t('chat.reasoningUnavailable')} (${error.intent.mode === 'effort' ? error.intent.value : error.intent.mode})`;
 		return error instanceof Error ? error.message : 'Unknown error';
 	}
 
@@ -736,8 +732,7 @@ class ChatStore {
 				modelOverride,
 				this.getConversationModel(messages),
 				{
-					conversationId: conversationsStore.activeConversation?.id ?? null,
-					reasoning: conversationsStore.getReasoningIntent(conversationsStore.activeConversation)
+					conversationId: conversationsStore.activeConversation?.id ?? null
 				}
 			)
 		});
@@ -2055,12 +2050,6 @@ class ChatStore {
 		const apiOptions: Record<string, unknown> = { stream: true, timings_per_token: true };
 
 		if (currentConfig.systemMessage) apiOptions.systemMessage = currentConfig.systemMessage;
-
-		if (
-			providerCapabilities.supportsLlamaReasoningControls &&
-			currentConfig.disableReasoningParsing
-		)
-			apiOptions.disableReasoningParsing = true;
 
 		if (currentConfig.excludeReasoningFromContext) apiOptions.excludeReasoningFromContext = true;
 

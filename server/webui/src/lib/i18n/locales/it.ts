@@ -285,7 +285,6 @@ export const it: TranslationDictionary = {
 		fieldMaxLinesPerToolPreview: 'Numero massimo di righe per anteprima dello strumento',
 		fieldShowToolCallInProgress: 'Mostra la chiamata dello strumento in corso',
 		fieldPreFillKvCacheAfterResponse: 'Precompila la cache KV dopo la risposta',
-		fieldDisableServerSideThinkingExtraction: 'Disabilita server-side extraction reasoning',
 		fieldStripThinkingFromMessageHistory: 'Rimuovi Reasoning dalla cronologia dei messaggi',
 		fieldCustomJson: 'JSON personalizzato',
 		groupConnection: 'Connessione',
@@ -508,8 +507,6 @@ export const it: TranslationDictionary = {
 				'Espande Reasoning per impostazione predefinita durante la generazione dei messaggi.',
 			minimalAgenticIndicators:
 				'Sostituisce i pannelli Reasoning e Tools con piccoli indicatori animati nel piè di pagina del messaggio mentre sono attivi.',
-			disableReasoningParsing:
-				'Invia reasoning_format=none in modo che il server restituisca il ragionamento inline invece di estrarlo separatamente.',
 			excludeReasoningFromContext:
 				'Rimuove il ragionamento dai messaggi precedenti prima di reinviarli.',
 			keepStatsVisible: 'Mantiene visibili le statistiche di elaborazione dopo la generazione.',
@@ -634,34 +631,6 @@ export const it: TranslationDictionary = {
 		askAnything: 'Chiedi qualsiasi cosa...',
 		openPicker: 'Apri selettore',
 		stopRecording: 'Ferma registrazione',
-		reasoningEffortTitle: 'Sforzo di reasoning',
-		reasoningLabel: 'Reasoning',
-		reasoningEnabled: 'Attivato',
-		reasoningDefault: 'Predefinito / Auto',
-		reasoningUnavailable:
-			'La scelta di ragionamento salvata non è disponibile per questa sorgente/modello/protocollo. Scegli Predefinito/Auto o un’opzione supportata.',
-		reasoningDeclarationTitle: 'Avanzate: dichiara i livelli di sforzo',
-		reasoningDeclarationHint:
-			'Inserisci i valori esatti documentati dal backend, separati da virgole. È una tua dichiarazione, non un rilevamento automatico. Vale solo per questa connessione, modello, protocollo e versione del template/server; non ne verifica l’accettazione.',
-		reasoningDeclarationInvalid:
-			'Inserisci da 1 a 16 nomi distinti (lettere, cifre, punto, trattino o sottolineatura; massimo 64 caratteri ciascuno).',
-		reasoningDeclarationApply: 'Salva dichiarazione',
-		reasoningDeclarationClear: 'Rimuovi dichiarazione',
-		reasoningDeclarationUser: 'Livelli di sforzo dichiarati da te, non verificati automaticamente.',
-		reasoningUnknown:
-			'Il backend non ha dichiarato le capacità di reasoning. Sono mantenute le impostazioni predefinite del server.',
-		reasoningLevelsUnknown:
-			'Il reasoning è supportato, ma il backend non ha dichiarato i livelli di sforzo consentiti.',
-		reasoningConfigureHint: 'Clicca per configurare.',
-		reasoningEffort: {
-			minimal: 'Minimo',
-			xhigh: 'Molto alto',
-			off: 'Disattivato',
-			low: 'Basso',
-			medium: 'Medio',
-			high: 'Alto',
-			max: 'Max'
-		},
 		pdfVisionSuggestion:
 			'Puoi abilitare l’elaborazione dei PDF come immagini con i modelli vision.',
 		pdfVisionSuggestionAction: 'Abilita PDF come immagini',

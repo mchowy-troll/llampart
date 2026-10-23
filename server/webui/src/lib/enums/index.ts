@@ -7,8 +7,7 @@ export {
 	ContentPartType,
 	ErrorDialogType,
 	MessageRole,
-	MessageType,
-	ReasoningFormat
+	MessageType
 } from './chat';
 
 export {

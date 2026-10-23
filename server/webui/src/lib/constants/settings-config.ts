@@ -5,10 +5,7 @@ import {
 	ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY,
 	DISABLED_TOOL_KEYS_LOCALSTORAGE_KEY,
 	DISABLED_TOOLS_LOCALSTORAGE_KEY,
-	MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY,
-	REASONING_PREFERENCE_LOCALSTORAGE_KEY,
-	REASONING_EFFORT_DEFAULT_LOCALSTORAGE_KEY,
-	THINKING_ENABLED_DEFAULT_LOCALSTORAGE_KEY
+	MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY
 } from './localstorage-keys';
 
 /** Global preferences historically stored outside the scalar settings document.
@@ -19,10 +16,7 @@ export const GLOBAL_CONFIG_STORAGE_DEFAULT = {
 	[ALWAYS_ALLOWED_TOOLS_LOCALSTORAGE_KEY]: '[]',
 	[DISABLED_TOOL_KEYS_LOCALSTORAGE_KEY]: '[]',
 	[DISABLED_TOOLS_LOCALSTORAGE_KEY]: null,
-	[MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY]: '[]',
-	[REASONING_PREFERENCE_LOCALSTORAGE_KEY]: '{"mode":"default"}',
-	[REASONING_EFFORT_DEFAULT_LOCALSTORAGE_KEY]: null,
-	[THINKING_ENABLED_DEFAULT_LOCALSTORAGE_KEY]: null
+	[MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY]: '[]'
 } satisfies Record<string, string | null>;
 
 export const SETTING_CONFIG_DEFAULT = {
@@ -46,7 +40,6 @@ export const SETTING_CONFIG_DEFAULT = {
 	responsePrefConcise: false,
 	responsePrefExamples: false,
 	responsePrefSteps: false,
-	reasoningLevelDeclarations: '{}',
 	responsePrefUserLanguage: false,
 	showSystemMessage: false,
 	theme: DEFAULT_THEME_ID,
@@ -58,7 +51,6 @@ export const SETTING_CONFIG_DEFAULT = {
 	fontSize: '13',
 	showThoughtInProgress: true,
 	minimalAgenticIndicators: false,
-	disableReasoningParsing: false,
 	excludeReasoningFromContext: true,
 	keepStatsVisible: false,
 	showMessageStats: true,
@@ -177,7 +169,6 @@ export const SETTING_CONFIG_INFO: Record<string, string> = {
 	custom: 'settings.info.custom',
 	showThoughtInProgress: 'settings.info.showThoughtInProgress',
 	minimalAgenticIndicators: 'settings.info.minimalAgenticIndicators',
-	disableReasoningParsing: 'settings.info.disableReasoningParsing',
 	excludeReasoningFromContext: 'settings.info.excludeReasoningFromContext',
 	keepStatsVisible: 'settings.info.keepStatsVisible',
 	showMessageStats: 'settings.info.showMessageStats',

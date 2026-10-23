@@ -32,8 +32,6 @@ describe('conversation import format', () => {
 				currNode: 'assistant',
 				lastModified: 2,
 				pinned: true,
-				thinkingEnabled: true,
-				reasoningEffort: 'high',
 				mcpServerOverrides: [{ serverId: 'mcp', enabled: true }]
 			},
 			messages: [
