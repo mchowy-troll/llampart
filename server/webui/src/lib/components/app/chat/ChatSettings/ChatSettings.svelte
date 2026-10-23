@@ -1193,7 +1193,7 @@
 				{:else}
 					<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 						{#each getCurrentGroups() as group (group.id)}
-							{#if currentSection.title === SETTINGS_SECTION_TITLES.APPEARANCE && group.id === 'message-display' && ThemeSettingsPanel}
+							{#if currentSection.title === SETTINGS_SECTION_TITLES.APPEARANCE && group.id === 'typography' && ThemeSettingsPanel}
 								<ThemeSettingsPanel config={localConfig} onConfigChange={handleConfigChange} />
 							{/if}
 
