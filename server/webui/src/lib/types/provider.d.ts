@@ -168,6 +168,7 @@ export interface OperationModel {
 	readonly model: string | null;
 	readonly requestContext: ProviderRequestContext;
 	readonly capabilities: Promise<CapabilitySnapshot | null>;
+	readonly modelInfo: Promise<import('./message-model-info').MessageModelInfoSnapshot | null>;
 }
 
 export interface ProviderMetric {

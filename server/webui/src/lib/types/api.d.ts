@@ -126,6 +126,7 @@ export interface ApiModelListResponse {
 }
 
 export interface ApiLlamaCppServerProps {
+	model_alias?: string;
 	default_generation_settings: {
 		id: number;
 		id_task: number;

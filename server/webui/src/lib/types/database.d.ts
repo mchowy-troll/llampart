@@ -117,6 +117,7 @@ export interface DatabaseMessage {
 	extra?: DatabaseMessageExtra[];
 	timings?: ChatMessageTimings;
 	model?: string | null;
+	modelInfo?: import('./message-model-info').MessageModelInfoSnapshot;
 }
 
 export type ExportedConversation = {

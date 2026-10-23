@@ -29,6 +29,7 @@ import {
 	findMessageById
 } from '$lib/utils/branching';
 import { normalizeModelName } from '$lib/utils/model-names';
+import { modelInfoForResponse } from '$lib/utils/message-model-info';
 import { uuid } from '$lib/utils/uuid';
 import type { AgenticMessageIdentity } from '$lib/types/agentic';
 import { generateConversationTitle } from '$lib/utils/text';
@@ -763,6 +764,12 @@ class ChatStore {
 				if (!isAbortError(error)) throw error;
 			}
 		}
+		// The promise belongs to this synchronous operation owner, not the later
+		// selected model. Discovery failures remain handled by sendMessage's barrier.
+		const verifiedModelInfo = await withAbortSignal(
+			operationModel.modelInfo,
+			abortController.signal
+		).catch(() => null);
 		if (
 			abortController.signal.aborted ||
 			!ChatService.isProviderRequestContextCurrent(providerRequestContext)
@@ -805,7 +812,8 @@ class ChatStore {
 		let streamedContent = '';
 		let streamedReasoningContent = '';
 		let resolvedModel: string | null = null;
-		let modelPersisted = false;
+		let currentModelInfo = verifiedModelInfo ?? undefined;
+		let modelWrites = Promise.resolve();
 		const convId = assistantMessage.convId;
 		const updateActiveMessage = (messageId: string, update: Partial<DatabaseMessage>): void => {
 			if (conversationsStore.activeConversation?.id !== convId) return;
@@ -829,25 +837,44 @@ class ChatStore {
 			};
 		})();
 
-		const recordModel = (modelName: string | null | undefined, persistImmediately = true): void => {
+		const recordModel = (modelName: string | null | undefined): void => {
 			if (!modelName) return;
 			const n =
 				providerRequestContext.providerId === 'llama-server'
 					? normalizeModelName(modelName)
 					: modelName;
-			if (!n || n === resolvedModel) return;
+			const info = verifiedModelInfo
+				? modelInfoForResponse(verifiedModelInfo, modelName)
+				: undefined;
+			if (!n || (n === resolvedModel && JSON.stringify(info) === JSON.stringify(currentModelInfo)))
+				return;
 			resolvedModel = n;
-			updateActiveMessage(currentAssistantMessageId, { model: n });
-			if (persistImmediately && !modelPersisted) {
-				modelPersisted = true;
-				DatabaseService.updateMessage(currentAssistantMessageId, { model: n }).catch(() => {
-					modelPersisted = false;
-					resolvedModel = null;
-				});
-			}
+			currentModelInfo = info;
+			const messageId = currentAssistantMessageId;
+			const update = { model: n, ...(info ? { modelInfo: info } : {}) };
+			updateActiveMessage(messageId, update);
+			// Capture the exact ID and value before scheduling, including agentic turns.
+			// Recover only the previous (already logged) failure so this write can run.
+			// The latest promise stays rejected on failure for the existing await barriers.
+			modelWrites = modelWrites
+				.catch(() => undefined)
+				.then(() => DatabaseService.updateMessage(messageId, update));
+			void modelWrites.catch((error) => {
+				console.error('Failed to persist message model:', messageId, error);
+			});
 		};
 
-		if (frozenModel) recordModel(frozenModel);
+		if (verifiedModelInfo) {
+			await DatabaseService.updateMessage(assistantMessage.id, {
+				modelInfo: verifiedModelInfo,
+				...(verifiedModelInfo.displayName ? { model: verifiedModelInfo.displayName } : {})
+			});
+			updateActiveMessage(assistantMessage.id, {
+				modelInfo: verifiedModelInfo,
+				...(verifiedModelInfo.displayName ? { model: verifiedModelInfo.displayName } : {})
+			});
+			resolvedModel = verifiedModelInfo.displayName;
+		} else if (frozenModel) recordModel(frozenModel);
 
 		const updateStreamingUI = () => {
 			this.setChatStreaming(convId, streamedContent, currentAssistantMessageId);
@@ -894,6 +921,7 @@ class ChatStore {
 				updateActiveMessage(currentAssistantMessageId, { toolCalls: JSON.stringify(toolCalls) });
 			},
 			onStreamCheckpoint: async (checkpoint: ChatStreamCheckpoint) => {
+				await modelWrites;
 				streamedContent = checkpoint.content;
 				streamedReasoningContent = checkpoint.reasoningContent;
 				const persistedTimings = withContextTotal(checkpoint.timings);
@@ -907,6 +935,7 @@ class ChatStore {
 				};
 				if (persistedTimings) update.timings = persistedTimings;
 				if (resolvedModel) update.model = resolvedModel;
+				if (currentModelInfo) update.modelInfo = currentModelInfo;
 
 				await DatabaseService.updateMessage(currentAssistantMessageId, update);
 				updateActiveMessage(currentAssistantMessageId, update);
@@ -954,7 +983,9 @@ class ChatStore {
 					toolCalls: toolCalls ? JSON.stringify(toolCalls) : '',
 					timings: persistedTimings
 				};
-				if (resolvedModel && !modelPersisted) updateData.model = resolvedModel;
+				await modelWrites;
+				if (resolvedModel) updateData.model = resolvedModel;
+				if (currentModelInfo) updateData.modelInfo = currentModelInfo;
 				const saved = await DatabaseService.completeAgenticAssistant(identity, updateData);
 				const uiUpdate: Partial<DatabaseMessage> = {
 					providerContinuation,
@@ -964,6 +995,7 @@ class ChatStore {
 				};
 				if (persistedTimings) uiUpdate.timings = persistedTimings;
 				if (resolvedModel) uiUpdate.model = resolvedModel;
+				if (currentModelInfo) uiUpdate.modelInfo = currentModelInfo;
 				updateActiveMessage(identity.assistantMessageId, { ...uiUpdate, agentic: saved.agentic });
 				await updateConversationCurrentNode(branchTailId);
 			},
@@ -995,6 +1027,7 @@ class ChatStore {
 				return result;
 			},
 			createAssistantMessage: async () => {
+				await modelWrites;
 				// Reset streaming state for new message
 				streamedContent = '';
 				streamedReasoningContent = '';
@@ -1009,6 +1042,7 @@ class ChatStore {
 						toolCalls: '',
 						children: [],
 						model: resolvedModel,
+						modelInfo: currentModelInfo,
 						agentic: { operationId, calls: [] }
 					},
 					branchTailId
@@ -1055,6 +1089,7 @@ class ChatStore {
 				}
 			},
 			onError: async (error: Error) => {
+				await modelWrites.catch(() => undefined);
 				if (conversationsStore.activeConversation?.id === convId) this.setStreamingActive(false);
 				if (isAbortError(error)) {
 					cleanupStreamingState();
@@ -1146,7 +1181,9 @@ class ChatStore {
 						toolCalls: toolCalls || '',
 						timings: persistedTimings
 					};
-					if (resolvedModel && !modelPersisted) updateData.model = resolvedModel;
+					await modelWrites;
+					if (resolvedModel) updateData.model = resolvedModel;
+					if (currentModelInfo) updateData.modelInfo = currentModelInfo;
 					await DatabaseService.updateMessage(currentAssistantMessageId, updateData);
 					const uiUpdate: Partial<DatabaseMessage> = {
 						content,
@@ -1155,6 +1192,7 @@ class ChatStore {
 					};
 					if (persistedTimings) uiUpdate.timings = persistedTimings;
 					if (resolvedModel) uiUpdate.model = resolvedModel;
+					if (currentModelInfo) uiUpdate.modelInfo = currentModelInfo;
 					updateActiveMessage(currentAssistantMessageId, uiUpdate);
 					await updateConversationCurrentNode(currentAssistantMessageId);
 					cleanupStreamingState();
@@ -1308,6 +1346,7 @@ class ChatStore {
 			this.clearChatStreaming(convId);
 			this.setProcessingState(convId, null);
 		};
+		let resumeSeedModel = true;
 
 		try {
 			const resumed = await ChatService.resumeStream(
@@ -1331,7 +1370,15 @@ class ChatStore {
 						assistantMessage.toolCalls = serialized;
 					},
 					onModel: (model) => {
+						// resumeStream first echoes the original request identity, not a new
+						// backend identification. Keep the persisted response evidence.
+						if (resumeSeedModel) {
+							resumeSeedModel = false;
+							if (model === state.model && assistantMessage.model) return;
+						}
 						assistantMessage.model = normalizeModelName(model);
+						if (assistantMessage.modelInfo)
+							assistantMessage.modelInfo = modelInfoForResponse(assistantMessage.modelInfo, model);
 					},
 					onTimings: (timings, promptProgress) => {
 						const tokensPerSecond =
@@ -1357,7 +1404,8 @@ class ChatStore {
 							reasoningContent: checkpoint.reasoningContent || undefined,
 							toolCalls:
 								checkpoint.toolCalls.length > 0 ? JSON.stringify(checkpoint.toolCalls) : '',
-							...(state.model ? { model: state.model } : {})
+							...(assistantMessage.model ? { model: assistantMessage.model } : {}),
+							...(assistantMessage.modelInfo ? { modelInfo: assistantMessage.modelInfo } : {})
 						};
 						const timings = withContextTotal(checkpoint.timings);
 						update.providerContinuation = checkpoint.providerContinuation;
@@ -1377,7 +1425,8 @@ class ChatStore {
 							content,
 							reasoningContent,
 							toolCalls: serializedToolCalls ?? '',
-							...(state.model ? { model: state.model } : {}),
+							...(assistantMessage.model ? { model: assistantMessage.model } : {}),
+							...(assistantMessage.modelInfo ? { modelInfo: assistantMessage.modelInfo } : {}),
 							timings: withContextTotal(timings)
 						};
 						await DatabaseService.updateMessage(assistantMessage.id, update);
@@ -1717,7 +1766,8 @@ class ChatStore {
 						content: newContent,
 						toolCalls: msg.toolCalls || '',
 						children: [],
-						model: msg.model
+						model: msg.model,
+						modelInfo: msg.modelInfo
 					},
 					msg.parent!
 				);

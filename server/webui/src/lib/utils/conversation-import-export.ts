@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ExportedConversation } from '$lib/types/database';
+import { messageModelInfoSnapshotSchema } from '$lib/utils/message-model-info';
 
 export const CONVERSATION_EXPORT_TYPE = 'llampart-conversations';
 export const CONVERSATION_EXPORT_FORMAT_VERSION = 2;
@@ -154,7 +155,8 @@ const messageShape = {
 	toolCallId: z.string().optional(),
 	extra: z.array(messageExtraSchema).optional(),
 	timings: messageTimingsSchema.optional(),
-	model: z.string().nullable().optional()
+	model: z.string().nullable().optional(),
+	modelInfo: messageModelInfoSnapshotSchema.optional()
 };
 const strictMessageSchema = z.object({ ...messageShape, toolCalls: z.string() }).strict();
 const agenticSchema = z
@@ -224,6 +226,8 @@ export function validateConversationImportRecords(value: unknown): ExportedConve
 	const records = parseWithSchema(z.array(conversationV2Schema), value) as ExportedConversation[];
 	for (const { messages } of records) {
 		for (const message of messages) {
+			if (message.modelInfo && message.role !== 'assistant')
+				throw new Error('Model information must belong to an assistant');
 			if (!message.agentic) continue;
 			if (message.role !== 'assistant')
 				throw new Error('Tool lifecycle must belong to an assistant');

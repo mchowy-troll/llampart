@@ -38,6 +38,7 @@ import {
 import type { ChatStreamResumeSeed, SettingsChatServiceOptions } from '$lib/types/settings';
 import { getReconnectDelay, sleepWithAbort } from '$lib/utils/retry';
 import { LlamaServerBackendError } from '$lib/services/providers/llama-server-response';
+import type { MessageModelInfoSnapshot } from '$lib/types/message-model-info';
 
 interface FrozenStreamRequest {
 	provider: ApiProviderAdapter;
@@ -69,13 +70,19 @@ export class ChatService {
 		selection?: { conversationId: string | null }
 	): OperationModel {
 		const model = ChatService.resolveEffectiveModel(context, modelOverride, conversationModel);
-		const capabilities = modelsStore.refreshCapabilities(context, model, true);
+		let verifiedInfo: MessageModelInfoSnapshot | null = null;
+		const capabilities = modelsStore.refreshCapabilities(context, model, true, (info) => {
+			verifiedInfo = info;
+		});
+		const modelInfo = capabilities.then(() => verifiedInfo);
 		// Discovery can finish while the operation still awaits persistence/permission.
 		void capabilities.catch(() => undefined);
+		void modelInfo.catch(() => undefined);
 		return Object.freeze({
 			model,
 			requestContext: context,
 			capabilities,
+			modelInfo,
 			conversationId: selection?.conversationId ?? null
 		});
 	}

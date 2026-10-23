@@ -95,7 +95,6 @@
 	let currentConfig = $derived(config());
 	let isRouter = $derived(isRouterMode());
 	let showModelDialog = $state(false);
-	let infoModelId = $state<string | null>(null);
 
 	let hideMinimalisticProcessingInfo = $derived(
 		!!currentConfig.minimalAgenticIndicators && isLastAssistantMessage
@@ -193,7 +192,6 @@
 	function handleShowModelInformation() {
 		if (!displayedModel) return;
 
-		infoModelId = displayedModel;
 		showModelDialog = true;
 	}
 
@@ -386,7 +384,12 @@
 	{/if}
 </div>
 
-<DialogModelInformation bind:open={showModelDialog} modelId={infoModelId} />
+<DialogModelInformation
+	bind:open={showModelDialog}
+	source="snapshot"
+	snapshot={message.modelInfo}
+	modelId={displayedModel}
+/>
 
 <style>
 	.llampart-assistant-message {

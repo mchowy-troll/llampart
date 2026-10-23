@@ -79,6 +79,50 @@ afterEach(() => {
 	ChatService.invalidateProviderRequestContexts();
 });
 
+describe('AUD-010 operation-owned model information', () => {
+	it.each([false, true])(
+		'keeps same-alias A and B evidence separate after mandatory verification (router=%s)',
+		async (router) => {
+			await seed(router);
+			const a = ChatService.captureOperationModel(context(), router ? 'same-alias' : null, null, {
+				conversationId: 'synthetic-A'
+			});
+			const aInfo = await a.modelInfo;
+			expect(aInfo?.native?.model_path).toBe('/synthetic/A.gguf');
+			replaceBackend(router);
+			const b = ChatService.captureOperationModel(context(), router ? 'same-alias' : null, null, {
+				conversationId: 'synthetic-B'
+			});
+			expect((await b.modelInfo)?.native?.chat_template).toBe('template-B');
+			expect((await a.modelInfo)?.native?.chat_template).toBe('template-A');
+			expect(a.conversationId).toBe('synthetic-A');
+			expect(b.conversationId).toBe('synthetic-B');
+			expect(JSON.stringify(aInfo)).not.toMatch(
+				/synthetic-key|review\.synthetic|connectionIdentity|"raw"/
+			);
+			serverStore.clear();
+			modelsStore.clear();
+			expect((await a.modelInfo)?.native?.model_path).toBe('/synthetic/A.gguf');
+		}
+	);
+	it('rejects late metadata from a superseded provider instead of resolving it for a new owner', async () => {
+		await seed();
+		const gate = deferred<ApiLlamaCppServerProps>();
+		vi.mocked(PropsService.fetch).mockReturnValueOnce(gate.promise);
+		const a = ChatService.captureOperationModel(context());
+		const rejected = expect(a.modelInfo).rejects.toThrow();
+		settingsStore.updateMultipleConfig({
+			apiProvider: 'vllm',
+			vllmBaseUrl: 'http://other.synthetic'
+		});
+		modelsStore.clear();
+		serverStore.clear();
+		ChatService.invalidateProviderRequestContexts();
+		gate.resolve(props());
+		await rejected;
+	});
+});
+
 describe('final review FRESH (real verification/fetch/ChatService)', () => {
 	it('FRESH-01 direct ordinary server props cannot be reused by mandatory catalog verification', async () => {
 		await seed();

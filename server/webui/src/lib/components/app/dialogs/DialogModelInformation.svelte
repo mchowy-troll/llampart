@@ -8,6 +8,8 @@
 	import { modelsStore, modelOptions, modelsLoading } from '$lib/stores/models.svelte';
 	import { formatFileSize, formatParameters, formatNumber } from '$lib/utils';
 	import type { ApiLlamaCppServerProps } from '$lib/types';
+	import type { MessageModelInfoSnapshot } from '$lib/types/message-model-info';
+	import { ModelModality } from '$lib/enums';
 	import { t } from '$lib/i18n';
 
 	interface Props {
@@ -15,11 +17,19 @@
 		onOpenChange?: (open: boolean) => void;
 		// when set, fetch props from the child process (router mode)
 		modelId?: string | null;
+		source?: 'live' | 'snapshot';
+		snapshot?: MessageModelInfoSnapshot | null;
 	}
 
-	let { open = $bindable(), onOpenChange, modelId = null }: Props = $props();
+	let {
+		open = $bindable(),
+		onOpenChange,
+		modelId = null,
+		source = 'live',
+		snapshot = null
+	}: Props = $props();
 
-	let supportsNativeProps = $derived(modelsStore.supportsModelProps);
+	let supportsNativeProps = $derived(source === 'live' && modelsStore.supportsModelProps);
 	let isRouter = $derived(supportsNativeProps && serverStore.isRouterMode);
 
 	// per-model props fetched from the child process
@@ -28,18 +38,32 @@
 
 	// in router mode use per-model props, otherwise use global props
 	let serverProps = $derived(
-		supportsNativeProps ? (isRouter && modelId ? routerModelProps : serverStore.props) : null
+		source === 'snapshot'
+			? (snapshot?.native ?? null)
+			: supportsNativeProps
+				? isRouter && modelId
+					? routerModelProps
+					: serverStore.props
+				: null
 	);
 
 	let modelName = $derived(
-		(isRouter || !supportsNativeProps) && modelId ? modelId : modelsStore.singleModelName
+		source === 'snapshot'
+			? (snapshot?.displayName ?? modelId)
+			: (isRouter || !supportsNativeProps) && modelId
+				? modelId
+				: modelsStore.singleModelName
 	);
-	let models = $derived(modelOptions());
-	let isLoadingModels = $derived(modelsLoading());
+	let models = $derived(source === 'live' ? modelOptions() : []);
+	let isLoadingModels = $derived(source === 'live' && modelsLoading());
 
 	// Select the exact requested model for routers and compatible providers.
 	// Native single-model mode keeps its original first-model behavior.
 	let firstModel = $derived.by(() => {
+		if (source === 'snapshot')
+			return snapshot
+				? { id: snapshot.modelId, contextSize: snapshot.contextSize, meta: snapshot.meta }
+				: null;
 		if (modelId && (isRouter || !supportsNativeProps)) {
 			return models.find((m) => m.model === modelId || m.id === modelId) ?? null;
 		}
@@ -48,20 +72,27 @@
 
 	// Get modalities from modelStore using the model ID from the first model
 	let modalities = $derived.by(() => {
+		if (source === 'snapshot') {
+			const result: ModelModality[] = [];
+			if (snapshot?.modalities?.vision) result.push(ModelModality.VISION);
+			if (snapshot?.modalities?.audio) result.push(ModelModality.AUDIO);
+			if (snapshot?.modalities?.video) result.push(ModelModality.VIDEO);
+			return result;
+		}
 		if (!firstModel?.id) return [];
 		return modelsStore.getModelModalitiesArray(firstModel.id);
 	});
 
 	// Ensure models are fetched when dialog opens
 	$effect(() => {
-		if (open && models.length === 0) {
+		if (source === 'live' && open && models.length === 0) {
 			modelsStore.fetch();
 		}
 	});
 
 	// fetch per-model props from child process when dialog opens in router mode
 	$effect(() => {
-		if (open && isRouter && modelId) {
+		if (source === 'live' && open && isRouter && modelId) {
 			isLoadingRouterProps = true;
 			modelsStore
 				.fetchModelProps(modelId)
@@ -208,11 +239,11 @@
 													class="resizable-text-container min-w-0 flex-1 truncate"
 													style:--threshold="14rem"
 												>
-													{serverProps.model_path}
+													{serverProps.model_path ?? t('common.notAvailable')}
 												</span>
 
 												<ActionIconCopyToClipboard
-													text={serverProps.model_path}
+													text={serverProps.model_path ?? ''}
 													ariaLabel={t('dialogs.copyModelPathToClipboard')}
 												/>
 											</Table.Cell>
@@ -312,7 +343,7 @@
 												>{t('dialogs.parallelSlotsLabel')}</Table.Cell
 											>
 
-											<Table.Cell>{serverProps.total_slots}</Table.Cell>
+											<Table.Cell>{serverProps.total_slots ?? t('common.notAvailable')}</Table.Cell>
 										</Table.Row>
 
 										<!-- Modalities -->
@@ -337,7 +368,7 @@
 											>
 
 											<Table.Cell class="align-middle font-mono text-xs"
-												>{serverProps.build_info}</Table.Cell
+												>{serverProps.build_info ?? t('common.notAvailable')}</Table.Cell
 											>
 										</Table.Row>
 									</Table.Body>

@@ -10,6 +10,8 @@ import { config } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { TTLCache } from '$lib/utils/cache-ttl';
 import { getModelContextSize } from '$lib/utils/model-information';
+import { captureMessageModelInfo } from '$lib/utils/message-model-info';
+import type { MessageModelInfoSnapshot } from '$lib/types/message-model-info';
 import { throwIfAborted } from '$lib/utils/abort';
 import { sleepWithAbort } from '$lib/utils/retry';
 import { t } from '$lib/i18n';
@@ -163,7 +165,8 @@ class ModelsStore {
 	async refreshCapabilities(
 		context: ProviderRequestContext,
 		model = this.selectedModelName,
-		verify = false
+		verify = false,
+		onVerifiedModelInfo?: (info: MessageModelInfoSnapshot) => void
 	): Promise<CapabilitySnapshot | null> {
 		const sourceKey = this.getModelListSourceKey(context);
 		if (verify) await this.verifyBackend(context, model);
@@ -223,6 +226,20 @@ class ModelsStore {
 						? this.getModelProps(model)
 						: null
 				: null;
+		const reference = model ?? props?.model_alias ?? null;
+		const resolved = reference ? this.resolveModelReference(reference) : null;
+		const option =
+			resolved?.status === 'resolved'
+				? resolved.model
+				: !reference && this.models.length === 1
+					? this.models[0]
+					: null;
+		// Capture the verified generation before the next await; never reread live stores
+		// after the asynchronous capability binding or later when opening a message.
+		const modelInfo =
+			verify && onVerifiedModelInfo
+				? captureMessageModelInfo(context.providerId, model, props, option)
+				: null;
 		const snapshot = await createCapabilitySnapshot(
 			context,
 			model,
@@ -258,6 +275,7 @@ class ModelsStore {
 		}
 		Object.freeze(snapshot.features);
 		Object.freeze(snapshot);
+		if (modelInfo) onVerifiedModelInfo?.(modelInfo);
 		if (
 			generation !== null &&
 			generation === this.capabilityGeneration &&

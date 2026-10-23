@@ -4,6 +4,7 @@ import { uuid } from '$lib/utils/uuid';
 import { planConversationDeletion } from '$lib/utils/conversation-selection';
 import { validateConversationImportRecords } from '$lib/utils/conversation-import-export';
 import { validateConversationGraph } from '$lib/utils/conversation-graph';
+import { messageModelInfoSnapshotSchema } from '$lib/utils/message-model-info';
 import { LEGACY_MIGRATION_DONE_KEY, type LegacyMessagePlanner } from '$lib/types/legacy-migration';
 import type { DatabaseMessageExtra, McpServerOverride } from '$lib/types/database';
 import { AttachmentType } from '$lib/enums/attachment';
@@ -208,6 +209,11 @@ export class DatabaseService {
 		message: Omit<DatabaseMessage, 'id'>,
 		parentId: string | null
 	): Promise<DatabaseMessage> {
+		if (message.modelInfo) {
+			if (message.role !== 'assistant')
+				throw new Error('Model information must belong to an assistant');
+			message = { ...message, modelInfo: messageModelInfoSnapshotSchema.parse(message.modelInfo) };
+		}
 		const operation = async (): Promise<DatabaseMessage> => {
 			const conversation = await requireConversation(message.convId);
 			const parentMessage =
@@ -858,6 +864,12 @@ export class DatabaseService {
 		id: string,
 		updates: Partial<Omit<DatabaseMessage, 'id'>>
 	): Promise<void> {
+		if (updates.modelInfo) {
+			const message = await db.messages.get(id);
+			if (message?.role !== 'assistant')
+				throw new Error('Model information must belong to an assistant');
+			updates = { ...updates, modelInfo: messageModelInfoSnapshotSchema.parse(updates.modelInfo) };
+		}
 		await requireUpdated(await db.messages.update(id, updates), `Message ${id}`);
 	}
 
@@ -1155,6 +1167,7 @@ export class DatabaseService {
 							timestamp: message.timestamp,
 							toolCalls: segment.toolCalls ?? '',
 							model: message.model,
+							modelInfo: segment.role === 'assistant' ? message.modelInfo : undefined,
 							parent: tail.id,
 							children: []
 						};
