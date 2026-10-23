@@ -442,14 +442,8 @@
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
-							key: SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS,
-							order: 9,
-							label: t('settings.fieldUseFullHeightCodeBlocks'),
-							type: SettingsFieldType.CHECKBOX
-						},
-						{
 							key: SETTINGS_KEYS.SHOW_RAW_MODEL_NAMES,
-							order: 10,
+							order: 9,
 							label: t('settings.fieldShowRawModelNames'),
 							type: SettingsFieldType.CHECKBOX
 						}

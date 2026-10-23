@@ -60,17 +60,21 @@ try {
 		const fontFamily =
 			process.env.LLAMPART_TEST_CODE_FONT || (fullHeight ? 'fira-sans' : 'merriweather');
 		const context = await browser.newContext({
-			viewport: { width: 1600, height: 1000 },
+			viewport: { width: Number(process.env.LLAMPART_TEST_WIDTH || 1600), height: 1000 },
 			acceptDownloads: true,
 			permissions: ['clipboard-read', 'clipboard-write']
 		});
 		const page = await context.newPage();
 		const errors = [];
+		page.on('console', (message) => {
+			if (message.type() === 'error') console.error(message.text());
+		});
 		page.on('pageerror', (error) => errors.push(error.message));
 		await page.addInitScript(
 			({ fullHeight, fontFamily }) => {
 				if (window.top !== window) return;
-				localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
+				localStorage.setItem('llama-webui-migration-v2-done', '1');
+				localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.1');
 				localStorage.setItem(
 					'LlamaCppWebui.config',
 					JSON.stringify({
@@ -111,8 +115,13 @@ try {
 			});
 		});
 		await page.goto(process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40138');
+		await page.waitForFunction(async () => {
+			const { modelsStore } = await import('/src/lib/stores/models.svelte.ts');
+			return modelsStore.capabilitySnapshot?.model === 'code.gguf';
+		});
 		await page.locator('textarea').first().fill('Pokaż kod');
 		await page.locator('textarea').first().press('Enter');
+		await page.screenshot({ path: `${artifacts}/sent-${fullHeight}.png` });
 		const assistant = page.locator('.llampart-assistant-markdown').first();
 		const blocks = assistant.locator('.code-block-wrapper');
 		await blocks.nth(6).locator('.download-code-btn[data-listener-bound=true]').waitFor();

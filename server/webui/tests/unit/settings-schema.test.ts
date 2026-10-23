@@ -57,6 +57,28 @@ beforeEach(() => {
 });
 
 describe('settings JSON import/export compatibility', () => {
+	it.each([true, false])(
+		'preserves hidden legacy code height=%s through import/export',
+		async (fullHeightCodeBlocks) => {
+			const before = { ...settingsStore.config };
+			importApplicationSettings(
+				JSON.stringify({
+					type: 'llampart-settings-export',
+					formatVersion: 1,
+					settings: { fullHeightCodeBlocks }
+				})
+			);
+			expect(settingsStore.config).toEqual({ ...before, fullHeightCodeBlocks });
+			const { data, text } = await exportFile();
+			expect(data.settings.fullHeightCodeBlocks).toBe(fullHeightCodeBlocks);
+			settingsStore.initialize();
+			importApplicationSettings(text);
+			expect(settingsStore.config.fullHeightCodeBlocks).toBe(fullHeightCodeBlocks);
+			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!).fullHeightCodeBlocks).toBe(
+				fullHeightCodeBlocks
+			);
+		}
+	);
 	const newSettings = {
 		...Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }, index) => [key, index % 2 === 0])),
 		uiScale: '105',
