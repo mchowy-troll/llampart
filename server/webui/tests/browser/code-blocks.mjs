@@ -54,6 +54,7 @@ const content =
 	chart +
 	'\n\n```mermaid\nflowchart LR\n A[Start] --> B[Koniec]\n```\n\nKoniec.';
 const reports = [];
+const surfaceBaseline = process.env.LLAMPART_EXPORT_BASELINE === '1';
 
 try {
 	for (const fullHeight of [false, true]) {
@@ -251,9 +252,68 @@ try {
 			states[state] = await style(codeButton, state);
 			assert.deepEqual(states[state], reference, `Shared chart/code action style: ${state}`);
 		}
-		assert.notEqual(states.hover.backgroundColor, states.rest.backgroundColor);
+		if (!surfaceBaseline) assert.equal(states.hover.backgroundColor, 'rgba(0, 0, 0, 0)');
 		assert.notEqual(states.hover.transitionDuration, '0s');
 		assert.notEqual(states.focus.boxShadow, 'none');
+		const formatStates = [];
+		const formatButtons = assistant.locator(
+			'.format-export-action, .table-csv-button, .download-code-btn'
+		);
+		for (const button of await formatButtons.all()) {
+			const label = (await button.innerText()).trim();
+			const measured = {};
+			for (const state of ['rest', 'hover', 'focus', 'active']) {
+				measured[state] = await style(button, state === 'active' ? 'hover' : state);
+				if (state === 'active') {
+					await page.mouse.down();
+					measured[state] = await button.evaluate((el) => {
+						const css = getComputedStyle(el);
+						return { backgroundColor: css.backgroundColor, boxShadow: css.boxShadow };
+					});
+					await page.mouse.move(0, 0);
+					await page.mouse.up();
+				}
+				if (!surfaceBaseline) {
+					assert.equal(measured[state].backgroundColor, 'rgba(0, 0, 0, 0)', `${label} ${state}`);
+					const borders = await button.evaluate((el) => {
+						const s = getComputedStyle(el);
+						return ['Top', 'Right', 'Bottom', 'Left'].map((side) => [
+							s[`border${side}Width`],
+							s[`border${side}Color`]
+						]);
+					});
+					assert(
+						borders.every(([width, color]) => width === '0px' || color === 'rgba(0, 0, 0, 0)')
+					);
+					if (state === 'rest' || state === 'hover')
+						assert.equal(measured[state].boxShadow, 'none');
+				}
+			}
+			formatStates.push({ label, measured });
+		}
+		assert.deepEqual(
+			formatStates.map(({ label }) => label),
+			['PY', 'JS', 'HTML', 'TXT', 'TXT', 'TS', 'MD', 'CSV', 'PNG', 'SVG', 'CSV', 'PNG', 'SVG']
+		);
+		for (const frame of [
+			assistant.locator('.llampart-chart-frame'),
+			assistant.locator('.llampart-diagram-frame')
+		]) {
+			for (const format of ['PNG', 'SVG']) {
+				const pending = page.waitForEvent('download');
+				await frame.getByRole('button', { name: new RegExp(` ${format}$`) }).click();
+				const file = await pending;
+				assert(file.suggestedFilename().endsWith(`.${format.toLowerCase()}`));
+				const path = `${artifacts}/${fullHeight}-${file.suggestedFilename()}`;
+				await file.saveAs(path);
+				const bytes = await readFile(path);
+				if (format === 'PNG') assert.equal(bytes.subarray(1, 4).toString(), 'PNG');
+				else assert.match(bytes.toString(), /<svg[\s>]/);
+			}
+			await frame.locator('.visualization-preview-action').click();
+			await page.locator('[role="dialog"]').waitFor();
+			await page.keyboard.press('Escape');
+		}
 		await codeButton.hover();
 		await page.screenshot({ path: `${artifacts}/code-hover-${fullHeight}.png` });
 		await blocks.nth(2).locator('.preview-code-btn').click();
@@ -325,7 +385,7 @@ try {
 			await download(blocks.first().locator('.download-code-btn'), 'code-block-1.js', longSource);
 		}
 		assert.deepEqual(errors, []);
-		reports.push({ fullHeight, fontFamily, colors, tokenColors, states, errors });
+		reports.push({ fullHeight, fontFamily, colors, tokenColors, states, formatStates, errors });
 		await context.close();
 	}
 	await writeFile(`${artifacts}/report.json`, JSON.stringify(reports, null, 2));

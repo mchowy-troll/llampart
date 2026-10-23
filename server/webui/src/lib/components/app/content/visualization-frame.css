@@ -62,19 +62,28 @@
 	transition: none;
 }
 
-/* Format downloads only. The ghost surface was transparent at rest and 10% on
- * hover. Retain 30% of that fill/border intensity without dimming labels, focus
- * rings or changing geometry (the current ghost border width remains zero). */
-:is(.format-export-action, .table-csv-button, .download-code-btn) {
-	background-color: transparent;
-	border-color: color-mix(in oklch, var(--border) 30%, transparent);
-}
+/* Export labels opt out of both ghost blur and theme glass. Transparency alone
+ * still paints a capsule over a textured backdrop. Do not change hitboxes. */
+:is(.format-export-action, .table-csv-button, .download-code-btn),
 :is(.format-export-action, .table-csv-button, .download-code-btn):is(
-		:hover,
-		:focus-visible,
-		:active
-	):not(:disabled) {
-	background-color: color-mix(in oklab, var(--muted-foreground) 3%, transparent);
+	:hover,
+	:focus-visible,
+	:active
+) {
+	background: transparent !important;
+	border-color: transparent !important;
+	box-shadow: none !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+	filter: none !important;
+}
+:is(.format-export-action, .table-csv-button, .download-code-btn)::before,
+:is(.format-export-action, .table-csv-button, .download-code-btn)::after {
+	content: none !important;
+}
+:is(.format-export-action, .table-csv-button, .download-code-btn):focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
 }
 .visualization-actions .visualization-preview-action:is(:hover, :focus-visible, :active) {
 	background: transparent;
