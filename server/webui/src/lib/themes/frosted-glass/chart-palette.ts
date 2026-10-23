@@ -110,6 +110,6 @@ export function resolveChartPalette(): Record<string, string> {
 			[`--llampart-chart-${i + 1}`, color],
 			[`--llampart-chart-fill-${i + 1}`, color]
 		]),
-		['--llampart-chart-separator', 'rgb(255 255 255 / 0.8)']
+		['--llampart-chart-separator', 'rgb(255 255 255 / 0.25)']
 	]);
 }

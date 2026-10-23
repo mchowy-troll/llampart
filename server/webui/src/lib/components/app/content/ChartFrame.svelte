@@ -265,7 +265,7 @@
 		// PieChart has no top-level highlight API; disable Cartesian marks in its
 		// native ChartChildren props, independently of Arc's tooltip/active state.
 		highlight: { motion: 'none' as const, points: false, lines: false, area: false, bar: false },
-		arc: { stroke: 'var(--llampart-chart-separator, rgb(255 255 255 / 0.78))', strokeWidth: 1.5 }
+		arc: { stroke: 'var(--llampart-chart-separator, rgb(255 255 255 / 0.25))', strokeWidth: 1.5 }
 	});
 	function toggle(key: string) {
 		hidden = hidden.includes(key)
