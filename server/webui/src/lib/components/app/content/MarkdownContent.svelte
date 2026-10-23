@@ -2,7 +2,7 @@
 	import type { Root as HastRoot, RootContent as HastRootContent } from 'hast';
 	import type { Root as MdastRoot } from 'mdast';
 	import { browser } from '$app/environment';
-	import { onDestroy, tick } from 'svelte';
+	import { getAllContexts, onDestroy, tick } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -19,6 +19,8 @@
 	import { toast } from 'svelte-sonner';
 	import { downloadChartBlob } from '$lib/charts/chart-csv';
 	import { tableCsv, tableCsvFilename } from '$lib/markdown/table-csv';
+	import { mathFrames } from '$lib/markdown/math-frames';
+	import { isClosedMathNode, markIncompleteMath } from '$lib/markdown/math-blocks';
 	import { hasRenderableMath, preprocessLaTeX } from '$lib/utils/latex-protection';
 	import {
 		getMarkdownFallbackText,
@@ -84,6 +86,8 @@
 		content: string;
 		class?: string;
 		disableMath?: boolean;
+		/** Opt in only for the visible assistant answer, not other Markdown contexts. */
+		allowMathFrames?: boolean;
 		inheritTypography?: boolean;
 		allowCharts?: boolean;
 		isStreaming?: boolean;
@@ -105,6 +109,7 @@
 		attachments,
 		class: className = '',
 		disableMath = false,
+		allowMathFrames = false,
 		inheritTypography = false,
 		allowCharts = false,
 		isStreaming = false,
@@ -113,6 +118,7 @@
 	}: Props = $props();
 
 	let containerRef = $state<HTMLDivElement>();
+	const mathContext = getAllContexts();
 	let renderedBlocks = $state<MarkdownBlock[]>([]);
 	let unstableBlockHtml = $state('');
 	let markdownFallbackText = $state('');
@@ -402,7 +408,7 @@
 				allowed: preceding.filter((block) => block.kind === 'diagram').length < diagramLimit
 			};
 		}
-		const { html } = await transformMdastNode(processor, node, index);
+		const { html } = await transformMdastNode(processor, node, index, markdown);
 		return { kind: 'html', id, html, contentHash: hash };
 	}
 
@@ -416,6 +422,7 @@
 		const normalized = preprocessLaTeX(rawCode);
 		const innerAst = processorInstance.parse(normalized) as MdastRoot;
 		const transformedRoot = (await processorInstance.run(innerAst)) as HastRoot;
+		markIncompleteMath(transformedRoot, innerAst, normalized);
 		const renderedMarkdown = processorInstance.stringify(transformedRoot);
 
 		return renderMarkdownRenderedCodeBlockShell({
@@ -440,7 +447,8 @@
 	async function transformMdastNode(
 		processorInstance: MarkdownProcessor,
 		node: unknown,
-		index: number
+		index: number,
+		markdown: string
 	): Promise<{ html: string; hash: string }> {
 		const hash = getMdastNodeHash(node, index);
 
@@ -458,6 +466,7 @@
 			const transformedRoot = (await processorInstance.run(
 				singleNodeRoot as MdastRoot
 			)) as HastRoot;
+			markIncompleteMath(transformedRoot, singleNodeRoot, markdown);
 			html = processorInstance.stringify(transformedRoot);
 		}
 
@@ -837,11 +846,12 @@
 		const ast = processorInstance.parse(normalized) as MdastRoot;
 		const mdastChildren = (ast as { children?: unknown[] }).children ?? [];
 		const last = mdastChildren.at(-1);
-		// A closed chart is stable immediately, even before any following paragraph.
+		// Closed visualizations are stable immediately, before any following paragraph.
 		const stableCount =
-			allowCharts &&
-			((isChartNode(last) && isClosedChartNode(last, normalized)) ||
-				(isMermaidNode(last) && isClosedMermaidNode(last, normalized)))
+			isClosedMathNode(last, normalized) ||
+			(allowCharts &&
+				((isChartNode(last) && isClosedChartNode(last, normalized)) ||
+					(isMermaidNode(last) && isClosedMermaidNode(last, normalized))))
 				? mdastChildren.length
 				: Math.max(mdastChildren.length - 1, 0);
 		const nextBlocks: MarkdownBlock[] = [];
@@ -881,7 +891,12 @@
 
 		if (mdastChildren.length > stableCount) {
 			const unstableChild = mdastChildren[stableCount];
-			const transformed = await transformMdastNode(processorInstance, unstableChild, stableCount);
+			const transformed = await transformMdastNode(
+				processorInstance,
+				unstableChild,
+				stableCount,
+				normalized
+			);
 
 			unstableHtml = transformed.html;
 		}
@@ -1133,6 +1148,11 @@
 
 	$effect(() => {
 		void loadHighlightTheme();
+	});
+
+	$effect(() => {
+		if (!allowMathFrames || !containerRef) return;
+		return mathFrames(containerRef, mathContext).destroy;
 	});
 
 	$effect(() => {
@@ -1430,6 +1450,12 @@
 		 * KaTeX's internal metrics or the native size of inline equations. */
 		font-size: 1.2em;
 		text-align: left;
+	}
+
+	.llampart-markdown-content:global(.llampart-assistant-markdown) :global(.katex-display > .katex) {
+		/* Keep the original 1.2em display scale and add 2 CSS px to the formula;
+		 * inline math and Markdown outside assistant answers keep their sizing. */
+		font-size: calc(1.2em + 2px);
 	}
 
 	:global(.markdown-rendered-preview-dialog-content) {

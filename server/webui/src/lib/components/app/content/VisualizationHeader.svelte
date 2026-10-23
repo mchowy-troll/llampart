@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Eye } from '@lucide/svelte';
+	import type { Snippet } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import './visualization-frame.css';
@@ -12,21 +13,25 @@
 		exportLabel,
 		previewLabel,
 		onexport,
-		onpreview
+		onpreview,
+		beforePreview,
+		previewTrigger = $bindable<HTMLButtonElement>()
 	}: {
-		title: string;
-		kind: 'chart' | 'diagram';
+		title?: string;
+		kind: 'chart' | 'diagram' | 'math';
 		formats: readonly string[];
 		exporting: boolean;
 		exportLabel: string;
 		previewLabel: string;
 		onexport: (format: string) => void;
 		onpreview: () => void;
+		beforePreview?: Snippet;
+		previewTrigger?: HTMLButtonElement;
 	} = $props();
 </script>
 
 <header class="visualization-header {kind}-header">
-	<span class="visualization-title {kind}-title">{title}</span>
+	{#if title}<span class="visualization-title {kind}-title">{title}</span>{/if}
 	<div class="visualization-actions {kind}-actions">
 		{#each formats as format (format)}
 			<Tooltip.Root>
@@ -46,11 +51,13 @@
 				<Tooltip.Content>{exportLabel} {format.toUpperCase()}</Tooltip.Content>
 			</Tooltip.Root>
 		{/each}
+		{@render beforePreview?.()}
 		<Tooltip.Root>
 			<Tooltip.Trigger>
 				{#snippet child({ props })}
 					<button
 						{...props}
+						bind:this={previewTrigger}
 						class="visualization-preview-action"
 						type="button"
 						aria-label={previewLabel}

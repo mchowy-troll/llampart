@@ -35,6 +35,26 @@ function fixture(rules: Face[], weight = '700', style = 'normal', bytes = 4) {
 	return { fetch, source: { querySelectorAll: () => [] } as unknown as HTMLElement };
 }
 describe('local chart font embedding', () => {
+	it('matches KaTeX normal/bold weight descriptors against computed numeric weights', async () => {
+		const { source, fetch } = fixture(
+			[new Face('normal', 'normal', 'latin'), new Face('bold', 'normal', 'latin')],
+			'400'
+		);
+		const css = await embeddedSvgFonts('Test Font', source);
+		expect(fetch).toHaveBeenCalledOnce();
+		expect(css).toContain('font-weight:normal');
+		expect(css).not.toContain('font-weight:bold');
+	});
+	it('preserves Vite-inlined local faces without network requests', async () => {
+		const face = new Face('400', 'normal', 'latin');
+		const data = 'data:font/woff2;base64,AQIDBA==';
+		face.style.cssText = `font-family:"Test Font";font-style:normal;font-weight:400;src:url("${data}")`;
+		face.style.getPropertyValue = () => `url("${data}")`;
+		const { source, fetch } = fixture([face], '400');
+		const css = await embeddedSvgFonts('Test Font', source);
+		expect(css).toContain(data);
+		expect(fetch).not.toHaveBeenCalled();
+	});
 	it('includes bold diagram titles in open shadow roots, but not unused faces', async () => {
 		const { fetch } = fixture(
 			['400', '700', '900'].map((weight) => new Face(weight, 'normal', 'latin')),

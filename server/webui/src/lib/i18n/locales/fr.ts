@@ -1,6 +1,13 @@
 import type { TranslationDictionary } from '../types';
 
 export const fr: TranslationDictionary = {
+	math: {
+		copySource: 'Copier le code source LaTeX',
+		preview: 'Aperçu de la formule',
+		zoom: 'Zoom de la formule',
+		export: 'Exporter la formule en',
+		exportError: 'Impossible d’exporter la formule. Veuillez réessayer.'
+	},
 	diagrams: {
 		title: 'Diagramme',
 		preview: 'Aperçu du diagramme',

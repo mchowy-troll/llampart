@@ -209,6 +209,7 @@
 		<div class="agentic-text">
 			<MarkdownContent
 				class="llampart-assistant-markdown"
+				allowMathFrames
 				allowCharts
 				{isStreaming}
 				chartLimit={Math.max(

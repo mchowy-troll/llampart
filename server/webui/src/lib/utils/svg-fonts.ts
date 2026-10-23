@@ -1,5 +1,7 @@
 /** Discover the active local faces from CSSOM; no second font registry. */
 export async function embeddedSvgFonts(families: string, source: HTMLElement): Promise<string> {
+	const weightNumber = (weight: string) =>
+		weight === 'normal' ? 400 : weight === 'bold' ? 700 : Number(weight);
 	const names = families.split(',').map((name) => name.trim().replace(/^["']|["']$/g, ''));
 	const nodes: Element[] = [source, ...Array.from(source.querySelectorAll('*'))];
 	// Diagram text lives in open shadow roots; include its actual bold/italic
@@ -9,7 +11,7 @@ export async function embeddedSvgFonts(families: string, source: HTMLElement): P
 	}
 	const used = nodes.map((node) => {
 		const style = getComputedStyle(node);
-		return { weight: Number(style.fontWeight), style: style.fontStyle };
+		return { weight: weightNumber(style.fontWeight), style: style.fontStyle };
 	});
 	const rules: CSSFontFaceRule[] = [];
 	function collect(list: CSSRuleList) {
@@ -34,7 +36,7 @@ export async function embeddedSvgFonts(families: string, source: HTMLElement): P
 	// A static family has separate files per weight. Keep the existing limits,
 	// but do not let unused italic faces displace the actual upright chart faces.
 	const needed = rules.filter((rule) => {
-		const weights = rule.style.fontWeight.split(/\s+/).map(Number);
+		const weights = rule.style.fontWeight.split(/\s+/).map(weightNumber);
 		return used.some(
 			(face) =>
 				face.style === rule.style.fontStyle &&
@@ -47,6 +49,13 @@ export async function embeddedSvgFonts(families: string, source: HTMLElement): P
 		const copy = rule.style.cssText;
 		const match = /url\(["']?([^"')]+)["']?\)/.exec(rule.style.getPropertyValue('src'));
 		if (!match) continue;
+		// Vite inlines smaller local fonts (including KaTeX) in production.
+		if (/^data:font\/(?:woff2?|ttf|otf);base64,[A-Za-z0-9+/=]+$/.test(match[1])) {
+			totalBytes += match[1].length;
+			if (totalBytes > 4 * 1024 * 1024) throw new Error('Font embedding limit');
+			embedded.push(`@font-face{${copy}}`);
+			continue;
+		}
 		const url = new URL(match[1], rule.parentStyleSheet?.href || document.baseURI);
 		if (url.origin !== location.origin || !/\.(woff2?|ttf|otf)$/i.test(url.pathname)) continue;
 		const response = await fetch(url);

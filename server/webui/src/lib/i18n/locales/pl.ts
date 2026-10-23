@@ -1,6 +1,13 @@
 import type { TranslationDictionary } from '$lib/i18n/types';
 
 export const pl: TranslationDictionary = {
+	math: {
+		copySource: 'Kopiuj LaTeX źródłowy',
+		preview: 'Podgląd matematyki',
+		zoom: 'Powiększenie wzoru',
+		export: 'Eksportuj wzór jako',
+		exportError: 'Nie udało się wyeksportować wzoru. Spróbuj ponownie.'
+	},
 	diagrams: {
 		title: 'Diagram',
 		preview: 'Podgląd diagramu',

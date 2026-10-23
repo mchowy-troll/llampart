@@ -25,6 +25,23 @@ describe('markdown-runtime', () => {
 		expect(html).toContain('katex');
 		expect(html).toContain('katex-mathml');
 	});
+	it('retains separate original TeX annotations for multiple displays and inline math', async () => {
+		const first = String.raw`\newcommand{\vct}[1]{\mathbf{#1}}
+\begin{aligned}
+\vct{x}_{i+1} &= \frac{a_1}{b^2} \\
+y &= \text{A\&B: 50\%}
+\end{aligned}`;
+		const second = String.raw`\sum_{n=1}^\infty \frac{1}{n^2}`;
+		const html = await renderMarkdown(`Inline $x_i$.\n\n$$\n${first}\n$$\n\n$$\n${second}\n$$`);
+		expect(html.match(/class="katex-display"/g)).toHaveLength(2);
+		expect(html.match(/encoding="application\/x-tex"/g)).toHaveLength(3);
+		// HTML encoding is decoded by annotation.textContent in the final DOM.
+		expect(html).toContain(first.replaceAll('&', '&#x26;'));
+		expect(html).toContain(second);
+		// Cached processor output remains free of interactive DOM or localized labels.
+		expect(html).not.toContain('math-actions');
+		expect(html).not.toContain('<button');
+	});
 
 	it('keeps untrusted LaTeX links and HTML extensions disabled with a polluted prototype', async () => {
 		const originalTrust = Object.getOwnPropertyDescriptor(Object.prototype, 'trust');
