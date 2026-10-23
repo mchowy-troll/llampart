@@ -52,6 +52,50 @@ export function flowchartSectionPresentation(svg: SVGSVGElement, font: DiagramTy
 	}
 }
 
+/** Keep native composite bounds, child positions and ports. Place measured title
+ * ink at the same bold, left-aligned inset as flowchart section titles. */
+export function stateSectionPresentation(svg: SVGSVGElement, font: DiagramTypography) {
+	for (const group of svg.querySelectorAll<SVGGElement>('g.statediagram-cluster')) {
+		const rect = group.querySelector<SVGRectElement>(':scope > g > rect.outer');
+		const label = group.querySelector<SVGGElement>(':scope > .cluster-label');
+		const text = label?.querySelector('text');
+		if (!rect || !label || !text) continue;
+		rect.setAttribute('rx', String(FLOWCHART_CORNER_RADIUS));
+		rect.setAttribute('ry', String(FLOWCHART_CORNER_RADIUS));
+		for (const ink of label.querySelectorAll<SVGElement>('text,tspan')) {
+			ink.style.setProperty('fill', font.color, 'important');
+			ink.style.setProperty('font-weight', '700', 'important');
+		}
+		const available = rect.width.baseVal.value - font.size * 2;
+		const template = text.querySelector('tspan');
+		// Bold text can outgrow Mermaid's regular-weight title measurement. Wrap
+		// only that title inside its existing frame, never resize or reroute it.
+		if (template && available > 0 && text.getBBox().width > available) {
+			const words = (text.textContent || '').trim().split(/\s+/);
+			text.replaceChildren();
+			let row: SVGTSpanElement | undefined;
+			for (const word of words) {
+				const previous = row?.textContent || '';
+				if (row) row.textContent = previous + ' ' + word;
+				if (!row || row.getComputedTextLength() > available) {
+					if (row) row.textContent = previous + ' ';
+					row = template.cloneNode(false) as SVGTSpanElement;
+					row.setAttribute('x', '0');
+					row.removeAttribute('y');
+					row.setAttribute('dy', text.childElementCount ? '1.1em' : '0');
+					row.textContent = word;
+					text.append(row);
+				}
+			}
+		}
+		const bounds = label.getBBox();
+		label.setAttribute(
+			'transform',
+			`translate(${rect.x.baseVal.value + font.size - bounds.x},${rect.y.baseVal.value + font.size * 0.75 - bounds.y})`
+		);
+	}
+}
+
 /** Opaque, gently softened data fills keep contrast independent of wallpaper.
  * These are derived from the shared palette, not a second set of data colors. */
 export function diagramFill(color: string, white = 0.16): string {

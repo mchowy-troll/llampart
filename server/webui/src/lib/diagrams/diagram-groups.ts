@@ -55,19 +55,21 @@ export function paintDiagramGroups(
 	for (const group of svg.querySelectorAll<SVGGElement>('g.cluster,g.statediagram-cluster')) {
 		const color = colors.get(group.id.slice(renderId.length + 1));
 		if (!color) continue;
-		for (const rect of group.querySelectorAll<SVGRectElement>('rect')) {
-			rect.style.fill = rect.classList.contains('inner')
-				? '#f5f6f5'
-				: group.classList.contains('statediagram-cluster')
-					? color
-					: color + '0C';
-			rect.style.stroke = color + '66';
-		}
 		if (group.classList.contains('statediagram-cluster')) {
-			for (const text of group.querySelectorAll<SVGElement>(
-				':scope > .cluster-label text,:scope > .cluster-label tspan'
-			))
-				text.style.setProperty('fill', diagramInk(color), 'important');
+			// One translucent surface, like flowchart groups; no separate title strip.
+			// Scope to this composite so nested groups and state nodes keep their paint.
+			for (const rect of group.querySelectorAll<SVGRectElement>(
+				':scope > g > rect.outer,:scope > rect.inner'
+			)) {
+				const inner = rect.classList.contains('inner');
+				rect.style.fill = inner ? 'none' : color + '0C';
+				rect.style.stroke = inner ? 'none' : color + '66';
+			}
+		} else {
+			for (const rect of group.querySelectorAll<SVGRectElement>('rect')) {
+				rect.style.fill = rect.classList.contains('inner') ? '#f5f6f5' : color + '0C';
+				rect.style.stroke = color + '66';
+			}
 		}
 	}
 }

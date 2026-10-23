@@ -8,6 +8,7 @@ import {
 	finishMindmapPresentation,
 	edgeLabelTypography,
 	flowchartSectionPresentation,
+	stateSectionPresentation,
 	diagramConfig
 } from '$lib/diagrams/mermaid-presentation';
 import { VISUALIZATION_LABEL_SIZE } from '$lib/utils/visualization-typography';
@@ -168,17 +169,49 @@ it('distinguishes decisions using the adjacent palette slot, never inferred labe
 	expect(colors.has('b')).toBe(false);
 });
 
-it('keeps composite-state titles legible on the darkest palette fill', () => {
+it('uses a single flowchart-like surface and measured, theme-colored composite titles', () => {
 	const fill = vi.fn();
+	const transform = vi.fn();
+	const radius = vi.fn();
+	const outer = {
+		classList: { contains: () => false },
+		style: { fill: '', stroke: '' },
+		setAttribute: radius,
+		x: { baseVal: { value: 20 } },
+		y: { baseVal: { value: 30 } },
+		width: { baseVal: { value: 200 } }
+	};
+	const inner = { classList: { contains: () => true }, style: { fill: '', stroke: '' } };
+	const label = {
+		querySelector: () => ({
+			getBBox: () => ({ x: -5, y: -10, width: 100 }),
+			querySelector: () => null
+		}),
+		getBBox: () => ({ x: -5, y: -10, width: 100 }),
+		querySelectorAll: () => [{ style: { setProperty: fill } }],
+		setAttribute: transform
+	};
 	const group = {
 		id: 'render-dark',
 		classList: { contains: () => true },
-		querySelectorAll: (selector: string) =>
-			selector === 'rect' ? [] : [{ style: { setProperty: fill } }]
+		querySelectorAll: vi.fn(() => [outer, inner]),
+		querySelector: (selector: string) => (selector.includes('rect.outer') ? outer : label)
 	};
 	const svg = { querySelectorAll: (selector: string) => (selector === 'g.node' ? [] : [group]) };
 	paintDiagramGroups(svg as unknown as SVGSVGElement, 'render', new Map([['dark', '#263238']]));
-	expect(fill).toHaveBeenCalledWith('fill', '#ffffff', 'important');
+	expect(group.querySelectorAll).toHaveBeenCalledWith(
+		':scope > g > rect.outer,:scope > rect.inner'
+	);
+	expect(outer.style).toEqual({ fill: '#2632380C', stroke: '#26323866' });
+	expect(inner.style).toEqual({ fill: 'none', stroke: 'none' });
+	stateSectionPresentation(svg as unknown as SVGSVGElement, font);
+	expect(fill).toHaveBeenCalledWith('fill', font.color, 'important');
+	expect(fill).toHaveBeenCalledWith('font-weight', '700', 'important');
+	expect(transform).toHaveBeenCalledWith('transform', 'translate(41,52)');
+	expect(radius.mock.calls).toEqual([
+		['rx', '8'],
+		['ry', '8']
+	]);
 });
 
 it('colors only explicit parser groups, deterministically in shared palette order', () => {

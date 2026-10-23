@@ -6,6 +6,7 @@ import {
 	statePresentationSource,
 	finishMindmapPresentation,
 	flowchartSectionPresentation,
+	stateSectionPresentation,
 	edgeLabelTypography,
 	type DiagramTypography
 } from './mermaid-presentation';
@@ -132,7 +133,12 @@ export function renderDiagram(
 			if (type === 'flowchart') flowchartSectionPresentation(safe, font);
 			if (type === 'mindmap') finishMindmapPresentation(safe);
 			if (type === 'gantt') spaceGanttLabels(safe, font.size, availableWidth);
-			if (type === 'stateDiagram-v2') centerStateLabels(safe);
+			if (type === 'stateDiagram-v2') {
+				await document.fonts.load(`${font.style} 700 ${font.size}px ${font.family}`);
+				signal.throwIfAborted();
+				centerStateLabels(safe);
+				stateSectionPresentation(safe, font);
+			}
 			if (type === 'flowchart' || type === 'stateDiagram-v2') {
 				safe
 					.querySelector('style')
