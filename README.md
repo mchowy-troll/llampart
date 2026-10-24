@@ -35,7 +35,7 @@ A distinctive, customizable interface built around the Frosted Glass visual them
 - An option to disable transparency for more opaque interface surfaces.
 - Bundled offline fonts, font variants, and adjustable text sizes.
 - Independent interface scaling and customizable sidebar layout.
-- Six interface languages: English, Polish, German, French, Italian, and Spanish.
+- 25 interface languages.
 
 ### Models & Providers
 

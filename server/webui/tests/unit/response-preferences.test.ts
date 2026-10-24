@@ -11,7 +11,7 @@ import {
 	type ResponsePreferences
 } from '$lib/utils/response-preferences';
 import type { ApiChatMessageData } from '$lib/types/api';
-import { getDictionary } from '$lib/i18n';
+import { getDictionary, INTERFACE_LANGUAGES } from '$lib/i18n';
 
 const all = Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }) => [key, true]));
 
@@ -230,7 +230,7 @@ describe('response preferences contract', () => {
 			expect(messages).toEqual(original);
 		}
 	});
-	it.each(['en', 'pl', 'de', 'fr', 'it', 'es'] as const)(
+	it.each(INTERFACE_LANGUAGES)(
 		'has translated UI in %s but a language-independent English contract',
 		(language) => {
 			const settings = parseSettingsConfig({ ...all, interfaceLanguage: language });

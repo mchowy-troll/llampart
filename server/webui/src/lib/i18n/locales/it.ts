@@ -968,7 +968,7 @@ export const it: TranslationDictionary = {
 		aboutLlampartAboutProgramBodyThree:
 			'La personalizzazione è parte integrante dell’esperienza. Impostazioni flessibili per l’aspetto, effetti Frosted Glass, sfondi personalizzabili, controlli tipografici e ridimensionamento dell’interfaccia consentono agli utenti di adattare l’applicazione alle proprie preferenze. La gestione delle conversazioni, le preferenze di risposta configurabili e l’importazione e l’esportazione delle impostazioni favoriscono inoltre un flusso di lavoro comodo e coerente.',
 		aboutLlampartAboutProgramBodyFour:
-			'Nato sulla base di llama-ui, llampart si è evoluto in un progetto sviluppato in modo indipendente, con una propria direzione e un proprio insieme di funzionalità. Non è affiliato al team di llama.cpp, pur mantenendo la compatibilità con tecnologie consolidate per l’erogazione dei modelli. Il progetto pone l’accento su usabilità, trasparenza e manutenibilità del codice e offre un’interfaccia in inglese, polacco, tedesco, francese, italiano e spagnolo.',
+			'Nato sulla base di llama-ui, llampart si è evoluto in un progetto sviluppato in modo indipendente, con una propria direzione e un proprio insieme di funzionalità. Non è affiliato al team di llama.cpp, pur mantenendo la compatibilità con tecnologie consolidate per l’erogazione dei modelli. Il progetto pone l’accento su usabilità, trasparenza e manutenibilità del codice e offre un’interfaccia in 25 lingue.',
 		aboutLlampartSpecialThanksTitle: 'Ringraziamenti speciali',
 		aboutLlampartSpecialThanksLlamaUiBody:
 			'Un ringraziamento speciale al team di llama.cpp e agli autori della base llama-ui su cui llampart si appoggia.',

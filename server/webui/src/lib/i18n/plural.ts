@@ -20,7 +20,12 @@ export function formatPluralizedTranslation(
 	language?: InterfaceLanguage
 ): string {
 	const activeLanguage = language ?? getInterfaceLanguage();
-	const category = new Intl.PluralRules(activeLanguage).select(count);
+	// ICU may not include Kashubian. Only borrow Polish plural categories, never its texts.
+	const pluralLanguage =
+		activeLanguage === 'csb' && Intl.PluralRules.supportedLocalesOf('csb').length === 0
+			? 'pl'
+			: activeLanguage;
+	const category = new Intl.PluralRules(pluralLanguage).select(count);
 	const categoryKey = `${baseKey}.${category}`;
 	const fallbackKey = `${baseKey}.other`;
 

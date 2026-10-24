@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { chartSourceTitle } from '$lib/charts/chart-title';
 import { CHART_LIMITS } from '$lib/charts/chart-schema';
 import { CHART_INSTRUCTIONS } from '$lib/markdown/chart-instructions';
-import { t } from '$lib/i18n';
+import { t, INTERFACE_LANGUAGES } from '$lib/i18n';
 
 describe('visualization fallback source titles', () => {
 	it('reads a title from complete but schema-invalid JSON without changing source', () => {
@@ -44,20 +44,17 @@ describe('visualization fallback source titles', () => {
 			expect(CHART_INSTRUCTIONS).toContain(limit);
 		expect(CHART_INSTRUCTIONS).toContain('Markdown table or text');
 	});
-	it.each(['en', 'pl', 'de', 'fr', 'it', 'es'] as const)(
-		'provides all fallback and connection actions in %s',
-		(language) => {
-			for (const key of [
-				'common.showCode',
-				'common.copyCode',
-				'diagrams.invalid',
-				'charts.invalid',
-				'server.connectionUnavailableHelp',
-				'server.refreshPage',
-				'server.connectionSettings',
-				'server.authenticationRequired'
-			])
-				expect(t(key, language)).not.toBe(key);
-		}
-	);
+	it.each(INTERFACE_LANGUAGES)('provides all fallback and connection actions in %s', (language) => {
+		for (const key of [
+			'common.showCode',
+			'common.copyCode',
+			'diagrams.invalid',
+			'charts.invalid',
+			'server.connectionUnavailableHelp',
+			'server.refreshPage',
+			'server.connectionSettings',
+			'server.authenticationRequired'
+		])
+			expect(t(key, language)).not.toBe(key);
+	});
 });

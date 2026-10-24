@@ -8,6 +8,25 @@ import { de } from './locales/de';
 import { fr } from './locales/fr';
 import { it } from './locales/it';
 import { es } from './locales/es';
+import { bg } from './locales/bg';
+import { hr } from './locales/hr';
+import { cs } from './locales/cs';
+import { da } from './locales/da';
+import { et } from './locales/et';
+import { fi } from './locales/fi';
+import { el } from './locales/el';
+import { ga } from './locales/ga';
+import { csb } from './locales/csb';
+import { lt } from './locales/lt';
+import { lv } from './locales/lv';
+import { mt } from './locales/mt';
+import { nl } from './locales/nl';
+import { pt } from './locales/pt';
+import { ro } from './locales/ro';
+import { sk } from './locales/sk';
+import { sl } from './locales/sl';
+import { sv } from './locales/sv';
+import { hu } from './locales/hu';
 
 const FALLBACK_LANGUAGE: InterfaceLanguage = 'en';
 
@@ -36,7 +55,26 @@ const dictionaries: Record<InterfaceLanguage, TranslationDictionary> = {
 	de: mergeDictionaries(de, getThemeTranslations('de')),
 	fr: mergeDictionaries(fr, getThemeTranslations('fr')),
 	it: mergeDictionaries(it, getThemeTranslations('it')),
-	es: mergeDictionaries(es, getThemeTranslations('es'))
+	es: mergeDictionaries(es, getThemeTranslations('es')),
+	bg: mergeDictionaries(bg, getThemeTranslations('bg')),
+	hr: mergeDictionaries(hr, getThemeTranslations('hr')),
+	cs: mergeDictionaries(cs, getThemeTranslations('cs')),
+	da: mergeDictionaries(da, getThemeTranslations('da')),
+	et: mergeDictionaries(et, getThemeTranslations('et')),
+	fi: mergeDictionaries(fi, getThemeTranslations('fi')),
+	el: mergeDictionaries(el, getThemeTranslations('el')),
+	ga: mergeDictionaries(ga, getThemeTranslations('ga')),
+	csb: mergeDictionaries(csb, getThemeTranslations('csb')),
+	lt: mergeDictionaries(lt, getThemeTranslations('lt')),
+	lv: mergeDictionaries(lv, getThemeTranslations('lv')),
+	mt: mergeDictionaries(mt, getThemeTranslations('mt')),
+	nl: mergeDictionaries(nl, getThemeTranslations('nl')),
+	pt: mergeDictionaries(pt, getThemeTranslations('pt')),
+	ro: mergeDictionaries(ro, getThemeTranslations('ro')),
+	sk: mergeDictionaries(sk, getThemeTranslations('sk')),
+	sl: mergeDictionaries(sl, getThemeTranslations('sl')),
+	sv: mergeDictionaries(sv, getThemeTranslations('sv')),
+	hu: mergeDictionaries(hu, getThemeTranslations('hu'))
 };
 
 function getNestedValue(dictionary: TranslationDictionary, key: string): string | undefined {

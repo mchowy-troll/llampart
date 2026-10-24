@@ -2,12 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { SETTING_CONFIG_DEFAULT } from '$lib/constants';
 import { parseSettingsStorage, serializeSettingsStorage } from '$lib/utils/settings-schema';
-import { en } from '$lib/i18n/locales/en';
+import { getDictionary, INTERFACE_LANGUAGES } from '$lib/i18n';
 import { pl } from '$lib/i18n/locales/pl';
-import { de } from '$lib/i18n/locales/de';
-import { fr } from '$lib/i18n/locales/fr';
-import { it as italian } from '$lib/i18n/locales/it';
-import { es } from '$lib/i18n/locales/es';
 import type { TranslationDictionary } from '$lib/i18n/types';
 
 function text(locale: TranslationDictionary, section: string, key: string): string {
@@ -49,9 +45,10 @@ describe('UI polish contracts', () => {
 			);
 		}
 	});
-	it.each([en, pl, de, fr, italian, es])(
+	it.each(INTERFACE_LANGUAGES)(
 		'offers safe actionable visualization errors in every locale',
-		(locale) => {
+		(language) => {
+			const locale = getDictionary(language);
 			expect(text(locale, 'charts', 'invalid')).toContain('llampart-chart');
 			expect(text(locale, 'diagrams', 'invalid')).toContain('llampart-diagram');
 			expect(locale.charts).not.toHaveProperty('inspectDefinition');

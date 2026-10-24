@@ -18,7 +18,16 @@ import {
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
-import { getDictionary, INTERFACE_LANGUAGES } from '$lib/i18n';
+import {
+	getDictionary,
+	getInterfaceLanguage,
+	isInterfaceLanguage,
+	INTERFACE_LANGUAGES
+} from '$lib/i18n';
+import type { TranslationDictionary } from '$lib/i18n/types';
+import { en } from '$lib/i18n/locales/en';
+import { FROSTED_GLASS_TRANSLATIONS } from '$lib/themes/frosted-glass/translations';
+import { formatPluralizedTranslation } from '$lib/i18n/plural';
 import { applyTypography, FONT_FAMILIES } from '$lib/utils/typography';
 import {
 	CUSTOM_FROSTED_GLASS_WALLPAPER_ID,
@@ -57,6 +66,105 @@ beforeEach(() => {
 });
 
 describe('settings JSON import/export compatibility', () => {
+	it('keeps all 25 dictionaries, themes, placeholders, plurals and language settings complete', async () => {
+		const locales = import.meta.glob<Record<string, TranslationDictionary>>(
+			'../../src/lib/i18n/locales/*.ts',
+			{ eager: true }
+		);
+		const placeholders = (text: string) =>
+			[...text.matchAll(/\{\{?\w+\}?\}/g)].map(([token]) => token).sort();
+		function checkTree(base: TranslationDictionary, actual: TranslationDictionary, path = '') {
+			expect(actual, path).toBeTypeOf('object');
+			expect(actual, path).not.toBeNull();
+			expect(Array.isArray(actual), path).toBe(false);
+			const plural = path === 'chat.pdfProcessedAsImages';
+			if (plural) {
+				expect(Object.keys(actual)).toEqual(expect.arrayContaining(Object.keys(base)));
+				expect(
+					Object.keys(actual).every((key) =>
+						['zero', 'one', 'two', 'few', 'many', 'other'].includes(key)
+					)
+				).toBe(true);
+			} else expect(Object.keys(actual).sort(), path).toEqual(Object.keys(base).sort());
+			for (const [key, value] of Object.entries(actual)) {
+				const reference = base[key] ?? (plural ? base.other : undefined);
+				const keyPath = path ? `${path}.${key}` : key;
+				expect(typeof value, keyPath).toBe(typeof reference);
+				if (typeof value === 'string' && typeof reference === 'string') {
+					expect(value.trim().length, keyPath).toBeGreaterThan(0);
+					expect(placeholders(value), keyPath).toEqual(placeholders(reference));
+				} else
+					checkTree(reference as TranslationDictionary, value as TranslationDictionary, keyPath);
+			}
+		}
+		expect(INTERFACE_LANGUAGES).toHaveLength(25);
+		expect(Object.keys(locales)).toHaveLength(25);
+		expect(Object.keys(FROSTED_GLASS_TRANSLATIONS).sort()).toEqual([...INTERFACE_LANGUAGES].sort());
+		for (const language of INTERFACE_LANGUAGES) {
+			const dictionary = locales[`../../src/lib/i18n/locales/${language}.ts`][language];
+			checkTree(en, dictionary);
+			checkTree(FROSTED_GLASS_TRANSLATIONS.en, FROSTED_GLASS_TRANSLATIONS[language]);
+			const plural = (dictionary.chat as TranslationDictionary)
+				.pdfProcessedAsImages as TranslationDictionary;
+			const rules = new Intl.PluralRules(language === 'csb' ? 'pl' : language);
+			// Preserve the existing six dictionaries; enforce all ICU categories in every new one.
+			if (!['en', 'pl', 'de', 'fr', 'it', 'es'].includes(language))
+				expect(Object.keys(plural)).toEqual(
+					expect.arrayContaining(rules.resolvedOptions().pluralCategories)
+				);
+			for (const count of [0, 1, 2, 3, 5, 7, 11, 21, 22, 101, 1.5, 1000000]) {
+				const category = rules.select(count);
+				expect(formatPluralizedTranslation('chat.pdfProcessedAsImages', count, {}, language)).toBe(
+					String(plural[category] ?? plural.other).replaceAll('{count}', String(count))
+				);
+			}
+			expect(parseSettingsConfig({ interfaceLanguage: language }).interfaceLanguage).toBe(language);
+			expect(validateSettingsPatch({ interfaceLanguage: language })).toEqual({
+				interfaceLanguage: language
+			});
+		}
+		for (const language of ['en', 'pl', 'pt', 'csb'] as const) {
+			const before = { ...settingsStore.config };
+			settingsStore.updateConfig('interfaceLanguage', language);
+			const expected = { ...before, interfaceLanguage: language };
+			expect(settingsStore.config).toEqual(expected);
+			settingsStore.initialize();
+			expect(settingsStore.config).toEqual(expected);
+			expect(getInterfaceLanguage()).toBe(language);
+			const { data, text } = await exportFile();
+			expect(data.settings.interfaceLanguage).toBe(language);
+			settingsStore.updateConfig('interfaceLanguage', language === 'en' ? 'pl' : 'en');
+			importApplicationSettings(text);
+			expect(settingsStore.config).toEqual(expected);
+			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!).interfaceLanguage).toBe(
+				language
+			);
+		}
+		expect(isInterfaceLanguage('xx')).toBe(false);
+		expect(parseSettingsStorage('{"interfaceLanguage":"xx","uiScale":"95"}')).toMatchObject({
+			interfaceLanguage: 'en',
+			uiScale: '95'
+		});
+		expect(() => validateSettingsPatch({ interfaceLanguage: 'xx' })).toThrow('interfaceLanguage');
+		const before = { ...settingsStore.config };
+		expect(() =>
+			importApplicationSettings(
+				JSON.stringify({
+					type: 'llampart-settings-export',
+					formatVersion: 1,
+					settings: { interfaceLanguage: 'xx' }
+				})
+			)
+		).toThrow('interfaceLanguage');
+		expect(settingsStore.config).toEqual(before);
+		try {
+			settingsStore.config = { ...before, interfaceLanguage: 'xx' };
+			expect(getInterfaceLanguage()).toBe('en');
+		} finally {
+			settingsStore.config = before;
+		}
+	});
+
 	it.each([true, false])(
 		'preserves hidden legacy code height=%s through import/export',
 		async (fullHeightCodeBlocks) => {

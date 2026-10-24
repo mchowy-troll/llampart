@@ -959,7 +959,7 @@ export const pl: TranslationDictionary = {
 		aboutLlampartAboutProgramBodyThree:
 			'Personalizacja stanowi istotny element llampart. Rozbudowane ustawienia wyglądu, efekty Frosted Glass, konfigurowalne tapety, typografia oraz skalowanie interfejsu pozwalają dostosować środowisko do indywidualnych preferencji. Zarządzanie rozmowami, preferencje dotyczące odpowiedzi modeli oraz import i eksport ustawień pomagają zachować wygodę i spójność codziennej pracy.',
 		aboutLlampartAboutProgramBodyFour:
-			'Projekt powstał na bazie llama-ui, lecz rozwija się niezależnie, we własnym kierunku i z własnym zestawem funkcji. llampart nie jest powiązany organizacyjnie z zespołem llama.cpp, zachowując jednocześnie zgodność z uznanymi rozwiązaniami do uruchamiania modeli AI. Rozwój projektu koncentruje się na użyteczności, przejrzystości i łatwości utrzymania kodu. Interfejs jest dostępny w sześciu językach: angielskim, polskim, niemieckim, francuskim, włoskim i hiszpańskim.',
+			'Projekt powstał na bazie llama-ui, lecz rozwija się niezależnie, we własnym kierunku i z własnym zestawem funkcji. llampart nie jest powiązany organizacyjnie z zespołem llama.cpp, zachowując jednocześnie zgodność z uznanymi rozwiązaniami do uruchamiania modeli AI. Rozwój projektu koncentruje się na użyteczności, przejrzystości i łatwości utrzymania kodu. Interfejs jest dostępny w 25 językach.',
 		aboutLlampartSpecialThanksTitle: 'Specjalne podziękowania',
 		aboutLlampartSpecialThanksLlamaUiBody:
 			'Specjalne podziękowania dla zespołu llama.cpp i autorów bazowego llama-ui, na którym opiera się llampart.',

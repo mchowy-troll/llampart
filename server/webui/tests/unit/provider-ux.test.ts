@@ -32,7 +32,12 @@ describe('localized connection UX', () => {
 	it.each(INTERFACE_LANGUAGES)(
 		'uses translated controls and safe discovery errors in %s',
 		(language) => {
-			expect(t('common.close', language)).toBe(closes[language]);
+			if (language in closes)
+				expect(t('common.close', language)).toBe(closes[language as keyof typeof closes]);
+			else {
+				expect(t('common.close', language).trim()).not.toBe('');
+				expect(t('common.close', language)).not.toBe(closes.en);
+			}
 			for (const status of [401, 403, 404, 502]) {
 				const message = connectionErrorMessage(`Model discovery failed (${status})`, language);
 				expect(message).toBe(`${t('server.modelDiscoveryFailed', language)} (HTTP ${status})`);

@@ -3,6 +3,7 @@ import { FONT_SIZES, normalizeFontFamily, normalizeFontVariant } from '$lib/util
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
 import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
 import { THEME_REGISTRY } from '$lib/themes/registry';
+import { INTERFACE_LANGUAGES } from '$lib/i18n/types';
 import type { SettingsConfigType, SettingsConfigValue } from '$lib/types/settings';
 
 export const SETTINGS_STORAGE_VERSION_KEY = '__llampartSettingsVersion';
@@ -28,7 +29,7 @@ Object.assign(knownSettingsShape, {
 		API_PROVIDER_IDS.VLLM
 	]),
 	theme: z.enum(Object.keys(THEME_REGISTRY) as [string, ...string[]]),
-	interfaceLanguage: z.enum(['en', 'pl', 'de', 'fr', 'it', 'es']),
+	interfaceLanguage: z.enum(INTERFACE_LANGUAGES),
 	uiScale: z.enum(['90', '95', '100', '105', '110']),
 	// Retired/unknown font IDs migrate independently, never invalidating other settings.
 	fontFamily: z.string().transform(normalizeFontFamily),

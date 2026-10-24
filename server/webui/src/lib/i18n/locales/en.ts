@@ -947,7 +947,7 @@ export const en: TranslationDictionary = {
 		aboutLlampartAboutProgramBodyThree:
 			'Personalization is an integral part of the experience. Flexible appearance settings, Frosted Glass effects, customizable wallpapers, typography controls, and interface scaling allow users to shape the application around their preferences. Conversation management, configurable response preferences, and settings import and export further support a comfortable and consistent workflow.',
 		aboutLlampartAboutProgramBodyFour:
-			'Originally built upon the llama-ui foundation, llampart has evolved into an independently developed project with its own direction and feature set. It is not affiliated with the llama.cpp team, while maintaining compatibility with established model-serving technologies. The project emphasizes usability, transparency, and maintainable development, and provides an interface in English, Polish, German, French, Italian, and Spanish.',
+			'Originally built upon the llama-ui foundation, llampart has evolved into an independently developed project with its own direction and feature set. It is not affiliated with the llama.cpp team, while maintaining compatibility with established model-serving technologies. The project emphasizes usability, transparency, and maintainable development, and provides an interface in 25 languages.',
 		aboutLlampartSpecialThanksTitle: 'Special thanks',
 		aboutLlampartSpecialThanksLlamaUiBody:
 			'Special thanks to the llama.cpp team and the authors of the base llama-ui that llampart builds on.',

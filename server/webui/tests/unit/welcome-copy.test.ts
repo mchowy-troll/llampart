@@ -1,14 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { en } from '$lib/i18n/locales/en';
-import { pl } from '$lib/i18n/locales/pl';
-import { de } from '$lib/i18n/locales/de';
-import { fr } from '$lib/i18n/locales/fr';
-import { it as italian } from '$lib/i18n/locales/it';
-import { es } from '$lib/i18n/locales/es';
+import { getDictionary, INTERFACE_LANGUAGES } from '$lib/i18n';
 import type { TranslationDictionary } from '$lib/i18n/types';
 import approved from '../fixtures/welcome-approved-copy.json';
 
-const dictionaries = { en, pl, de, fr, it: italian, es };
+const dictionaries = Object.fromEntries(
+	INTERFACE_LANGUAGES.map((language) => [language, getDictionary(language)])
+);
 const keys = [
 	'aboutLlampartAboutProgramBodyOne',
 	'aboutLlampartAboutProgramBodyTwo',

@@ -50,6 +50,7 @@
 	import { onDestroy, untrack } from 'svelte';
 	import type { ProviderCapabilityKey } from '$lib/types/provider';
 	import { t } from '$lib/i18n';
+	import { INTERFACE_LANGUAGES, INTERFACE_LANGUAGE_NAMES } from '$lib/i18n/types';
 	import { CAPABILITY_FEATURES } from '$lib/services/providers/provider-capabilities';
 	import { normalizeGatewaySource } from '$lib/services/providers/provider-transport';
 	import { modelsStore } from '$lib/stores/models.svelte';
@@ -63,14 +64,15 @@
 	}
 
 	let { onSave, initialSection, active = true }: Props = $props();
-	const INTERFACE_LANGUAGE_OPTIONS = [
-		{ value: 'en', label: 'English' },
-		{ value: 'pl', label: 'Polski' },
-		{ value: 'de', label: 'Deutsch' },
-		{ value: 'fr', label: 'Français' },
-		{ value: 'it', label: 'Italiano' },
-		{ value: 'es', label: 'Español' }
-	];
+	const languageCollator = new Intl.Collator('pl', { sensitivity: 'base' });
+	const INTERFACE_LANGUAGE_OPTIONS = INTERFACE_LANGUAGES.map((value) => ({
+		value,
+		label: INTERFACE_LANGUAGE_NAMES[value]
+	})).sort(
+		(a, b) =>
+			languageCollator.compare(a.label, b.label) ||
+			(a.value < b.value ? -1 : a.value > b.value ? 1 : 0)
+	);
 	const THEME_OPTIONS = getThemeOptions().map((option) => ({
 		...option,
 		label: t(option.labelKey)
