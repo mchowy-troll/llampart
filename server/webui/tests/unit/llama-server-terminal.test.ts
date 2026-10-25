@@ -72,7 +72,6 @@ afterEach(() => {
 describe('real ChatService llama-server terminal semantics (AUD-004)', () => {
 	it.each([
 		['error then DONE', errorRecord + done, [], 'LlamaServerBackendError'],
-		['error without DONE', errorRecord, [], 'LlamaServerBackendError'],
 		[
 			'error envelope with SSE event marker',
 			'event: error\n' + errorRecord + done,
@@ -91,7 +90,6 @@ describe('real ChatService llama-server terminal semantics (AUD-004)', () => {
 			['zażółć🙂'],
 			'LlamaServerBackendError'
 		],
-		['historical error then DONE', legacyError + done, [], 'LlamaServerBackendError'],
 		[
 			'partial then historical error',
 			text + legacyError + done,

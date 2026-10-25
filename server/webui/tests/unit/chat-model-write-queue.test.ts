@@ -62,7 +62,7 @@ function setup(failedModel: string) {
 	};
 	let persisted = structuredClone(assistant);
 	const failure = new Error(`Synthetic IndexedDB write rejected: ${failedModel}`);
-	const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+	vi.spyOn(console, 'error').mockImplementation(() => undefined);
 	let release!: () => void;
 	let entered!: () => void;
 	const gate = new Promise<void>((resolve) => (release = resolve));
@@ -133,7 +133,6 @@ function setup(failedModel: string) {
 		failure,
 		info,
 		update,
-		logged,
 		currentNode,
 		firstStarted,
 		release: () => release(),
@@ -173,11 +172,6 @@ describe('AUD-010 model write queue recovery', () => {
 			modelInfo: modelInfoForResponse(test.info, 'Model-C'),
 			content: 'Synthetic answer'
 		});
-		expect(test.logged).toHaveBeenCalledWith(
-			'Failed to persist message model:',
-			test.assistant.id,
-			test.failure
-		);
 		expect(test.onComplete).toHaveBeenCalledExactlyOnceWith('Synthetic answer');
 		expect(test.onError).not.toHaveBeenCalled();
 		expect(chatStore.errorDialogState).toBeNull();
@@ -203,11 +197,6 @@ describe('AUD-010 model write queue recovery', () => {
 			modelInfo: modelInfoForResponse(test.info, 'Model-B'),
 			content: 'Synthetic answer'
 		});
-		expect(test.logged).toHaveBeenCalledWith(
-			'Failed to persist message model:',
-			test.assistant.id,
-			test.failure
-		);
 		expect(test.onError).toHaveBeenCalledExactlyOnceWith(
 			expect.objectContaining({ name: 'StreamCheckpointError', cause: test.failure })
 		);

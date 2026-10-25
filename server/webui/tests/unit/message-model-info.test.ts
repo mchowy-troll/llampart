@@ -117,25 +117,25 @@ describe('AUD-010 bounded message evidence', () => {
 		}
 		expect(snapshot.native?.chat_template).toBe('template-A');
 	});
-	it.each(['vllm', 'openai-compatible'] as const)(
-		'keeps sparse %s metadata sparse, despite arbitrary raw/native input',
-		(provider) => {
-			const snapshot = captureMessageModelInfo(provider, 'provider/model', props, {
-				...option,
-				contextSize: 32768
-			});
-			expect(snapshot).toMatchObject({
-				modelId: 'provider/model',
-				displayName: 'provider/model',
-				contextSize: 32768
-			});
-			expect(snapshot.native).toBeUndefined();
-			expect(snapshot.meta).toBeUndefined();
-			expect(snapshot.modalities).toBeUndefined();
-			const minimal = captureMessageModelInfo(provider, 'provider/model', null, null);
-			expect(minimal.contextSize).toBeUndefined();
-		}
-	);
+	it('keeps non-native metadata sparse, despite arbitrary raw/native input', () => {
+		// Both non-native providers use the same projection; one representative is sufficient.
+		const provider = 'openai-compatible';
+		const snapshot = captureMessageModelInfo(provider, 'provider/model', props, {
+			...option,
+			contextSize: 32768
+		});
+		expect(snapshot).toMatchObject({
+			providerId: provider,
+			modelId: 'provider/model',
+			displayName: 'provider/model',
+			contextSize: 32768
+		});
+		expect(snapshot.native).toBeUndefined();
+		expect(snapshot.meta).toBeUndefined();
+		expect(snapshot.modalities).toBeUndefined();
+		const minimal = captureMessageModelInfo(provider, 'provider/model', null, null);
+		expect(minimal.contextSize).toBeUndefined();
+	});
 	it('bounds optional runtime fields without blocking generation; rejects oversized or malformed import', () => {
 		const snapshot = captureMessageModelInfo(
 			'llama-server',

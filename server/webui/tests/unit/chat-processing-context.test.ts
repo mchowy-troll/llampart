@@ -2,24 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { resolveHistoricalContextTotal } from '$lib/stores/chat.svelte';
 
 describe('historical chat context total', () => {
-	it('keeps model A context after model B becomes selected', () => {
+	it('keeps persisted model A context after reload and selection of model B', () => {
 		const getModelContextSize = vi.fn((model: string) => (model === 'model-b' ? 65536 : null));
-
-		expect(
-			resolveHistoricalContextTotal(
-				{ model: 'model-a', timings: { context_total: 8192 } },
-				getModelContextSize
-			)
-		).toBe(8192);
-		expect(getModelContextSize).not.toHaveBeenCalled();
-	});
-
-	it('retains the persisted value after reload', () => {
 		const restoredMessage = JSON.parse(
-			JSON.stringify({ model: 'model-a', timings: { context_total: 16384 } })
+			JSON.stringify({ model: 'model-a', timings: { context_total: 8192 } })
 		);
 
-		expect(resolveHistoricalContextTotal(restoredMessage, () => 32768)).toBe(16384);
+		expect(resolveHistoricalContextTotal(restoredMessage, getModelContextSize)).toBe(8192);
+		expect(getModelContextSize).not.toHaveBeenCalled();
 	});
 
 	it('uses the message model for legacy timings', () => {

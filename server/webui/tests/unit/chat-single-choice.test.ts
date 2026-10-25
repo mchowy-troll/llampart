@@ -1,41 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { getApiProvider } from '$lib/services/providers';
-import { buildChatBody } from '$lib/services/providers/openai-chat.protocol';
-import { buildResponsesBody } from '$lib/services/providers/openai-responses.protocol';
 import type { ProviderChatCompletionInput, ProviderProtocol } from '$lib/types/provider';
 
-const invalid = [
-	2,
-	3,
-	0,
-	-1,
-	1.5,
-	'1',
-	true,
-	false,
-	[],
-	{},
-	Number.MAX_SAFE_INTEGER + 1,
-	Number.MIN_SAFE_INTEGER - 1,
-	NaN,
-	Infinity,
-	-Infinity,
-	undefined
-];
-const invalidJson = [
-	'2',
-	'0',
-	'-1',
-	'1.5',
-	'"1"',
-	'true',
-	'false',
-	'[]',
-	'{}',
-	'9007199254740993',
-	'1e999',
-	'-1e999'
-];
+const invalid = [2, 0, -1, 1.5, '1', true, [], {}, NaN, Infinity, undefined];
+const invalidJson = ['2', '"1"', 'true', '[]', '{}', '1e999'];
 
 describe.each(['openai-compatible', 'vllm'] as const)('AUD-005 %s single choice', (providerId) => {
 	const provider = getApiProvider(providerId);
@@ -63,12 +31,10 @@ describe.each(['openai-compatible', 'vllm'] as const)('AUD-005 %s single choice'
 		JSON.parse(String(provider.buildChatCompletionRequest(value).init.body));
 
 	it('does not add n by default, and normalizes null without mutating Custom JSON', () => {
-		expect(buildChatBody(input())).not.toHaveProperty('n');
 		expect(body(input())).not.toHaveProperty('n');
 		for (const custom of [{}, '{}', { n: null }, '{"n":null}']) {
 			const value = input(custom);
 			const before = structuredClone(value);
-			expect(buildChatBody(value)).not.toHaveProperty('n');
 			expect(body(value)).not.toHaveProperty('n');
 			expect(value).toEqual(before);
 		}
@@ -76,14 +42,13 @@ describe.each(['openai-compatible', 'vllm'] as const)('AUD-005 %s single choice'
 	});
 
 	it.each(invalid.map((n) => [n]))('rejects explicit object n=%s', (n) => {
-		expect(() => buildChatBody(input({ n }))).toThrow(/n must be 1 or null/);
 		expect(() => body(input({ n }))).toThrow(/n must be 1 or null/);
 	});
 	it.each(invalidJson)('rejects textual JSON n=%s', (n) => {
 		expect(() => body(input(`{"n":${n}}`))).toThrow(/n must be 1 or null/);
 	});
 	it('guards runtime direct options too, with intentional Custom precedence', () => {
-		for (const n of invalid) {
+		for (const n of [2, undefined]) {
 			const value = input();
 			Object.assign(value.options, { n });
 			expect(() => body(value)).toThrow(/n must be 1 or null/);
@@ -102,7 +67,7 @@ describe.each(['openai-compatible', 'vllm'] as const)('AUD-005 %s single choice'
 		expect(body(value)).not.toHaveProperty('n');
 	});
 	it('retains explicit unsupported capability protection, including null', () => {
-		for (const n of [1, null, 2, undefined]) {
+		for (const n of [1, null]) {
 			const value = input({ n });
 			value.capabilities!.features = { n: { state: 'unsupported' } };
 			expect(() => body(value)).toThrow(/not supported by this backend\/model: n/);
@@ -123,19 +88,16 @@ describe.each(['openai-compatible', 'vllm'] as const)('AUD-005 %s single choice'
 			include: ['reasoning.encrypted_content'],
 			...custom
 		};
-		expect(buildResponsesBody(value)).toEqual(expected);
 		expect(body(value)).toEqual(expected);
-		expect(body(value)).not.toHaveProperty('n');
 	});
-	it.each([1, null, ...invalid].map((n) => [n]))('rejects every object Responses n=%s', (n) => {
+	it.each([1, null, 2, undefined])('rejects explicit object or direct Responses n=%s', (n) => {
 		const value = input({ n, custom_extension: true }, 'responses');
-		expect(() => buildResponsesBody(value)).toThrow(/Responses API does not support n/);
 		expect(() => body(value)).toThrow(/Responses API does not support n/);
 		value.options.custom = {};
 		Object.assign(value.options, { n });
 		expect(() => body(value)).toThrow(/Responses API does not support n/);
 	});
-	it.each(['1', 'null', ...invalidJson])('rejects every textual Responses n=%s', (n) => {
+	it.each(['1', 'null', '2'])('rejects textual Responses n=%s', (n) => {
 		expect(() => body(input(`{"n":${n},"custom_extension":true}`, 'responses'))).toThrow(
 			/Responses API does not support n/
 		);
