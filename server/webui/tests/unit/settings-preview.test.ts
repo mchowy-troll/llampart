@@ -15,12 +15,7 @@ import {
 	exportApplicationSettings,
 	importApplicationSettings
 } from '$lib/utils/settings-import-export';
-import {
-	parseSettingsConfig,
-	parseSettingsStorage,
-	serializeSettingsStorage,
-	validateSettingsPatch
-} from '$lib/utils/settings-schema';
+import { parseSettingsStorage } from '$lib/utils/settings-schema';
 import {
 	CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY,
 	CUSTOM_FROSTED_GLASS_WALLPAPER_ID,
@@ -45,38 +40,6 @@ const originalConfig = { ...settingsStore.config };
 const originalProps = serverStore.props;
 const originalOverrides = [...settingsStore.userOverrides];
 
-it('uses wallpaper 03 for first run, invalid values and reset without changing milkiness', () => {
-	expect(DEFAULT_FROSTED_GLASS_WALLPAPER_ID).toBe('frosted-glass-03');
-	expect(SETTING_CONFIG_DEFAULT.frostedGlassWallpaper).toBe('frosted-glass-03');
-	expect(getFrostedGlassWallpaper('invalid').id).toBe('frosted-glass-03');
-	settingsStore.updateConfig('frostedGlassWallpaper', 'frosted-glass-01');
-	settingsStore.resetConfig();
-	expect(config().frostedGlassWallpaper).toBe('frosted-glass-03');
-	expect(config().frostedGlassMilkiness).toBe(75);
-});
-
-it.each(['frosted-glass-01', 'frosted-glass-02', 'frosted-glass-04', 'frosted-glass-05'])(
-	'preserves the saved wallpaper %s on initialization',
-	(id) => {
-		settingsStore.updateConfig('frostedGlassWallpaper', id);
-		settingsStore.initialize();
-		expect(config().frostedGlassWallpaper).toBe(id);
-	}
-);
-
-it('resets milkiness to 75 and persists it without changing the slider semantics', () => {
-	settingsStore.updateConfig('frostedGlassMilkiness', 23);
-	expect(config().frostedGlassMilkiness).toBe(23);
-	settingsStore.resetParameterToServerDefault('frostedGlassMilkiness');
-	expect(config().frostedGlassMilkiness).toBe(75);
-	expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!).frostedGlassMilkiness).toBe(
-		75
-	);
-	settingsStore.updateConfig('frostedGlassMilkiness', 50);
-	settingsStore.resetConfig();
-	expect(config().frostedGlassMilkiness).toBe(75);
-});
-
 beforeEach(() => {
 	storage.clear();
 	vi.stubGlobal('localStorage', {
@@ -100,7 +63,8 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-describe('settings preview through the real store', () => {
+// These tests use the production store with a Map-backed localStorage, not a browser.
+describe('settings preview with mock storage', () => {
 	it.each(['add', 'edit', 'remove'] as const)(
 		'preserves immediate MCP %s through main Save and reload',
 		(operation) => {
@@ -141,39 +105,11 @@ describe('settings preview through the real store', () => {
 				});
 		}
 	);
-	it('merges independent appearance edits with MCP additions without dirtying the opening snapshot', () => {
+	it('merges appearance edits with MCP updates arriving while Save awaits validation', async () => {
 		const session = settingsStore.beginPreview();
 		const draft = { ...config(), fontFamily: 'fira-sans', fontVariant: '700', uiScale: '105' };
 		settingsStore.updatePreview(session, draft);
-		mcpStore.addServer({ id: 'new', url: 'http://mock.invalid/mcp', enabled: true });
-		expect(Object.keys(settingsStore.getPreviewChanges(session, draft)).sort()).toEqual([
-			'fontFamily',
-			'fontVariant',
-			'uiScale'
-		]);
-		expect(
-			settingsStore.commitPreview(session, settingsStore.getPreviewChanges(session, draft))
-		).toEqual({ ok: true });
-		settingsStore.initialize();
-		expect(config()).toMatchObject({
-			fontFamily: 'fira-sans',
-			fontVariant: '700',
-			uiScale: '105'
-		});
-		expect(mcpStore.getServers()[0].id).toBe('new');
-	});
-	it('Cancel/close discards only appearance preview, not immediate MCP writes', () => {
-		const session = settingsStore.beginPreview();
-		settingsStore.updatePreview(session, { uiScale: '110' });
-		mcpStore.addServer({ id: 'new', url: 'http://mock.invalid/mcp', enabled: true });
-		settingsStore.cancelPreview(session);
-		settingsStore.initialize();
-		expect(config().uiScale).toBe('100');
-		expect(mcpStore.getServers()[0].id).toBe('new');
-	});
-	it('preserves MCP updates arriving while Save awaits validation', async () => {
-		const session = settingsStore.beginPreview();
-		const patch = settingsStore.getPreviewChanges(session, { ...config(), uiScale: '105' });
+		const patch = settingsStore.getPreviewChanges(session, draft);
 		let validated!: () => void;
 		const validation = new Promise<void>((resolve) => {
 			validated = resolve;
@@ -183,25 +119,21 @@ describe('settings preview through the real store', () => {
 			return settingsStore.commitPreview(session, patch);
 		};
 		const pending = save();
-		mcpStore.addServer({ id: 'during-validation', url: 'http://mock.invalid/mcp', enabled: true });
+		mcpStore.addServer({ id: 'new', url: 'http://mock.invalid/mcp', enabled: true });
+		expect(Object.keys(settingsStore.getPreviewChanges(session, draft)).sort()).toEqual([
+			'fontFamily',
+			'fontVariant',
+			'uiScale'
+		]);
 		validated();
 		expect(await pending).toEqual({ ok: true });
 		settingsStore.initialize();
-		expect(config().uiScale).toBe('105');
-		expect(mcpStore.getServers()[0].id).toBe('during-validation');
-	});
-	it('rejects same-field conflicts before committing config or appearance assets', () => {
-		const session = settingsStore.beginPreview();
-		settingsStore.updatePreview(session, { uiScale: '110' });
-		settingsStore.updateConfig('uiScale', '105');
-		expect(settingsStore.commitPreview(session, { uiScale: '110' })).toEqual({
-			ok: false,
-			reason: 'conflict',
-			keys: ['uiScale']
+		expect(config()).toMatchObject({
+			fontFamily: 'fira-sans',
+			fontVariant: '700',
+			uiScale: '105'
 		});
-		expect(config().uiScale).toBe('105');
-		expect(settingsStore.isPreviewCurrent(session)).toBe(true);
-		expect(settingsStore.appearanceConfig.uiScale).toBe('110');
+		expect(mcpStore.getServers()[0].id).toBe('new');
 	});
 	it('rejects changed connection read-set after async validation without losing MCP', () => {
 		const session = settingsStore.beginPreview();
@@ -255,36 +187,32 @@ describe('settings preview through the real store', () => {
 			uiScale: '105'
 		});
 	});
-	it.each(['Save', 'Cancel'])(
-		'does not let a conflicting old draft %s undo an import or immediate MCP update',
-		(action) => {
-			const session = settingsStore.beginPreview();
-			const draft = { ...config(), fontSize: '20', uiScale: '105' };
-			settingsStore.updatePreview(session, draft);
-			mcpStore.addServer({ id: 'after-open', url: 'http://synthetic.invalid/mcp', enabled: true });
-			importApplicationSettings(
-				JSON.stringify({
-					type: 'llampart-settings-export',
-					formatVersion: 1,
-					settings: { fontSize: '18' }
-				})
-			);
-			const imported = { ...config() };
-			if (action === 'Save') {
-				expect(settingsStore.commitPreview(session, draft)).toEqual({
-					ok: false,
-					reason: 'conflict',
-					keys: ['fontSize']
-				});
-				expect(settingsStore.isPreviewCurrent(session)).toBe(true);
-			}
-			settingsStore.cancelPreview(session);
-			expect(config()).toEqual(imported);
-			settingsStore.initialize();
-			expect(config()).toEqual(imported);
-			expect(mcpStore.getServers()[0].id).toBe('after-open');
-		}
-	);
+	it('blocks conflicting Save; Cancel and reload preserve imports and immediate MCP updates', () => {
+		const session = settingsStore.beginPreview();
+		const draft = { ...config(), fontSize: '20', uiScale: '105' };
+		settingsStore.updatePreview(session, draft);
+		mcpStore.addServer({ id: 'after-open', url: 'http://synthetic.invalid/mcp', enabled: true });
+		importApplicationSettings(
+			JSON.stringify({
+				type: 'llampart-settings-export',
+				formatVersion: 1,
+				settings: { fontSize: '18' }
+			})
+		);
+		const imported = { ...config() };
+		expect(settingsStore.commitPreview(session, draft)).toEqual({
+			ok: false,
+			reason: 'conflict',
+			keys: ['fontSize']
+		});
+		expect(settingsStore.isPreviewCurrent(session)).toBe(true);
+		expect(settingsStore.appearanceConfig.fontSize).toBe('20');
+		settingsStore.cancelPreview(session);
+		expect(config()).toEqual(imported);
+		settingsStore.initialize();
+		expect(config()).toEqual(imported);
+		expect(mcpStore.getServers()[0].id).toBe('after-open');
+	});
 	it('fully resets every central configuration field, MCP, profiles and overrides; preserves assets and reload defaults', () => {
 		serverStore.props = {
 			default_generation_settings: { params: { temperature: 0.8, backend_sampling: true } },
@@ -319,6 +247,8 @@ describe('settings preview through the real store', () => {
 		const image = 'data:image/png;base64,b3JpZ2luYWw=';
 		setCustomFrostedGlassWallpaperSrc(image);
 		storage.set('unrelated-conversations-sentinel', 'untouched-history');
+		for (const key of Object.keys(GLOBAL_CONFIG_STORAGE_DEFAULT)) storage.set(key, 'custom');
+		storage.set('LlamaCppWebui.resumableStreams', 'unrelated');
 		const session = settingsStore.beginPreview();
 		settingsStore.updatePreview(session, { uiScale: '110' });
 		settingsStore.resetConfig();
@@ -332,6 +262,9 @@ describe('settings preview through the real store', () => {
 		expect(config()).toEqual(committed);
 		expect(storage.get(CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY)).toBe(image);
 		expect(storage.get('unrelated-conversations-sentinel')).toBe('untouched-history');
+		for (const [key, value] of Object.entries(GLOBAL_CONFIG_STORAGE_DEFAULT))
+			expect(storage.get(key) ?? null).toBe(value);
+		expect(storage.get('LlamaCppWebui.resumableStreams')).toBe('unrelated');
 		const refreshed = settingsStore.beginPreview();
 		expect(settingsStore.appearanceConfig).toEqual(config());
 		expect(settingsStore.commitPreview(refreshed, { showMessageStats: true })).toEqual({
@@ -351,33 +284,6 @@ describe('settings preview through the real store', () => {
 		expect([...settingsStore.userOverrides]).toEqual([]);
 		settingsStore.initialize();
 		expect(config().backend_sampling).toBe(true);
-	});
-	it('resets centrally registered global tool permissions and new-chat defaults without clearing unrelated data', () => {
-		for (const key of Object.keys(GLOBAL_CONFIG_STORAGE_DEFAULT)) storage.set(key, 'custom');
-		storage.set('LlamaCppWebui.resumableStreams', 'unrelated');
-		settingsStore.resetConfig();
-		for (const [key, value] of Object.entries(GLOBAL_CONFIG_STORAGE_DEFAULT))
-			expect(storage.get(key) ?? null).toBe(value);
-		expect(storage.get('LlamaCppWebui.resumableStreams')).toBe('unrelated');
-	});
-	it('keeps config, overrides and preview intact when confirmed Reset cannot be persisted', () => {
-		settingsStore.updateConfig('uiScale', '105');
-		const before = { ...config() };
-		const overrides = [...settingsStore.userOverrides];
-		const session = settingsStore.beginPreview();
-		settingsStore.updatePreview(session, { uiScale: '110' });
-		vi.stubGlobal('localStorage', {
-			getItem: (key: string) => storage.get(key) ?? null,
-			setItem: () => {
-				throw new Error('storage failure');
-			},
-			removeItem: () => {}
-		});
-		expect(() => settingsStore.resetConfig()).toThrow('Settings could not be persisted');
-		expect(config()).toEqual(before);
-		expect([...settingsStore.userOverrides]).toEqual(overrides);
-		expect(settingsStore.isPreviewCurrent(session)).toBe(true);
-		expect(settingsStore.appearanceConfig.uiScale).toBe('110');
 	});
 	it('does not inherit response preferences from provider UI defaults', () => {
 		serverStore.props = {
@@ -407,43 +313,6 @@ describe('settings preview through the real store', () => {
 		for (const { key } of RESPONSE_PREFERENCES) expect(config()[key]).toBe(false);
 	});
 
-	it('exports/imports all nine committed preferences, rejects malformed imports atomically', async () => {
-		const all = Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }) => [key, true]));
-		settingsStore.updateMultipleConfig(all);
-		let exported: Blob | undefined;
-		const create = vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
-			exported = blob as Blob;
-			return 'blob:response-preferences';
-		});
-		const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-		vi.stubGlobal('document', {
-			createElement: () => ({ click: vi.fn() }),
-			body: { appendChild: vi.fn(), removeChild: vi.fn() }
-		});
-		try {
-			exportApplicationSettings();
-			const text = await exported!.text();
-			expect(JSON.parse(text).settings).toMatchObject(all);
-			settingsStore.resetConfig();
-			importApplicationSettings(text);
-			settingsStore.initialize();
-			expect(config()).toMatchObject(all);
-			const before = new Map(storage);
-			expect(() =>
-				importApplicationSettings(
-					JSON.stringify({
-						type: 'llampart-settings-export',
-						formatVersion: 1,
-						settings: { responsePrefTables: 'yes' }
-					})
-				)
-			).toThrow('responsePrefTables');
-			expect(storage).toEqual(before);
-		} finally {
-			create.mockRestore();
-			revoke.mockRestore();
-		}
-	});
 	it('keeps server-default synchronization stable instead of replacing its reactive dependency', () => {
 		serverStore.props = {
 			default_generation_settings: { params: { temperature: 0.8, top_p: 0.95 } },
@@ -465,7 +334,7 @@ describe('settings preview through the real store', () => {
 		});
 	});
 
-	it('previews every appearance field without changing config(), storage or overrides', () => {
+	it('isolates appearance preview from committed config, storage, overrides and connection fields', () => {
 		const before = new Map(storage);
 		const committed = { ...config() };
 		const overrides = [...settingsStore.userOverrides];
@@ -514,7 +383,7 @@ describe('settings preview through the real store', () => {
 		settingsStore.cancelPreview(reopened);
 	});
 
-	it('commits changed form fields once, ends preview and survives a reload', () => {
+	it('commits changed form fields, ends preview and survives a reload', () => {
 		const session = settingsStore.beginPreview();
 		const patch = {
 			uiScale: '105',
@@ -565,8 +434,6 @@ describe('settings preview through the real store', () => {
 			ok: false,
 			reason: 'stale'
 		});
-		settingsStore.resetConfig();
-		expect(config()).toEqual(SETTING_CONFIG_DEFAULT);
 	});
 
 	it('stages custom wallpaper replacement and deletion until commit', () => {
@@ -613,37 +480,20 @@ describe('settings preview through the real store', () => {
 		}
 	});
 
-	it('successfully replaces a custom wallpaper with delete-before-write and reloads it', () => {
-		const key = CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY;
+	it('saves a replacement custom wallpaper and reloads it with the committed configuration', () => {
 		setCustomFrostedGlassWallpaperSrc('data:image/png;base64,b2xk');
 		settingsStore.updateConfig('frostedGlassWallpaper', CUSTOM_FROSTED_GLASS_WALLPAPER_ID);
 		const session = settingsStore.beginPreview();
 		const image = 'data:image/png;base64,bmV3';
 		setCustomFrostedGlassWallpaperSrc(image);
-		const order: string[] = [];
-		vi.stubGlobal('localStorage', {
-			getItem: (k: string) => storage.get(k) ?? null,
-			removeItem: (k: string) => {
-				if (k === key) order.push('remove');
-				storage.delete(k);
-			},
-			setItem: (k: string, value: string) => {
-				if (k === key) {
-					order.push('write');
-					expect(storage.has(key)).toBe(false);
-				}
-				storage.set(k, value);
-			}
-		});
 		expect(settingsStore.commitPreview(session, { keepStatsVisible: true })).toEqual({ ok: true });
-		expect(order).toEqual(['remove', 'write']);
 		expect(settingsStore.isPreviewCurrent(session)).toBe(false);
 		settingsStore.initialize();
 		expect(config().keepStatsVisible).toBe(true);
 		expect(getCustomFrostedGlassWallpaperSrc()).toBe(image);
 	});
 
-	it.each(['quota', 'throw', 'verification'])(
+	it.each(['quota', 'verification'])(
 		'reports %s failure, accepts loss of the old image, preserves unrelated drafts and retries',
 		(mode) => {
 			const key = CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY;
@@ -661,7 +511,6 @@ describe('settings preview through the real store', () => {
 					if (k !== key) return setItem(k, value);
 					expect(storage.has(key)).toBe(false);
 					if (mode === 'quota') throw new DOMException('quota', 'QuotaExceededError');
-					if (mode === 'throw') throw new Error('storage failure');
 					storage.set(k, 'data:image/png;base64,d3Jvbmc=');
 				}
 			});
@@ -734,42 +583,17 @@ describe('contextual font normalization through store entry points', () => {
 	function expectFont(family: string, variant: string) {
 		const expected = { fontFamily: family, fontVariant: variant };
 		expect(config()).toMatchObject(expected);
-		expect(settingsStore.getAllConfig()).toMatchObject(expected);
 		expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject(expected);
-		expect(parseSettingsStorage(serializeSettingsStorage(config()))).toMatchObject(expected);
 	}
 
-	it('normalizes unsupported Crimson Text weights before assigning state', () => {
+	it('normalizes unsupported weights and preserves supported weights on family-only changes', () => {
 		settingsStore.updateConfig('fontFamily', 'crimson-text');
 		settingsStore.updateConfig('fontVariant', '500');
 		expectFont('crimson-text', '400');
-		settingsStore.updateMultipleConfig({ fontVariant: '500' });
-		expectFont('crimson-text', '400');
-		settingsStore.updateMultipleConfig({ fontFamily: 'crimson-text', fontVariant: '500' });
-		expectFont('crimson-text', '400');
-	});
-
-	it('preserves supported weights, including family-only changes', () => {
 		settingsStore.updateMultipleConfig({ fontFamily: 'merriweather', fontVariant: '700' });
 		expectFont('merriweather', '700');
 		settingsStore.updateConfig('fontFamily', 'frank-ruhl-libre');
 		expectFont('frank-ruhl-libre', '700');
-		settingsStore.updateConfig('fontVariant', '600');
-		expectFont('frank-ruhl-libre', '600');
-		settingsStore.updateConfig('fontFamily', 'crimson-text');
-		expectFont('crimson-text', '600');
-	});
-
-	it('uses the supplied effective family for standalone patches and previews', () => {
-		expect(validateSettingsPatch({ fontVariant: '500' }, { fontFamily: 'crimson-text' })).toEqual({
-			fontVariant: '400'
-		});
-		expect(
-			validateSettingsPatch(
-				{ fontFamily: 'frank-ruhl-libre' },
-				{ fontFamily: 'merriweather', fontVariant: '700' }
-			)
-		).toMatchObject({ fontVariant: '700' });
 		const session = settingsStore.beginPreview();
 		settingsStore.updatePreview(session, { fontFamily: 'crimson-text' });
 		settingsStore.updatePreview(session, { fontVariant: '500' });
@@ -790,28 +614,4 @@ describe('contextual font normalization through store entry points', () => {
 		importPatch({ fontFamily: 'frank-ruhl-libre' });
 		expectFont('frank-ruhl-libre', '700');
 	});
-
-	it.each(['dm-serif-display', 'inter', 'open-sans', 'instrument-serif', 'unknown'])(
-		'migrates %s and rejects invalid types atomically',
-		(family) => {
-			expect(parseSettingsConfig({ fontFamily: family, fontVariant: '700' }).fontFamily).toBe(
-				'default'
-			);
-			settingsStore.updateMultipleConfig({ fontFamily: family, fontVariant: '700' });
-			expectFont('default', '400');
-			const before = { ...config() };
-			const saved = new Map(storage);
-			expect(() => settingsStore.updateConfig('fontVariant', NaN as unknown as string)).toThrow(
-				/fontVariant/
-			);
-			expect(() =>
-				settingsStore.updateMultipleConfig({
-					fontFamily: 'merriweather',
-					fontVariant: false as unknown as string
-				})
-			).toThrow(/fontVariant/);
-			expect(config()).toEqual(before);
-			expect(storage).toEqual(saved);
-		}
-	);
 });

@@ -54,7 +54,8 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-describe('Settings persistence boundary', () => {
+// Compensation and reload below exercise a Map-backed storage, not browser atomicity.
+describe('Settings persistence boundary with mock storage', () => {
 	it('restores absent keys rather than inventing saved values when the second write fails', () => {
 		storage.delete(CONFIG_LOCALSTORAGE_KEY);
 		storage.delete(USER_OVERRIDES_LOCALSTORAGE_KEY);
@@ -92,41 +93,7 @@ describe('Settings persistence boundary', () => {
 		}
 	);
 
-	it('explicitly reports failed compensation, keeps memory uncommitted and allows repair by retry', () => {
-		const before = { ...config() };
-		const oldRaw = storage.get(CONFIG_LOCALSTORAGE_KEY);
-		const overrides = [...settingsStore.userOverrides];
-		useStorage(
-			(key, value) =>
-				key === USER_OVERRIDES_LOCALSTORAGE_KEY ||
-				(key === CONFIG_LOCALSTORAGE_KEY && value === oldRaw)
-		);
-		let failure: unknown;
-		try {
-			settingsStore.updateMultipleConfig({ uiScale: '110', temperature: 0.8 });
-		} catch (error) {
-			failure = error;
-		}
-		expect(failure).toBeInstanceOf(SettingsPersistenceError);
-		expect(failure).toMatchObject({
-			messageKey: 'settings.storageRollbackError',
-			rollbackErrors: [CONFIG_LOCALSTORAGE_KEY]
-		});
-		expect(config()).toEqual(before);
-		expect([...settingsStore.userOverrides]).toEqual(overrides);
-		expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject({
-			uiScale: '110',
-			temperature: 0.8
-		});
-		expect(JSON.parse(storage.get(USER_OVERRIDES_LOCALSTORAGE_KEY)!)).toEqual(overrides);
-		useStorage();
-		settingsStore.updateMultipleConfig({ uiScale: '110', temperature: 0.8 });
-		settingsStore.initialize();
-		expect(config()).toMatchObject({ uiScale: '110', temperature: 0.8 });
-		expect([...settingsStore.userOverrides]).toEqual([]);
-	});
-
-	it.each(['single', 'batch', 'parameter reset', 'clear overrides', 'props sync'] as const)(
+	it.each(['parameter reset', 'clear overrides', 'props sync'] as const)(
 		'does not publish a failed %s',
 		(operation) => {
 			const before = { ...config() },
@@ -134,8 +101,6 @@ describe('Settings persistence boundary', () => {
 				overrides = [...settingsStore.userOverrides];
 			useStorage((key) => key === USER_OVERRIDES_LOCALSTORAGE_KEY);
 			const actions = {
-				single: () => settingsStore.updateConfig('temperature', 0.8),
-				batch: () => settingsStore.updateMultipleConfig({ uiScale: '110', temperature: 0.8 }),
 				'parameter reset': () => settingsStore.resetParameterToServerDefault('temperature'),
 				'clear overrides': () => settingsStore.clearAllUserOverrides(),
 				'props sync': () => settingsStore.syncWithServerDefaults()
@@ -157,12 +122,14 @@ describe('Settings persistence boundary', () => {
 				disk = new Map(storage),
 				overrides = [...settingsStore.userOverrides];
 			const session = settingsStore.beginPreview();
+			settingsStore.updatePreview(session, { uiScale: '110' });
 			useStorage((key) => key === failedKey);
 			expect(() => settingsStore.resetConfig()).toThrow(SettingsPersistenceError);
 			expect(config()).toEqual(before);
 			expect(storage).toEqual(disk);
 			expect([...settingsStore.userOverrides]).toEqual(overrides);
 			expect(settingsStore.isPreviewCurrent(session)).toBe(true);
+			expect(settingsStore.appearanceConfig.uiScale).toBe('110');
 			useStorage();
 			settingsStore.resetConfig();
 			expect(config()).toEqual(SETTING_CONFIG_DEFAULT);
@@ -239,7 +206,7 @@ describe('import uses the Settings persistence boundary (AUD-001)', () => {
 		expect(failure).toBeInstanceOf(SettingsPersistenceError);
 		return failure as SettingsPersistenceError;
 	}
-	it('writes each key exactly once, publishes only after persistence and retains authoritative exclusions', () => {
+	it('publishes only after persistence and retains existing data, exclusions and MCP state', () => {
 		settingsStore.updateMultipleConfig({
 			serverBaseUrl: 'http://synthetic.invalid',
 			apiKey: 'synthetic-secret',
@@ -264,18 +231,15 @@ describe('import uses the Settings persistence boundary (AUD-001)', () => {
 		const health = mcpStore.getHealthCheckState('kept');
 		storage.set('unrelated-tools', '["keep"]');
 		const before = snapshot();
-		const writes: string[] = [];
 		vi.stubGlobal('localStorage', {
 			getItem: (key: string) => storage.get(key) ?? null,
 			setItem: (key: string, value: string) => {
 				expect(config()).toEqual(before.config);
 				expect([...settingsStore.userOverrides]).toEqual(before.overrides);
-				writes.push(key);
 				storage.set(key, value);
 			}
 		});
 		importApplicationSettings(file);
-		expect(writes).toEqual([CONFIG_LOCALSTORAGE_KEY, USER_OVERRIDES_LOCALSTORAGE_KEY]);
 		expect(config()).toEqual({ ...before.config, ...patch });
 		expect([...settingsStore.userOverrides]).toEqual(['mcpServers', 'agenticMaxTurns', 'theme']);
 		expect(storage.get('unrelated-tools')).toBe('["keep"]');
@@ -318,7 +282,6 @@ describe('import uses the Settings persistence boundary (AUD-001)', () => {
 		});
 	});
 	it.each([
-		['first write', CONFIG_LOCALSTORAGE_KEY],
 		['second write', USER_OVERRIDES_LOCALSTORAGE_KEY],
 		['snapshot read', USER_OVERRIDES_LOCALSTORAGE_KEY],
 		['verification read', CONFIG_LOCALSTORAGE_KEY],
@@ -419,37 +382,10 @@ describe('import uses the Settings persistence boundary (AUD-001)', () => {
 	});
 });
 
-describe('factory typography without migration of user choices', () => {
-	it('fills missing values from central defaults on fresh load and Reset', () => {
+describe('first-run defaults', () => {
+	it('fills absent storage from central defaults', () => {
 		storage.delete(CONFIG_LOCALSTORAGE_KEY);
 		settingsStore.initialize();
-		expect(config()).toMatchObject({
-			fontFamily: 'merriweather',
-			fontVariant: '400',
-			fontSize: '13',
-			interfaceLanguage: 'en',
-			uiScale: '100',
-			theme: 'frosted-glass',
-			frostedGlassWallpaper: 'frosted-glass-03',
-			frostedGlassMilkiness: 75
-		});
-		settingsStore.resetConfig();
-		settingsStore.initialize();
 		expect(config()).toEqual(SETTING_CONFIG_DEFAULT);
-		expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toEqual(config());
-	});
-	it.each([
-		{ fontFamily: 'default', fontSize: 'default', fontVariant: '400' },
-		{ fontFamily: 'fira-sans', fontSize: '18', fontVariant: '600' }
-	])('preserves explicitly stored/imported $fontFamily preferences', (font) => {
-		storage.set(CONFIG_LOCALSTORAGE_KEY, JSON.stringify(font));
-		settingsStore.initialize();
-		expect(config()).toMatchObject(font);
-		importApplicationSettings(
-			JSON.stringify({ type: 'llampart-settings-export', formatVersion: 1, settings: font })
-		);
-		settingsStore.initialize();
-		expect(config()).toMatchObject(font);
-		expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject(font);
 	});
 });

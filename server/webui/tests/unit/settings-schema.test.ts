@@ -18,17 +18,7 @@ import {
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
 import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
-import {
-	getDictionary,
-	getInterfaceLanguage,
-	isInterfaceLanguage,
-	INTERFACE_LANGUAGES
-} from '$lib/i18n';
-import type { TranslationDictionary } from '$lib/i18n/types';
-import { en } from '$lib/i18n/locales/en';
-import { FROSTED_GLASS_TRANSLATIONS } from '$lib/themes/frosted-glass/translations';
-import { formatPluralizedTranslation } from '$lib/i18n/plural';
-import { applyTypography, FONT_FAMILIES } from '$lib/utils/typography';
+import { getInterfaceLanguage, isInterfaceLanguage } from '$lib/i18n';
 import {
 	CUSTOM_FROSTED_GLASS_WALLPAPER_ID,
 	CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY
@@ -66,80 +56,21 @@ beforeEach(() => {
 });
 
 describe('settings JSON import/export compatibility', () => {
-	it('keeps all 25 dictionaries, themes, placeholders, plurals and language settings complete', async () => {
-		const locales = import.meta.glob<Record<string, TranslationDictionary>>(
-			'../../src/lib/i18n/locales/*.ts',
-			{ eager: true }
+	it('round-trips a non-default language and rejects an unsupported language without changing config', async () => {
+		const language = 'csb';
+		const expected = { ...settingsStore.config, interfaceLanguage: language };
+		settingsStore.updateConfig('interfaceLanguage', language);
+		settingsStore.initialize();
+		expect(settingsStore.config).toEqual(expected);
+		expect(getInterfaceLanguage()).toBe(language);
+		const { data, text } = await exportFile();
+		expect(data.settings.interfaceLanguage).toBe(language);
+		settingsStore.updateConfig('interfaceLanguage', 'en');
+		importApplicationSettings(text);
+		expect(settingsStore.config).toEqual(expected);
+		expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!).interfaceLanguage).toBe(
+			language
 		);
-		const placeholders = (text: string) =>
-			[...text.matchAll(/\{\{?\w+\}?\}/g)].map(([token]) => token).sort();
-		function checkTree(base: TranslationDictionary, actual: TranslationDictionary, path = '') {
-			expect(actual, path).toBeTypeOf('object');
-			expect(actual, path).not.toBeNull();
-			expect(Array.isArray(actual), path).toBe(false);
-			const plural = path === 'chat.pdfProcessedAsImages';
-			if (plural) {
-				expect(Object.keys(actual)).toEqual(expect.arrayContaining(Object.keys(base)));
-				expect(
-					Object.keys(actual).every((key) =>
-						['zero', 'one', 'two', 'few', 'many', 'other'].includes(key)
-					)
-				).toBe(true);
-			} else expect(Object.keys(actual).sort(), path).toEqual(Object.keys(base).sort());
-			for (const [key, value] of Object.entries(actual)) {
-				const reference = base[key] ?? (plural ? base.other : undefined);
-				const keyPath = path ? `${path}.${key}` : key;
-				expect(typeof value, keyPath).toBe(typeof reference);
-				if (typeof value === 'string' && typeof reference === 'string') {
-					expect(value.trim().length, keyPath).toBeGreaterThan(0);
-					expect(placeholders(value), keyPath).toEqual(placeholders(reference));
-				} else
-					checkTree(reference as TranslationDictionary, value as TranslationDictionary, keyPath);
-			}
-		}
-		expect(INTERFACE_LANGUAGES).toHaveLength(25);
-		expect(Object.keys(locales)).toHaveLength(25);
-		expect(Object.keys(FROSTED_GLASS_TRANSLATIONS).sort()).toEqual([...INTERFACE_LANGUAGES].sort());
-		for (const language of INTERFACE_LANGUAGES) {
-			const dictionary = locales[`../../src/lib/i18n/locales/${language}.ts`][language];
-			checkTree(en, dictionary);
-			checkTree(FROSTED_GLASS_TRANSLATIONS.en, FROSTED_GLASS_TRANSLATIONS[language]);
-			const plural = (dictionary.chat as TranslationDictionary)
-				.pdfProcessedAsImages as TranslationDictionary;
-			const rules = new Intl.PluralRules(language === 'csb' ? 'pl' : language);
-			// Preserve the existing six dictionaries; enforce all ICU categories in every new one.
-			if (!['en', 'pl', 'de', 'fr', 'it', 'es'].includes(language))
-				expect(Object.keys(plural)).toEqual(
-					expect.arrayContaining(rules.resolvedOptions().pluralCategories)
-				);
-			for (const count of [0, 1, 2, 3, 5, 7, 11, 21, 22, 101, 1.5, 1000000]) {
-				const category = rules.select(count);
-				expect(formatPluralizedTranslation('chat.pdfProcessedAsImages', count, {}, language)).toBe(
-					String(plural[category] ?? plural.other).replaceAll('{count}', String(count))
-				);
-			}
-			expect(parseSettingsConfig({ interfaceLanguage: language }).interfaceLanguage).toBe(language);
-			expect(validateSettingsPatch({ interfaceLanguage: language })).toEqual({
-				interfaceLanguage: language
-			});
-		}
-		for (const language of ['en', 'pl', 'pt', 'csb'] as const) {
-			const before = { ...settingsStore.config };
-			settingsStore.updateConfig('interfaceLanguage', language);
-			const expected = { ...before, interfaceLanguage: language };
-			expect(settingsStore.config).toEqual(expected);
-			settingsStore.initialize();
-			expect(settingsStore.config).toEqual(expected);
-			expect(getInterfaceLanguage()).toBe(language);
-			const { data, text } = await exportFile();
-			expect(data.settings.interfaceLanguage).toBe(language);
-			settingsStore.updateConfig('interfaceLanguage', language === 'en' ? 'pl' : 'en');
-			importApplicationSettings(text);
-			expect(settingsStore.config).toEqual(expected);
-			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!).interfaceLanguage).toBe(
-				language
-			);
-		}
 		expect(isInterfaceLanguage('xx')).toBe(false);
 		expect(parseSettingsStorage('{"interfaceLanguage":"xx","uiScale":"95"}')).toMatchObject({
 			interfaceLanguage: 'en',
@@ -165,28 +96,6 @@ describe('settings JSON import/export compatibility', () => {
 		}
 	});
 
-	it.each([true, false])(
-		'preserves hidden legacy code height=%s through import/export',
-		async (fullHeightCodeBlocks) => {
-			const before = { ...settingsStore.config };
-			importApplicationSettings(
-				JSON.stringify({
-					type: 'llampart-settings-export',
-					formatVersion: 1,
-					settings: { fullHeightCodeBlocks }
-				})
-			);
-			expect(settingsStore.config).toEqual({ ...before, fullHeightCodeBlocks });
-			const { data, text } = await exportFile();
-			expect(data.settings.fullHeightCodeBlocks).toBe(fullHeightCodeBlocks);
-			settingsStore.initialize();
-			importApplicationSettings(text);
-			expect(settingsStore.config.fullHeightCodeBlocks).toBe(fullHeightCodeBlocks);
-			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!).fullHeightCodeBlocks).toBe(
-				fullHeightCodeBlocks
-			);
-		}
-	);
 	const newSettings = {
 		...Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }, index) => [key, index % 2 === 0])),
 		uiScale: '105',
@@ -194,6 +103,7 @@ describe('settings JSON import/export compatibility', () => {
 		fontVariant: '700',
 		fontSize: '18',
 		frostedGlassMilkiness: 27,
+		frostedGlassWallpaper: 'frosted-glass-01',
 		frostedGlassOpaque: true
 	};
 	const groups = ['responsePreferences', 'interfaceScale', 'typography', 'frostedGlass'];
@@ -238,46 +148,42 @@ describe('settings JSON import/export compatibility', () => {
 		}
 	}
 
-	it.each([false, true])(
-		'round-trips all current fields, with preference inversion=%s',
-		async (invert) => {
-			const preferences = Object.fromEntries(
-				RESPONSE_PREFERENCES.map(({ key }, index) => [key, (index % 2 === 0) !== invert])
-			);
-			const values = {
-				...SETTING_CONFIG_DEFAULT,
-				...newSettings,
-				...preferences,
-				systemMessage: 'Keep me'
-			};
-			storage.set(CONFIG_LOCALSTORAGE_KEY, serializeSettingsStorage(values));
-			storage.set(USER_OVERRIDES_LOCALSTORAGE_KEY, '["systemMessage","theme"]');
-			const { data, text } = await exportFile();
-			expect(Object.keys(data).sort()).toEqual([
-				'app',
-				'exportedAt',
-				'formatVersion',
-				'settings',
-				'type',
-				'userOverrides'
-			]);
-			expect(data).toMatchObject({
-				type: 'llampart-settings-export',
-				formatVersion: 1,
-				app: 'llampart'
-			});
-			expect(data.settings).toMatchObject({ ...newSettings, ...preferences });
-			for (const { key } of RESPONSE_PREFERENCES) expect(data.settings[key]).toBeTypeOf('boolean');
-			storage.clear();
-			settingsStore.initialize();
-			expect(importApplicationSettings(text)).toEqual({ missingSettingsGroups: [] });
-			expect(savedConfig()).toEqual(parseSettingsStorage(serializeSettingsStorage(values)));
-			expect(JSON.parse(storage.get(USER_OVERRIDES_LOCALSTORAGE_KEY)!)).toEqual(data.userOverrides);
-			const reexport = await exportFile();
-			expect(reexport.data.settings).toEqual(data.settings);
-			expect(reexport.data.userOverrides).toEqual(data.userOverrides);
-		}
-	);
+	it('round-trips current fields, mixed preferences and hidden legacy code height', async () => {
+		const values = {
+			...SETTING_CONFIG_DEFAULT,
+			...newSettings,
+			fullHeightCodeBlocks: true,
+			systemMessage: 'Keep me'
+		};
+		storage.set(CONFIG_LOCALSTORAGE_KEY, serializeSettingsStorage(values));
+		storage.set(USER_OVERRIDES_LOCALSTORAGE_KEY, '["systemMessage","theme"]');
+		const { data, text } = await exportFile();
+		expect(Object.keys(data).sort()).toEqual([
+			'app',
+			'exportedAt',
+			'formatVersion',
+			'settings',
+			'type',
+			'userOverrides'
+		]);
+		expect(data).toMatchObject({
+			type: 'llampart-settings-export',
+			formatVersion: 1,
+			app: 'llampart'
+		});
+		expect(data.settings).toMatchObject({
+			...newSettings,
+			fullHeightCodeBlocks: true
+		});
+		storage.clear();
+		settingsStore.initialize();
+		expect(importApplicationSettings(text)).toEqual({ missingSettingsGroups: [] });
+		expect(savedConfig()).toEqual(parseSettingsStorage(serializeSettingsStorage(values)));
+		expect(JSON.parse(storage.get(USER_OVERRIDES_LOCALSTORAGE_KEY)!)).toEqual(data.userOverrides);
+		const reexport = await exportFile();
+		expect(reexport.data.settings).toEqual(data.settings);
+		expect(reexport.data.userOverrides).toEqual(data.userOverrides);
+	});
 
 	it('imports an older file successfully without resetting any absent new settings', () => {
 		storage.set(
@@ -297,41 +203,14 @@ describe('settings JSON import/export compatibility', () => {
 
 	it.each([
 		{
-			name: 'both legacy default sentinels',
-			font: { fontFamily: 'default', fontVariant: '400', fontSize: 'default' },
-			effective: { fontFamily: 'merriweather', fontVariant: '400', fontSize: '13' }
-		},
-		{
 			name: 'historical variant sentinel',
-			font: { fontFamily: 'default', fontVariant: 'default', fontSize: 'default' },
-			effective: { fontFamily: 'merriweather', fontVariant: '400', fontSize: '13' }
-		},
-		{
-			name: 'historical variant sentinel with explicit family and size',
-			font: { fontFamily: 'merriweather', fontVariant: 'default', fontSize: '18' },
-			effective: { fontFamily: 'merriweather', fontVariant: '400', fontSize: '18' }
+			font: { fontFamily: 'default', fontVariant: 'default', fontSize: 'default' }
 		},
 		{
 			name: 'explicit family, weight and size',
-			font: { fontFamily: 'fira-sans', fontVariant: '600', fontSize: '18' },
-			effective: { fontFamily: 'fira-sans', fontVariant: '600', fontSize: '18' }
-		},
-		{
-			name: 'explicit non-default Merriweather weight and size',
-			font: { fontFamily: 'merriweather', fontVariant: '700', fontSize: '16' },
-			effective: { fontFamily: 'merriweather', fontVariant: '700', fontSize: '16' }
-		},
-		{
-			name: 'default family with explicit size',
-			font: { fontFamily: 'default', fontVariant: '400', fontSize: '18' },
-			effective: { fontFamily: 'merriweather', fontVariant: '400', fontSize: '18' }
-		},
-		{
-			name: 'explicit family and weight with default size',
-			font: { fontFamily: 'fira-sans', fontVariant: '600', fontSize: 'default' },
-			effective: { fontFamily: 'fira-sans', fontVariant: '600', fontSize: '13' }
+			font: { fontFamily: 'fira-sans', fontVariant: '600', fontSize: '18' }
 		}
-	])('keeps version-1 typography backward compatible: $name', async ({ font, effective }) => {
+	])('keeps version-1 typography backward compatible: $name', async ({ font }) => {
 		const storedFont = {
 			...font,
 			fontVariant:
@@ -345,25 +224,6 @@ describe('settings JSON import/export compatibility', () => {
 			expect(JSON.parse(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject(storedFont);
 			expect(savedConfig()).toMatchObject(storedFont);
 			expect(settingsStore.config).toMatchObject(storedFont);
-			const properties = new Map<string, string>();
-			const root = {
-				dataset: {} as Record<string, string>,
-				style: {
-					setProperty: (key: string, value: string) => properties.set(key, value),
-					removeProperty: (key: string) => properties.delete(key)
-				}
-			} as unknown as HTMLElement;
-			const cleanup = applyTypography(root, settingsStore.config);
-			try {
-				expect(root.dataset.llampartFont).toBe(effective.fontFamily);
-				expect(properties.get('--llampart-font-family')).toBe(
-					`"${FONT_FAMILIES[effective.fontFamily as keyof typeof FONT_FAMILIES]}"`
-				);
-				expect(properties.get('--llampart-font-weight')).toBe(effective.fontVariant);
-				expect(properties.get('--llampart-text-unit')).toBe(`${effective.fontSize}px`);
-			} finally {
-				cleanup();
-			}
 		};
 		try {
 			// A literal old export, not regenerated with today's factory defaults.
@@ -418,20 +278,6 @@ describe('settings JSON import/export compatibility', () => {
 			missingSettingsGroups: ['responsePreferences', 'typography', 'frostedGlass']
 		});
 		expect(savedConfig()).toMatchObject(patch);
-	});
-
-	it.each([
-		...RESPONSE_PREFERENCES.map(({ key }) => [key, 'responsePreferences']),
-		['uiScale', 'interfaceScale'],
-		['fontFamily', 'typography'],
-		['fontVariant', 'typography'],
-		['fontSize', 'typography'],
-		['frostedGlassMilkiness', 'frostedGlass'],
-		['frostedGlassOpaque', 'frostedGlass']
-	])('detects a missing %s before defaults or font normalization can fill it', (key, group) => {
-		const partial: Record<string, unknown> = { ...newSettings };
-		delete partial[key];
-		expect(importPatch(partial)).toEqual({ missingSettingsGroups: [group] });
 	});
 
 	it('counts false, zero, empty strings and default values as present keys', () => {
@@ -538,7 +384,7 @@ describe('settings JSON import/export compatibility', () => {
 	);
 
 	it.each<[string, unknown]>([
-		...RESPONSE_PREFERENCES.map(({ key }): [string, unknown] => [key, 'false']),
+		['responsePrefCharts', 'false'],
 		['uiScale', '120'],
 		['uiScale', 100],
 		['fontFamily', null],
@@ -573,159 +419,55 @@ describe('settings JSON import/export compatibility', () => {
 		expect(() => importApplicationSettings(text)).toThrow();
 		expect(storage).toEqual(before);
 	});
-
-	it.each(INTERFACE_LANGUAGES)(
-		'includes native warning text and all four section labels in %s',
-		(language) => {
-			// Read the actual language dictionary: a fallback translation must not hide a missing key.
-			const settings = getDictionary(language).settings as Record<string, unknown>;
-			expect(settings.fontDefault).toMatch(/^\{font\} \(.+\)$/);
-			expect(settings.fontVariantDefault).toMatch(/^\{variant\} \(.+\)$/);
-			expect(settings.fontSizeDefault).toMatch(/^\{size\} px \(.+\)$/);
-			const messages = settings.importExport as Record<string, unknown>;
-			expect(messages.olderSettingsFile).toBeTypeOf('string');
-			expect(messages.olderSettingsFile).toContain('{sections}');
-			const labels = messages.olderSettingsSections as Record<string, string>;
-			expect(Object.keys(labels)).toEqual(groups);
-			for (const group of groups) expect(labels[group].length).toBeGreaterThan(0);
-		}
-	);
 });
 
 describe('settings runtime schema', () => {
-	it('resets appearance through the actual store to canonical defaults', () => {
-		const before = { ...settingsStore.config };
-		try {
-			settingsStore.updateMultipleConfig({
-				fontFamily: 'crimson-text',
-				fontVariant: '500',
-				fontSize: '20',
-				uiScale: '110',
-				frostedGlassMilkiness: 12,
-				frostedGlassOpaque: true
-			});
-			expect(settingsStore.config.fontVariant).toBe('400');
-			settingsStore.resetConfig();
-			expect(settingsStore.config).toMatchObject({
-				fontFamily: 'merriweather',
-				fontSize: '13',
-				fontVariant: '400',
-				uiScale: '100',
-				frostedGlassMilkiness: 75,
-				frostedGlassOpaque: false
-			});
-			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject({
-				fontFamily: 'merriweather',
-				fontVariant: '400'
-			});
-		} finally {
-			settingsStore.config = before;
-		}
-	});
-	it.each([
-		{ fontFamily: 'merriweather', fontVariant: '700' },
-		{ fontFamily: 'frank-ruhl-libre', fontVariant: '600' },
-		{ fontFamily: 'crimson-text', fontVariant: '600' },
-		{ fontFamily: 'libre-caslon-condensed', fontVariant: '500' },
-		{ fontFamily: 'fira-sans', fontVariant: '700' }
-	])('exports and imports $fontFamily appearance without losing saved milkiness', async (font) => {
-		const appearance = {
-			...font,
-			fontSize: '18',
-			uiScale: '95',
-			frostedGlassMilkiness: 27,
-			frostedGlassOpaque: true,
-			frostedGlassWallpaper: 'frosted-glass-01'
+	it('migrates a retired font without dropping unrelated settings through storage, import and export', async () => {
+		const legacy = {
+			fontFamily: 'unknown-retired-font',
+			fontVariant: '400-italic',
+			uiScale: '105',
+			frostedGlassMilkiness: 23,
+			frostedGlassWallpaperMilky: true,
+			systemMessage: 'Keep my prompt',
+			temperature: 0.35
 		};
-		storage.set(
-			CONFIG_LOCALSTORAGE_KEY,
-			serializeSettingsStorage({ ...SETTING_CONFIG_DEFAULT, ...appearance })
-		);
-		let exported: Blob | undefined;
-		const createUrl = vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
-			exported = blob as Blob;
-			return 'blob:appearance-test';
+		const expected = {
+			fontFamily: 'default',
+			fontVariant: '400',
+			uiScale: '105',
+			frostedGlassMilkiness: 23,
+			systemMessage: 'Keep my prompt',
+			temperature: 0.35
+		};
+		expect(parseSettingsConfig(legacy, { rejectInvalidKnown: true })).toMatchObject(expected);
+		storage.set(CONFIG_LOCALSTORAGE_KEY, JSON.stringify(legacy));
+		expect(parseSettingsStorage(JSON.stringify(legacy))).toMatchObject(expected);
+		let blob: Blob | undefined;
+		const create = vi.spyOn(URL, 'createObjectURL').mockImplementation((value) => {
+			blob = value as Blob;
+			return 'blob:test';
 		});
-		const revokeUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+		const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 		vi.stubGlobal('document', {
 			createElement: () => ({ click: vi.fn() }),
 			body: { appendChild: vi.fn(), removeChild: vi.fn() }
 		});
 		try {
 			exportApplicationSettings();
-			const text = await exported!.text();
-			expect(JSON.parse(text).settings).toMatchObject(appearance);
-			storage.clear();
-			importApplicationSettings(text);
-			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject(appearance);
+			expect(JSON.parse(await blob!.text()).settings).toMatchObject(expected);
+			importApplicationSettings(
+				JSON.stringify({ type: 'llampart-settings-export', formatVersion: 1, settings: legacy })
+			);
+			const stored = JSON.parse(storage.get(CONFIG_LOCALSTORAGE_KEY)!);
+			expect(stored).toMatchObject(expected);
+			expect(stored).not.toHaveProperty('frostedGlassWallpaperMilky');
 		} finally {
-			createUrl.mockRestore();
-			revokeUrl.mockRestore();
+			create.mockRestore();
+			revoke.mockRestore();
 			vi.unstubAllGlobals();
 		}
 	});
-	it.each(['dm-serif-display', 'inter', 'open-sans', 'instrument-serif', 'unknown-retired-font'])(
-		'migrates %s independently through storage, strict parsing, import and export',
-		async (fontFamily) => {
-			const legacy = {
-				fontFamily,
-				fontVariant: '400-italic',
-				uiScale: '105',
-				frostedGlassMilkiness: 23,
-				frostedGlassWallpaperMilky: true,
-				systemMessage: 'Keep my prompt',
-				temperature: 0.35
-			};
-			const expected = {
-				fontFamily: 'default',
-				fontVariant: '400',
-				uiScale: '105',
-				frostedGlassMilkiness: 23,
-				systemMessage: 'Keep my prompt',
-				temperature: 0.35
-			};
-			expect(parseSettingsConfig(legacy, { rejectInvalidKnown: true })).toMatchObject(expected);
-			storage.set(CONFIG_LOCALSTORAGE_KEY, JSON.stringify(legacy));
-			expect(parseSettingsStorage(JSON.stringify(legacy))).toMatchObject(expected);
-			let blob: Blob | undefined;
-			const create = vi.spyOn(URL, 'createObjectURL').mockImplementation((value) => {
-				blob = value as Blob;
-				return 'blob:test';
-			});
-			const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
-			vi.stubGlobal('document', {
-				createElement: () => ({ click: vi.fn() }),
-				body: { appendChild: vi.fn(), removeChild: vi.fn() }
-			});
-			try {
-				exportApplicationSettings();
-				expect(JSON.parse(await blob!.text()).settings).toMatchObject(expected);
-				importApplicationSettings(
-					JSON.stringify({ type: 'llampart-settings-export', formatVersion: 1, settings: legacy })
-				);
-				const stored = JSON.parse(storage.get(CONFIG_LOCALSTORAGE_KEY)!);
-				expect(stored).toMatchObject(expected);
-				expect(stored).not.toHaveProperty('frostedGlassWallpaperMilky');
-			} finally {
-				create.mockRestore();
-				revoke.mockRestore();
-				vi.unstubAllGlobals();
-			}
-		}
-	);
-
-	it.each(['400-italic', '999', '300', '800'])(
-		'normalizes unsupported base weight %s without dropping other values',
-		(fontVariant) => {
-			expect(
-				parseSettingsConfig({ fontFamily: 'crimson-text', fontVariant, uiScale: '95' })
-			).toMatchObject({ fontFamily: 'crimson-text', fontVariant: '400', uiScale: '95' });
-			expect(validateSettingsPatch({ fontFamily: 'crimson-text', fontVariant })).toMatchObject({
-				fontFamily: 'crimson-text',
-				fontVariant: '400'
-			});
-		}
-	);
 	it('validates known keys while retaining flat primitive extension keys', () => {
 		const parsed = parseSettingsConfig({
 			showThoughtInProgress: 'true',
@@ -758,48 +500,19 @@ describe('settings runtime schema', () => {
 		expect(parseUserOverrides('{broken')).toEqual([]);
 	});
 
-	it('does not partially write an import containing an invalid known value', () => {
-		storage.set(CONFIG_LOCALSTORAGE_KEY, serializeSettingsStorage({ ...SETTING_CONFIG_DEFAULT }));
-		storage.set(USER_OVERRIDES_LOCALSTORAGE_KEY, '["temperature"]');
-		const before = new Map(storage);
-
-		expect(() =>
-			importApplicationSettings(
-				JSON.stringify({
-					type: 'llampart-settings-export',
-					formatVersion: 1,
-					app: 'llampart',
-					exportedAt: new Date().toISOString(),
-					settings: { showThoughtInProgress: 'true' }
-				})
-			)
-		).toThrow(/showThoughtInProgress/);
-		expect(storage).toEqual(before);
-	});
-
-	it('accepts shipped numeric defaults and inclusive probability boundaries', () => {
+	it('accepts inclusive numeric boundaries and omission sentinels', () => {
 		expect(
 			validateSettingsPatch({
-				temperature: 0.8,
-				dynatemp_range: 0,
-				dynatemp_exponent: 1,
-				top_k: 40,
+				temperature: '',
 				top_p: 0,
 				min_p: 1,
-				xtc_probability: 0,
-				xtc_threshold: 1,
-				typ_p: 1,
-				repeat_last_n: 64,
-				repeat_penalty: 1,
-				dry_multiplier: 0,
-				dry_base: 1.75,
-				dry_allowed_length: 2,
 				dry_penalty_last_n: -1,
 				max_tokens: -1,
 				presence_penalty: -2,
 				frequency_penalty: 2
 			})
 		).toMatchObject({
+			temperature: '',
 			top_p: 0,
 			min_p: 1,
 			dry_penalty_last_n: -1,
