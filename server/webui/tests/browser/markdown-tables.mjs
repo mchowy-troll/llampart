@@ -61,11 +61,17 @@ try {
 			permissions: ['clipboard-read', 'clipboard-write']
 		});
 		const page = await context.newPage();
+		await page.addLocatorHandler(
+			page.locator('.llampart-about-dialog-content'),
+			async (welcome) => {
+				await welcome.locator('#about-llampart-do-not-show-again').check();
+				await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+			}
+		);
 		const errors = [];
 		page.on('pageerror', (error) => errors.push(error.message));
 		await page.addInitScript((fullHeight) => {
 			if (window.top !== window) return;
-			localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 			localStorage.setItem(
 				'LlamaCppWebui.config',
 				JSON.stringify({

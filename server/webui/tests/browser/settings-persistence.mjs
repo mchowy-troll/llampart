@@ -12,6 +12,10 @@ const browser = await chromium.launch({
 });
 const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
 const page = await context.newPage();
+await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+	await welcome.locator('#about-llampart-do-not-show-again').check();
+	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+});
 const base = process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40134';
 const artifacts = process.env.LLAMPART_TEST_ARTIFACTS || '/tmp/opencode/llampart-three-smoke';
 await mkdir(artifacts, { recursive: true });
@@ -27,8 +31,6 @@ await context.route('**/*', (route) => {
 		});
 	return ['localhost', '127.0.0.1'].includes(url.hostname) ? route.continue() : route.abort();
 });
-// Dismiss the existing About UI only in this disposable test context; no product change.
-await context.addInitScript(() => localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0'));
 const key = 'LlamaCppWebui.config';
 const dialog = page.locator('.llampart-chat-settings-dialog-content');
 async function openSettings() {

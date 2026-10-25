@@ -19,6 +19,10 @@ const context = await browser.newContext({
 	acceptDownloads: true
 });
 const page = await context.newPage();
+await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+	await welcome.locator('#about-llampart-do-not-show-again').check();
+	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+});
 const errors = [],
 	transparency = [],
 	warnings = [],
@@ -212,7 +216,6 @@ await page.addInitScript(() => {
 				minimalAgenticIndicators: false
 			})
 		);
-	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 });
 await page.route('**/__llampart/api/**', (route) => {
 	const path = new URL(route.request().url()).pathname;
@@ -534,6 +537,41 @@ try {
 				assert(svg.includes('data:font/woff2;base64,'));
 				assert(!/foreignObject|<script|<button|https?:\/\/(?!www\.w3\.org)/i.test(svg));
 				assert(svg.includes('Użytkownik'));
+				const reopened = await context.newPage();
+				try {
+					await reopened.goto(`data:image/svg+xml;base64,${bytes.toString('base64')}`);
+					await reopened.evaluate(() => document.fonts.ready);
+					assert.equal(await reopened.locator('parsererror').count(), 0);
+					assert(
+						await reopened.evaluate(() =>
+							[...document.styleSheets]
+								.flatMap((sheet) => [...sheet.cssRules])
+								.filter((rule) => rule instanceof CSSFontFaceRule)
+								.some((rule) => {
+									const range = rule.style.fontWeight.split(/\s+/).map(Number);
+									return (
+										range[0] <= 700 &&
+										(range[1] ?? range[0]) >= 700 &&
+										rule.style.src.includes('data:font/woff2;base64,')
+									);
+								})
+						),
+						'Exported SVG must embed the bold section face (700)'
+					);
+					const headings = reopened.locator('.cluster-label text');
+					assert((await headings.count()) > 0, 'Exported SVG must retain section headings');
+					assert(
+						(
+							await headings.evaluateAll((nodes) =>
+								nodes.map((node) => getComputedStyle(node).fontWeight)
+							)
+						).every((weight) => weight === '700'),
+						'Exported SVG section headings must use bold (700)'
+					);
+					console.log(`PASS standalone SVG: embedded bold 700 and section headings (${family})`);
+				} finally {
+					await reopened.close();
+				}
 			} else assert.equal(bytes.subarray(1, 4).toString(), 'PNG');
 		}
 	}
@@ -945,9 +983,62 @@ try {
 		'PASS SVG security boundary, large/wide flowchart/long Gantt scroll, mobile overflow, rapid replacement, conversation reload'
 	);
 	// Drive the real ChatService with a controllable Response, not private store state.
+	const incompleteSource = 'flowchart LR\nB[';
+	const expectedPartial =
+		'Początek\n\n' +
+		fence('flowchart LR\nA[Użytkownik] --> B[llampart]') +
+		'\n\n' +
+		fence(samples[1][1]) +
+		'\n\n```mermaid\n' +
+		incompleteSource;
+	const streamState = () =>
+		page.evaluate(async () => {
+			const { db, conversations } = await import('/tests/browser/charts-harness.ts');
+			const { chatStore } = await import('/src/lib/stores/chat.svelte.ts');
+			const { scanMermaidFences } = await import('/src/lib/markdown/mermaid-blocks.ts');
+			const conversation = conversations.activeConversation;
+			const messages = await db.getConversationMessages(conversation.id);
+			const assistant = conversations.activeMessages.findLast((m) => m.role === 'assistant');
+			const saved = messages.find((m) => m.id === assistant.id);
+			const scan = scanMermaidFences(assistant.content);
+			return {
+				conversationId: conversation.id,
+				currNode: conversation.currNode,
+				savedCurrNode: (await db.getConversation(conversation.id)).currNode,
+				messageIds: messages.map((m) => m.id),
+				assistantId: assistant.id,
+				content: assistant.content,
+				savedContent: saved.content,
+				closedFences: scan.ranges.length,
+				pendingSource: scan.pending?.code,
+				loading: chatStore.isLoading,
+				streaming: chatStore.isStreaming()
+			};
+		});
 	await page.goto(base);
 	await page.waitForSelector('textarea');
-	await page.evaluate(() => {
+	await page.evaluate(async () => {
+		const { ChatService } = await import('/src/lib/services/chat.service.ts');
+		const send = ChatService.sendMessage;
+		window.diagramTerminalCallbacks = { complete: 0, error: 0 };
+		ChatService.sendMessage = function (messages, options, ...rest) {
+			return send.call(
+				this,
+				messages,
+				{
+					...options,
+					onComplete: (...args) => {
+						window.diagramTerminalCallbacks.complete++;
+						return options.onComplete?.(...args);
+					},
+					onError: (...args) => {
+						window.diagramTerminalCallbacks.error++;
+						return options.onError?.(...args);
+					}
+				},
+				...rest
+			);
+		};
 		const original = window.fetch;
 		window.fetch = (input, init) => {
 			const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
@@ -1000,21 +1091,60 @@ try {
 				window.liveDiagram
 		)
 	);
-	await page.evaluate(() => window.enqueueDiagramToken('\n\n```mermaid\nflowchart LR\nB['));
+	await page.evaluate(
+		(source) => window.enqueueDiagramToken('\n\n```mermaid\n' + source),
+		incompleteSource
+	);
 	await page.getByText('Przygotowywanie diagramu…', { exact: true }).waitFor();
+	const beforeStop = await streamState();
+	assert.equal(beforeStop.content, expectedPartial);
 	await page.locator('.llampart-composer-stop-action').click();
 	await page.waitForFunction(() => window.diagramStreamAborted === true);
 	await page.locator('.llampart-diagram-fallback').waitFor();
-	assert.equal(await page.locator('.llampart-diagram-frame').count(), 2);
-	assert(
-		await page.evaluate(
-			() =>
-				document.querySelector('.diagram-surface').shadowRoot.firstElementChild ===
-				window.liveDiagram
-		)
+	// Changing isStreaming rebuilds Markdown blocks. Check the final render/data,
+	// not the identity of an SVG from the previous streaming render policy.
+	await ready(2);
+	await page.waitForFunction(async () => {
+		const { chatStore } = await import('/src/lib/stores/chat.svelte.ts');
+		return !chatStore.isLoading && !chatStore.isStreaming();
+	});
+	const stopped = await streamState();
+	assert.equal(stopped.content, expectedPartial);
+	assert.equal(stopped.savedContent, expectedPartial);
+	assert.equal(stopped.closedFences, 2);
+	assert.equal(stopped.pendingSource, incompleteSource);
+	for (const key of ['conversationId', 'currNode', 'savedCurrNode', 'messageIds', 'assistantId'])
+		assert.deepEqual(stopped[key], beforeStop[key], `Stop must preserve ${key}`);
+	assert.deepEqual(
+		await page.evaluate(() => window.diagramTerminalCallbacks),
+		{ complete: 0, error: 0 },
+		'User Stop is neither successful stream completion nor an incomplete-stream error'
 	);
+	for (const [i, label] of ['Użytkownik', 'Gotowy'].entries()) {
+		const svg = page.locator('.llampart-diagram-frame').nth(i).locator('.diagram-surface svg');
+		await svg.waitFor({ state: 'visible' });
+		assert((await svg.textContent()).includes(label));
+		const bounds = await svg.boundingBox();
+		assert(bounds.width > 0 && bounds.height > 0);
+	}
+	const fallback = page.locator('.llampart-diagram-fallback');
+	assert.equal(await fallback.count(), 1);
+	await fallback.getByRole('button', { name: 'Pokaż kod', exact: true }).click();
+	await page.getByRole('dialog').waitFor({ state: 'visible' });
+	assert.equal(await page.locator('.visualization-source').textContent(), incompleteSource);
+	await page.keyboard.press('Escape');
+	await page.getByRole('dialog').waitFor({ state: 'hidden' });
+	await page.reload();
+	await ready(2);
+	// loadConversation restores the persisted leaf, not the pre-reload UI snapshot.
+	assert.deepEqual(
+		await streamState(),
+		{ ...stopped, currNode: stopped.savedCurrNode },
+		'Reload restores the persisted leaf and exact stopped partial answer'
+	);
+	await writeFile(`${artifacts}/stopped-stream.json`, JSON.stringify(stopped, null, 2));
 	console.log(
-		'PASS real ChatService token streaming: preparing without parse errors, closed-fence rendering, stable completed SVGs, Stop with source fallback'
+		'PASS real ChatService token streaming: stable append, Stop abort, two rendered closed fences, exact partial answer/graph/IndexedDB/reload, incomplete-tail source fallback, no false completion'
 	);
 	assert.deepEqual(external, []);
 	assert.deepEqual(errors, []);

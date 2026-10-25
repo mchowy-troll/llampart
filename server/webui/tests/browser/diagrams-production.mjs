@@ -1,4 +1,5 @@
-/** Production-only smoke/performance probe; serve server/public locally after build.
+/** Production-only Chromium smoke/performance probe; serve the existing server/public build.
+ * Real WebUI/renderers/downloads; synthetic provider HTTP/SSE, not live inference.
  * LLAMPART_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs node tests/browser/diagrams-production.mjs
  */
 import assert from 'node:assert/strict';
@@ -12,8 +13,10 @@ const manifest = JSON.parse(
 	await readFile('.svelte-kit/output/client/.vite/manifest.json', 'utf8')
 );
 const key = Object.keys(manifest).find((key) => key.endsWith('/mermaid.core.mjs'));
+assert(key, 'Production manifest must contain the Mermaid core');
 const core = '/' + manifest[key].file;
 const elkKey = Object.keys(manifest).find((key) => /\/elk-[^/]+\.mjs$/.test(key));
+assert(elkKey, 'Production manifest must contain the lazy ELK chunk');
 const browser = await chromium.launch({
 	executablePath: '/usr/bin/chromium',
 	headless: true,
@@ -58,7 +61,6 @@ await page.addInitScript(() => {
 			askForTitleConfirmation: false
 		})
 	);
-	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 });
 const sources = [
 	'flowchart LR\nA[Użytkownik] --> B{Lokalnie?}\nB -->|Tak| C[Łódź]\nB -->|Nie| D[Klaster GPU]',
@@ -91,13 +93,41 @@ await page.route('**/__llampart/api/**', (route) => {
 });
 try {
 	await page.goto(base);
-	await page.waitForSelector('textarea');
+	// Fresh context: close the actual welcome modal instead of guessing its version.
+	// Waiting explicitly also catches an unresponsive modal before the rendering probe.
+	const welcome = page.locator('.llampart-about-dialog-content');
+	await welcome.waitFor({ state: 'visible', timeout: 10000 });
+	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+	await welcome.waitFor({ state: 'hidden' });
+	const composer = page.locator('textarea').first();
+	await composer.waitFor();
 	await Promise.all(pending);
 	assert(!sizes.has(core), 'Engine must stay lazy');
 	const before = new Map(sizes);
-	await page.locator('textarea').first().fill('Pokaż cztery diagramy.');
+	const prompt = 'Pokaż cztery diagramy.';
+	await composer.fill(prompt);
 	const started = Date.now();
-	await page.locator('textarea').first().press('Enter');
+	const [request, response] = await Promise.all([
+		page.waitForRequest(
+			(request) => request.url().endsWith('/chat/completions') && request.method() === 'POST',
+			{ timeout: 10000 }
+		),
+		page.waitForResponse((response) => response.url().endsWith('/chat/completions'), {
+			timeout: 10000
+		}),
+		composer.press('Enter')
+	]);
+	assert(
+		request
+			.postDataJSON()
+			.messages.some((message) => message.role === 'user' && message.content === prompt),
+		'Chat request must contain the submitted user message'
+	);
+	assert.equal(response.status(), 200, 'Synthetic provider must return the answer');
+	assert.equal(await response.finished(), null, 'SSE response must finish successfully');
+	const assistant = page.locator('.llampart-assistant-markdown');
+	await assistant.getByRole('heading', { name: 'Przepływ żądania', exact: true }).waitFor();
+	await page.locator('.llampart-composer-stop-action').waitFor({ state: 'hidden' });
 	await page.waitForFunction(
 		() =>
 			document.querySelectorAll('.llampart-assistant-markdown .llampart-diagram-frame').length ===
@@ -113,6 +143,10 @@ try {
 	);
 	for (const [i, type] of ['flowchart', 'state', 'gantt', 'mindmap'].entries()) {
 		const frame = page.locator('.llampart-diagram-frame').nth(i);
+		const svg = frame.locator('.diagram-surface svg');
+		await svg.waitFor({ state: 'visible' });
+		const svgBounds = await svg.boundingBox();
+		assert(svgBounds.width > 0 && svgBounds.height > 0, `${type}: SVG must have visible geometry`);
 		// Explicit roles: edge labels use visualizationLabelSize (0.8 × text unit),
 		// Gantt uses that label size + 1px; the other families keep the body size.
 		const bodySize = await page
@@ -193,6 +227,12 @@ try {
 		'Removed diagram families must not be requested'
 	);
 	const report = {
+		backend: 'synthetic HTTP/SSE (no live inference)',
+		chatRequestSent: true,
+		answerReceived: true,
+		renderedSvgCount: await assistant.locator('.diagram-surface svg').count(),
+		fallbackCount: await assistant.locator('.llampart-diagram-fallback').count(),
+		verifiedExports: transparency.length,
 		initialJsBytes: [...before.values()].reduce((a, b) => a + b, 0),
 		fourDiagramsAdditionalJsBytes: added.reduce((sum, [, bytes]) => sum + bytes, 0),
 		renderMs,
@@ -205,7 +245,7 @@ try {
 	await writeFile(`${artifacts}/transparency.json`, JSON.stringify(transparency, null, 2));
 	console.log(JSON.stringify(report, null, 2));
 	console.log(
-		'PASS production: four families, lazy engine/ELK, full SVG dialogs, all PNG/SVG exports, no external requests'
+		'MOCK PASS Chromium production: submitted chat, synthetic SSE answer, four rendered SVG families, two fallbacks, lazy engine/ELK, full SVG dialogs, all PNG/SVG exports, no external requests'
 	);
 } finally {
 	await browser.close();

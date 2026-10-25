@@ -17,6 +17,10 @@ const browser = await chromium.launch({
 });
 const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
 const page = await context.newPage();
+await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+	await welcome.locator('#about-llampart-do-not-show-again').check();
+	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+});
 const failures = [];
 page.on('pageerror', (error) => failures.push(error.message));
 page.on('console', (message) => {
@@ -50,7 +54,6 @@ await page.addInitScript(() => {
 				askForTitleConfirmation: false
 			})
 		);
-		localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	}
 });
 await page.route('**/__llampart/api/**', (route) => {
@@ -172,6 +175,9 @@ try {
 	await page.goto(process.env.LLAMPART_TEST_URL || 'http://localhost:5173');
 	await page.locator('textarea').first().fill(markdown);
 	await page.locator('textarea').first().press('Enter');
+	const dismissedVersion = await page.evaluate(() =>
+		localStorage.getItem('Llampart.aboutDismissedVersion')
+	);
 	await checkPreferences(true, true);
 	await screenshot('assistant-markdown', assistant);
 	await screenshot('reasoning-markdown', reasoning);
@@ -213,7 +219,7 @@ try {
 		assert.equal(await page.locator('.llampart-about-dialog-content').count(), 0);
 		assert.equal(
 			await page.evaluate(() => localStorage.getItem('Llampart.aboutDismissedVersion')),
-			'1.9.0'
+			dismissedVersion
 		);
 		console.log(
 			`PASS saved appearance + Markdown preferences: user=${userEnabled}, reasoning=${reasoningEnabled}, reload`

@@ -58,7 +58,6 @@ try {
 			permissions: ['clipboard-read', 'clipboard-write']
 		});
 		await context.addInitScript(() => {
-			localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 			if (!localStorage.getItem('LlamaCppWebui.config'))
 				localStorage.setItem(
 					'LlamaCppWebui.config',
@@ -95,6 +94,13 @@ try {
 			});
 		});
 		const page = await context.newPage();
+		await page.addLocatorHandler(
+			page.locator('.llampart-about-dialog-content'),
+			async (welcome) => {
+				await welcome.locator('#about-llampart-do-not-show-again').check();
+				await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+			}
+		);
 		const report = { fault, errors: [], network: [], pageerrors: [] };
 		reports.push(report);
 		page.on('console', (event) => {

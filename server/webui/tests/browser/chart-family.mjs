@@ -17,6 +17,10 @@ const context = await browser.newContext({
 	acceptDownloads: true
 });
 const page = await context.newPage();
+await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+	await welcome.locator('#about-llampart-do-not-show-again').check();
+	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+});
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 const base = process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40138';
@@ -57,7 +61,6 @@ const markdown = specs
 	.join('\n\n');
 let responseMarkdown = markdown;
 await page.addInitScript(() => {
-	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	localStorage.setItem(
 		'LlamaCppWebui.config',
 		JSON.stringify({

@@ -19,6 +19,13 @@ try {
 	for (const scenario of ['abort', 'stale-context', 'replacement']) {
 		const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
 		const page = await context.newPage();
+		await page.addLocatorHandler(
+			page.locator('.llampart-about-dialog-content'),
+			async (welcome) => {
+				await welcome.locator('#about-llampart-do-not-show-again').check();
+				await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+			}
+		);
 		page.on('pageerror', (error) => errors.push(error.message));
 		const requests = [];
 		let releaseProps, releaseResponse, captureCompletion;
@@ -45,7 +52,6 @@ try {
 						alwaysShowSidebarOnDesktop: true
 					})
 				);
-				localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 			});
 			await page.route('**/__llampart/api/**', async (route) => {
 				const request = route.request();

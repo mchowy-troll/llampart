@@ -38,7 +38,6 @@ try {
 			if (localStorage.getItem('own006-initialized')) return;
 			localStorage.setItem('own006-initialized', '1');
 			localStorage.setItem('llama-webui-migration-v2-done', '1');
-			localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 			localStorage.setItem(
 				'LlamaCppWebui.config',
 				JSON.stringify({
@@ -148,6 +147,13 @@ try {
 			return route.fulfill({ json: [] });
 		});
 		const page = await context.newPage();
+		await page.addLocatorHandler(
+			page.locator('.llampart-about-dialog-content'),
+			async (welcome) => {
+				await welcome.locator('#about-llampart-do-not-show-again').check();
+				await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+			}
+		);
 		page.on('pageerror', (error) => errors.push(error.message));
 		page.on('console', (message) => {
 			if (message.type() !== 'error') return;

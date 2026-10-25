@@ -44,6 +44,10 @@ async function setup(context) {
 		return route.fulfill({ json: [] });
 	});
 	const page = await context.newPage();
+	await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+		await welcome.locator('#about-llampart-do-not-show-again').check();
+		await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+	});
 	page.on('pageerror', (error) => errors.push(error.message));
 	page.on('console', (message) => {
 		if (message.type() === 'error') errors.push(message.text());
@@ -181,7 +185,6 @@ try {
 		context = await browser.newContext({ viewport });
 		page = await setup(context);
 		await page.evaluate(async () => {
-			localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 			localStorage.setItem(
 				'LlamaCppWebui.config',
 				JSON.stringify({

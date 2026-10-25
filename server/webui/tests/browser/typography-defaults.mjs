@@ -13,6 +13,10 @@ const browser = await chromium.launch({
 });
 const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
 const page = await context.newPage();
+await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+	await welcome.locator('#about-llampart-do-not-show-again').check();
+	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+});
 const base = process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40134';
 const artifacts = process.env.LLAMPART_TEST_ARTIFACTS;
 if (artifacts) await mkdir(artifacts, { recursive: true });
@@ -43,10 +47,6 @@ await context.route('**/*', (route) => {
 	}
 	if (url.pathname.includes('/__llampart/api/')) return route.fulfill({ json: { status: 'ok' } });
 	return ['127.0.0.1', 'localhost'].includes(url.hostname) ? route.continue() : route.abort();
-});
-await context.addInitScript(() => {
-	// Suppress only the existing About modal in this disposable browser context.
-	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 });
 const dialog = page.locator('.llampart-chat-settings-dialog-content');
 const fontLabels = ['Merriweather (Default)', 'Regular — 400 (Default)', '13 px (Default)'];

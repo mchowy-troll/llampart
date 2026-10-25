@@ -21,6 +21,10 @@ const browser = await chromium.launch({
 const artifacts = process.env.LLAMPART_TEST_ARTIFACTS;
 if (artifacts) await mkdir(artifacts, { recursive: true });
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+	await welcome.locator('#about-llampart-do-not-show-again').check();
+	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+});
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 const storageKey = 'LlamaCppWebui.config';
@@ -109,7 +113,6 @@ await page.route('**/*', async (route) => {
 await page.addInitScript(
 	({ key, config }) => {
 		if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(config));
-		localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	},
 	{ key: storageKey, config: initial }
 );

@@ -235,6 +235,24 @@ LLAMPART_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs \
 LLAMPART_TEST_URL=http://127.0.0.1:40138 node tests/browser/diagrams.mjs
 ```
 
+For a focused production smoke, serve the existing `server/public` build locally
+and run from `server/webui` (the matching `.svelte-kit/output/client/.vite/manifest.json`
+must also be present; the smoke does not build the app):
+
+```bash
+LLAMPART_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs \
+LLAMPART_TEST_URL=http://127.0.0.1:40141 \
+LLAMPART_TEST_ARTIFACTS=/tmp/opencode/llampart-production-diagrams \
+node tests/browser/diagrams-production.mjs
+```
+
+This Chromium smoke closes the welcome modal through its `OK` button without a
+hard-coded application version. It verifies a submitted chat request and a
+completed **synthetic HTTP/SSE response**, then four rendered SVG families, two
+unsupported-family fallbacks, lazy loading, previews and eight transparent
+PNG/SVG exports. WebUI, Mermaid, DOM and downloads are real; model inference is
+not tested (`MOCK PASS`, not a live-backend pass).
+
 The sequence diagrams in the technical architecture/flow documentation target a
 general Mermaid documentation renderer. They are not examples of the assistant
 renderer allowlist: Sequence, ER, Pie, XYChart and other families remain unsupported

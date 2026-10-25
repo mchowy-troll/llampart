@@ -16,8 +16,12 @@ const context = await browser.newContext({
 	viewport: { width: 1920, height: 1080 },
 	acceptDownloads: true
 });
-const page = await context.newPage(),
-	errors = [],
+const page = await context.newPage();
+await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+	await welcome.locator('#about-llampart-do-not-show-again').check();
+	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+});
+const errors = [],
 	fonts = [],
 	external = [];
 page.on('pageerror', (e) => errors.push(e.message));
@@ -64,7 +68,6 @@ const markdown =
 	'\n\n**Pogrubienie** i *kursywa*. `const ł = 1;`\n\n- Lista\n\n| Miasto | Wartość |\n| --- | --- |\n| Łódź | 25 |\n\n$$x^2 + y^2 = z^2$$\n\n' +
 	specs.map((s) => '```llampart-chart\n' + JSON.stringify(s) + '\n```').join('\n\n');
 await page.addInitScript(() => {
-	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	if (!localStorage.getItem('LlamaCppWebui.config'))
 		localStorage.setItem(
 			'LlamaCppWebui.config',

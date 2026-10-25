@@ -20,6 +20,10 @@ const context = await browser.newContext({
 	acceptDownloads: true
 });
 const page = await context.newPage();
+await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+	await welcome.locator('#about-llampart-do-not-show-again').check();
+	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+});
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
 const base = process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40138';
@@ -90,7 +94,6 @@ const content =
 	'\n\n' +
 	lists;
 await page.addInitScript(() => {
-	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	if (localStorage.getItem('LlamaCppWebui.config')) return;
 	localStorage.setItem(
 		'LlamaCppWebui.config',
@@ -448,6 +451,10 @@ try {
 			}
 		}
 		await writeFile(`${artifacts}/directions.json`, JSON.stringify(directions, null, 2));
+		const baseTextSize = await page
+			.locator('body')
+			.evaluate((node) => parseFloat(getComputedStyle(node).fontSize));
+		const expectedLabelSize = baseTextSize * 0.8;
 		const exportedSvgs = [];
 		for (const [i, frame] of (await assistant.locator('.llampart-diagram-frame').all()).entries()) {
 			for (const format of ['SVG', 'PNG']) {
@@ -473,7 +480,11 @@ try {
 			const sizes = await exportPage
 				.locator('.edgeLabel text')
 				.evaluateAll((nodes) => nodes.map((el) => getComputedStyle(el).fontSize));
-			assert(sizes.length > 0 && sizes.every((size) => size === '9.6px'));
+			assert(
+				sizes.length > 0 &&
+					sizes.every((size) => Math.abs(parseFloat(size) - expectedLabelSize) < 0.001),
+				'Exported edge labels must use 0.8 × the current text unit'
+			);
 		}
 		await exportPage.close();
 		await page.bringToFront();
@@ -490,7 +501,10 @@ try {
 		for (const size of await previewSvg
 			.locator('.edgeLabel text')
 			.evaluateAll((nodes) => nodes.map((el) => getComputedStyle(el).fontSize)))
-			assert.equal(size, '9.6px');
+			assert(Math.abs(parseFloat(size) - expectedLabelSize) < 0.001);
+		console.log(
+			`PASS exported/preview edge labels: ${baseTextSize}px × 0.8 = ${expectedLabelSize}px`
+		);
 		await preview.screenshot({ path: `${artifacts}/native-diagram-preview.png` });
 		await page.keyboard.press('Escape');
 		await preview.waitFor({ state: 'hidden' });
@@ -750,6 +764,19 @@ try {
 					)
 				);
 			}, expected);
+			// Source actions must still work after each live language change.
+			for (const [i, source] of ['{', 'flowchart LR\nA['].entries()) {
+				const fallback = assistant.locator('.llampart-visualization-fallback').nth(i);
+				assert.equal(await fallback.locator('button').count(), 2);
+				await fallback.locator('button').nth(1).click();
+				assert.equal(await page.evaluate(() => navigator.clipboard.readText()), source);
+				await fallback.locator('button').nth(0).click();
+				await page.getByRole('dialog').waitFor({ state: 'visible' });
+				assert.equal(await page.locator('.visualization-source').textContent(), source);
+				await page.keyboard.press('Escape');
+				await page.getByRole('dialog').waitFor({ state: 'hidden' });
+			}
+			console.log(`PASS fallback copy/source preview after language change: ${language}`);
 			for (const colorScheme of ['light', 'dark']) {
 				await page.emulateMedia({ colorScheme });
 				for (const width of [1600, 1100]) {

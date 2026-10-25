@@ -19,6 +19,10 @@ const context = await browser.newContext({
 	acceptDownloads: true
 });
 const page = await context.newPage();
+await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+	await welcome.locator('#about-llampart-do-not-show-again').check();
+	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+});
 const errors = [];
 page.on('pageerror', (e) => errors.push(e.message));
 page.on('console', (message) => {
@@ -86,7 +90,6 @@ let responseContent = content;
 let diagramCount = 8,
 	chartCount = 6;
 await page.addInitScript(() => {
-	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	localStorage.setItem(
 		'LlamaCppWebui.config',
 		JSON.stringify({

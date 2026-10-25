@@ -16,6 +16,10 @@ const context = await browser.newContext({
 	permissions: ['clipboard-read', 'clipboard-write']
 });
 const page = await context.newPage();
+await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+	await welcome.locator('#about-llampart-do-not-show-again').check();
+	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+});
 const artifacts =
 	process.env.LLAMPART_TEST_ARTIFACTS || '/tmp/opencode/llampart-response-preferences/browser';
 await mkdir(artifacts, { recursive: true });
@@ -60,7 +64,6 @@ await page.addInitScript(
 					alwaysShowSidebarOnDesktop: true
 				})
 			);
-		localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 	},
 	{ storageKey, manual }
 );

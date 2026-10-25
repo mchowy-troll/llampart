@@ -20,7 +20,6 @@ async function setup(viewport) {
 	const context = await browser.newContext({ viewport });
 	await context.addInitScript(() => {
 		localStorage.setItem('llama-webui-migration-v2-done', '1');
-		localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.0');
 		localStorage.setItem(
 			'LlamaCppWebui.config',
 			JSON.stringify({
@@ -63,6 +62,10 @@ async function setup(viewport) {
 		return route.fulfill({ json: [] });
 	});
 	const page = await context.newPage();
+	await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
+		await welcome.locator('#about-llampart-do-not-show-again').check();
+		await welcome.getByRole('button', { name: 'OK', exact: true }).click();
+	});
 	const errors = [];
 	page.on('pageerror', (error) => errors.push(error.message));
 	page.on('console', (message) => {
