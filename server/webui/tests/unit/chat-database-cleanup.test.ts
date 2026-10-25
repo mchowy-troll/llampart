@@ -6,6 +6,17 @@ import { agenticStore } from '$lib/stores/agentic.svelte';
 import { chatStore, type GenerationModel } from '$lib/stores/chat.svelte';
 import { conversationsStore } from '$lib/stores/conversations.svelte';
 
+const internalChatStore = chatStore as unknown as {
+	captureGenerationModel(): GenerationModel;
+	streamChatCompletion(
+		messages: DatabaseMessage[],
+		assistant: DatabaseMessage,
+		onComplete: ((content: string) => Promise<void>) | undefined,
+		onError: ((error: Error) => void) | undefined,
+		binding: GenerationModel
+	): Promise<void>;
+};
+
 function message(
 	id: string,
 	parent: string | null,
@@ -86,14 +97,6 @@ describe('ChatStore database cleanup', () => {
 		vi.spyOn(DatabaseService, 'updateCurrentNode').mockImplementation(async (_convId, nodeId) => {
 			persistedConversation = { ...persistedConversation, currNode: nodeId };
 		});
-		const internalChatStore = chatStore as unknown as {
-			streamChatCompletion: (
-				messages: DatabaseMessage[],
-				assistantMessage: DatabaseMessage,
-				onComplete?: (content: string) => Promise<void>,
-				onError?: (error: Error) => void
-			) => Promise<void>;
-		};
 		vi.spyOn(internalChatStore, 'streamChatCompletion').mockImplementation(
 			async (_messages, _assistantMessage, _onComplete, onError) => {
 				persistedConversation = { ...persistedConversation, currNode: 'user' };
@@ -119,9 +122,7 @@ describe('ChatStore database cleanup', () => {
 	it('cleans up a failed assistant even after another conversation becomes active', async () => {
 		vi.spyOn(console, 'error').mockImplementation(() => undefined);
 		conversationsStore.activeConversation = { id: 'stream-conversation' } as DatabaseConversation;
-		const binding = (
-			chatStore as unknown as { captureGenerationModel(): GenerationModel }
-		).captureGenerationModel();
+		const binding = internalChatStore.captureGenerationModel();
 		conversationsStore.activeConversation = {
 			id: 'other-conversation',
 			name: 'Other',
@@ -136,17 +137,13 @@ describe('ChatStore database cleanup', () => {
 			await options?.onError?.(new Error('stream failed'));
 		});
 
-		await (
-			chatStore as unknown as {
-				streamChatCompletion: (
-					messages: DatabaseMessage[],
-					assistant: DatabaseMessage,
-					onComplete: undefined,
-					onError: undefined,
-					binding: GenerationModel
-				) => Promise<void>;
-			}
-		).streamChatCompletion([], failedAssistant, undefined, undefined, binding);
+		await internalChatStore.streamChatCompletion(
+			[],
+			failedAssistant,
+			undefined,
+			undefined,
+			binding
+		);
 
 		expect(deleteBranch).toHaveBeenCalledWith(
 			'stream-conversation',
@@ -248,24 +245,12 @@ describe('ChatStore database cleanup', () => {
 			return { handled: true, error: new Error('later turn failed') };
 		});
 
-		await (
-			chatStore as unknown as {
-				streamChatCompletion: (
-					messages: DatabaseMessage[],
-					assistant: DatabaseMessage,
-					onComplete: undefined,
-					onError: undefined,
-					binding: GenerationModel
-				) => Promise<void>;
-			}
-		).streamChatCompletion(
+		await internalChatStore.streamChatCompletion(
 			[user],
 			assistant,
 			undefined,
 			undefined,
-			(
-				chatStore as unknown as { captureGenerationModel(): GenerationModel }
-			).captureGenerationModel()
+			internalChatStore.captureGenerationModel()
 		);
 
 		expect(deleteBranch).not.toHaveBeenCalled();

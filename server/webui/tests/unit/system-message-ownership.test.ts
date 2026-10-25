@@ -85,7 +85,8 @@ describe('OWN-008 system message edit', () => {
 		expect(c.activeConversation).toEqual({ ...conversations[0] });
 	});
 
-	it.each(['B', 'A-B-A', 'clear'])(
+	// Staying in B is covered below by the concurrent, independent B edit.
+	it.each(['A-B-A', 'clear'])(
 		'binds both IDs before persistence; navigation %s cannot retarget it',
 		async (navigation) => {
 			const ready = deferred(),
@@ -105,9 +106,7 @@ describe('OWN-008 system message edit', () => {
 			const view = JSON.stringify(c.activeMessages);
 			gate.resolve();
 			await pending;
-			expect(c.activeConversation?.id ?? null).toBe(
-				navigation === 'clear' ? null : navigation === 'B' ? 'B' : 'A'
-			);
+			expect(c.activeConversation?.id ?? null).toBe(navigation === 'clear' ? null : 'A');
 			if (navigation !== 'A-B-A') expect(JSON.stringify(c.activeMessages)).toBe(view);
 			else expect(c.activeMessages[0].content).toBe('Instrukcja nowa');
 			expect(rows.find((row) => row.id === 'B-system')!.content).toBe('Instrukcja stara');
@@ -180,12 +179,18 @@ describe('OWN-008 system message edit', () => {
 		});
 		const pending = chatStore.editSystemMessage('A', 'A-system', 'A new');
 		await ready.promise;
+		expect(c.activeMessages[0].content).toBe('Instrukcja stara');
 		await c.loadConversation('B');
 		await chatStore.editSystemMessage('B', 'B-system', 'B new');
+		const view = JSON.stringify(c.activeMessages);
 		gate.resolve();
 		await pending;
+		expect(c.activeConversation?.id).toBe('B');
+		expect(JSON.stringify(c.activeMessages)).toBe(view);
 		expect(c.activeMessages[0].content).toBe('B new');
 		expect(rows.find((row) => row.id === 'A-system')!.content).toBe('A new');
 		expect(rows.find((row) => row.id === 'B-system')!.content).toBe('B new');
+		await c.loadConversation('A');
+		expect(c.activeMessages[0].content).toBe('A new');
 	});
 });
