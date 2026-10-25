@@ -201,11 +201,6 @@ donut/base-state export, negative bars, 500×5 data, independent gradients and r
 motion. It saves per-type comparisons and reopens all PNG/SVG/CSV downloads. Run it
 with the same environment variables against dev or the static build.
 
-`tests/browser/chart-finalization.mjs` additionally checks exact computed SVG colors,
-ascending arc start angles, stable ties/zeros, every nonzero slice for 5/9/20 categories,
-source-order CSV, standalone PNG/SVG reopens on both wallpapers, and changed-source
-mapping while a slice was active (the last probe is dev-only).
-
 D3 `curveMonotoneX`/`curveLinear` are imported directly from `d3-shape` (already used
 by LayerChart); it is now an explicit dependency. No React, alternate chart engine,
 animation library or CSV library is added.

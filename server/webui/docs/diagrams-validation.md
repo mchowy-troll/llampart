@@ -76,7 +76,6 @@ Nie zmieniano `ChartFrame.svelte`, wyglądu/gradientów/danych wykresów, wersji
 | `npm audit`                                   | 0 podatności                       |
 | Chromium dev `diagrams.mjs`                   | OK                                 |
 | Chromium dev `charts.mjs`                     | OK                                 |
-| Chromium dev `chart-finalization.mjs`         | OK                                 |
 | Chromium dev `response-preferences.mjs`       | OK                                 |
 | Chromium production `diagrams-production.mjs` | OK                                 |
 | Chromium production `charts.mjs`              | OK                                 |
