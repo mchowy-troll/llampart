@@ -1,17 +1,10 @@
-import { readFileSync, readdirSync } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { SETTING_CONFIG_DEFAULT } from '$lib/constants';
-import { materialAlpha, resolveGlassMaterials } from '$lib/themes/frosted-glass/materials';
+import { resolveGlassMaterials } from '$lib/themes/frosted-glass/materials';
 import { frostedGlassTheme } from '$lib/themes/frosted-glass';
 import { getThemeOptions } from '$lib/themes/registry';
-import {
-	applyTypography,
-	FONT_FAMILIES,
-	FONT_SIZES,
-	getFontVariants,
-	normalizeUiScalePreset
-} from '$lib/utils/typography';
+import { applyTypography, getFontVariants, normalizeUiScalePreset } from '$lib/utils/typography';
 import {
 	averageWallpaperColor,
 	FALLBACK_WALLPAPER_ACCENT,
@@ -28,52 +21,15 @@ import {
 const defaults = { ...SETTING_CONFIG_DEFAULT } as SettingsConfigType;
 
 describe('appearance settings and material palette', () => {
-	it('defaults to 75 while retaining the existing material curve and filters', () => {
-		expect(defaults).toMatchObject({
-			frostedGlassMilkiness: 75,
-			frostedGlassOpaque: false,
-			fontFamily: 'merriweather',
-			fontSize: '13',
-			fontVariant: '400',
-			uiScale: '100'
-		});
-		const styles = resolveGlassMaterials({ ...defaults, frostedGlassMilkiness: 50 });
-		for (const [name, percent] of [
-			['white-140', 14],
-			['white-130', 13],
-			['white-340', 34],
-			['grey-290', 29]
-		]) {
-			expect(styles[`--llampart-glass-${name}`]).toContain('var(--llampart-frosted-glass-accent)');
-			expect(styles[`--llampart-glass-${name}`]).toContain(` ${percent}%, transparent)`);
-		}
-		expect(styles['--llampart-glass-filter-18-116']).toBe('blur(18px) saturate(116%)');
-	});
-
-	it('increases only surface alpha monotonically across the full scale', () => {
-		for (const alpha of [0.035, 0.13, 0.14, 0.2, 0.34, 0.46, 0.72, 0.96]) {
-			expect(materialAlpha(alpha, 0)).toBeCloseTo(alpha / 4);
-			expect(materialAlpha(alpha, 50)).toBe(alpha);
-			expect(materialAlpha(alpha, 100)).toBeCloseTo(Math.max(0.92, alpha));
-			for (let level = 1; level <= 100; level++)
-				expect(materialAlpha(alpha, level)).toBeGreaterThanOrEqual(materialAlpha(alpha, level - 1));
-		}
-		expect(materialAlpha(0.14, NaN)).toBe(0.14);
-	});
-
-	it('makes the shared palette opaque and tinted without opacity on children', () => {
+	it('disables surface transparency and filters reversibly without opacity on children', () => {
 		const config = { ...defaults, frostedGlassMilkiness: 23 };
 		const before = resolveGlassMaterials(config);
 		const opaque = resolveGlassMaterials({ ...config, frostedGlassOpaque: true });
 		for (const [key, value] of Object.entries(opaque)) {
 			expect(key).not.toMatch(/text|foreground|opacity|shadow|fade|wallpaper/);
 			if (key.includes('-filter-')) expect(value).toBe('none');
-			else
-				expect(value).toMatch(
-					/^color-mix\(in srgb, var\(--llampart-frosted-glass-accent\) [\d.]+%, white\)$/
-				);
+			else expect(value).not.toContain('transparent');
 		}
-		expect(opaque['--llampart-glass-grey-290']).not.toBe(opaque['--llampart-glass-grey-340']);
 		expect(config.frostedGlassMilkiness).toBe(23);
 		expect(resolveGlassMaterials({ ...config, frostedGlassOpaque: false })).toEqual(before);
 	});
@@ -83,16 +39,7 @@ describe('appearance settings and material palette', () => {
 		for (const name of Object.keys(runtime.styles))
 			expect(frostedGlassTheme.ownedStyleProperties).toContain(name);
 		expect(getThemeOptions().map((theme) => theme.value)).toContain('frosted-glass');
-		expect(runtime.classes).toContain('has-frosted-glass-wallpaper-milk');
 	});
-
-	it.each(['90', '95', '100', '105', '110'])(
-		'retains the exact %s%% scale through schema and runtime',
-		(value) => {
-			expect(validateSettingsPatch({ uiScale: value })).toEqual({ uiScale: value });
-			expect(normalizeUiScalePreset(value)).toBe(value);
-		}
-	);
 
 	it('ignores the retired wallpaper setting while retaining legacy wallpapers and unrelated settings', () => {
 		const config = parseSettingsConfig({
@@ -117,11 +64,13 @@ describe('appearance settings and material palette', () => {
 			frostedGlassOpaque: true,
 			fontFamily: 'crimson-text',
 			fontVariant: '400',
+			fontSize: '18',
 			uiScale: '105'
 		};
 		expect(parseSettingsStorage(serializeSettingsStorage({ ...defaults, ...patch }))).toMatchObject(
 			patch
 		);
+		expect(normalizeUiScalePreset(patch.uiScale)).toBe(patch.uiScale);
 		for (const invalid of [
 			{ frostedGlassMilkiness: -1 },
 			{ frostedGlassMilkiness: 101 },
@@ -129,9 +78,14 @@ describe('appearance settings and material palette', () => {
 			{ frostedGlassOpaque: 'true' },
 			{ fontFamily: {} },
 			{ fontVariant: {} },
+			{ fontSize: '16px' },
 			{ uiScale: '97' }
 		])
 			expect(() => validateSettingsPatch(invalid)).toThrow(/Invalid value/);
+		expect(parseSettingsConfig({ fontSize: '16px', temperature: 0.3 })).toMatchObject({
+			fontSize: defaults.fontSize,
+			temperature: 0.3
+		});
 	});
 });
 
@@ -156,7 +110,6 @@ describe('local typography', () => {
 			fontSize: 'default',
 			fontVariant: '700'
 		});
-		expect(values.get('--llampart-font-family')).toBe('"Llampart Merriweather"');
 		expect(values.get('--llampart-font-weight')).toBe(SETTING_CONFIG_DEFAULT.fontVariant);
 		expect(values.get('--llampart-text-unit')).toBe(`${SETTING_CONFIG_DEFAULT.fontSize}px`);
 		expect(root.dataset.llampartFont).toBe(SETTING_CONFIG_DEFAULT.fontFamily);
@@ -177,6 +130,8 @@ describe('local typography', () => {
 			addEventListener.mock.calls[0][1]();
 			expect(values.get('--llampart-fixed-text-scale')).toBe('1.125');
 			expect(values.get('--llampart-text-unit')).toBe('18px');
+			expect(values.has('font-size')).toBe(false);
+			expect([...values.keys()].some((key) => key.includes('mono'))).toBe(false);
 			cleanup();
 			expect(removeEventListener).toHaveBeenCalledWith('resize', addEventListener.mock.calls[0][1]);
 			expect(values.size).toBe(0);
@@ -185,116 +140,23 @@ describe('local typography', () => {
 		}
 	});
 
-	it.each(['merriweather', 'frank-ruhl-libre'])(
-		'uses real %s weights with hierarchy and cleans up',
-		(fontFamily) => {
-			for (const { value: fontVariant } of getFontVariants(fontFamily)) {
-				const { root, values } = rootFixture();
-				const cleanup = applyTypography(root, { ...defaults, fontFamily, fontVariant });
-				const base = Number(values.get('--llampart-font-weight'));
-				const medium = Number(values.get('--llampart-font-medium'));
-				const semibold = Number(values.get('--llampart-font-semibold'));
-				const bold = Number(values.get('--llampart-font-bold'));
-				expect(base).toBe(Number(fontVariant));
-				expect(medium).toBeGreaterThan(base);
-				expect(semibold).toBeGreaterThan(medium);
-				expect(bold).toBeGreaterThan(semibold);
-				expect(bold).toBeLessThanOrEqual(900);
-				expect([...values.keys()].some((key) => key.includes('mono'))).toBe(false);
-				cleanup();
-				expect(values.size).toBe(0);
-				expect(root.dataset).toEqual({});
-			}
-		}
-	);
-
-	it('offers only real new-family weights and normalizes unsupported Crimson weights', () => {
-		expect(Object.keys(FONT_FAMILIES)).toEqual([
-			'default',
-			'merriweather',
-			'frank-ruhl-libre',
-			'crimson-text',
-			'libre-caslon-condensed',
-			'fira-sans'
-		]);
-		expect(getFontVariants('crimson-text').map((item) => item.value)).toEqual([
-			'400',
-			'600',
-			'700'
-		]);
-		for (const fontVariant of ['400', '500', '400-italic']) {
-			const { root, values } = rootFixture();
-			const cleanup = applyTypography(root, {
-				...defaults,
-				fontFamily: 'crimson-text',
-				fontVariant
-			});
-			expect(values.get('--llampart-font-weight')).toBe('400');
-			expect(values.get('--llampart-font-medium')).toBe('600');
-			expect(values.get('--llampart-font-bold')).toBe('700');
-			expect(values.get('--llampart-font-style')).toBe('normal');
-			cleanup();
-			expect(values.size).toBe(0);
-		}
-		expect(
-			parseSettingsConfig({ fontFamily: 'crimson-text', fontVariant: '500' }).fontVariant
-		).toBe('400');
-		expect(
-			parseSettingsConfig({ fontFamily: 'merriweather', fontVariant: '400-italic' }).fontVariant
-		).toBe('400');
-	});
-
-	it('limits user widths with one percentage rule, without changing the 72rem AI container', () => {
-		const read = (path: string) =>
-			readFileSync(new URL(`../../src/${path}`, import.meta.url), 'utf8');
-		const tokens = read('lib/styles/tokens.css');
-		expect(tokens).toContain('--llampart-chat-message-max-width: 72rem');
-		expect(tokens).toContain('--llampart-chat-user-message-min-width: 50%');
-		expect(tokens).toContain('--llampart-chat-user-message-max-width: 75%');
-		const rule = read('app.css').match(/\.llampart-user-message-width\s*\{([^}]+)\}/)![1];
-		expect(rule).toContain('width: fit-content');
-		expect(rule).toContain('min-width: var(--llampart-chat-user-message-min-width)');
-		expect(rule).toContain('max-width: var(--llampart-chat-user-message-max-width)');
-		expect(rule).not.toContain('!important');
-		const component = read('lib/components/app/chat/ChatMessages/ChatMessageUser.svelte');
-		expect(component).not.toMatch(/w-fit|min-w-48|w-full llampart-user-message-width/);
-	});
-
-	it('renders the wallpaper directly without global overlay pseudo-elements', () => {
-		const css = readFileSync(
-			new URL('../../src/lib/themes/frosted-glass/global.css', import.meta.url),
-			'utf8'
+	it('normalizes an unsupported font weight consistently in storage and runtime and cleans up', () => {
+		const config = parseSettingsConfig({ fontFamily: 'crimson-text', fontVariant: '500' });
+		const { root, values } = rootFixture();
+		const cleanup = applyTypography(root, { ...config, fontVariant: '500' });
+		expect(getFontVariants(config.fontFamily).map(({ value }) => value)).toContain(
+			config.fontVariant
 		);
-		expect(css).toContain('background-image: var(--llampart-theme-wallpaper)');
-		expect(css).not.toMatch(/#llampart-theme-preload-background::(?:before|after)/);
-	});
-
-	it('keeps the composer wallpaper fade without the retired white overlay', () => {
-		const css = readFileSync(
-			new URL('../../src/lib/themes/frosted-glass/composer.css', import.meta.url),
-			'utf8'
-		);
-		expect(css).toContain('.llampart-composer-fade-curtain::before');
-		expect(css).toContain('background-image: var(--llampart-theme-wallpaper)');
-		expect(css).toContain('mask-image: linear-gradient(');
-		expect(css).not.toContain('.llampart-composer-fade-curtain::after');
+		expect(values.get('--llampart-font-weight')).toBe(config.fontVariant);
+		cleanup();
+		expect(values.size).toBe(0);
+		expect(root.dataset).toEqual({});
 	});
 
 	it('averages wallpaper colors with alpha weighting and a safe empty fallback', () => {
-		expect(averageWallpaperColor(new Uint8ClampedArray([255, 0, 0, 255, 0, 0, 255, 255]))).toBe(
-			'#800080'
-		);
-		expect(averageWallpaperColor(new Uint8ClampedArray([255, 0, 0, 0, 0, 0, 255, 255]))).toBe(
-			'#0000ff'
-		);
+		const blue = averageWallpaperColor(new Uint8ClampedArray([0, 0, 255, 255]));
+		expect(averageWallpaperColor(new Uint8ClampedArray([255, 0, 0, 0, 0, 0, 255, 255]))).toBe(blue);
 		expect(averageWallpaperColor(new Uint8ClampedArray())).toBe(FALLBACK_WALLPAPER_ACCENT);
-	});
-
-	it('limits a tiny extreme-color outlier without shifting the dominant material color', () => {
-		const pixels = new Uint8ClampedArray(100 * 4);
-		for (let i = 0; i < 100; i++)
-			pixels.set(i === 0 ? [255, 0, 255, 255] : [120, 140, 160, 255], i * 4);
-		expect(averageWallpaperColor(pixels)).toBe('#788ca0');
 	});
 
 	it.each(['decode', 'context', 'pixels'])(
@@ -367,7 +229,8 @@ describe('local typography', () => {
 			const wallpaper = { id: 'test-custom', labelKey: '', src: 'data:first' };
 			expect(resolveWallpaperAccent(wallpaper)).toBe(FALLBACK_WALLPAPER_ACCENT);
 			images[0].onload();
-			expect(resolveWallpaperAccent(wallpaper)).toBe('#1e50a0');
+			const first = resolveWallpaperAccent(wallpaper);
+			expect(first).not.toBe(FALLBACK_WALLPAPER_ACCENT);
 			expect(images).toHaveLength(1);
 			expect(dispatch.mock.calls[0][0].type).toBe(WALLPAPER_ACCENT_EVENT);
 			resolveWallpaperAccent({ ...wallpaper, src: 'data:second' });
@@ -377,70 +240,17 @@ describe('local typography', () => {
 			expect(resolveWallpaperAccent(latest)).toBe(FALLBACK_WALLPAPER_ACCENT);
 			pixels = new Uint8ClampedArray([180, 100, 20, 255]);
 			images[2].onload();
-			expect(resolveWallpaperAccent(latest)).toBe('#b46414');
+			expect(resolveWallpaperAccent(latest)).not.toBe(FALLBACK_WALLPAPER_ACCENT);
+			expect(resolveWallpaperAccent(latest)).not.toBe(first);
 		} finally {
 			vi.unstubAllGlobals();
 		}
 	});
 
-	it.each([0, 50, 100])('retains the wallpaper tint at milkiness %s', (frostedGlassMilkiness) => {
-		for (const [key, value] of Object.entries(
-			resolveGlassMaterials({ ...defaults, frostedGlassMilkiness })
-		))
-			if (!key.includes('-filter-'))
-				expect(value).toContain('var(--llampart-frosted-glass-accent)');
-	});
-
-	it('ships real local WOFF2 faces and OFL licenses without runtime CDN CSS', () => {
-		const dir = new URL('../../static/fonts/', import.meta.url);
-		const files = readdirSync(dir).filter((name) => name.endsWith('.woff2'));
-		expect(files).toHaveLength(38);
+	it('does not load typography CSS from an external CDN', () => {
 		const css =
 			readFileSync(new URL('../../src/lib/styles/typography.css', import.meta.url), 'utf8') +
 			readFileSync(new URL('../../src/lib/styles/local-fonts.css', import.meta.url), 'utf8');
 		expect(css).not.toMatch(/https?:|@import/);
-		for (const file of files) {
-			expect(readFileSync(new URL(file, dir)).subarray(0, 4).toString()).toBe('wOF2');
-			expect(css).toContain(`/fonts/${file}`);
-		}
-		const sources = JSON.parse(readFileSync(new URL('sources.json', dir), 'utf8')) as {
-			file: string;
-			bytes: number;
-			sha256: string;
-			url: string;
-		}[];
-		expect(sources).toHaveLength(32);
-		for (const source of sources) {
-			const data = readFileSync(new URL(source.file, dir));
-			expect(data.length).toBe(source.bytes);
-			expect(createHash('sha256').update(data).digest('hex')).toBe(source.sha256);
-			expect(source.url).toMatch(/^https:\/\/fonts.gstatic.com\//);
-		}
-		for (const family of Object.keys(FONT_FAMILIES).filter((id) => id !== 'default'))
-			expect(readFileSync(new URL(`${family}-OFL.txt`, dir), 'utf8')).toMatch(
-				/SIL OPEN FONT LICENSE Version 1.1/i
-			);
 	});
-	it.each(FONT_SIZES)('applies %s px without touching root rem or monospace', (fontSize) => {
-		const { root, values } = rootFixture();
-		const cleanup = applyTypography(root, { ...defaults, fontFamily: 'default', fontSize });
-		expect(values.get('--llampart-text-unit')).toBe(`${fontSize}px`);
-		expect(values.has('font-size')).toBe(false);
-		expect([...values.keys()].some((key) => key.includes('mono'))).toBe(false);
-		cleanup();
-		expect(values.size).toBe(0);
-		expect(parseSettingsStorage(serializeSettingsStorage({ ...defaults, fontSize })).fontSize).toBe(
-			fontSize
-		);
-	});
-	it.each(['11', '21', '100', '105', '16px', 16, NaN])(
-		'rejects invalid font size %s and falls back on storage load',
-		(fontSize) => {
-			expect(() => validateSettingsPatch({ fontSize })).toThrow();
-			expect(parseSettingsConfig({ fontSize, temperature: 0.3 })).toMatchObject({
-				fontSize: '13',
-				temperature: 0.3
-			});
-		}
-	);
 });

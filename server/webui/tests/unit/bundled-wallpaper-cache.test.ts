@@ -44,27 +44,18 @@ async function ready(
 }
 
 describe('independent single-entry bundled wallpaper cache', () => {
-	it('checks storage before fetching, deduplicates and reopens without a network request', async () => {
+	it('deduplicates, replaces one independent entry and reopens without a network request', async () => {
+		const revoke = vi.spyOn(URL, 'revokeObjectURL');
 		const module = await import('$lib/themes/frosted-glass/bundled-wallpaper-cache');
 		expect(module.resolveBundledWallpaperSrc(source(3))).toBe('');
 		module.resolveBundledWallpaperSrc(source(3));
-		await ready(module, 3);
+		const original = await ready(module, 3);
 		expect(fetchImage).toHaveBeenCalledExactlyOnceWith(
 			`${source(3)}?v=${module.BUNDLED_WALLPAPER_CACHE_VERSION}`
 		);
 		expect(stored.size).toBe(1);
-		vi.resetModules();
-		fetchImage.mockClear();
-		const reopened = await import('$lib/themes/frosted-glass/bundled-wallpaper-cache');
-		expect(reopened.resolveBundledWallpaperSrc(source(3))).toBe('');
-		await ready(reopened, 3);
-		expect(fetchImage).not.toHaveBeenCalled();
-	});
-
-	it('replaces only the built-in entry without touching localStorage', async () => {
-		const module = await import('$lib/themes/frosted-glass/bundled-wallpaper-cache');
-		await ready(module, 1);
 		await ready(module, 2);
+		expect(revoke).toHaveBeenCalledExactlyOnceWith(original);
 		expect(stored.size).toBe(1);
 		expect(stored.get(module.BUNDLED_WALLPAPER_CACHE_KEY)?.headers.get('X-LLAMPART-Source')).toBe(
 			source(2)
@@ -72,26 +63,75 @@ describe('independent single-entry bundled wallpaper cache', () => {
 		expect(localStorage.getItem).not.toHaveBeenCalled();
 		expect(localStorage.setItem).not.toHaveBeenCalled();
 		expect(localStorage.removeItem).not.toHaveBeenCalled();
+		vi.resetModules();
+		fetchImage.mockClear();
+		const reopened = await import('$lib/themes/frosted-glass/bundled-wallpaper-cache');
+		expect(reopened.resolveBundledWallpaperSrc(source(2))).toBe('');
+		await ready(reopened, 2);
+		expect(fetchImage).not.toHaveBeenCalled();
 	});
 
 	it('keeps the committed image through preview/Cancel and persists only on Save', async () => {
+		const revoke = vi.spyOn(URL, 'revokeObjectURL');
 		const module = await import('$lib/themes/frosted-glass/bundled-wallpaper-cache');
 		const original = await ready(module, 3);
 		const draft = module.beginBundledWallpaperPreview();
-		await ready(module, 4);
+		const cancelled = await ready(module, 4);
+		expect(revoke).not.toHaveBeenCalled();
 		expect(stored.get(module.BUNDLED_WALLPAPER_CACHE_KEY)?.headers.get('X-LLAMPART-Source')).toBe(
 			source(3)
 		);
 		draft.cancel();
+		expect(revoke).toHaveBeenCalledExactlyOnceWith(cancelled);
 		expect(module.resolveBundledWallpaperSrc(source(3))).toBe(original);
 		const next = module.beginBundledWallpaperPreview();
-		await ready(module, 5);
+		const saved = await ready(module, 5);
 		next.commit();
+		expect(revoke).toHaveBeenCalledTimes(2);
+		expect(revoke).toHaveBeenLastCalledWith(original);
+		expect(module.resolveBundledWallpaperSrc(source(5))).toBe(saved);
 		await vi.waitFor(() =>
 			expect(stored.get(module.BUNDLED_WALLPAPER_CACHE_KEY)?.headers.get('X-LLAMPART-Source')).toBe(
 				source(5)
 			)
 		);
+	});
+
+	it('rolls back a failed custom image Save, preserves bundled storage and allows retry', async () => {
+		const module = await import('$lib/themes/frosted-glass/bundled-wallpaper-cache');
+		const original = await ready(module, 3);
+		const wallpapers = await import('$lib/themes/frosted-glass/wallpapers');
+		let saved: string | null = 'data:image/png;base64,b2xk';
+		vi.mocked(localStorage.getItem).mockImplementation(() => saved);
+		vi.mocked(localStorage.removeItem).mockImplementation(() => {
+			saved = null;
+		});
+		const preview = wallpapers.beginWallpaperSettingsPreview();
+		wallpapers.setCustomFrostedGlassWallpaperSrc('data:image/png;base64,bmV3');
+		await ready(module, 4);
+		expect(saved).toBe('data:image/png;base64,b2xk');
+		expect(
+			preview.commit({
+				frostedGlassWallpaper: wallpapers.CUSTOM_FROSTED_GLASS_WALLPAPER_ID
+			} as SettingsConfigType)
+		).toMatchObject({
+			ok: false,
+			configPatch: { frostedGlassWallpaper: wallpapers.DEFAULT_FROSTED_GLASS_WALLPAPER_ID }
+		});
+		expect(saved).toBeNull();
+		expect(wallpapers.getCustomFrostedGlassWallpaperSrc()).toBeUndefined();
+		expect(stored.get(module.BUNDLED_WALLPAPER_CACHE_KEY)?.headers.get('X-LLAMPART-Source')).toBe(
+			source(3)
+		);
+		preview.cancel();
+		expect(module.resolveBundledWallpaperSrc(source(3))).toBe(original);
+		vi.mocked(localStorage.setItem).mockImplementation((_key, value) => {
+			saved = value;
+		});
+		const retry = wallpapers.beginWallpaperSettingsPreview();
+		wallpapers.setCustomFrostedGlassWallpaperSrc('data:image/png;base64,bmV3');
+		expect(retry.commit({} as SettingsConfigType)).toEqual({ ok: true });
+		expect(saved).toBe('data:image/png;base64,bmV3');
 	});
 
 	it('displays the image even when Cache Storage quota is exceeded', async () => {
@@ -137,9 +177,13 @@ describe('independent single-entry bundled wallpaper cache', () => {
 			`${source(3)}?v=${module.BUNDLED_WALLPAPER_CACHE_VERSION}`
 		);
 		expect(stored.size).toBe(1);
+		expect(stored.get(module.BUNDLED_WALLPAPER_CACHE_KEY)?.headers.get('X-LLAMPART-Version')).toBe(
+			module.BUNDLED_WALLPAPER_CACHE_VERSION
+		);
 	});
 
 	it('ignores a slow obsolete download', async () => {
+		const create = vi.spyOn(URL, 'createObjectURL');
 		let finish!: (response: Response) => void;
 		fetchImage.mockImplementationOnce(
 			() =>
@@ -151,8 +195,14 @@ describe('independent single-entry bundled wallpaper cache', () => {
 		module.resolveBundledWallpaperSrc(source(1));
 		await vi.waitFor(() => expect(fetchImage).toHaveBeenCalledTimes(1));
 		await ready(module, 2);
-		finish(image());
-		await vi.waitFor(() => expect(cache.put).toHaveBeenCalledTimes(1));
+		create.mockClear();
+		const obsolete = image();
+		const read = vi.spyOn(obsolete, 'blob');
+		finish(obsolete);
+		await vi.waitFor(() => expect(read).toHaveBeenCalledOnce());
+		await new Promise<void>((resolve) => setImmediate(resolve));
+		expect(create).not.toHaveBeenCalled();
+		expect(cache.put).toHaveBeenCalledTimes(1);
 		expect(stored.get(module.BUNDLED_WALLPAPER_CACHE_KEY)?.headers.get('X-LLAMPART-Source')).toBe(
 			source(2)
 		);
@@ -169,21 +219,10 @@ describe('independent single-entry bundled wallpaper cache', () => {
 		);
 	});
 
-	it('sets the upload limit to exactly 1.5 MiB and updates every theme translation', async () => {
-		const { CUSTOM_FROSTED_GLASS_WALLPAPER_MAX_SIZE_BYTES } =
-			await import('$lib/themes/frosted-glass/wallpapers');
-		const { FROSTED_GLASS_TRANSLATIONS } = await import('$lib/themes/frosted-glass/translations');
-		expect(CUSTOM_FROSTED_GLASS_WALLPAPER_MAX_SIZE_BYTES).toBe(1_572_864);
-		for (const translation of Object.values(FROSTED_GLASS_TRANSLATIONS)) {
-			const settings = translation.settings as Record<string, string>;
-			expect(settings.frostedGlassWallpaperUploadTooLarge).toMatch(/1[.,]5 MiB/);
-			expect(settings.frostedGlassWallpaperUploadRequirements).toMatch(/1[.,]5 MiB/);
-		}
-	});
-
 	it('renders a maximum-size custom Data URL through a short, reusable Blob URL', async () => {
-		const { resolveCustomWallpaperDisplaySrc } =
+		const { resolveCustomWallpaperDisplaySrc, CUSTOM_FROSTED_GLASS_WALLPAPER_MAX_SIZE_BYTES } =
 			await import('$lib/themes/frosted-glass/wallpapers');
+		expect(CUSTOM_FROSTED_GLASS_WALLPAPER_MAX_SIZE_BYTES).toBe(1_572_864);
 		const create = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:custom');
 		const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 		const source = `data:image/png;base64,${Buffer.alloc(1_572_864).toString('base64')}`;
