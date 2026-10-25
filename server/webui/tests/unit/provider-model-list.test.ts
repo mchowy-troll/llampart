@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
 import { llamaServerProvider } from '$lib/services/providers/llama-server.provider';
 import { openAiCompatibleProvider } from '$lib/services/providers/openai-compatible.provider';
 
@@ -73,7 +72,6 @@ describe('provider-owned model lists', () => {
 		);
 
 		expect(result.data[0].id).toBe('gpt-test');
-		expect(openAiCompatibleProvider.id).toBe(API_PROVIDER_IDS.OPENAI_COMPATIBLE);
 		expect(fetchMock).toHaveBeenCalledWith(
 			'/__llampart/api/openai-compatible/v1/models',
 			expect.objectContaining({
@@ -84,19 +82,5 @@ describe('provider-owned model lists', () => {
 				})
 			})
 		);
-	});
-
-	it('rejects invalid OpenAI-compatible model list payloads', async () => {
-		const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ object: 'list', data: null }));
-
-		await expect(
-			openAiCompatibleProvider.listModels(
-				{
-					serverBaseUrl: 'https://api.example.test',
-					apiKey: ''
-				},
-				fetchMock
-			)
-		).rejects.toThrow('/v1/models');
 	});
 });

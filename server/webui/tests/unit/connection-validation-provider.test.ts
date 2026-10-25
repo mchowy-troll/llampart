@@ -86,7 +86,8 @@ describe('provider-aware connection validation', () => {
 	});
 
 	it('rejects invalid OpenAI-compatible model list payloads', async () => {
-		const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ data: null }));
+		// Covers listModels rejecting this payload and the validator exposing that failure.
+		const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ object: 'list', data: null }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		const result = await validateConnectionSettings(

@@ -39,7 +39,9 @@ describe('provider connection store', () => {
 		expect(store.status).toBe('connected');
 		expect(store.hasDisconnected).toBe(false);
 	});
-	it.each(Object.values(API_PROVIDER_IDS))(
+	// Cover both error shapes: llama-server HTTP status and OpenAI-family discovery errors.
+	// vLLM shares the latter validator and is also exercised by the source-switch tests.
+	it.each([API_PROVIDER_IDS.LLAMA_SERVER, API_PROVIDER_IDS.OPENAI_COMPATIBLE])(
 		'distinguishes offline/authentication and recovers for %s',
 		async (providerId) => {
 			const store = new ProviderConnectionStore();

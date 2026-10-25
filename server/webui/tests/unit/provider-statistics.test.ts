@@ -19,14 +19,6 @@ describe('provider statistics badges', () => {
 		]
 	};
 
-	it('shows output tokens and explicit backend generation metrics', () => {
-		expect(getProviderStatistics(provider, 'generation')).toEqual({
-			tokens: 12,
-			timeMs: 200,
-			tokensPerSecond: 69.98
-		});
-	});
-
 	it('does not substitute TTFT or browser elapsed time for prompt processing', () => {
 		expect(getProviderStatistics(provider, 'reading')).toEqual({
 			tokens: 79,

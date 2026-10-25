@@ -12,7 +12,7 @@ import {
 } from '$lib/services/providers';
 
 describe('api provider registry', () => {
-	it('registers llama-server and OpenAI-compatible as independent providers', () => {
+	it('registers and selects each provider under its own id', () => {
 		expect(Object.keys(API_PROVIDER_REGISTRY).sort()).toEqual(
 			[
 				API_PROVIDER_IDS.LLAMA_SERVER,
@@ -20,9 +20,10 @@ describe('api provider registry', () => {
 				API_PROVIDER_IDS.VLLM
 			].sort()
 		);
-		expect(API_PROVIDER_REGISTRY[API_PROVIDER_IDS.LLAMA_SERVER]).not.toBe(
-			API_PROVIDER_REGISTRY[API_PROVIDER_IDS.OPENAI_COMPATIBLE]
-		);
+		for (const id of Object.values(API_PROVIDER_IDS)) {
+			expect(API_PROVIDER_REGISTRY[id].id).toBe(id);
+			expect(getApiProvider(id).id).toBe(id);
+		}
 	});
 
 	it('falls back to llama-server for unknown provider ids', () => {
@@ -32,6 +33,9 @@ describe('api provider registry', () => {
 	});
 
 	it('keeps provider capabilities owned by each provider', () => {
+		for (const id of Object.values(API_PROVIDER_IDS))
+			expect(getApiProviderCapabilities(id).supportsOpenAiToolCalls).toBe(true);
+
 		expect(PROVIDER_CAPABILITIES[API_PROVIDER_IDS.LLAMA_SERVER].supportsServerProps).toBe(true);
 		expect(PROVIDER_CAPABILITIES[API_PROVIDER_IDS.LLAMA_SERVER].supportsBuiltinToolsEndpoint).toBe(
 			true
@@ -48,9 +52,7 @@ describe('api provider registry', () => {
 		expect(openAiCapabilities.supportsModelProps).toBe(false);
 		expect(openAiCapabilities.supportsTopK).toBe(false);
 		expect(openAiCapabilities.supportsPreEncode).toBe(false);
-		expect(openAiCapabilities.supportsOpenAiToolCalls).toBe(true);
 		expect(openAiCapabilities.supportsBuiltinToolsEndpoint).toBe(false);
-		expect(getApiProviderCapabilities(API_PROVIDER_IDS.VLLM).supportsOpenAiToolCalls).toBe(true);
 		expect(openAiCapabilities.supportsCustomJsonPayload).toBe(true);
 		expect(openAiCapabilities.supportsStreamUsage).toBe(true);
 		expect(openAiCapabilities.requiresModelInChatRequest).toBe(true);

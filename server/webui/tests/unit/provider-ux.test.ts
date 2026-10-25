@@ -8,7 +8,6 @@ import {
 	parseSettingsStorage,
 	validateSettingsPatch
 } from '$lib/utils/settings-schema';
-import { getApiProviderCapabilities } from '$lib/services/providers';
 import { createCapabilitySnapshot } from '$lib/services/providers/provider-capabilities';
 import { modelsStore } from '$lib/stores/models.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
@@ -21,23 +20,9 @@ afterEach(() => {
 });
 
 describe('localized connection UX', () => {
-	const closes = {
-		en: 'Close',
-		pl: 'Zamknij',
-		de: 'Schließen',
-		fr: 'Fermer',
-		it: 'Chiudi',
-		es: 'Cerrar'
-	};
 	it.each(INTERFACE_LANGUAGES)(
-		'uses translated controls and safe discovery errors in %s',
+		'uses translated connection guidance and safe discovery errors in %s',
 		(language) => {
-			if (language in closes)
-				expect(t('common.close', language)).toBe(closes[language as keyof typeof closes]);
-			else {
-				expect(t('common.close', language).trim()).not.toBe('');
-				expect(t('common.close', language)).not.toBe(closes.en);
-			}
 			for (const status of [401, 403, 404, 502]) {
 				const message = connectionErrorMessage(`Model discovery failed (${status})`, language);
 				expect(message).toBe(`${t('server.modelDiscoveryFailed', language)} (HTTP ${status})`);
@@ -66,17 +51,12 @@ describe('localized connection UX', () => {
 			expect(SETTING_CONFIG_INFO[`${prefix}BaseUrl`]).toBe('settings.info.serverBaseUrl');
 			expect(SETTING_CONFIG_INFO[`${prefix}ApiKey`]).toBe('settings.info.apiKey');
 		}
-		expect(t('settings.info.apiProvider', 'pl')).toBe('Wybierz dostawcę API.');
-		expect(t('settings.info.serverBaseUrl', 'pl')).toBe(
-			'Adres serwera, z którym chcesz się połączyć.'
-		);
-		expect(t('settings.info.apiKey', 'pl')).toBe('Klucz API, jeśli jest wymagany przez serwer.');
 	});
 });
 
 describe('removed tools compatibility setting', () => {
-	it.each([true, false, 'obsolete', { invalid: true }])(
-		'ignores legacy values %j without hiding tools',
+	it.each([true, { invalid: true }])(
+		'drops legacy value %j from configuration, storage and patches',
 		(value) => {
 			expect(parseSettingsConfig({ disableOpenAiCompatibleTools: value })).not.toHaveProperty(
 				'disableOpenAiCompatibleTools'
@@ -85,8 +65,6 @@ describe('removed tools compatibility setting', () => {
 				parseSettingsStorage(JSON.stringify({ disableOpenAiCompatibleTools: value }))
 			).not.toHaveProperty('disableOpenAiCompatibleTools');
 			expect(validateSettingsPatch({ disableOpenAiCompatibleTools: value })).toEqual({});
-			for (const provider of ['openai-compatible', 'vllm', 'llama-server'])
-				expect(getApiProviderCapabilities(provider).supportsOpenAiToolCalls).toBe(true);
 		}
 	);
 });

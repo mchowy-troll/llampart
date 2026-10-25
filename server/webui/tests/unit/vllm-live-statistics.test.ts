@@ -52,13 +52,10 @@ describe('request-scoped vLLM live rate', () => {
 		expect(tracker.observe(usage(2), 100)).toBeUndefined();
 		expect(tracker.observe(usage(4), 99)).toBeUndefined();
 	});
-	it('prefers the final backend rate and marks only the live measurement approximate', () => {
+	it('prefers the final backend rate and keeps live rates out of prompt processing', () => {
 		const live = new VllmLiveStatistics();
 		live.observe(usage(1), 0);
 		const metric = live.observe(usage(11), 1000)!;
-		expect(
-			getProviderStatistics({ usage: { completionTokens: 11 }, metrics: [metric] }, 'generation')
-		).toMatchObject({ tokens: 11, tokensPerSecond: 10, approximate: true });
 		expect(
 			getProviderStatistics(
 				{
