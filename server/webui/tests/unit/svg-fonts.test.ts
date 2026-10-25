@@ -35,16 +35,6 @@ function fixture(rules: Face[], weight = '700', style = 'normal', bytes = 4) {
 	return { fetch, source: { querySelectorAll: () => [] } as unknown as HTMLElement };
 }
 describe('local chart font embedding', () => {
-	it('matches KaTeX normal/bold weight descriptors against computed numeric weights', async () => {
-		const { source, fetch } = fixture(
-			[new Face('normal', 'normal', 'latin'), new Face('bold', 'normal', 'latin')],
-			'400'
-		);
-		const css = await embeddedSvgFonts('Test Font', source);
-		expect(fetch).toHaveBeenCalledOnce();
-		expect(css).toContain('font-weight:normal');
-		expect(css).not.toContain('font-weight:bold');
-	});
 	it('preserves Vite-inlined local faces without network requests', async () => {
 		const face = new Face('400', 'normal', 'latin');
 		const data = 'data:font/woff2;base64,AQIDBA==';
@@ -55,9 +45,9 @@ describe('local chart font embedding', () => {
 		expect(css).toContain(data);
 		expect(fetch).not.toHaveBeenCalled();
 	});
-	it('includes bold diagram titles in open shadow roots, but not unused faces', async () => {
+	it('embeds used normal, bold and variable faces, including text in open shadow roots', async () => {
 		const { fetch } = fixture(
-			['400', '700', '900'].map((weight) => new Face(weight, 'normal', 'latin')),
+			['normal', 'bold', '600 800', '900'].map((weight) => new Face(weight, 'normal', 'latin')),
 			'400'
 		);
 		const text = { weight: '700' };
@@ -68,16 +58,17 @@ describe('local chart font embedding', () => {
 			fontStyle: 'normal'
 		}));
 		const css = await embeddedSvgFonts('Test Font', source as unknown as HTMLElement);
-		expect(fetch).toHaveBeenCalledTimes(2);
-		expect(css).toContain('font-weight:700');
+		expect(fetch).toHaveBeenCalledTimes(3);
+		expect(css.match(/@font-face/g)).toHaveLength(3);
+		for (const weight of ['normal', 'bold', '600 800'])
+			expect(css).toContain(`font-weight:${weight}`);
 		expect(css).not.toContain('font-weight:900');
+		expect(css).toContain('data:font/woff2;base64,');
+		expect(css).not.toContain('/fonts/');
 	});
-	it('does not let sixteen static faces displace used upright weights', async () => {
-		const rules = ['italic', 'normal'].flatMap((style) =>
-			['400', '500', '600', '700'].flatMap((weight) =>
-				['latin', 'latin-ext'].map((subset) => new Face(weight, style, subset))
-			)
-		);
+	it('filters unused faces before the export limit and retains both used subsets', async () => {
+		const rules = Array.from({ length: 13 }, (_, i) => new Face('700', 'italic', String(i)));
+		rules.push(new Face('700', 'normal', 'latin'), new Face('700', 'normal', 'latin-ext'));
 		const { fetch, source } = fixture(rules);
 		const css = await embeddedSvgFonts('"Test Font",sans-serif', source);
 		expect(fetch).toHaveBeenCalledTimes(2);
@@ -85,11 +76,6 @@ describe('local chart font embedding', () => {
 		expect(css).toContain('data:font/woff2;base64,');
 		expect(css).toContain('font-weight:700');
 		expect(css).not.toContain('italic');
-	});
-	it('matches variable weight ranges', async () => {
-		const { fetch, source } = fixture([new Face('400 700', 'normal', 'latin')], '600');
-		await embeddedSvgFonts('Test Font', source);
-		expect(fetch).toHaveBeenCalledOnce();
 	});
 	it('keeps the 12 face and 4 MiB limits', async () => {
 		let { source } = fixture(
