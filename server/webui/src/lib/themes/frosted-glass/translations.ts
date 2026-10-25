@@ -24,8 +24,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Could not save the wallpaper. The previous custom image may have been removed. Other changes have not been saved. Upload the image again and retry.',
 			frostedGlassWallpaperUserRemoved: 'User wallpaper removed.',
 			frostedGlassWallpaperUploadInvalidType: 'Choose a JPG or PNG file.',
-			frostedGlassWallpaperUploadTooLarge: 'Wallpaper file can be up to 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Use a JPG or PNG file up to 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Wallpaper file can be up to 1.5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Use a JPG or PNG file up to 1.5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Could not save the wallpaper. Browser localStorage may be full.',
 			info: {
@@ -59,8 +59,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Nie udało się zapisać tapety. Poprzedni własny obraz mógł zostać usunięty. Pozostałe zmiany nie zostały zapisane. Wczytaj obraz ponownie i ponów zapis.',
 			frostedGlassWallpaperUserRemoved: 'Tapeta użytkownika została usunięta.',
 			frostedGlassWallpaperUploadInvalidType: 'Wybierz plik JPG lub PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'Tapeta może mieć maksymalnie 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Użyj pliku JPG lub PNG o rozmiarze do 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Tapeta może mieć maksymalnie 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Użyj pliku JPG lub PNG o rozmiarze do 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Nie udało się zapisać tapety. LocalStorage przeglądarki może być pełny.',
 			info: {
@@ -95,8 +95,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Das Hintergrundbild konnte nicht gespeichert werden. Das vorherige eigene Bild wurde möglicherweise entfernt. Andere Änderungen wurden nicht gespeichert. Lade das Bild erneut hoch und versuche es noch einmal.',
 			frostedGlassWallpaperUserRemoved: 'Eigenes Hintergrundbild entfernt.',
 			frostedGlassWallpaperUploadInvalidType: 'Wählen Sie eine JPG- oder PNG-Datei.',
-			frostedGlassWallpaperUploadTooLarge: 'Das Hintergrundbild darf höchstens 3 MB groß sein.',
-			frostedGlassWallpaperUploadRequirements: 'Zulässig sind JPG- oder PNG-Dateien bis 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Das Hintergrundbild darf höchstens 1,5 MiB groß sein.',
+			frostedGlassWallpaperUploadRequirements: 'Zulässig sind JPG- oder PNG-Dateien bis 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Das Hintergrundbild konnte nicht gespeichert werden. Der localStorage des Browsers ist möglicherweise voll.',
 			info: {
@@ -131,8 +131,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Impossible d’enregistrer le fond. L’image personnalisée précédente a peut-être été supprimée. Les autres modifications n’ont pas été enregistrées. Chargez à nouveau l’image et réessayez.',
 			frostedGlassWallpaperUserRemoved: 'Fond utilisateur supprimé.',
 			frostedGlassWallpaperUploadInvalidType: 'Choisissez un fichier JPG ou PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'Le fond peut faire au maximum 3 Mo.',
-			frostedGlassWallpaperUploadRequirements: 'Utilisez un fichier JPG ou PNG de 3 Mo maximum.',
+			frostedGlassWallpaperUploadTooLarge: 'Le fond peut faire au maximum 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Utilisez un fichier JPG ou PNG de 1,5 MiB maximum.',
 			frostedGlassWallpaperUploadReadError:
 				'Impossible d’enregistrer le fond. Le localStorage du navigateur est peut-être plein.',
 			info: {
@@ -167,8 +167,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Impossibile salvare lo sfondo. L’immagine personalizzata precedente potrebbe essere stata rimossa. Le altre modifiche non sono state salvate. Carica nuovamente l’immagine e riprova.',
 			frostedGlassWallpaperUserRemoved: 'Sfondo utente rimosso.',
 			frostedGlassWallpaperUploadInvalidType: 'Scegli un file JPG o PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'Lo sfondo può essere al massimo di 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Usa un file JPG o PNG fino a 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Lo sfondo può essere al massimo di 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Usa un file JPG o PNG fino a 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Impossibile salvare lo sfondo. Il localStorage del browser potrebbe essere pieno.',
 			info: {
@@ -203,8 +203,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'No se pudo guardar el fondo. Es posible que se haya eliminado la imagen personalizada anterior. Los demás cambios no se han guardado. Vuelve a cargar la imagen e inténtalo de nuevo.',
 			frostedGlassWallpaperUserRemoved: 'Fondo del usuario eliminado.',
 			frostedGlassWallpaperUploadInvalidType: 'Elige un archivo JPG o PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'El fondo puede tener como máximo 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Usa un archivo JPG o PNG de hasta 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'El fondo puede tener como máximo 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Usa un archivo JPG o PNG de hasta 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'No se pudo guardar el fondo. Es posible que el localStorage del navegador esté lleno.',
 			info: {
@@ -241,8 +241,9 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			frostedGlassWallpaperUserRemoved: 'Imagem de fundo personalizada removida.',
 			frostedGlassWallpaperUploadInvalidType: 'Escolha um ficheiro JPG ou PNG.',
 			frostedGlassWallpaperUploadTooLarge:
-				'O ficheiro da imagem de fundo pode ter, no máximo, 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Use um ficheiro JPG ou PNG com, no máximo, 3 MB.',
+				'O ficheiro da imagem de fundo pode ter, no máximo, 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements:
+				'Use um ficheiro JPG ou PNG com, no máximo, 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Não foi possível guardar a imagem de fundo. O localStorage do navegador pode estar cheio.',
 			info: {
@@ -278,8 +279,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Taustapilti ei saanud salvestada. Eelmine kohandatud pilt võis olla eemaldatud. Muid muudatusi pole salvestatud. Laadi pilt uuesti üles ja proovi uuesti.',
 			frostedGlassWallpaperUserRemoved: 'Kasutaja taustapilt eemaldati.',
 			frostedGlassWallpaperUploadInvalidType: 'Vali JPG- või PNG-fail.',
-			frostedGlassWallpaperUploadTooLarge: 'Taustapildifail võib olla kuni 3 MB suurune.',
-			frostedGlassWallpaperUploadRequirements: 'Kasuta kuni 3 MB suurust JPG- või PNG-faili.',
+			frostedGlassWallpaperUploadTooLarge: 'Taustapildifail võib olla kuni 1,5 MiB suurune.',
+			frostedGlassWallpaperUploadRequirements: 'Kasuta kuni 1,5 MiB suurust JPG- või PNG-faili.',
 			frostedGlassWallpaperUploadReadError:
 				'Taustapilti ei saanud salvestada. Brauseri localStorage võib olla täis.',
 			info: {
@@ -314,8 +315,10 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'De achtergrond kon niet worden opgeslagen. De vorige eigen afbeelding is mogelijk verwijderd. Andere wijzigingen zijn niet opgeslagen. Upload de afbeelding opnieuw en probeer het nogmaals.',
 			frostedGlassWallpaperUserRemoved: 'Eigen achtergrond verwijderd.',
 			frostedGlassWallpaperUploadInvalidType: 'Kies een JPG- of PNG-bestand.',
-			frostedGlassWallpaperUploadTooLarge: 'Het achtergrondbestand mag maximaal 3 MB groot zijn.',
-			frostedGlassWallpaperUploadRequirements: 'Gebruik een JPG- of PNG-bestand van maximaal 3 MB.',
+			frostedGlassWallpaperUploadTooLarge:
+				'Het achtergrondbestand mag maximaal 1,5 MiB groot zijn.',
+			frostedGlassWallpaperUploadRequirements:
+				'Gebruik een JPG- of PNG-bestand van maximaal 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'De achtergrond kon niet worden opgeslagen. De localStorage van de browser is mogelijk vol.',
 			info: {
@@ -351,8 +354,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Taustakuvaa ei voitu tallentaa. Aiempi oma kuva on saatettu poistaa. Muita muutoksia ei ole tallennettu. Lataa kuva uudelleen ja yritä vielä kerran.',
 			frostedGlassWallpaperUserRemoved: 'Oma taustakuva poistettu.',
 			frostedGlassWallpaperUploadInvalidType: 'Valitse JPG- tai PNG-tiedosto.',
-			frostedGlassWallpaperUploadTooLarge: 'Taustakuvatiedoston enimmäiskoko on 3 Mt.',
-			frostedGlassWallpaperUploadRequirements: 'Käytä enintään 3 Mt:n JPG- tai PNG-tiedostoa.',
+			frostedGlassWallpaperUploadTooLarge: 'Taustakuvatiedoston enimmäiskoko on 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Käytä enintään 1,5 MiB:n JPG- tai PNG-tiedostoa.',
 			frostedGlassWallpaperUploadReadError:
 				'Taustakuvaa ei voitu tallentaa. Selaimen localStorage-tallennustila saattaa olla täynnä.',
 			info: {
@@ -387,8 +390,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Tapetu sa nepodarilo uložiť. Predchádzajúci vlastný obrázok mohol byť odstránený. Ostatné zmeny sa neuložili. Nahrajte obrázok znova a zopakujte uloženie.',
 			frostedGlassWallpaperUserRemoved: 'Vlastná tapeta bola odstránená.',
 			frostedGlassWallpaperUploadInvalidType: 'Vyberte súbor JPG alebo PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'Súbor tapety môže mať najviac 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Použite súbor JPG alebo PNG do 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Súbor tapety môže mať najviac 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Použite súbor JPG alebo PNG do 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Tapetu sa nepodarilo uložiť. Úložisko localStorage prehliadača môže byť plné.',
 			info: {
@@ -423,8 +426,9 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Tapetu se nepodařilo uložit. Předchozí vlastní obrázek mohl být odstraněn. Ostatní změny nebyly uloženy. Nahrajte obrázek znovu a zopakujte uložení.',
 			frostedGlassWallpaperUserRemoved: 'Vlastní tapeta byla odebrána.',
 			frostedGlassWallpaperUploadInvalidType: 'Vyberte soubor JPG nebo PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'Soubor tapety může mít nejvýše 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Použijte soubor JPG nebo PNG o velikosti do 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Soubor tapety může mít nejvýše 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements:
+				'Použijte soubor JPG nebo PNG o velikosti do 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Tapetu se nepodařilo uložit. Úložiště localStorage prohlížeče může být plné.',
 			info: {
@@ -460,8 +464,10 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Imaginea de fundal nu a putut fi salvată. Este posibil ca imaginea personalizată anterioară să fi fost eliminată. Celelalte modificări nu au fost salvate. Încarcă din nou imaginea și reîncearcă.',
 			frostedGlassWallpaperUserRemoved: 'Imaginea de fundal personalizată a fost eliminată.',
 			frostedGlassWallpaperUploadInvalidType: 'Alege un fișier JPG sau PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'Fișierul imaginii de fundal poate avea cel mult 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Folosește un fișier JPG sau PNG de cel mult 3 MB.',
+			frostedGlassWallpaperUploadTooLarge:
+				'Fișierul imaginii de fundal poate avea cel mult 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements:
+				'Folosește un fișier JPG sau PNG de cel mult 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Imaginea de fundal nu a putut fi salvată. Este posibil ca spațiul localStorage al browserului să fie plin.',
 			info: {
@@ -497,9 +503,9 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Neizdevās saglabāt fona attēlu. Iepriekšējais pielāgotais attēls, iespējams, ir noņemts. Citas izmaiņas nav saglabātas. Augšupielādējiet attēlu vēlreiz un atkārtojiet saglabāšanu.',
 			frostedGlassWallpaperUserRemoved: 'Lietotāja fona attēls noņemts.',
 			frostedGlassWallpaperUploadInvalidType: 'Izvēlieties JPG vai PNG failu.',
-			frostedGlassWallpaperUploadTooLarge: 'Fona attēla fails nedrīkst pārsniegt 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Fona attēla fails nedrīkst pārsniegt 1,5 MiB.',
 			frostedGlassWallpaperUploadRequirements:
-				'Izmantojiet JPG vai PNG failu, kas nepārsniedz 3 MB.',
+				'Izmantojiet JPG vai PNG failu, kas nepārsniedz 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Neizdevās saglabāt fona attēlu. Iespējams, pārlūka localStorage ir pilns.',
 			info: {
@@ -535,8 +541,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Δεν ήταν δυνατή η αποθήκευση της ταπετσαρίας. Η προηγούμενη προσαρμοσμένη εικόνα ενδέχεται να έχει αφαιρεθεί. Οι υπόλοιπες αλλαγές δεν έχουν αποθηκευτεί. Ανεβάστε ξανά την εικόνα και δοκιμάστε πάλι.',
 			frostedGlassWallpaperUserRemoved: 'Η ταπετσαρία χρήστη αφαιρέθηκε.',
 			frostedGlassWallpaperUploadInvalidType: 'Επιλέξτε αρχείο JPG ή PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'Το αρχείο ταπετσαρίας μπορεί να είναι έως 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Χρησιμοποιήστε αρχείο JPG ή PNG έως 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Το αρχείο ταπετσαρίας μπορεί να είναι έως 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Χρησιμοποιήστε αρχείο JPG ή PNG έως 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Δεν ήταν δυνατή η αποθήκευση της ταπετσαρίας. Το localStorage του προγράμματος περιήγησης ενδέχεται να είναι γεμάτο.',
 			info: {
@@ -572,8 +578,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Baggrundsbilledet kunne ikke gemmes. Det tidligere brugerdefinerede billede kan være blevet fjernet. Andre ændringer er ikke gemt. Upload billedet igen, og prøv igen.',
 			frostedGlassWallpaperUserRemoved: 'Dit baggrundsbillede er fjernet.',
 			frostedGlassWallpaperUploadInvalidType: 'Vælg en JPG- eller PNG-fil.',
-			frostedGlassWallpaperUploadTooLarge: 'Baggrundsbilledet må højst fylde 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Brug en JPG- eller PNG-fil på højst 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Baggrundsbilledet må højst fylde 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Brug en JPG- eller PNG-fil på højst 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Baggrundsbilledet kunne ikke gemmes. Browserens localStorage kan være fuld.',
 			info: {
@@ -608,8 +614,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Det gick inte att spara bakgrundsbilden. Den tidigare egna bilden kan ha tagits bort. Övriga ändringar har inte sparats. Ladda upp bilden igen och försök på nytt.',
 			frostedGlassWallpaperUserRemoved: 'Den egna bakgrundsbilden har tagits bort.',
 			frostedGlassWallpaperUploadInvalidType: 'Välj en JPG- eller PNG-fil.',
-			frostedGlassWallpaperUploadTooLarge: 'Bakgrundsbildens fil får vara högst 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Använd en JPG- eller PNG-fil på högst 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Bakgrundsbildens fil får vara högst 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Använd en JPG- eller PNG-fil på högst 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Det gick inte att spara bakgrundsbilden. Webbläsarens localStorage kan vara fullt.',
 			info: {
@@ -645,8 +651,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			frostedGlassWallpaperUserRemoved: 'Baineadh cúlbhratán an úsáideora.',
 			frostedGlassWallpaperUploadInvalidType: 'Roghnaigh comhad JPG nó PNG.',
 			frostedGlassWallpaperUploadTooLarge:
-				'Ní féidir le comhad an chúlbhratáin a bheith níos mó ná 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Úsáid comhad JPG nó PNG nach mó ná 3 MB.',
+				'Ní féidir le comhad an chúlbhratáin a bheith níos mó ná 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Úsáid comhad JPG nó PNG nach mó ná 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Níorbh fhéidir an cúlbhratán a shábháil. Seans go bhfuil localStorage an bhrabhsálaí lán.',
 			info: {
@@ -682,8 +688,9 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Nije moguće spremiti pozadinsku sliku. Prethodna vlastita slika možda je uklonjena. Ostale izmjene nisu spremljene. Ponovno prenesite sliku i pokušajte još jednom.',
 			frostedGlassWallpaperUserRemoved: 'Korisnička pozadinska slika je uklonjena.',
 			frostedGlassWallpaperUploadInvalidType: 'Odaberite datoteku JPG ili PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'Datoteka pozadinske slike može imati najviše 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Koristite datoteku JPG ili PNG veličine do 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Datoteka pozadinske slike može imati najviše 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements:
+				'Koristite datoteku JPG ili PNG veličine do 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Nije moguće spremiti pozadinsku sliku. localStorage preglednika možda je pun.',
 			info: {
@@ -719,8 +726,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Ozadja ni bilo mogoče shraniti. Prejšnja slika po meri je bila morda odstranjena. Druge spremembe niso bile shranjene. Znova naložite sliko in poskusite še enkrat.',
 			frostedGlassWallpaperUserRemoved: 'Uporabniško ozadje je odstranjeno.',
 			frostedGlassWallpaperUploadInvalidType: 'Izberite datoteko JPG ali PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'Datoteka ozadja je lahko velika največ 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Uporabite datoteko JPG ali PNG do 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Datoteka ozadja je lahko velika največ 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Uporabite datoteko JPG ali PNG do 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Ozadja ni bilo mogoče shraniti. Shramba localStorage v brskalniku je morda polna.',
 			info: {
@@ -757,8 +764,9 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 			frostedGlassWallpaperUserRemoved: 'Naudotojo fono paveikslėlis pašalintas.',
 			frostedGlassWallpaperUploadInvalidType: 'Pasirinkite JPG arba PNG failą.',
 			frostedGlassWallpaperUploadTooLarge:
-				'Fono paveikslėlio failas gali būti ne didesnis kaip 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Naudokite ne didesnį kaip 3 MB JPG arba PNG failą.',
+				'Fono paveikslėlio failas gali būti ne didesnis kaip 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements:
+				'Naudokite ne didesnį kaip 1,5 MiB JPG arba PNG failą.',
 			frostedGlassWallpaperUploadReadError:
 				'Nepavyko išsaugoti fono paveikslėlio. Naršyklės localStorage saugykla gali būti pilna.',
 			info: {
@@ -794,8 +802,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'L-isfond ma setax jiġi ssejvjat. L-immaġni personalizzata preċedenti setgħet tneħħiet. Il-bidliet l-oħra ma ġewx issejvjati. Erġa’ tella’ l-immaġni u erġa’ pprova.',
 			frostedGlassWallpaperUserRemoved: 'L-isfond tal-utent tneħħa.',
 			frostedGlassWallpaperUploadInvalidType: 'Agħżel fajl JPG jew PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'Il-fajl tal-isfond jista’ jkun sa 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Uża fajl JPG jew PNG sa 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Il-fajl tal-isfond jista’ jkun sa 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Uża fajl JPG jew PNG sa 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'L-isfond ma setax jiġi ssejvjat. Il-localStorage tal-brawżer jista’ jkun mimli.',
 			info: {
@@ -830,9 +838,9 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Nem sikerült menteni a háttérképet. Lehet, hogy az előző egyéni kép törlődött. A többi módosítás nem lett mentve. Töltsd fel újra a képet, majd próbáld újra.',
 			frostedGlassWallpaperUserRemoved: 'Egyéni háttérkép eltávolítva.',
 			frostedGlassWallpaperUploadInvalidType: 'Válassz JPG- vagy PNG-fájlt.',
-			frostedGlassWallpaperUploadTooLarge: 'A háttérképfájl mérete legfeljebb 3 MB lehet.',
+			frostedGlassWallpaperUploadTooLarge: 'A háttérképfájl mérete legfeljebb 1,5 MiB lehet.',
 			frostedGlassWallpaperUploadRequirements:
-				'Legfeljebb 3 MB méretű JPG- vagy PNG-fájlt használj.',
+				'Legfeljebb 1,5 MiB méretű JPG- vagy PNG-fájlt használj.',
 			frostedGlassWallpaperUploadReadError:
 				'Nem sikerült menteni a háttérképet. Lehet, hogy a böngésző localStorage tárhelye megtelt.',
 			info: {
@@ -868,8 +876,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Тапетът не можа да бъде запазен. Предишното персонализирано изображение може да е било премахнато. Другите промени не са запазени. Качете изображението отново и опитайте пак.',
 			frostedGlassWallpaperUserRemoved: 'Потребителският тапет е премахнат.',
 			frostedGlassWallpaperUploadInvalidType: 'Изберете JPG или PNG файл.',
-			frostedGlassWallpaperUploadTooLarge: 'Файлът за тапет може да бъде до 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Използвайте JPG или PNG файл до 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Файлът за тапет може да бъде до 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Използвайте JPG или PNG файл до 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Тапетът не можа да бъде запазен. Възможно е localStorage на браузъра да е запълнено.',
 			info: {
@@ -905,8 +913,8 @@ export const FROSTED_GLASS_TRANSLATIONS: Record<InterfaceLanguage, TranslationDi
 				'Nie dało sã zapisac tapétë. Przédny swój òbrôzk mógł òstac ùsëniãti. Jinszé zmianë nie òstałë zapisóné. Wladëjë òbrôzk znowa ë spróbùjë jesz rôz.',
 			frostedGlassWallpaperUserRemoved: 'Tapéta ùżëtkòwnika ùsëniãtô.',
 			frostedGlassWallpaperUploadInvalidType: 'Wëbierzë lopk JPG abò PNG.',
-			frostedGlassWallpaperUploadTooLarge: 'Lopk tapétë mòże miec co nôwicy 3 MB.',
-			frostedGlassWallpaperUploadRequirements: 'Ùżëjë lopka JPG abò PNG do 3 MB.',
+			frostedGlassWallpaperUploadTooLarge: 'Lopk tapétë mòże miec co nôwicy 1,5 MiB.',
+			frostedGlassWallpaperUploadRequirements: 'Ùżëjë lopka JPG abò PNG do 1,5 MiB.',
 			frostedGlassWallpaperUploadReadError:
 				'Nie dało sã zapisac tapétë. Pamiãc localStorage przezérnika mòże bëc fùl.',
 			info: {

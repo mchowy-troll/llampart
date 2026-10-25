@@ -11,9 +11,14 @@
 		FROSTED_GLASS_WALLPAPERS,
 		getCustomFrostedGlassWallpaperSrc,
 		isAcceptedCustomFrostedGlassWallpaperType,
+		resolveCustomWallpaperDisplaySrc,
 		setCustomFrostedGlassWallpaperSrc
 	} from './wallpapers';
 	import { t } from '$lib/i18n';
+	import {
+		BUNDLED_WALLPAPER_CACHE_EVENT,
+		getBundledWallpaperPreviewSrc
+	} from './bundled-wallpaper-cache';
 	import { onMount, onDestroy } from 'svelte';
 	import {
 		CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT,
@@ -34,18 +39,34 @@
 
 	let fileInput: HTMLInputElement | undefined = $state();
 	let customWallpaperSrc = $derived(getCustomFrostedGlassWallpaperSrc());
+	let customDisplaySrc = $derived(
+		customWallpaperSrc ? resolveCustomWallpaperDisplaySrc(customWallpaperSrc) : undefined
+	);
 	let isCustomWallpaperSelected = $derived(selectedWallpaper === CUSTOM_FROSTED_GLASS_WALLPAPER_ID);
 	let wallpaperValidationDialog = $state<WallpaperValidationDialog | undefined>(undefined);
 	let mounted = true;
+	let bundledRevision = $state(0);
+	const bundledPreviews = $derived.by(() => {
+		void bundledRevision;
+		return FROSTED_GLASS_WALLPAPERS.map((wallpaper) => ({
+			...wallpaper,
+			src: getBundledWallpaperPreviewSrc(wallpaper.src)
+		}));
+	});
 	onDestroy(() => {
 		mounted = false;
 	});
 	onMount(() => {
 		const refresh = () => {
 			customWallpaperSrc = getCustomFrostedGlassWallpaperSrc();
+			bundledRevision++;
 		};
 		window.addEventListener(CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT, refresh);
-		return () => window.removeEventListener(CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT, refresh);
+		window.addEventListener(BUNDLED_WALLPAPER_CACHE_EVENT, refresh);
+		return () => {
+			window.removeEventListener(CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT, refresh);
+			window.removeEventListener(BUNDLED_WALLPAPER_CACHE_EVENT, refresh);
+		};
 	});
 
 	function readFileAsDataUrl(file: File): Promise<string> {
@@ -161,12 +182,12 @@
 </script>
 
 <div class="llampart-settings-wallpaper-selector" data-llampart-wallpaper-grid>
-	{#each FROSTED_GLASS_WALLPAPERS as wallpaper (wallpaper.id)}
+	{#each bundledPreviews as wallpaper (wallpaper.id)}
 		{@const isSelected = selectedWallpaper === wallpaper.id}
 		<button
 			type="button"
 			class={getWallpaperPreviewClass(isSelected)}
-			style={`background-image: url("${wallpaper.src}")`}
+			style={wallpaper.src ? `background-image: url("${wallpaper.src}")` : undefined}
 			onclick={() => selectBundledWallpaper(wallpaper.id)}
 			aria-label={t(wallpaper.labelKey)}
 			aria-pressed={isSelected}
@@ -187,7 +208,7 @@
 			]
 				.filter(Boolean)
 				.join(' ')}
-			style={customWallpaperSrc ? `background-image: url("${customWallpaperSrc}")` : undefined}
+			style={customDisplaySrc ? `background-image: url("${customDisplaySrc}")` : undefined}
 			onclick={handleCustomWallpaperSelect}
 			aria-label={t('settings.frostedGlassWallpaperUser')}
 			aria-pressed={isCustomWallpaperSelected}

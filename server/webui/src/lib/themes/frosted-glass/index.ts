@@ -5,11 +5,20 @@ import { FROSTED_GLASS_CONFIG_DEFAULT, FROSTED_GLASS_CONFIG_INFO } from './confi
 import {
 	beginWallpaperSettingsPreview,
 	CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT,
-	getFrostedGlassWallpaper
+	getFrostedGlassWallpaper,
+	resolveCustomWallpaperDisplaySrc
 } from './wallpapers';
 import { GLASS_STYLE_PROPERTIES, resolveGlassMaterials } from './materials';
-import { resolveWallpaperAccent, WALLPAPER_ACCENT_EVENT } from './wallpaper-accent';
+import {
+	FALLBACK_WALLPAPER_ACCENT,
+	resolveWallpaperAccent,
+	WALLPAPER_ACCENT_EVENT
+} from './wallpaper-accent';
 import { CHART_STYLE_PROPERTIES, resolveChartPalette } from './chart-palette';
+import {
+	BUNDLED_WALLPAPER_CACHE_EVENT,
+	resolveBundledWallpaperSrc
+} from './bundled-wallpaper-cache';
 
 export const frostedGlassTheme = {
 	id: ColorMode.FROSTED_GLASS,
@@ -28,7 +37,11 @@ export const frostedGlassTheme = {
 		...CHART_STYLE_PROPERTIES,
 		...GLASS_STYLE_PROPERTIES
 	],
-	runtimeRefreshEvents: [CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT, WALLPAPER_ACCENT_EVENT],
+	runtimeRefreshEvents: [
+		CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT,
+		WALLPAPER_ACCENT_EVENT,
+		BUNDLED_WALLPAPER_CACHE_EVENT
+	],
 	beginSettingsPreview: beginWallpaperSettingsPreview,
 	motion: {
 		messageEntry: false,
@@ -37,8 +50,14 @@ export const frostedGlassTheme = {
 	configDefaults: FROSTED_GLASS_CONFIG_DEFAULT,
 	configInfo: FROSTED_GLASS_CONFIG_INFO,
 	resolveRuntime: (config, revision) => {
-		const wallpaper = getFrostedGlassWallpaper(config.frostedGlassWallpaper, revision);
-		const accent = resolveWallpaperAccent(wallpaper);
+		const selected = getFrostedGlassWallpaper(config.frostedGlassWallpaper, revision);
+		const wallpaper = {
+			...selected,
+			src: selected.isCustom
+				? resolveCustomWallpaperDisplaySrc(selected.src)
+				: resolveBundledWallpaperSrc(selected.src)
+		};
+		const accent = wallpaper.src ? resolveWallpaperAccent(wallpaper) : FALLBACK_WALLPAPER_ACCENT;
 
 		return {
 			// This legacy class now enables ONLY the protected composer fade layers.
@@ -51,7 +70,7 @@ export const frostedGlassTheme = {
 				...resolveChartPalette(),
 				...resolveGlassMaterials(config),
 				'--llampart-frosted-glass-accent': accent,
-				'--llampart-theme-wallpaper': `url("${wallpaper.src}")`
+				'--llampart-theme-wallpaper': wallpaper.src ? `url("${wallpaper.src}")` : 'none'
 			}
 		};
 	}
