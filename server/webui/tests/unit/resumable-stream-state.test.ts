@@ -19,7 +19,7 @@ function createStorage() {
 }
 
 describe('resumable stream state storage', () => {
-	it('stores the exact resumable fields and replaces state per conversation', () => {
+	it('replaces a conversation checkpoint without changing another conversation', () => {
 		const storage = createStorage();
 		const initial: ResumableStreamState = {
 			schemaVersion: 2,
@@ -30,38 +30,26 @@ describe('resumable stream state storage', () => {
 			streamIdentity: 'stream-1',
 			model: 'org/repo/model',
 			bytesReceived: 0,
-			updatedAt: 10
+			updatedAt: Date.now()
+		};
+		const other = { ...initial, conversationId: 'chat-2', streamIdentity: 'stream-2' };
+		const replacement = {
+			...initial,
+			assistantMessageId: 'assistant-retry',
+			streamIdentity: 'stream-retry',
+			bytesReceived: 42
 		};
 
-		saveResumableStreamState(initial, storage, 10);
-		saveResumableStreamState({ ...initial, bytesReceived: 42, updatedAt: 20 }, storage, 20);
+		saveResumableStreamState(initial, storage);
+		saveResumableStreamState(other, storage);
+		saveResumableStreamState(replacement, storage);
 
-		expect(getResumableStreamState('chat-1', storage, 20)).toEqual({
-			schemaVersion: 2,
-			conversationId: 'chat-1',
-			assistantMessageId: 'assistant-1',
-			providerId: 'llama-server',
-			sourceFingerprint: 'sha256:source-a',
-			streamIdentity: 'stream-1',
-			model: 'org/repo/model',
-			bytesReceived: 42,
-			updatedAt: 20
-		});
-		expect(Object.keys(loadResumableStreamStates(storage, 20)[0]).sort()).toEqual(
-			[
-				'schemaVersion',
-				'conversationId',
-				'assistantMessageId',
-				'providerId',
-				'sourceFingerprint',
-				'streamIdentity',
-				'model',
-				'bytesReceived',
-				'updatedAt'
-			].sort()
-		);
+		expect(getResumableStreamState('chat-1', storage)).toEqual(replacement);
+		expect(loadResumableStreamStates(storage)).toEqual([other, replacement]);
 
 		removeResumableStreamState('chat-1', storage);
+		expect(loadResumableStreamStates(storage)).toEqual([other]);
+		removeResumableStreamState('chat-2', storage);
 		expect(storage.getItem(RESUMABLE_STREAMS_LOCALSTORAGE_KEY)).toBeNull();
 	});
 

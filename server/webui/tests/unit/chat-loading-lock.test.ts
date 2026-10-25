@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 describe('per-conversation chat operation lock', () => {
-	it('rejects a second send synchronously before the first send creates messages', async () => {
+	it('rejects a concurrent send and releases the lock after failure so the user can retry', async () => {
 		vi.spyOn(console, 'error').mockImplementation(() => undefined);
 		conversationsStore.activeConversation = {
 			id: 'conversation-1',
@@ -30,6 +30,9 @@ describe('per-conversation chat operation lock', () => {
 		await second;
 		expect(addMessage).toHaveBeenCalledTimes(1);
 		await first;
+
+		await chatStore.sendMessage('retry');
+		expect(addMessage.mock.calls.map(([, content]) => content)).toEqual(['first', 'retry']);
 	});
 
 	it('keeps the new-conversation lock while the conversation is being created', async () => {

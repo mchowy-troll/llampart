@@ -1119,15 +1119,9 @@ export class ChatService {
 
 			if (ChatService.optionalStreamEndpointStatuses.has(activeResponse.status)) {
 				ChatService.clearResumableState(resumableState);
-				const finalToolCalls =
-					aggregatedToolCalls.length > 0 ? JSON.stringify(aggregatedToolCalls) : undefined;
-				await onComplete?.(
-					aggregatedContent,
-					fullReasoningContent || undefined,
-					lastTimings,
-					finalToolCalls
-				);
-				return;
+				throw new IncompleteStreamError('Stream ended before a terminal event', {
+					cause: transportError
+				});
 			}
 			if (!activeResponse.ok) throw await ChatService.parseErrorResponse(activeResponse);
 			reconnectAttempt = 0;
