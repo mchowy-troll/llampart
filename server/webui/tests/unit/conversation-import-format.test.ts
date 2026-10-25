@@ -72,30 +72,7 @@ describe('conversation import format', () => {
 		expect(parseConversationImport(envelope)).toEqual(envelope.conversations);
 	});
 
-	it('rejects timing fields that are not part of the canonical V1 format', () => {
-		const envelope = createConversationExportEnvelope(
-			[exportedConversation],
-			'1.8.2'
-		) as unknown as {
-			conversations: Array<{ messages: Array<Record<string, unknown>> }>;
-		};
-		envelope.conversations[0].messages.push({
-			id: 'message',
-			convId: 'conversation',
-			type: 'text',
-			timestamp: 1,
-			role: 'assistant',
-			content: 'answer',
-			parent: null,
-			children: [],
-			toolCalls: '',
-			timings: { future_unknown_timing: 1 }
-		});
-
-		expect(() => parseConversationImport(envelope)).toThrow(/future_unknown_timing|unrecognized/i);
-	});
-
-	it('keeps the canonical V1 parser strict after export normalization', () => {
+	it('rejects missing canonical fields and unknown timing fields after export normalization', () => {
 		const envelope = createConversationExportEnvelope(
 			[
 				{
@@ -122,6 +99,14 @@ describe('conversation import format', () => {
 		delete withoutToolCalls.conversations[0].messages[0].toolCalls;
 
 		expect(() => parseConversationImport(withoutToolCalls)).toThrow(/toolCalls/i);
+
+		const withUnknownTimings = structuredClone(envelope) as unknown as {
+			conversations: Array<{ messages: Array<Record<string, unknown>> }>;
+		};
+		withUnknownTimings.conversations[0].messages[0].timings = { future_unknown_timing: 1 };
+		expect(() => parseConversationImport(withUnknownTimings)).toThrow(
+			/future_unknown_timing|unrecognized/i
+		);
 	});
 
 	it('migrates shipped single-object and array V0 exports', () => {

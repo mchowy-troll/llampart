@@ -20,6 +20,7 @@ describe('video attachments', () => {
 	});
 
 	it('requires explicit video modality support', () => {
+		expect(ModelModality.VIDEO).toBe('VIDEO');
 		expect(
 			isFileTypeSupportedByModel('clip.mp4', 'video/mp4', {
 				hasVision: false,
@@ -59,7 +60,6 @@ describe('video attachments', () => {
 
 		const result = ChatService.convertDbMessageToApiChatMessageData(message);
 
-		expect(Array.isArray(result.content)).toBe(true);
 		expect(result.content).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({
@@ -71,9 +71,5 @@ describe('video attachments', () => {
 				})
 			])
 		);
-	});
-
-	it('exposes video as a model modality enum', () => {
-		expect(ModelModality.VIDEO).toBe('VIDEO');
 	});
 });

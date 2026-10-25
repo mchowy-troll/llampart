@@ -36,51 +36,27 @@ const OPEN_BLOCK =
 	'partial output...';
 
 describe('legacy agentic marker stripping (for migration)', () => {
-	it('strips a complete tool call block, leaving surrounding text', () => {
-		const input = 'Before.' + COMPLETE_BLOCK + 'After.';
-		const result = stripLegacyContextMarkers(input);
-		expect(result).not.toContain('<<<');
-		expect(result).toContain('Before.');
-		expect(result).toContain('After.');
-	});
-
-	it('strips multiple complete tool call blocks', () => {
-		const input = 'A' + COMPLETE_BLOCK + 'B' + COMPLETE_BLOCK + 'C';
-		const result = stripLegacyContextMarkers(input);
-		expect(result).not.toContain('<<<');
-		expect(result).toContain('A');
-		expect(result).toContain('B');
-		expect(result).toContain('C');
+	it('strips complete tool call blocks, preserving all surrounding text', () => {
+		const input = 'Before.' + COMPLETE_BLOCK + 'Between.' + COMPLETE_BLOCK + 'After.';
+		expect(stripLegacyContextMarkers(input)).toBe('Before.\nBetween.\nAfter.');
 	});
 
 	it('strips an open/partial tool call block (no END marker)', () => {
 		const input = 'Lead text.' + OPEN_BLOCK;
 		const result = stripLegacyContextMarkers(input);
 		expect(result).toBe('Lead text.');
-		expect(result).not.toContain('<<<');
 	});
 
-	it('does not alter content with no markers', () => {
+	it('does not alter marker-free or empty content', () => {
 		const input = 'Just a normal assistant response.';
 		expect(stripLegacyContextMarkers(input)).toBe(input);
+		expect(stripLegacyContextMarkers('')).toBe('');
 	});
 
-	it('strips reasoning block independently', () => {
+	it('strips reasoning independently and together with tool call blocks', () => {
 		const input = '<<<reasoning_content_start>>>think hard<<<reasoning_content_end>>>Answer.';
 		expect(stripLegacyContextMarkers(input)).toBe('Answer.');
-	});
-
-	it('strips both reasoning and agentic blocks together', () => {
-		const input =
-			'<<<reasoning_content_start>>>plan<<<reasoning_content_end>>>' +
-			'Some text.' +
-			COMPLETE_BLOCK;
-		expect(stripLegacyContextMarkers(input)).not.toContain('<<<');
-		expect(stripLegacyContextMarkers(input)).toContain('Some text.');
-	});
-
-	it('empty string survives', () => {
-		expect(stripLegacyContextMarkers('')).toBe('');
+		expect(stripLegacyContextMarkers(input + COMPLETE_BLOCK)).toBe('Answer.\n');
 	});
 
 	it('detects legacy markers', () => {

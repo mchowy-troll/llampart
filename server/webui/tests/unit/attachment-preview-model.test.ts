@@ -48,37 +48,24 @@ function renderedModel() {
 }
 
 describe('composer attachment preview model ownership', () => {
-	it.each(['openai-compatible', 'vllm'] as const)(
-		'%s maps the selected option id to its backend model, not the first option or display name',
-		(provider) => {
-			setup(provider);
-			expect(renderedModel()).toBe('backend-B');
-		}
-	);
-
-	it('preserves router selection priority and conversation fallback', () => {
-		setup('llama-server', true);
-		vi.mocked(chatStore.getConversationModel).mockReturnValue('backend-A');
-		expect(renderedModel()).toBe('backend-B');
-		modelsStore.selectedModelId = null;
-		expect(renderedModel()).toBe('backend-A');
-		modelsStore.selectedModelId = 'obsolete';
-		expect(renderedModel()).toBe('backend-A');
-	});
-
-	it('keeps the single-model server fallback without a selection', () => {
-		setup('llama-server');
-		modelsStore.selectedModelId = null;
-		expect(renderedModel()).toBe('backend-A');
-		modelsStore.models = [];
-		expect(renderedModel()).toBeUndefined();
-	});
-
 	it.each(['openai-compatible', 'vllm', 'llama-server'] as const)(
-		'%s does not borrow the first model for missing, stale or unavailable selection/context',
+		'%s resolves preview ownership from selection, then valid backend context, without borrowing a model',
 		(provider) => {
 			setup(provider, provider === 'llama-server');
+			expect(renderedModel()).toBe('backend-B');
+			vi.mocked(chatStore.getConversationModel).mockReturnValue('backend-A');
+			expect(renderedModel()).toBe('backend-B');
 			modelsStore.selectedModelId = null;
+			expect(renderedModel()).toBe('backend-A');
+			modelsStore.selectedModelId = 'obsolete';
+			expect(renderedModel()).toBe('backend-A');
+
+			modelsStore.selectedModelId = null;
+			vi.mocked(chatStore.getConversationModel).mockReturnValue('backend-B');
+			expect(renderedModel()).toBe('backend-B');
+			vi.mocked(chatStore.getConversationModel).mockReturnValue('selector-B');
+			expect(renderedModel()).toBeUndefined();
+			vi.mocked(chatStore.getConversationModel).mockReturnValue(null);
 			expect(renderedModel()).toBeUndefined();
 			modelsStore.selectedModelId = 'obsolete';
 			vi.mocked(chatStore.getConversationModel).mockReturnValue('removed-model');
@@ -88,12 +75,11 @@ describe('composer attachment preview model ownership', () => {
 		}
 	);
 
-	it('resolves conversation context by backend model, not option id', () => {
-		setup('openai-compatible');
+	it('keeps the single-model server fallback without a selection', () => {
+		setup('llama-server');
 		modelsStore.selectedModelId = null;
-		vi.mocked(chatStore.getConversationModel).mockReturnValue('backend-B');
-		expect(renderedModel()).toBe('backend-B');
-		vi.mocked(chatStore.getConversationModel).mockReturnValue('selector-B');
+		expect(renderedModel()).toBe('backend-A');
+		modelsStore.models = [];
 		expect(renderedModel()).toBeUndefined();
 	});
 });

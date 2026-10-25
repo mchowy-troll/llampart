@@ -44,7 +44,7 @@ afterEach(() => {
 });
 
 describe('AUD-006 rename persistence and dialog state', () => {
-	it('waits for persistence, updates list/active owner, closes and clears exactly once', async () => {
+	it('serializes saves, blocks cancellation until persistence and updates only the owner', async () => {
 		const gate = deferred();
 		const write = vi.spyOn(DatabaseService, 'updateConversation').mockReturnValue(gate.promise);
 		const saving = rename.save();
@@ -52,6 +52,10 @@ describe('AUD-006 rename persistence and dialog state', () => {
 		expect(rename.open).toBe(true);
 		expect(conversationsStore.activeConversation?.name).toBe('Old A');
 		expect(conversationsStore.conversations[0].name).toBe('Old A');
+		await Promise.all([rename.save(), rename.save(), rename.save()]);
+		rename.cancel();
+		expect(rename.open).toBe(true);
+		expect(write).toHaveBeenCalledTimes(1);
 		gate.resolve();
 		await saving;
 		expect(write).toHaveBeenCalledExactlyOnceWith('A', { name: 'New A' });
@@ -94,19 +98,6 @@ describe('AUD-006 rename persistence and dialog state', () => {
 		await expect(conversationsStore.updateConversationName('A', 'New A')).rejects.toBe(error);
 		expect(conversationsStore.activeConversation?.name).toBe('Old A');
 		expect(conversationsStore.conversations[0].name).toBe('Old A');
-	});
-
-	it('serializes repeated save/Enter and blocks cancellation while pending', async () => {
-		const gate = deferred();
-		const write = vi.spyOn(DatabaseService, 'updateConversation').mockReturnValue(gate.promise);
-		const saving = rename.save();
-		await Promise.all([rename.save(), rename.save(), rename.save()]);
-		rename.cancel();
-		expect(rename.open).toBe(true);
-		expect(write).toHaveBeenCalledTimes(1);
-		gate.resolve();
-		await saving;
-		expect(rename.open).toBe(false);
 	});
 
 	it('updates only A when the active conversation changes to B during save', async () => {
