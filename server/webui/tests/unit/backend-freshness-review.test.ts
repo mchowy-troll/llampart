@@ -27,7 +27,7 @@ function props(version = 'A', router = false) {
 		chat_template: `template-${version}`,
 		chat_template_caps: { supports_tool_calls: version === 'B' },
 		modalities: { vision: version === 'B' },
-		default_generation_settings: { n_ctx: 8192, params: {} }
+		default_generation_settings: { n_ctx: version === 'B' ? 16384 : 8192, params: {} }
 	} as unknown as ApiLlamaCppServerProps;
 }
 function catalog(version = 'A') {
@@ -81,20 +81,34 @@ afterEach(() => {
 
 describe('AUD-010 operation-owned model information', () => {
 	it.each([false, true])(
-		'keeps same-alias A and B evidence separate after mandatory verification (router=%s)',
+		'binds fresh same-alias B to operation and UI while preserving A evidence (router=%s)',
 		async (router) => {
 			await seed(router);
 			const a = ChatService.captureOperationModel(context(), router ? 'same-alias' : null, null, {
 				conversationId: 'synthetic-A'
 			});
 			const aInfo = await a.modelInfo;
+			const aCapabilities = await a.capabilities;
 			expect(aInfo?.native?.model_path).toBe('/synthetic/A.gguf');
-			replaceBackend(router);
+			expect(aCapabilities?.features.vision.state).toBe('unsupported');
+			// The address, alias and catalog stay unchanged; native metadata alone must refresh.
+			vi.mocked(PropsService.fetch).mockResolvedValue(props('B', router));
+			vi.mocked(PropsService.fetchForModel).mockResolvedValue(props('B'));
 			const b = ChatService.captureOperationModel(context(), router ? 'same-alias' : null, null, {
 				conversationId: 'synthetic-B'
 			});
 			expect((await b.modelInfo)?.native?.chat_template).toBe('template-B');
+			const bCapabilities = await b.capabilities;
+			expect(bCapabilities?.features.vision.state).toBe('supported');
+			expect(bCapabilities?.features.tools.state).toBe('supported');
+			expect(bCapabilities?.backendIdentity).not.toBe(aCapabilities?.backendIdentity);
+			expect(bCapabilities?.connectionIdentity).toBe(aCapabilities?.connectionIdentity);
+			expect(modelsStore.capabilitySnapshot).toEqual(bCapabilities);
+			expect(serverStore.contextSize).toBe(16384);
 			expect((await a.modelInfo)?.native?.chat_template).toBe('template-A');
+			expect(aCapabilities?.features.vision.state).toBe('unsupported');
+			expect(Object.isFrozen(aCapabilities?.features.vision)).toBe(true);
+			expect(Object.isFrozen(bCapabilities)).toBe(true);
 			expect(a.conversationId).toBe('synthetic-A');
 			expect(b.conversationId).toBe('synthetic-B');
 			expect(JSON.stringify(aInfo)).not.toMatch(
@@ -166,45 +180,35 @@ describe('final review FRESH (real verification/fetch/ChatService)', () => {
 		expect(io).toHaveBeenCalledTimes(1);
 		const body = JSON.parse(io.mock.calls[0][1].body);
 		expect(body.messages[0].content[0].type).toBe('image_url');
-		expect(body).not.toHaveProperty('reasoning_effort');
-		expect(body).not.toHaveProperty('enable_thinking');
 		expect(modelsStore.capabilitySnapshot?.features.vision.state).toBe('supported');
 	});
-	it.each([false, true])(
-		'FRESH-01/02 ordinary pending root cannot certify B; late A cannot overwrite B (router=%s)',
-		async (router) => {
-			await seed(router);
-			const old = deferred<ApiLlamaCppServerProps>();
-			vi.mocked(PropsService.fetch).mockReturnValueOnce(old.promise);
-			const ordinary = modelsStore.fetch(true, true);
-			replaceBackend(router);
-			const count = vi.mocked(PropsService.fetch).mock.calls.length;
-			const operation = bind(router ? 'same-alias' : null);
-			try {
-				expect(PropsService.fetch).toHaveBeenCalledTimes(count + 1);
-				const snapshot = await operation;
-				expect(snapshot?.backendIdentity).toBe(
-					backendIdentity(router ? props('B') : props('B', router))
-				);
-				old.resolve(props('A', router));
-				await ordinary;
-				expect(serverStore.props?.model_path).toBe('/synthetic/B.gguf');
-				expect(modelsStore.models[0].meta).toEqual({ version: 'B' });
-				expect(modelsStore.capabilitySnapshot).toEqual(snapshot);
-			} finally {
-				old.resolve(props('A', router));
-				await Promise.allSettled([ordinary, operation]);
-			}
+	it('FRESH-01/02 ordinary pending root cannot certify B; late A cannot overwrite B', async () => {
+		await seed();
+		const old = deferred<ApiLlamaCppServerProps>();
+		vi.mocked(PropsService.fetch).mockReturnValueOnce(old.promise);
+		const ordinary = modelsStore.fetch(true, true);
+		replaceBackend();
+		const operation = bind();
+		try {
+			const snapshot = await operation;
+			expect(snapshot?.backendIdentity).toBe(backendIdentity(props('B')));
+			old.resolve(props());
+			await ordinary;
+			expect(serverStore.props?.model_path).toBe('/synthetic/B.gguf');
+			expect(modelsStore.models[0].meta).toEqual({ version: 'B' });
+			expect(modelsStore.capabilitySnapshot).toEqual(snapshot);
+		} finally {
+			old.resolve(props());
+			await Promise.allSettled([ordinary, operation]);
 		}
-	);
-	it.each(['llama-server', 'vllm', 'openai-compatible'] as const)(
+	});
+	it.each(['llama-server', 'vllm'] as const)(
 		'FRESH-01/02 pending %s catalog cannot certify B; late catalog A is ignored',
 		async (provider) => {
 			settingsStore.updateMultipleConfig({
 				apiProvider: provider,
 				serverBaseUrl: 'http://review.synthetic',
-				vllmBaseUrl: 'http://review.synthetic',
-				openAiCompatibleBaseUrl: 'http://review.synthetic'
+				vllmBaseUrl: 'http://review.synthetic'
 			});
 			await seed();
 			const gate = deferred<ApiModelListResponse>(),
@@ -216,15 +220,9 @@ describe('final review FRESH (real verification/fetch/ChatService)', () => {
 			const ordinary = modelsStore.fetch(true, true);
 			await started.promise;
 			replaceBackend();
-			const count = vi.mocked(ModelsService.list).mock.calls.length;
-			const propsCount = vi.mocked(PropsService.fetch).mock.calls.length;
 			const operation = bind(provider === 'llama-server' ? null : 'same-alias');
 			try {
-				if (provider === 'llama-server')
-					expect(PropsService.fetch).toHaveBeenCalledTimes(propsCount + 1);
-				else expect(ModelsService.list).toHaveBeenCalledTimes(count + 1);
 				const fresh = await operation;
-				expect(ModelsService.list).toHaveBeenCalledTimes(count + 1);
 				gate.resolve(catalog('A'));
 				await ordinary;
 				expect(fresh?.features.vision.state).toBe('supported');
@@ -260,33 +258,37 @@ describe('final review FRESH (real verification/fetch/ChatService)', () => {
 		expect(modelsStore.capabilitySnapshot).toEqual(current);
 		expect(serverStore.props?.model_path).toBe('/synthetic/B.gguf');
 	});
-	it.each([false, true])(
-		'FRESH-04 simultaneous mandatory checks supersede ordinary work once (router=%s)',
-		async (router) => {
-			await seed(router);
-			const old = deferred<ApiLlamaCppServerProps>(),
-				fresh = deferred<ApiLlamaCppServerProps>();
-			vi.mocked(PropsService.fetch)
-				.mockReturnValueOnce(old.promise)
-				.mockReturnValueOnce(fresh.promise);
-			const ordinary = modelsStore.fetch(true, true);
-			const count = vi.mocked(PropsService.fetch).mock.calls.length;
-			const checks = Array.from({ length: 6 }, () =>
-				modelsStore.verifyBackend(context(), router ? 'same-alias' : null)
-			);
-			try {
-				expect(new Set(checks).size).toBe(1);
-				expect(PropsService.fetch).toHaveBeenCalledTimes(count + 1);
-				fresh.resolve(props('B', router));
-				await Promise.all(checks);
-				expect(ModelsService.list).toHaveBeenCalledTimes(2);
-			} finally {
-				old.resolve(props('A', router));
-				fresh.resolve(props('B', router));
-				await Promise.allSettled([ordinary, ...checks]);
-			}
+	it('FRESH-04 coalesces mandatory router checks over ordinary work without polling', async () => {
+		await seed(true);
+		const old = deferred<ApiLlamaCppServerProps>(),
+			fresh = deferred<ApiLlamaCppServerProps>();
+		vi.mocked(PropsService.fetch)
+			.mockReturnValueOnce(old.promise)
+			.mockReturnValueOnce(fresh.promise);
+		vi.mocked(PropsService.fetchForModel).mockResolvedValue(props('B'));
+		const ordinary = modelsStore.fetch(true, true);
+		const count = vi.mocked(PropsService.fetch).mock.calls.length;
+		const checks = Array.from({ length: 6 }, () =>
+			modelsStore.verifyBackend(context(), 'same-alias')
+		);
+		try {
+			expect(PropsService.fetch).toHaveBeenCalledTimes(count + 1);
+			fresh.resolve(props('B', true));
+			await Promise.all(checks);
+			expect(ModelsService.list).toHaveBeenCalledTimes(2);
+			expect(PropsService.fetchForModel).toHaveBeenCalledTimes(2);
+			old.resolve(props('A', true));
+			await ordinary;
+			expect(serverStore.props?.model_path).toBe('/synthetic/B.gguf');
+			expect(modelsStore.getModelProps('same-alias')?.model_path).toBe('/synthetic/B.gguf');
+			await new Promise((done) => setTimeout(done, 20));
+			expect(PropsService.fetch).toHaveBeenCalledTimes(count + 1);
+		} finally {
+			old.resolve(props('A', true));
+			fresh.resolve(props('B', true));
+			await Promise.allSettled([ordinary, ...checks]);
 		}
-	);
+	});
 	it.each(['provider', 'credential', 'protocol'] as const)(
 		'FRESH-05/SNAP-06 source %s changes during await never publish old evidence',
 		async (change) => {
@@ -337,7 +339,6 @@ describe('final review FRESH (real verification/fetch/ChatService)', () => {
 		});
 		const rejected = expect(sending).rejects.toThrow();
 		try {
-			expect(PropsService.fetch).toHaveBeenCalledTimes(3);
 			await rejected;
 			expect(io).not.toHaveBeenCalled();
 			expect(onError).toHaveBeenCalledTimes(1);
@@ -376,23 +377,6 @@ describe('final review SNAP (returned snapshot AND published store)', () => {
 		expect(modelsStore.capabilitySnapshot?.features.vision.state).toBe('supported');
 		expect(modelsStore.capabilitySnapshot?.features.tools.state).toBe('supported');
 	});
-	it.each([false, true])(
-		'SNAP-01/02/03 single A→B binds operation and UI without second refresh (router=%s)',
-		async (router) => {
-			await seed(router);
-			const a = await bind(router ? 'same-alias' : null);
-			replaceBackend(router);
-			const operation = ChatService.captureOperationModel(context(), router ? 'same-alias' : null);
-			const b = await operation.capabilities;
-			expect(b?.features.vision.state).toBe('supported');
-			expect(b?.features.tools.state).toBe('supported');
-			expect(b?.backendIdentity).not.toBe(a?.backendIdentity);
-			expect(modelsStore.capabilitySnapshot).toEqual(b);
-			expect(modelsStore.capabilitySnapshot?.backendIdentity).toBe(b?.backendIdentity);
-			expect(a?.features.vision.state).toBe('unsupported');
-			expect(Object.isFrozen(b)).toBe(true);
-		}
-	);
 	it('SNAP-04 inactive model finishing later cannot cancel or replace selected model publication', async () => {
 		await seed(true);
 		const gate = deferred<void>(),

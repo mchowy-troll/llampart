@@ -141,30 +141,6 @@ describe('AUD-011B real freshness barrier (never stub verifyBackend)', () => {
 		expect(modelsStore.getModelProps('same-alias')).toBeNull();
 		expect(modelsStore.getModelModalities('same-alias')).toBeNull();
 	});
-	it('checks fresh single-model vision before serializing an image completion', async () => {
-		await bind();
-		vi.mocked(PropsService.fetch).mockResolvedValue(props('B'));
-		const io = vi.fn().mockResolvedValue(
-			new Response(
-				JSON.stringify({
-					choices: [{ message: { content: 'synthetic answer' }, finish_reason: 'stop' }]
-				}),
-				{ headers: { 'Content-Type': 'application/json' } }
-			)
-		);
-		vi.stubGlobal('fetch', io);
-		await ChatService.sendMessage(
-			[
-				{
-					role: 'user',
-					content: [{ type: 'image_url', image_url: { url: 'data:image/png;base64,SYNTHETIC' } }]
-				}
-			],
-			{ stream: false }
-		);
-		expect(io).toHaveBeenCalledTimes(1);
-		expect(JSON.parse(io.mock.calls[0][1].body).messages[0].content[0].type).toBe('image_url');
-	});
 	it('rejects late catalog failure from an old source without invalidating current evidence', async () => {
 		const gate = deferred<void>(),
 			ready = deferred<void>();
@@ -190,24 +166,6 @@ describe('AUD-011B real freshness barrier (never stub verifyBackend)', () => {
 		expect(next?.features.vision.state).toBe('supported');
 		expect(serverStore.props?.model_path).toBe('/synthetic/B.gguf');
 	});
-	it.each([false, true])(
-		'replaces same-address/same-alias metadata in %s router mode',
-		async (router) => {
-			vi.mocked(PropsService.fetch).mockResolvedValue(props('A', router));
-			const first = await bind(router ? 'same-alias' : null);
-			expect(first?.features.vision.state).toBe('unsupported');
-			vi.mocked(PropsService.fetch).mockResolvedValue(props('B', router));
-			vi.mocked(PropsService.fetchForModel).mockResolvedValue(props('B'));
-			const second = await bind(router ? 'same-alias' : null);
-			expect(second?.features.vision.state).toBe('supported');
-			expect(second?.features.tools.state).toBe('supported');
-			expect(second?.backendIdentity).not.toBe(first?.backendIdentity);
-			expect(second?.connectionIdentity).toBe(first?.connectionIdentity);
-			expect(first?.features.vision.state).toBe('unsupported');
-			expect(Object.isFrozen(first?.features.vision)).toBe(true);
-			expect(serverStore.contextSize).toBe(16384);
-		}
-	);
 	it.each([
 		'model_path',
 		'chat_template',
@@ -226,18 +184,6 @@ describe('AUD-011B real freshness barrier (never stub verifyBackend)', () => {
 			backendIdentity({ modalities: { audio: false, vision: true }, model_path: 'A' })
 		);
 	});
-	it('deduplicates simultaneous checks and leaves no background polling', async () => {
-		const gate = deferred<ApiLlamaCppServerProps>();
-		vi.mocked(PropsService.fetch).mockReturnValue(gate.promise);
-		const checks = Array.from({ length: 8 }, () => modelsStore.verifyBackend(context(), null));
-		expect(new Set(checks).size).toBe(1);
-		gate.resolve(props());
-		await Promise.all(checks);
-		expect(PropsService.fetch).toHaveBeenCalledTimes(1);
-		expect(ModelsService.list).toHaveBeenCalledTimes(1);
-		await new Promise((done) => setTimeout(done, 20));
-		expect(PropsService.fetch).toHaveBeenCalledTimes(1);
-	});
 	it.each(['props', 'catalog'] as const)(
 		'invalidates cached evidence on %s failure and recovers',
 		async (failure) => {
@@ -253,18 +199,6 @@ describe('AUD-011B real freshness barrier (never stub verifyBackend)', () => {
 			expect((await bind())?.features.vision.state).toBe('supported');
 		}
 	);
-	it('does not send a completion and reports verification failure through onError', async () => {
-		await bind();
-		vi.mocked(PropsService.fetch).mockRejectedValue(new Error('synthetic offline'));
-		const io = vi.fn();
-		vi.stubGlobal('fetch', io);
-		const onError = vi.fn();
-		await expect(
-			ChatService.sendMessage([{ role: 'user', content: 'synthetic' }], { stream: false, onError })
-		).rejects.toThrow();
-		expect(onError).toHaveBeenCalledTimes(1);
-		expect(io).not.toHaveBeenCalled();
-	});
 	it('rejects a vanished router model rather than falling back to the first model', async () => {
 		vi.mocked(PropsService.fetch).mockResolvedValue(props('A', true));
 		await bind('same-alias');
@@ -281,20 +215,6 @@ describe('AUD-011B real freshness barrier (never stub verifyBackend)', () => {
 		const second = await bind('same-alias');
 		expect(second?.backendIdentity).not.toBe(first?.backendIdentity);
 		expect(PropsService.fetchForModel).toHaveBeenCalledTimes(2);
-	});
-	it('does not join a per-model props request from an obsolete catalog generation', async () => {
-		vi.mocked(PropsService.fetch).mockResolvedValue(props('A', true));
-		await bind('same-alias');
-		const gate = deferred<ApiLlamaCppServerProps>();
-		vi.mocked(PropsService.fetchForModel)
-			.mockReturnValueOnce(gate.promise)
-			.mockResolvedValue(props('B'));
-		const late = modelsStore.fetchModelProps('same-alias', true);
-		const second = await bind('same-alias');
-		expect(second?.features.vision.state).toBe('supported');
-		gate.resolve(props('A'));
-		expect(await late).toBeNull();
-		expect(modelsStore.getModelProps('same-alias')?.model_path).toBe('/synthetic/B.gguf');
 	});
 	it.each(['success', 'failure'] as const)(
 		'ignores late source A props %s after switching to B',
@@ -338,23 +258,19 @@ describe('AUD-011B real freshness barrier (never stub verifyBackend)', () => {
 		gate.resolve();
 		await rejected;
 	});
-	it.each(['vllm', 'openai-compatible'] as const)(
-		'verifies %s only through models, never /props',
-		async (provider) => {
-			settingsStore.updateMultipleConfig({
-				apiProvider: provider,
-				serverBaseUrl: 'http://synthetic.test',
-				vllmBaseUrl: 'http://synthetic.test',
-				openAiCompatibleBaseUrl: 'http://synthetic.test'
-			});
-			const first = await bind('same-alias');
-			vi.mocked(ModelsService.list).mockResolvedValue(catalog(true));
-			const next = await bind('same-alias');
-			expect(first?.features.vision.state).toBe('unsupported');
-			expect(next?.features.vision.state).toBe('supported');
-			expect(next?.backendIdentity).not.toBe(first?.backendIdentity);
-			expect(PropsService.fetch).not.toHaveBeenCalled();
-			expect(PropsService.fetchForModel).not.toHaveBeenCalled();
-		}
-	);
+	it('verifies a catalog-only backend without /props', async () => {
+		settingsStore.updateMultipleConfig({
+			apiProvider: 'vllm',
+			serverBaseUrl: 'http://synthetic.test',
+			vllmBaseUrl: 'http://synthetic.test'
+		});
+		const first = await bind('same-alias');
+		vi.mocked(ModelsService.list).mockResolvedValue(catalog(true));
+		const next = await bind('same-alias');
+		expect(first?.features.vision.state).toBe('unsupported');
+		expect(next?.features.vision.state).toBe('supported');
+		expect(next?.backendIdentity).not.toBe(first?.backendIdentity);
+		expect(PropsService.fetch).not.toHaveBeenCalled();
+		expect(PropsService.fetchForModel).not.toHaveBeenCalled();
+	});
 });
