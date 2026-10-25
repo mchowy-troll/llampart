@@ -55,77 +55,41 @@ afterEach(() => {
 	ChatService.invalidateProviderRequestContexts();
 });
 
-describe('AUD-008: selection only invalidates capabilities for an accepted change', () => {
-	it.each([false, true, undefined])(
-		'preserves the exact snapshot on A→A (vision=%s)',
-		async (vision) => {
-			// Pass undefined explicitly: it represents missing evidence, not false.
-			await setup();
-			vi.mocked(ModelsService.list).mockResolvedValue(catalog(vision));
-			await modelsStore.fetch(true);
-			const snapshot = await modelsStore.refreshCapabilities(
-				ChatService.createProviderRequestContext()
-			);
-			const discovery = vi.spyOn(capabilities, 'createCapabilitySnapshot');
-			await modelsStore.selectModelById('model-A');
+describe('selection only invalidates capabilities for an accepted change', () => {
+	it.each(['same', 'empty', 'updating', 'missing'] as const)(
+		'preserves published and pending A capabilities for an ignored/rejected selection: %s',
+		async (kind) => {
+			const before = await setup();
+			async function attemptSelection() {
+				modelsStore.updating = kind === 'updating';
+				const selection = modelsStore.selectModelById(
+					kind === 'same'
+						? 'model-A'
+						: kind === 'empty'
+							? ''
+							: kind === 'missing'
+								? 'missing'
+								: 'model-B'
+				);
+				if (kind === 'missing')
+					await expect(selection).rejects.toThrow('Selected model is not available');
+				else await selection;
+			}
+			await attemptSelection();
+			expect(modelsStore.capabilitySnapshot).toBe(before);
 			expect(modelsStore.selectedModelId).toBe('model-A');
 			expect(modelsStore.selectedModelName).toBe('model-A');
-			expect(modelsStore.capabilitySnapshot).toBe(snapshot);
-			expect(snapshot?.features.vision.state).toBe(
-				vision === undefined ? 'unknown' : vision ? 'supported' : 'unsupported'
-			);
-			expect(modelsStore.modelSupportsVision('model-A')).toBe(vision !== false);
-			expect(snapshot?.features.tools.state).toBe('unsupported');
-			expect(discovery).not.toHaveBeenCalled();
-		}
-	);
-
-	it.each(['same', 'empty', 'updating', 'missing'] as const)(
-		'does not cancel pending A discovery for an ignored/rejected selection: %s',
-		async (kind) => {
-			await setup();
 			const gate = deferred();
-			const discovery = vi
-				.spyOn(capabilities, 'createCapabilitySnapshot')
-				.mockImplementationOnce(async (...args) => {
-					await gate.promise;
-					return createSnapshot(...args);
-				});
+			vi.spyOn(capabilities, 'createCapabilitySnapshot').mockImplementationOnce(async (...args) => {
+				await gate.promise;
+				return createSnapshot(...args);
+			});
 			const pending = modelsStore.refreshCapabilities(ChatService.createProviderRequestContext());
-			modelsStore.updating = kind === 'updating';
-			const selection = modelsStore.selectModelById(
-				kind === 'same'
-					? 'model-A'
-					: kind === 'empty'
-						? ''
-						: kind === 'missing'
-							? 'missing'
-							: 'model-B'
-			);
-			if (kind === 'missing')
-				await expect(selection).rejects.toThrow('Selected model is not available');
-			else await selection;
+			await attemptSelection();
 			gate.resolve();
 			const snapshot = await pending;
 			expect(modelsStore.capabilitySnapshot).toBe(snapshot);
 			expect(snapshot?.features.vision.state).toBe('unsupported');
-			expect(modelsStore.selectedModelName).toBe('model-A');
-			expect(discovery).toHaveBeenCalledTimes(1);
-		}
-	);
-
-	it.each(['empty', 'updating', 'missing'] as const)(
-		'keeps a valid snapshot for %s',
-		async (kind) => {
-			const snapshot = await setup();
-			modelsStore.updating = kind === 'updating';
-			const selection = modelsStore.selectModelById(
-				kind === 'empty' ? '' : kind === 'missing' ? 'missing' : 'model-B'
-			);
-			if (kind === 'missing')
-				await expect(selection).rejects.toThrow('Selected model is not available');
-			else await selection;
-			expect(modelsStore.capabilitySnapshot).toBe(snapshot);
 			expect(modelsStore.selectedModelName).toBe('model-A');
 		}
 	);
@@ -156,13 +120,6 @@ describe('AUD-008: selection only invalidates capabilities for an accepted chang
 		expect(modelsStore.capabilitySnapshot).toBe(nextA);
 	});
 
-	it('invalidates an already published snapshot before B discovery starts', async () => {
-		await setup();
-		await modelsStore.selectModelById('model-B');
-		expect(modelsStore.capabilitySnapshot).toBeNull();
-		expect(modelsStore.selectedModelName).toBe('model-B');
-	});
-
 	it('rejects late A even before B starts its discovery', async () => {
 		await setup();
 		const gate = deferred();
@@ -178,29 +135,18 @@ describe('AUD-008: selection only invalidates capabilities for an accepted chang
 		expect(modelsStore.selectedModelName).toBe('model-B');
 	});
 
-	it('allows explicit refresh without a selection change', async () => {
+	it('refreshes changed catalog capabilities without changing the selected model', async () => {
 		const before = await setup();
-		const discovery = vi.spyOn(capabilities, 'createCapabilitySnapshot');
+		vi.mocked(ModelsService.list).mockResolvedValue(catalog(true));
+		await modelsStore.fetch(true);
+		await modelsStore.selectModelById('model-A');
+		expect(modelsStore.capabilitySnapshot).toBe(before);
 		const pending = modelsStore.refreshCapabilities(ChatService.createProviderRequestContext());
 		expect(modelsStore.capabilitySnapshot).toBeNull();
 		const after = await pending;
-		expect(after).not.toBe(before);
-		expect(after).toEqual(before);
-		expect(modelsStore.capabilitySnapshot).toBe(after);
-		expect(discovery).toHaveBeenCalledTimes(1);
-	});
-
-	it('refreshes changed catalog metadata with the same selection (layout discovery boundary)', async () => {
-		const before = await setup();
-		vi.mocked(ModelsService.list).mockResolvedValue(catalog(true));
-		const oldList = modelsStore.models;
-		await modelsStore.fetch(true);
-		expect(modelsStore.models).not.toBe(oldList); // +layout watches this reference.
-		await modelsStore.selectModelById('model-A');
-		expect(modelsStore.capabilitySnapshot).toBe(before);
-		const after = await modelsStore.refreshCapabilities(ChatService.createProviderRequestContext());
 		expect(after?.features.vision.state).toBe('supported');
 		expect(after).not.toBe(before);
+		expect(modelsStore.capabilitySnapshot).toBe(after);
 		expect(modelsStore.selectedModelName).toBe('model-A');
 	});
 

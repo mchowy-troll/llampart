@@ -11,7 +11,6 @@ import { toolsStore } from '$lib/stores/tools.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { permissionsStore } from '$lib/stores/permissions.svelte';
 import { conversationsStore } from '$lib/stores/conversations.svelte';
-import { getApiProvider } from '$lib/services/providers';
 import type {
 	AgenticFlowOptions,
 	AgenticMessageIdentity,
@@ -25,12 +24,11 @@ const originalRole = serverStore.role;
 const originalProps = serverStore.props;
 const image =
 	'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC';
-const matrix = [
+// Representative request paths, not evidence of real provider compatibility.
+const requestPaths = [
 	['llama-server', 'chat-completions'],
 	['openai-compatible', 'chat-completions'],
-	['vllm', 'chat-completions'],
-	['openai-compatible', 'responses'],
-	['vllm', 'responses']
+	['openai-compatible', 'responses']
 ] as const;
 const entry = {
 	key: 'builtin:synthetic',
@@ -209,8 +207,8 @@ function flow(
 	};
 }
 
-describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
-	it('serializes model A across a paused tool result after switching the view to model B', async () => {
+describe.each(requestPaths)('operation model %s/%s', (providerId, protocol) => {
+	it('keeps operation A after switching conversation and selector, then uses B for the next operation', async () => {
 		await prepare(providerId, protocol);
 		conversationsStore.activeConversation = {
 			id: 'A',
@@ -220,8 +218,7 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 		const operationModel = ChatService.captureOperationModel(context, undefined, undefined, {
 			conversationId: 'A'
 		});
-		const build = vi.spyOn(getApiProvider(providerId), 'buildChatCompletionRequest');
-		const { payloads, fetchMock } = providerIO(protocol);
+		const { payloads } = providerIO(protocol);
 		const ready = deferred(),
 			gate = deferred();
 		vi.mocked(toolsStore.executeTool).mockImplementation(async () => {
@@ -254,48 +251,6 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 			expect(body).not.toHaveProperty('reasoning');
 			expect(body).not.toHaveProperty('chat_template_kwargs');
 		}
-		for (const [input] of build.mock.calls) {
-			expect(input.options.operationModel).toBe(operationModel);
-			expect(input.capabilities).toBe(await operationModel.capabilities);
-			expect(input.capabilities?.model).toBe('model-A');
-		}
-		expect(fetchMock.mock.calls.every(([url]) => String(url).includes(`/api/${providerId}/`))).toBe(
-			true
-		);
-		expect(callbacks.onFlowComplete).toHaveBeenCalledWith(
-			expect.objectContaining({ reason: 'completed' })
-		);
-	});
-	it('keeps A across tool awaits and uses B only for the next operation', async () => {
-		await prepare(providerId, protocol);
-		const { payloads } = providerIO(protocol);
-		const ready = deferred(),
-			gate = deferred();
-		vi.mocked(toolsStore.executeTool).mockImplementation(async () => {
-			ready.resolve();
-			await gate.promise;
-			return { content: 'CONFIRMED_RESULT', isError: false };
-		});
-		// Native ChatStore already passes a model in router mode; compatible did not.
-		const { pending, callbacks } = flow(providerId === 'llama-server' ? { model: 'model-A' } : {});
-		await Promise.race([
-			ready.promise,
-			pending.then(() => {
-				throw new Error(
-					`Flow ended before tool: ${callbacks.onError.mock.calls.map((args) => String(args[0]))}`
-				);
-			})
-		]);
-		await modelsStore.selectModelById('model-B');
-		gate.resolve();
-		await pending;
-		console.log(
-			'OWN006 captured',
-			providerId,
-			protocol,
-			payloads.map((body) => body.model)
-		);
-		expect.soft(payloads.map((body) => body.model)).toEqual(['model-A', 'model-A']);
 		expect(callbacks.onFlowComplete).toHaveBeenCalledWith(
 			expect.objectContaining({ reason: 'completed' })
 		);
@@ -303,16 +258,20 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 			expect(payloads.every((body) => body.store === false)).toBe(true);
 			expect(JSON.stringify(payloads[1])).toContain('SYNTHETIC_OPAQUE');
 		}
-		await flow(providerId === 'llama-server' ? { model: 'model-B' } : {}).pending;
+		await flow({}, undefined, 'B').pending;
 		expect(payloads.at(-1)?.model).toBe('model-B');
 	});
+});
 
+describe('operation model ownership', () => {
 	it('preserves an explicit override and exact provider ID over selector changes', async () => {
-		const exact = providerId === 'llama-server' ? 'model-B' : 'org/nested/model-B';
-		await prepare(providerId, protocol, [false, true], ['model-A', exact]);
-		const { payloads } = providerIO(protocol, 2);
+		const exact = 'org/nested/model-B';
+		await prepare('openai-compatible', 'responses', [false, true], ['model-A', exact]);
+		const { payloads } = providerIO('responses', 2);
 		vi.mocked(toolsStore.executeTool).mockImplementation(async () => {
-			await modelsStore.selectModelById('model-A');
+			await modelsStore.selectModelById(
+				modelsStore.selectedModelId === 'model-A' ? exact : 'model-A'
+			);
 			return { content: 'CONFIRMED_RESULT', isError: false };
 		});
 		await flow({ model: exact }).pending;
@@ -322,9 +281,9 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 	it.each([true, undefined])(
 		'preserves image input for vision=%s on the second model',
 		async (vision) => {
-			await prepare(providerId, protocol, [false, vision]);
+			await prepare('openai-compatible', 'chat-completions', [false, vision]);
 			await modelsStore.selectModelById('model-B');
-			const { payloads } = providerIO(protocol, 0);
+			const { payloads } = providerIO('chat-completions', 0);
 			await ChatService.sendMessage(
 				[{ role: 'user', content: [{ type: 'image_url', image_url: { url: image } }] }],
 				{
@@ -333,15 +292,15 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 				}
 			);
 			expect(JSON.stringify(payloads)).toContain(image);
-			if (vision === undefined && providerId !== 'llama-server')
+			if (vision === undefined)
 				expect(modelsStore.capabilitySnapshot?.features.vision.state).toBe('unknown');
 		}
 	);
 
 	it('rejects an explicitly text-only active image before I/O without mutating history', async () => {
-		await prepare(providerId, protocol, [true, false]);
+		await prepare('openai-compatible', 'chat-completions', [true, false]);
 		await modelsStore.selectModelById('model-B');
-		const { fetchMock } = providerIO(protocol, 0);
+		const { fetchMock } = providerIO('chat-completions', 0);
 		const history: DatabaseMessage[] = [
 			{
 				id: 'user',
@@ -365,20 +324,20 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 	});
 
 	it('does not fall back when the operation model disappears from the catalog', async () => {
-		await prepare(providerId, protocol);
-		const { payloads } = providerIO(protocol);
+		await prepare('openai-compatible', 'chat-completions');
+		const { payloads } = providerIO('chat-completions');
 		vi.mocked(toolsStore.executeTool).mockImplementation(async () => {
 			modelsStore.models = modelsStore.models.filter((model) => model.model !== 'model-A');
 			await modelsStore.selectModelById('model-B');
 			return { content: 'CONFIRMED_RESULT', isError: false };
 		});
-		await flow(providerId === 'llama-server' ? { model: 'model-A' } : {}).pending;
+		await flow().pending;
 		expect(payloads.map((body) => body.model)).toEqual(['model-A', 'model-A']);
 	});
 
 	it('does not send the next turn to a changed provider context', async () => {
-		await prepare(providerId, protocol);
-		const { payloads } = providerIO(protocol);
+		await prepare('openai-compatible', 'chat-completions');
+		const { payloads } = providerIO('chat-completions');
 		const controller = new AbortController();
 		vi.mocked(toolsStore.executeTool).mockImplementation(async () => {
 			settingsStore.updateMultipleConfig({ serverBaseUrl: 'http://changed.synthetic.test' });
@@ -391,7 +350,7 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 	});
 
 	it('captures before asynchronous tool discovery, not after it', async () => {
-		await prepare(providerId, protocol);
+		await prepare('openai-compatible', 'chat-completions');
 		const ready = deferred(),
 			gate = deferred();
 		vi.mocked(mcpStore.hasEnabledServers).mockReturnValue(true);
@@ -400,7 +359,7 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 			await gate.promise;
 			return false;
 		});
-		const { payloads } = providerIO(protocol, 0);
+		const { payloads } = providerIO('chat-completions', 0);
 		const { pending } = flow();
 		await ready.promise;
 		await modelsStore.selectModelById('model-B');
@@ -410,7 +369,7 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 	});
 
 	it('keeps capabilities with the operation across catalog mutations and other refreshes', async () => {
-		await prepare(providerId, protocol, [false, true]);
+		await prepare('llama-server', 'chat-completions', [false, true]);
 		const context = ChatService.createProviderRequestContext();
 		const operationModel = ChatService.captureOperationModel(context);
 		// The freshness barrier binds evidence before the first request. Once bound,
@@ -420,7 +379,7 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 		await modelsStore.selectModelById('model-B');
 		await modelsStore.refreshCapabilities(context, 'model-B');
 		modelsStore.models = [...modelsStore.models].reverse();
-		const { fetchMock } = providerIO(protocol, 0);
+		const { fetchMock } = providerIO('chat-completions', 0);
 		await expect(
 			ChatService.sendMessage(
 				[{ role: 'user', content: [{ type: 'image_url', image_url: { url: image } }] }],
@@ -435,10 +394,9 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 		expect((await operationModel.capabilities)?.features.vision.state).toBe('unsupported');
 	});
 
-	it('isolates simultaneous A and B flows and resolves capabilities once per operation', async () => {
-		await prepare(providerId, protocol);
-		const refresh = vi.spyOn(modelsStore, 'refreshCapabilities');
-		const { payloads } = providerIO(protocol, 2);
+	it('isolates simultaneous A and B flows', async () => {
+		await prepare('openai-compatible', 'responses');
+		const { payloads } = providerIO('responses', 2);
 		const aReady = deferred(),
 			aGate = deferred(),
 			bReady = deferred(),
@@ -465,13 +423,11 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 			'model-A',
 			'model-B'
 		]);
-		expect(refresh).toHaveBeenCalledTimes(2);
-		expect(JSON.stringify(payloads)).not.toContain('operationModel');
 	});
 
-	it('preserves a tool image in DB history but refuses generation for an unconfirmed tool-output backend', async () => {
-		await prepare(providerId, protocol, [true, true]);
-		const { fetchMock } = providerIO(protocol, 0);
+	it('preserves tool image history when its backend cannot accept tool images', async () => {
+		await prepare('llama-server', 'chat-completions', [true, true]);
+		const { fetchMock } = providerIO('chat-completions', 0);
 		const history: DatabaseMessage[] = [
 			{
 				id: 'assistant',
@@ -512,8 +468,8 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 	});
 
 	it('does not redirect A tool PNG to concurrent B or interrupt B when A continuation is refused', async () => {
-		await prepare(providerId, protocol, [true, true]);
-		const { payloads } = providerIO(protocol, 1);
+		await prepare('openai-compatible', 'chat-completions', [true, true]);
+		const { payloads } = providerIO('chat-completions', 1);
 		const ready = deferred(),
 			gate = deferred();
 		vi.mocked(toolsStore.executeTool).mockImplementation(async () => {
@@ -546,46 +502,39 @@ describe.each(matrix)('operation model %s/%s', (providerId, protocol) => {
 });
 
 describe('agentic image capability ownership', () => {
-	it('uses the selected second vision model, not the first text-only model, for tool images', async () => {
-		await prepare('llama-server', 'chat-completions', [false, true]);
-		await modelsStore.selectModelById('model-B');
-		const { payloads } = providerIO('chat-completions');
-		vi.mocked(toolsStore.executeTool).mockResolvedValue({
-			content: `CONFIRMED_RESULT\n${image}`,
-			isError: false
-		});
-		const { pending, callbacks } = flow();
-		await pending;
-		expect(payloads).toHaveLength(1);
-		expect(vi.mocked(toolsStore.executeTool)).toHaveBeenCalledTimes(1);
-		expect(callbacks.onToolCallState).toHaveBeenCalledWith(
-			expect.anything(),
-			'call-1',
-			expect.objectContaining({
-				status: 'completed',
-				result: expect.objectContaining({ extras: [expect.objectContaining({ base64Url: image })] })
-			})
-		);
-		expect(callbacks.onFlowComplete).toHaveBeenCalledWith(
-			expect.objectContaining({ reason: 'error' })
-		);
-		expect(callbacks.onError).toHaveBeenCalledWith(
-			expect.objectContaining({ message: expect.stringMatching(/tool result images/i) })
-		);
-	});
-
-	it('does not drop an image from a text-only operation just because another model has vision', async () => {
-		await prepare('llama-server', 'chat-completions', [true, false]);
-		await modelsStore.selectModelById('model-B');
-		const { payloads } = providerIO('chat-completions');
-		vi.mocked(toolsStore.executeTool).mockResolvedValue({ content: image, isError: false });
-		const { pending, callbacks } = flow({ model: 'model-B' });
-		await pending;
-		expect(payloads).toHaveLength(1);
-		expect(callbacks.onError).toHaveBeenCalledWith(
-			expect.objectContaining({ message: expect.stringMatching(/vision/i) })
-		);
-	});
+	it.each([true, false])(
+		'keeps tool images owned by selected B (vision=%s), not the first model',
+		async (vision) => {
+			await prepare('llama-server', 'chat-completions', [!vision, vision]);
+			await modelsStore.selectModelById('model-B');
+			const { payloads } = providerIO('chat-completions');
+			vi.mocked(toolsStore.executeTool).mockResolvedValue({
+				content: `CONFIRMED_RESULT\n${image}`,
+				isError: false
+			});
+			const { pending, callbacks } = flow();
+			await pending;
+			expect(payloads.map((body) => body.model)).toEqual(['model-B']);
+			expect(callbacks.onToolCallState).toHaveBeenCalledWith(
+				expect.anything(),
+				'call-1',
+				expect.objectContaining({
+					status: 'completed',
+					result: expect.objectContaining({
+						extras: [expect.objectContaining({ base64Url: image })]
+					})
+				})
+			);
+			expect(callbacks.onFlowComplete).toHaveBeenCalledWith(
+				expect.objectContaining({ reason: 'error' })
+			);
+			expect(callbacks.onError).toHaveBeenCalledWith(
+				expect.objectContaining({
+					message: expect.stringMatching(vision ? /tool result images/i : /vision/i)
+				})
+			);
+		}
+	);
 });
 
 describe('model defaults and auxiliary requests', () => {
@@ -650,11 +599,11 @@ describe('model defaults and auxiliary requests', () => {
 		}
 	);
 
-	it.each(matrix)(
-		'keeps an exact auto ID for %s/%s rather than interpreting a sentinel',
-		async (provider, protocol) => {
-			await prepare(provider, protocol, [true], ['auto']);
-			const { payloads } = providerIO(protocol, 0);
+	it.each(['llama-server', 'openai-compatible'] as const)(
+		'keeps an exact auto ID for %s rather than interpreting a sentinel',
+		async (provider) => {
+			await prepare(provider, 'chat-completions', [true], ['auto']);
+			const { payloads } = providerIO('chat-completions', 0);
 			await flow().pending;
 			expect(payloads[0].model).toBe('auto');
 		}

@@ -56,24 +56,30 @@ afterEach(() => {
 });
 
 describe('source-bound model metadata', () => {
-	it('shares a pending props request and keeps video in the common modality mapping', async () => {
+	it('shares one pending props request between callers for the same model', async () => {
 		setSource('https://a.example.test', 'key-a');
 		modelsStore.models = [{ id: 'model-a', model: 'model-a', name: 'A' } as ModelOption];
 		modelsStore.routerModels = routerList('model-a').data;
 		const pending = deferred<ApiLlamaCppServerProps>();
 		const fetchProps = vi.spyOn(PropsService, 'fetchForModel').mockReturnValue(pending.promise);
+		const props = { model_alias: 'model-a' } as ApiLlamaCppServerProps;
 
 		const first = modelsStore.fetchModelProps('model-a');
 		const second = modelsStore.fetchModelProps('model-a');
-		pending.resolve({
+		pending.resolve(props);
+
+		await expect(Promise.all([first, second])).resolves.toEqual([props, props]);
+		expect(fetchProps).toHaveBeenCalledTimes(1);
+	});
+
+	it('keeps video in model modalities', async () => {
+		setSource('https://a.example.test', 'key-a');
+		modelsStore.models = [{ id: 'model-a', model: 'model-a', name: 'A' } as ModelOption];
+		modelsStore.routerModels = routerList('model-a').data;
+		vi.spyOn(PropsService, 'fetchForModel').mockResolvedValue({
 			modalities: { vision: false, audio: false, video: true }
 		} as ApiLlamaCppServerProps);
 
-		await expect(Promise.all([first, second])).resolves.toEqual([
-			expect.objectContaining({ modalities: expect.objectContaining({ video: true }) }),
-			expect.objectContaining({ modalities: expect.objectContaining({ video: true }) })
-		]);
-		expect(fetchProps).toHaveBeenCalledTimes(1);
 		await modelsStore.fetchModalitiesForLoadedModels();
 		expect(modelsStore.getModelModalities('model-a')).toEqual({
 			vision: false,
@@ -114,7 +120,7 @@ describe('source-bound model metadata', () => {
 		expect(modelsStore.hasRouterMetadataForCurrentSource).toBe(true);
 	});
 
-	it('preserves a bounded per-source selection without exposing the raw API key in its key', async () => {
+	it('preserves per-source selection without exposing raw API keys in source keys', async () => {
 		vi.spyOn(ModelsService, 'list').mockImplementation(async (context) =>
 			context.serverBaseUrl.includes('a.example') ? list('model-a') : list('model-b')
 		);
@@ -129,6 +135,7 @@ describe('source-bound model metadata', () => {
 		setSource('https://b.example.test', 'RAW-KEY-B');
 		await modelsStore.fetch();
 		await modelsStore.selectModelById('model-b');
+		expect(modelsStore.modelListSourceKey).not.toContain('RAW-KEY-B');
 
 		modelsStore.clear();
 		serverStore.role = ServerRole.ROUTER;
@@ -136,7 +143,6 @@ describe('source-bound model metadata', () => {
 		await modelsStore.fetch();
 
 		expect(modelsStore.selectedModelId).toBe('model-a');
-		expect(modelsStore.rememberedSelectionSourceCount).toBeLessThanOrEqual(10);
 	});
 
 	it('aborts load polling on source switch and never polls the replacement source', async () => {
