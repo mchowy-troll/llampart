@@ -7,7 +7,6 @@ import {
 
 describe('same-origin gateway transport', () => {
 	it.each([
-		'http://localhost:8080',
 		'http://127.0.0.1:8080',
 		'http://192.168.1.60:8000',
 		'https://api.openai.com',

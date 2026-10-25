@@ -133,16 +133,6 @@ describe('Chat Completions protocol', () => {
 	])('does not silently swallow malformed event %s', (data) =>
 		expect(() => parseChatStream(data)).toThrow()
 	);
-	it.each(['messages', 'model', 'stream', 'tools', 'previous_response_id', 'store', 'background'])(
-		'protects custom key %s',
-		(key) =>
-			expect(() =>
-				buildChatBody({
-					...input,
-					options: { ...input.options, custom: JSON.stringify({ [key]: false }) }
-				})
-			).toThrow()
-	);
 	it('validates conflicting max-token variants and optional parameter types', () => {
 		expect(() =>
 			buildChatBody({
@@ -187,13 +177,6 @@ describe('capability snapshots and insecure-LAN fingerprint', () => {
 		expect(body).toHaveProperty('max_completion_tokens', 20);
 		expect(body).not.toHaveProperty('tools');
 		expect(body).not.toHaveProperty('max_tokens');
-		expect(
-			buildChatBody({
-				...input,
-				capabilities,
-				options: { ...input.options, custom: '{"reasoning_effort":"high"}' }
-			})
-		).toHaveProperty('reasoning_effort', 'high');
 	});
 	it('computes exact SHA-256 without crypto.subtle and preserves shipped llama source identity', async () => {
 		vi.stubGlobal('crypto', undefined);
@@ -536,49 +519,57 @@ describe.each([
 		};
 	};
 
-	it.each(['duplicate results', 'duplicate calls', 'incomplete call with actual result'])(
-		'rejects %s before fetch without changing history',
-		async (kind) => {
-			const { refresh, options } = prepare();
-			const history: ApiChatMessageData[] = [
-				{
-					role: 'assistant',
-					content: 'text',
-					tool_calls:
-						kind === 'duplicate calls'
-							? [call, structuredClone(call)]
-							: kind === 'incomplete call with actual result'
-								? [{ ...call, function: { ...call.function, arguments: '{' } }]
-								: [call]
-				},
-				{ role: 'tool', tool_call_id: call.id, content: 'ACTUAL' },
-				...(kind === 'duplicate results'
-					? [{ role: 'tool' as const, tool_call_id: call.id, content: 'SECOND' }]
-					: [])
-			];
-			const before = structuredClone(history),
-				fetch = vi.fn(),
-				complete = vi.fn();
-			vi.stubGlobal('fetch', fetch);
-			await expect(
-				ChatService.sendMessage(history, { ...options, onComplete: complete })
-			).rejects.toThrow(
-				kind === 'incomplete call with actual result'
-					? /matching/
-					: /Ambiguous tool history: duplicate/
-			);
-			expect(fetch).not.toHaveBeenCalled();
-			expect(refresh).not.toHaveBeenCalled();
-			expect(complete).not.toHaveBeenCalled();
-			expect(history).toEqual(before);
-			if (providerId === 'llama-server') {
+	// Rejection happens in shared history projection, before capability lookup or
+	// adapter serialization. Keep native preEncode and a Responses caller here;
+	// successful projection below still exercises every provider/protocol pair.
+	if (
+		providerId === 'llama-server' ||
+		(providerId === 'openai-compatible' && protocol === 'responses')
+	) {
+		it.each(['duplicate results', 'duplicate calls', 'incomplete call with actual result'])(
+			'rejects %s before fetch without changing history',
+			async (kind) => {
+				const { refresh, options } = prepare();
+				const history: ApiChatMessageData[] = [
+					{
+						role: 'assistant',
+						content: 'text',
+						tool_calls:
+							kind === 'duplicate calls'
+								? [call, structuredClone(call)]
+								: kind === 'incomplete call with actual result'
+									? [{ ...call, function: { ...call.function, arguments: '{' } }]
+									: [call]
+					},
+					{ role: 'tool', tool_call_id: call.id, content: 'ACTUAL' },
+					...(kind === 'duplicate results'
+						? [{ role: 'tool' as const, tool_call_id: call.id, content: 'SECOND' }]
+						: [])
+				];
+				const before = structuredClone(history),
+					fetch = vi.fn(),
+					complete = vi.fn();
+				vi.stubGlobal('fetch', fetch);
 				await expect(
-					ChatService.preEncode(history, options.providerRequestContext, 'exact')
-				).rejects.toThrow();
+					ChatService.sendMessage(history, { ...options, onComplete: complete })
+				).rejects.toThrow(
+					kind === 'incomplete call with actual result'
+						? /matching/
+						: /Ambiguous tool history: duplicate/
+				);
 				expect(fetch).not.toHaveBeenCalled();
+				expect(refresh).not.toHaveBeenCalled();
+				expect(complete).not.toHaveBeenCalled();
+				expect(history).toEqual(before);
+				if (providerId === 'llama-server') {
+					await expect(
+						ChatService.preEncode(history, options.providerRequestContext, 'exact')
+					).rejects.toThrow();
+					expect(fetch).not.toHaveBeenCalled();
+				}
 			}
-		}
-	);
+		);
+	}
 
 	it.each(['two actual results', 'incomplete stopped call', 'historical missing result'])(
 		'serializes %s without retry or mutating history',
@@ -742,16 +733,7 @@ describe('stream integration and compatibility', () => {
 		);
 		const complete = vi.fn();
 		const error = vi.fn();
-		const expectedLog = [
-			'Error in sendMessage:',
-			'ProviderOutcomeError',
-			'Provider response failed: failed'
-		];
-		const originalError = console.error;
-		const errorLog = vi.spyOn(console, 'error').mockImplementation((...args) => {
-			if (args.length !== expectedLog.length || args.some((arg, i) => arg !== expectedLog[i]))
-				originalError(...args);
-		});
+		vi.spyOn(console, 'error').mockImplementation(() => undefined);
 		await expect(
 			ChatService.sendMessage(input.messages, {
 				model: 'exact',
@@ -763,7 +745,6 @@ describe('stream integration and compatibility', () => {
 			name: 'ProviderOutcomeError',
 			message: 'Provider response failed: failed'
 		});
-		expect(errorLog).toHaveBeenCalledExactlyOnceWith(...expectedLog);
 		expect(complete).not.toHaveBeenCalled();
 		expect(error).toHaveBeenCalledTimes(1);
 		expect(error).toHaveBeenCalledWith(

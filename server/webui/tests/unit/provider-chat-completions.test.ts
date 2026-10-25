@@ -65,7 +65,7 @@ describe.each(matrix)('backend-owned reasoning %s/%s', (providerId, protocol) =>
 		for (const key of controlKeys) expect(request).not.toHaveProperty(key);
 		if (protocol === 'responses') expect(request.include).toEqual(['reasoning.encrypted_content']);
 	});
-	it('passes explicit protocol-correct effort without trusting a discovered value list', async () => {
+	it('passes explicit protocol-correct effort and unrelated extensions without trusting a discovered value list', async () => {
 		const capabilities = await createCapabilitySnapshot(
 			{ providerId, serverBaseUrl: input.serverBaseUrl, apiKey: input.apiKey, sourceGeneration: 1 },
 			'exact',
@@ -76,10 +76,12 @@ describe.each(matrix)('backend-owned reasoning %s/%s', (providerId, protocol) =>
 				}
 			}
 		);
-		const custom =
-			protocol === 'responses'
+		const custom = {
+			vendor_flag: true,
+			...(protocol === 'responses'
 				? { reasoning: { effort: 'future-level' } }
-				: { reasoning_effort: 'future-level' };
+				: { reasoning_effort: 'future-level' })
+		};
 		expect(body(JSON.stringify(custom), { capabilities })).toMatchObject(custom);
 	});
 	it.each([
@@ -103,9 +105,6 @@ describe.each(matrix)('backend-owned reasoning %s/%s', (providerId, protocol) =>
 				protocol === 'responses' ? '{"reasoning_effort":"low"}' : '{"reasoning":{"effort":"low"}}'
 			)
 		).toThrow();
-	});
-	it('preserves unrelated Custom JSON', () => {
-		expect(body('{"vendor_flag":true}')).toHaveProperty('vendor_flag', true);
 	});
 	it('keeps request identity and stream headers provider-scoped', () => {
 		const request = provider.buildChatCompletionRequest({

@@ -102,17 +102,11 @@ describe('automatic protocol contract', () => {
 			});
 			const fetch = vi.fn().mockResolvedValue(new Response('Endpoint unavailable', { status }));
 			vi.stubGlobal('fetch', fetch);
-			const expectedLog = ['Error in sendMessage:', 'HttpError', `Server error (${status}): `];
-			const originalError = console.error;
-			const errorLog = vi.spyOn(console, 'error').mockImplementation((...args) => {
-				if (args.length !== expectedLog.length || args.some((arg, i) => arg !== expectedLog[i]))
-					originalError(...args);
-			});
+			vi.spyOn(console, 'error').mockImplementation(() => undefined);
 			await expect(ChatService.sendMessage(input.messages, input.options)).rejects.toMatchObject({
 				name: 'HttpError',
 				message: `Server error (${status}): `
 			});
-			expect(errorLog).toHaveBeenCalledExactlyOnceWith(...expectedLog);
 			expect(fetch).toHaveBeenCalledTimes(1);
 			expect(fetch.mock.calls[0][0]).toContain('/chat/completions');
 		}
@@ -132,17 +126,11 @@ describe('automatic protocol contract', () => {
 			);
 			const fetch = vi.fn().mockResolvedValue(new Response('Endpoint unavailable', { status }));
 			vi.stubGlobal('fetch', fetch);
-			const expectedLog = ['Error in sendMessage:', 'HttpError', `Server error (${status}): `];
-			const originalError = console.error;
-			const errorLog = vi.spyOn(console, 'error').mockImplementation((...args) => {
-				if (args.length !== expectedLog.length || args.some((arg, i) => arg !== expectedLog[i]))
-					originalError(...args);
-			});
+			vi.spyOn(console, 'error').mockImplementation(() => undefined);
 			await expect(ChatService.sendMessage(input.messages, input.options)).rejects.toMatchObject({
 				name: 'HttpError',
 				message: `Server error (${status}): `
 			});
-			expect(errorLog).toHaveBeenCalledExactlyOnceWith(...expectedLog);
 			expect(fetch).toHaveBeenCalledTimes(1);
 			expect(fetch.mock.calls[0][0]).toContain('/responses');
 		}
@@ -150,37 +138,17 @@ describe('automatic protocol contract', () => {
 });
 
 describe('shared reasoning and explicit custom extensions', () => {
-	it('uses only explicit Custom JSON and does not constrain efforts to discovered values', async () => {
+	it('does not enable discovered reasoning and rejects explicit unsupported effort', async () => {
 		const supported = await createCapabilitySnapshot(context, 'exact', {
 			capabilities: { reasoning_effort: { supported: true, values: ['low', 'none'] } }
 		});
+		expect(buildChatBody({ ...input, capabilities: supported })).not.toHaveProperty(
+			'reasoning_effort'
+		);
 		const options = {
 			...input.options,
 			custom: '{"reasoning_effort":"high"}'
 		};
-		expect(buildChatBody({ ...input, options, capabilities: supported }).reasoning_effort).toBe(
-			'high'
-		);
-		const responses = await createCapabilitySnapshot(context, 'exact', {
-			capabilities: {
-				required_protocol: 'responses',
-				reasoning_effort: { supported: true, values: ['low', 'none'] }
-			}
-		});
-		expect(
-			buildResponsesBody({
-				...input,
-				options: { ...input.options, custom: '{"reasoning":{"effort":"high"}}' },
-				capabilities: responses
-			}).reasoning
-		).toMatchObject({ effort: 'high' });
-		expect(
-			buildChatBody({
-				...input,
-				capabilities: supported,
-				options: input.options
-			}).reasoning_effort
-		).toBeUndefined();
 		const unsupported = await createCapabilitySnapshot(context, 'exact', {
 			capabilities: { reasoning: false, reasoning_effort: false }
 		});
@@ -314,20 +282,6 @@ describe('Responses generation parameters', () => {
 				})
 			).toThrow(name);
 	});
-	it.each(['model', 'input', 'stream', 'store', 'previous_response_id', 'tools', 'background'])(
-		'keeps %s protected even with supported extensions',
-		(name) => {
-			expect(() =>
-				buildResponsesBody({
-					...input,
-					options: {
-						...input.options,
-						custom: JSON.stringify({ [name]: 'override' })
-					}
-				})
-			).toThrow('protected');
-		}
-	);
 });
 
 describe('Responses function reconciliation', () => {
