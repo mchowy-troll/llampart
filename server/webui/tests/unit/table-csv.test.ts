@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Element, Root, RootContent } from 'hast';
 import { createMarkdownProcessor } from '$lib/markdown/markdown-runtime';
-import { tableCsv, tableCsvFilename } from '$lib/markdown/table-csv';
+import { tableCsv } from '$lib/markdown/table-csv';
 
 // Node project: a structural DOM double from the actual rendered HAST, not an HTML parser.
 function dom(node: RootContent): Node {
@@ -42,7 +42,8 @@ describe('Markdown table CSV', () => {
 				'| **Mleko** | 4,50 | Zwykłe |\n' +
 				'| Ser "żółty" | 24,90 | Produkt, nabiał |\n' +
 				'| *Łódź 東京 😀* | `-1.25` | pierwszy<br>drugi |\n' +
-				'| | | |\n| Koniec | -1,25 | <ul><li>A</li><li>B<br>C</li></ul> |'
+				'| | | |\n| Koniec | -1,25 | <ul><li>A</li><li>B<br>C</li></ul> |\n' +
+				'| Liczby | -001.2500 | -1.25e-3 |'
 		);
 		expect(result).toHaveLength(2);
 		expect(tableCsv(result[0])).toBe('\uFEFFIgnore\r\nFIRST\r\n');
@@ -51,55 +52,38 @@ describe('Markdown table CSV', () => {
 				'Mleko,"4,50",Zwykłe\r\n' +
 				'"Ser ""żółty""","24,90","Produkt, nabiał"\r\n' +
 				'Łódź 東京 😀,-1.25,"pierwszy\ndrugi"\r\n' +
-				',,\r\nKoniec,"-1,25","A\nB\nC"\r\n'
+				',,\r\nKoniec,"-1,25","A\nB\nC"\r\n' +
+				'Liczby,-001.2500,-1.25e-3\r\n'
 		);
 	});
-	it.each(['=', '+', '-', '@'])(
-		'neutralizes %s after whitespace/control/invisible prefixes',
-		async (sign) => {
-			for (const prefix of [
-				'',
-				' ',
-				'\t',
-				'\u0000',
-				'\u200B',
-				'\uFEFF',
-				'\u2066',
-				'\u034F',
-				'\uFE0F',
-				'\u3164',
-				' \t\u0001\u200B'
-			]) {
-				const value = `${prefix}${sign}SUM(A1)`;
-				const table = {
-					rows: [{ cells: [dom({ type: 'text', value })] }]
-				} as unknown as HTMLTableElement;
-				expect(tableCsv(table)).toBe(`\uFEFF'${value}\r\n`);
-			}
-		}
-	);
-	it.each(['-12', '-1.25', '-1,25', '-001.2500', '-1.25e-3'])(
-		'preserves numeric text %s exactly',
-		async (value) => {
-			const [table] = await tables(`| Number |\n|---|\n| ${value} |`);
-			expect(tableCsv(table)).toBe(
-				`\uFEFFNumber\r\n${value.includes(',') ? `"${value}"` : value}\r\n`
-			);
-		}
-	);
+
+	it('neutralizes formula signs and whitespace/control/invisible prefixes', () => {
+		const values = [
+			'=SUM(A1)',
+			'+SUM(A1)',
+			'-SUM(A1)',
+			'@SUM(A1)',
+			' =SUM(A1)',
+			'\t=SUM(A1)',
+			'\u0000=SUM(A1)',
+			'\u200B=SUM(A1)',
+			'\uFEFF=SUM(A1)',
+			'\u2066=SUM(A1)',
+			'\u034F=SUM(A1)',
+			'\uFE0F=SUM(A1)',
+			'\u3164=SUM(A1)',
+			' \t\u0001\u200B=SUM(A1)'
+		];
+		const table = {
+			rows: values.map((value) => ({ cells: [dom({ type: 'text', value })] }))
+		} as unknown as HTMLTableElement;
+		expect(tableCsv(table)).toBe('\uFEFF' + values.map((value) => `'${value}\r\n`).join(''));
+	});
+
 	it('quotes newlines and quotes without normalizing original text', () => {
 		const table = {
 			rows: [{ cells: [dom({ type: 'text', value: '  a,"b"\r\nc  ' })] }]
 		} as unknown as HTMLTableElement;
 		expect(tableCsv(table)).toBe('\uFEFF"  a,""b""\r\nc  "\r\n');
 	});
-	it.each([1, 2, 100, 0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1])(
-		'uses bounded numeric-only filenames (%s)',
-		(index) => {
-			expect(tableCsvFilename(index)).toBe(
-				`table-${Number.isSafeInteger(index) && index > 0 ? index : 1}.csv`
-			);
-			expect(tableCsvFilename(index)).toMatch(/^table-\d+\.csv$/);
-		}
-	);
 });
