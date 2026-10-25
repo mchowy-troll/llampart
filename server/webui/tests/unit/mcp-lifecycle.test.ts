@@ -17,12 +17,10 @@ interface LifecycleHarness {
 	reconnectControllers: Map<string, AbortController>;
 	pendingConnectControllers: Set<AbortController>;
 	configSignature: string | null;
-	lifecycleGeneration: number;
 	toolCount: number;
 	connectedServerNames: string[];
 	initialize(signature: string, config: MCPClientConfig): Promise<boolean>;
 	autoReconnect(serverName: string): Promise<void>;
-	reconnectServer(serverName: string): Promise<void>;
 	commitConnection(serverName: string, connection?: MCPConnection): void;
 	handleToolsListChanged(serverName: string, tools: Tool[]): void;
 	runHealthCheck(
@@ -188,7 +186,6 @@ describe('MCP lifecycle cancellation', () => {
 		const store = createStore();
 		const reconnectController = new AbortController();
 		const connectController = new AbortController();
-		const generation = store.lifecycleGeneration;
 
 		store.serverConfigs.set('server', createConfig('https://a.test/mcp').servers.server);
 		store.reconnectingServers.add('server');
@@ -198,7 +195,6 @@ describe('MCP lifecycle cancellation', () => {
 
 		await store.shutdown();
 
-		expect(store.lifecycleGeneration).toBe(generation + 1);
 		expect(reconnectController.signal.aborted).toBe(true);
 		expect(connectController.signal.aborted).toBe(true);
 		expect(store.serverConfigs.size).toBe(0);
@@ -208,28 +204,9 @@ describe('MCP lifecycle cancellation', () => {
 		expect(store.configSignature).toBeNull();
 	});
 
-	it('replaces A+B with A on reconnect and refreshes reactive connection state', async () => {
+	it('shares one deferred session reconnect, closes the stale connection and refreshes tools', async () => {
 		const store = createStore();
 		const oldConnection = createConnection('server', ['A', 'B']);
-		const newConnection = createConnection('server', ['A']);
-		store.serverConfigs.set('server', createConfig('https://a.test/mcp').servers.server);
-		store.commitConnection('server', oldConnection);
-		const commitSpy = vi.spyOn(store, 'commitConnection');
-		vi.spyOn(MCPService, 'connect').mockResolvedValue(newConnection);
-		vi.spyOn(MCPService, 'disconnect').mockResolvedValue();
-
-		await store.reconnectServer('server');
-
-		expect(commitSpy).toHaveBeenCalledWith('server', newConnection);
-		expect(store.hasTool('A')).toBe(true);
-		expect(store.hasTool('B')).toBe(false);
-		expect(store.toolCount).toBe(1);
-		expect(store.connectedServerNames).toEqual(['server']);
-	});
-
-	it('shares one deferred session reconnect and disconnects the stale connection', async () => {
-		const store = createStore();
-		const oldConnection = createConnection('server', ['A']);
 		const newConnection = createConnection('server', ['A']);
 		const oldDisconnected = deferred<void>();
 		const connected = deferred<MCPConnection>();
@@ -267,16 +244,19 @@ describe('MCP lifecycle cancellation', () => {
 		]);
 		expect(store.connections.get('server')).toBe(newConnection);
 		expect(store.reconnectPromises.size).toBe(0);
+		expect(store.hasTool('A')).toBe(true);
+		expect(store.hasTool('B')).toBe(false);
+		expect(store.toolCount).toBe(1);
+		expect(store.connectedServerNames).toEqual(['server']);
 	});
 
-	it('commits auto-reconnected connections through the shared connection helper', async () => {
+	it('closes the stale connection and publishes auto-reconnected tools and servers', async () => {
 		vi.useFakeTimers();
 		const store = createStore();
 		const staleConnection = createConnection('server', ['stale']);
 		const connection = createConnection('server', ['A']);
 		store.serverConfigs.set('server', createConfig('https://a.test/mcp').servers.server);
 		store.commitConnection('server', staleConnection);
-		const commitSpy = vi.spyOn(store, 'commitConnection');
 		const disconnect = vi.spyOn(MCPService, 'disconnect').mockResolvedValue();
 		vi.spyOn(MCPService, 'connect').mockResolvedValue(connection);
 
@@ -287,41 +267,35 @@ describe('MCP lifecycle cancellation', () => {
 		await vi.advanceTimersByTimeAsync(1_000);
 		await reconnect;
 
-		expect(commitSpy).toHaveBeenCalledWith('server', connection);
 		expect(store.toolCount).toBe(1);
 		expect(store.connectedServerNames).toEqual(['server']);
 	});
 
-	it('commits list changes through the shared connection helper', () => {
+	it('removes tools from the registry when the server list changes', () => {
 		const store = createStore();
 		const connection = createConnection('server', ['A', 'B']);
 		store.commitConnection('server', connection);
-		const commitSpy = vi.spyOn(store, 'commitConnection');
 
 		store.handleToolsListChanged('server', [createTool('A')]);
 
-		expect(commitSpy).toHaveBeenCalledWith('server', connection);
 		expect(store.hasTool('B')).toBe(false);
 		expect(store.toolCount).toBe(1);
 	});
 
-	it('commits initialized connections through the shared connection helper', async () => {
+	it('publishes tools and connected servers after initialization', async () => {
 		const store = createStore();
 		const connection = createConnection('server', ['A']);
-		const commitSpy = vi.spyOn(store, 'commitConnection');
 		vi.spyOn(MCPService, 'connect').mockResolvedValue(connection);
 
 		await store.initialize('A', createConfig('https://a.test/mcp'));
 
-		expect(commitSpy).toHaveBeenCalledWith('server', connection);
 		expect(store.toolCount).toBe(1);
 		expect(store.connectedServerNames).toEqual(['server']);
 	});
 
-	it('commits promoted health-check connections through the shared connection helper', async () => {
+	it('publishes tools and connected servers after health-check promotion', async () => {
 		const store = createStore();
 		const connection = createConnection('server', ['A']);
-		const commitSpy = vi.spyOn(store, 'commitConnection');
 		vi.spyOn(MCPService, 'connect').mockResolvedValue(connection);
 
 		await store.runHealthCheck(
@@ -334,7 +308,6 @@ describe('MCP lifecycle cancellation', () => {
 			true
 		);
 
-		expect(commitSpy).toHaveBeenCalledWith('server', connection);
 		expect(store.toolCount).toBe(1);
 		expect(store.connectedServerNames).toEqual(['server']);
 	});
