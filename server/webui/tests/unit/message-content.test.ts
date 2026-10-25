@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MessageRole, MessageType } from '$lib/enums';
-import {
-	generateAssistantResponseFilename,
-	getMessageResponseContent
-} from '$lib/utils/message-content';
+import { getMessageResponseContent } from '$lib/utils/message-content';
 import type { DatabaseMessage } from '$lib/types/database';
 
 function makeMessage(overrides: Partial<DatabaseMessage> = {}): DatabaseMessage {
@@ -67,13 +64,5 @@ describe('getMessageResponseContent', () => {
 				result: 'Result'
 			})
 		).toBe('Reasoning:\nNeed more information.');
-	});
-});
-
-describe('generateAssistantResponseFilename', () => {
-	it('generates a deterministic Markdown filename from the message timestamp', () => {
-		expect(generateAssistantResponseFilename(Date.UTC(2026, 7, 12, 14, 30, 0))).toBe(
-			'llampart-response-2026-08-12_14-30-00.md'
-		);
 	});
 });

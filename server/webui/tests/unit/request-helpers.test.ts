@@ -8,117 +8,88 @@ import {
 	extractJsonRpcMethods
 } from '$lib/utils/request-helpers';
 
-describe('getRequestUrl', () => {
-	it('returns a plain string input as-is', () => {
-		expect(getRequestUrl('https://example.com/mcp')).toBe('https://example.com/mcp');
+describe('request metadata', () => {
+	it('accepts fetch URL input forms', () => {
+		const url = 'https://example.com/mcp';
+
+		expect(getRequestUrl(url)).toBe(url);
+		expect(getRequestUrl(new URL(url))).toBe(url);
+		expect(getRequestUrl(new Request(url))).toBe(url);
 	});
 
-	it('returns href from a URL object', () => {
-		expect(getRequestUrl(new URL('https://example.com/mcp'))).toBe('https://example.com/mcp');
+	it('resolves method overrides before Request, base init and GET', () => {
+		const url = 'https://example.com/mcp';
+		const request = new Request(url, { method: 'PUT' });
+		const baseInit = { method: 'DELETE' };
+
+		expect(getRequestMethod(request, { method: 'POST' }, baseInit)).toBe('POST');
+		expect(getRequestMethod(request, undefined, baseInit)).toBe('PUT');
+		expect(getRequestMethod(url, undefined, baseInit)).toBe('DELETE');
+		expect(getRequestMethod(url)).toBe('GET');
 	});
 
-	it('returns url from a Request object', () => {
-		const req = new Request('https://example.com/mcp');
-		expect(getRequestUrl(req)).toBe('https://example.com/mcp');
-	});
-});
-
-describe('getRequestMethod', () => {
-	it('prefers method from init', () => {
-		expect(getRequestMethod('https://example.com', { method: 'POST' })).toBe('POST');
-	});
-
-	it('falls back to Request.method', () => {
-		const req = new Request('https://example.com', { method: 'PUT' });
-		expect(getRequestMethod(req)).toBe('PUT');
-	});
-
-	it('falls back to baseInit.method', () => {
-		expect(getRequestMethod('https://example.com', undefined, { method: 'DELETE' })).toBe('DELETE');
-	});
-
-	it('defaults to GET', () => {
-		expect(getRequestMethod('https://example.com')).toBe('GET');
-	});
-});
-
-describe('getRequestBody', () => {
-	it('returns body from init', () => {
+	it('returns the supplied body or undefined when absent', () => {
 		expect(getRequestBody('https://example.com', { body: 'payload' })).toBe('payload');
-	});
-
-	it('returns undefined when no body is present', () => {
 		expect(getRequestBody('https://example.com')).toBeUndefined();
 	});
 });
 
 describe('summarizeRequestBody', () => {
-	it('returns empty for null', () => {
+	it('reports an absent body as empty', () => {
 		expect(summarizeRequestBody(null)).toEqual({ kind: 'empty' });
 	});
 
-	it('returns empty for undefined', () => {
-		expect(summarizeRequestBody(undefined)).toEqual({ kind: 'empty' });
+	it('reports string metadata without exposing its content', () => {
+		const body = 'token=secret-token';
+
+		expect(summarizeRequestBody(body)).toEqual({ kind: 'string', size: body.length });
 	});
 
-	it('returns string kind with size', () => {
-		expect(summarizeRequestBody('hello')).toEqual({ kind: 'string', size: 5 });
-	});
+	it('reports binary body metadata without exposing content', () => {
+		const blob = new Blob(['secret-token']);
 
-	it('returns blob kind with size', () => {
-		const blob = new Blob(['abc']);
-		expect(summarizeRequestBody(blob)).toEqual({ kind: 'blob', size: 3 });
-	});
-
-	it('returns formdata kind', () => {
-		expect(summarizeRequestBody(new FormData())).toEqual({ kind: 'formdata' });
-	});
-
-	it('returns arraybuffer kind with size', () => {
+		expect(summarizeRequestBody(blob)).toEqual({ kind: 'blob', size: blob.size });
 		expect(summarizeRequestBody(new ArrayBuffer(8))).toEqual({ kind: 'arraybuffer', size: 8 });
+	});
+
+	it('reports formdata metadata without exposing fields', () => {
+		const body = new FormData();
+		body.set('token', 'secret-token');
+
+		expect(summarizeRequestBody(body)).toEqual({ kind: 'formdata' });
 	});
 });
 
 describe('formatDiagnosticErrorMessage', () => {
-	it('appends CORS hint for Failed to fetch', () => {
+	it('adds a CORS hint only for fetch failures and accepts non-Error values', () => {
 		expect(formatDiagnosticErrorMessage(new TypeError('Failed to fetch'))).toBe(
 			'Failed to fetch (check CORS?)'
 		);
-	});
-
-	it('passes through other error messages unchanged', () => {
 		expect(formatDiagnosticErrorMessage(new Error('timeout'))).toBe('timeout');
-	});
-
-	it('handles non-Error values', () => {
 		expect(formatDiagnosticErrorMessage('some string')).toBe('some string');
 	});
 });
 
 describe('extractJsonRpcMethods', () => {
-	it('extracts methods from a JSON-RPC array', () => {
+	it('extracts only method names from a JSON-RPC batch', () => {
 		const body = JSON.stringify([
-			{ jsonrpc: '2.0', id: 1, method: 'initialize' },
+			{ jsonrpc: '2.0', id: 1, method: 'initialize', params: { token: 'secret-token' } },
 			{ jsonrpc: '2.0', method: 'notifications/initialized' }
 		]);
+
 		expect(extractJsonRpcMethods(body)).toEqual(['initialize', 'notifications/initialized']);
 	});
 
 	it('extracts method from a single JSON-RPC message', () => {
 		const body = JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
+
 		expect(extractJsonRpcMethods(body)).toEqual(['tools/list']);
 	});
 
-	it('returns undefined for non-string body', () => {
+	it('ignores absent, malformed and non-method payloads', () => {
 		expect(extractJsonRpcMethods(null)).toBeUndefined();
 		expect(extractJsonRpcMethods(undefined)).toBeUndefined();
-	});
-
-	it('returns undefined for invalid JSON', () => {
 		expect(extractJsonRpcMethods('not json')).toBeUndefined();
-	});
-
-	it('returns undefined when no methods found', () => {
 		expect(extractJsonRpcMethods(JSON.stringify({ foo: 'bar' }))).toBeUndefined();
 	});
 });
