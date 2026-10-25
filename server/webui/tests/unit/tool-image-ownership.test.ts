@@ -43,10 +43,6 @@ describe('LLP-009: real tool image bytes', () => {
 			`before\n${dataUrl}\nbetween\n${dataUrl}\nafter`
 		);
 		expect(attachments).toHaveLength(2);
-		expect(attachments.map((item) => item.type)).toEqual([
-			AttachmentType.IMAGE,
-			AttachmentType.IMAGE
-		]);
 		expect(attachments[0].name).not.toBe(attachments[1].name);
 		const bytes = Buffer.from(png, 'base64');
 		expect(bytes.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');

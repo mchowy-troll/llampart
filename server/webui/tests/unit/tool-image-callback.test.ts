@@ -163,8 +163,12 @@ describe('tool image callback must be canonical before the next model request', 
 		}
 	);
 
-	it('passes the canonical DB image to the provider boundary despite a different saved filename', async () => {
-		const flow = start({ result: `description\n${image}`, canonical: 'valid', renamedExtra: true });
+	it('passes both identical canonical DB images to the provider boundary despite different saved filenames', async () => {
+		const flow = start({
+			result: `description\n${image}\n${image}`,
+			canonical: 'valid',
+			renamedExtra: true
+		});
 		await flow.pending;
 		expect(flow.send).toHaveBeenCalledTimes(2);
 		expect(flow.history[1]).toEqual(
@@ -180,17 +184,27 @@ describe('tool image callback must be canonical before the next model request', 
 		);
 		expect(flow.commits).toHaveLength(1);
 		expect(flow.commits[0].extra?.[0].name).toMatch(/^previously-saved/);
-	});
-
-	it('requires both intentionally identical images, without comparing newly generated names', async () => {
-		const flow = start({ result: `${image}\n${image}`, canonical: 'valid', renamedExtra: true });
-		await flow.pending;
-		expect(flow.send).toHaveBeenCalledTimes(2);
 		expect(
 			(flow.history[1].at(-1) as { content: { type: string }[] }).content.filter(
 				(part) => part.type === 'image_url'
 			)
 		).toHaveLength(2);
+	});
+
+	it('successfully forwards both identical images from an image-only tool result', async () => {
+		const flow = start({ result: `${image}\n${image}`, canonical: 'valid', renamedExtra: true });
+		const outcome = await flow.pending;
+		expect(outcome.error).toBeUndefined();
+		expect(flow.states.at(-1)?.status).toBe('completed');
+		expect(flow.send).toHaveBeenCalledTimes(2);
+		expect(
+			(flow.history[1].at(-1) as { content: { type: string }[] }).content.filter(
+				(part) => part.type === 'image_url'
+			)
+		).toEqual([
+			{ type: 'image_url', image_url: { url: image } },
+			{ type: 'image_url', image_url: { url: image } }
+		]);
 	});
 
 	it('does not accept one canonical image as two deliberately identical results', async () => {

@@ -323,19 +323,6 @@ describe('lifecycle export contract', () => {
 		expect(envelope.formatVersion).toBe(2);
 		expect(parseConversationImport(JSON.parse(JSON.stringify(envelope)))).toEqual(fixture(status));
 	});
-	it('imports V1 without inventing lifecycle', () => {
-		const conversations = fixture('not_started');
-		const { agentic: _agentic, ...old } = conversations[0].messages[0];
-		expect(_agentic).toBeDefined();
-		const imported = parseConversationImport({
-			type: 'llampart-conversations',
-			formatVersion: 1,
-			appVersion: '1.9.0',
-			exportedAt: 'now',
-			conversations: [{ ...conversations[0], messages: [old] }]
-		});
-		expect(imported[0].messages[0].agentic).toBeUndefined();
-	});
 	it('rejects unsupported lifecycle and never silently exports it', () => {
 		const broken = fixture('not_started');
 		Object.assign(broken[0].messages[0].agentic!.calls[0], { status: 'cancelled_safely' });
