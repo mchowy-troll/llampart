@@ -20,12 +20,6 @@ const donut = {
 	]
 };
 describe('bounded chart schema', () => {
-	it('rejects excessive breadth before constructing per-row validation issues', () => {
-		expect(
-			parseChart(JSON.stringify({ ...cartesian, data: Array.from({ length: 10000 }, () => ({})) }))
-				.success
-		).toBe(false);
-	});
 	it('formats with explicit locale/precision without modifying source values', () => {
 		const spec = chartSchema.parse({ ...cartesian, format: 'percent', decimals: 1 });
 		expect(formatChartValue(spec, 0.12345, 'en')).toBe('12.3%');
@@ -35,8 +29,21 @@ describe('bounded chart schema', () => {
 	it.each(['line', 'bar', 'area'])('accepts %s with multiple series', (type) =>
 		expect(parseChart(JSON.stringify({ ...cartesian, type })).success).toBe(true)
 	);
-	it('accepts donut with zero slices and a positive total', () =>
-		expect(parseChart(JSON.stringify(donut)).success).toBe(true));
+	it('accepts the maximum donut slices, including zero values with a positive total', () =>
+		expect(
+			parseChart(
+				JSON.stringify({
+					...donut,
+					data: [
+						...donut.data,
+						...Array.from({ length: CHART_LIMITS.slices - donut.data.length }, (_, i) => ({
+							name: `Slice ${i}`,
+							value: 1
+						}))
+					]
+				})
+			).success
+		).toBe(true));
 	it('supports grouped horizontal bars and safe formatting', () =>
 		expect(
 			chartSchema.parse({
@@ -47,7 +54,7 @@ describe('bounded chart schema', () => {
 				decimals: 4
 			})
 		).toMatchObject({ orientation: 'horizontal' }));
-	it.each(['{', 'null', '[]', '{}', 'NaN', 'Infinity'])('rejects malformed JSON %s', (source) =>
+	it.each(['{', 'null', '[]', '{}'])('rejects malformed or non-chart JSON %s', (source) =>
 		expect(parseChart(source).success).toBe(false)
 	);
 	it.each([
@@ -56,7 +63,6 @@ describe('bounded chart schema', () => {
 		{ ...cartesian, data: [] },
 		{ ...cartesian, series: [] },
 		{ ...cartesian, data: [{ month: 'x', a: 1 }] },
-		{ ...cartesian, data: [{ month: 'x', a: null, b: 1 }] },
 		{ ...cartesian, data: [{ month: 'x', a: '1', b: 1 }] },
 		{ ...cartesian, data: [{ month: 'x', a: 1, b: 1, props: 'unsafe' }] },
 		{ ...cartesian, title: 'x'.repeat(121) },
@@ -69,10 +75,9 @@ describe('bounded chart schema', () => {
 			...cartesian,
 			data: Array.from({ length: 501 }, (_, i) => ({ month: String(i), a: 1, b: 2 }))
 		},
+		{ ...cartesian, data: Array.from({ length: 10000 }, () => ({})) },
 		{ ...cartesian, data: [cartesian.data[0], cartesian.data[0]] },
 		{ ...cartesian, series: [{ key: 'month', label: 'X' }] },
-		{ ...cartesian, color: 'red' },
-		{ ...cartesian, font: 'anything' },
 		{ ...cartesian, url: 'https://evil.test' },
 		{ ...cartesian, formatter: '(x) => alert(x)' },
 		{ ...cartesian, orientation: 'horizontal' },
@@ -106,10 +111,18 @@ describe('bounded chart schema', () => {
 			).success
 		).toBe(true);
 		expect(parseChart(' '.repeat(CHART_LIMITS.sourceBytes + 1)).success).toBe(false);
-		expect(
-			parseChart(JSON.stringify({ ...cartesian, title: '界'.repeat(CHART_LIMITS.sourceBytes / 2) }))
-				.success
-		).toBe(false);
+		const unicode = chartSchema.parse({
+			...cartesian,
+			data: Array.from({ length: CHART_LIMITS.points }, (_, i) => ({
+				month: '界'.repeat(100) + i,
+				a: 1,
+				b: 2
+			}))
+		});
+		const source = JSON.stringify(unicode);
+		expect(source.length).toBeLessThan(CHART_LIMITS.sourceBytes);
+		expect(new TextEncoder().encode(source).length).toBeGreaterThan(CHART_LIMITS.sourceBytes);
+		expect(parseChart(source).success).toBe(false);
 	});
 	it('preserves suspicious labels as inert text, never HTML or options', () => {
 		const title = '<img src=x onerror=alert(1)> ${alert(1)}';

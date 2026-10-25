@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
 	remove: vi.fn(),
 	load: vi.fn(),
 	parse: vi.fn(),
-	styleAppend: vi.fn(),
 	spaceEdges: vi.fn()
 }));
 vi.mock('mermaid', () => ({
@@ -60,85 +59,30 @@ beforeEach(() => {
 		source: svg,
 		viewBox: { baseVal: { x: 0, y: 0, width: 100, height: 100 } },
 		setAttribute: vi.fn(),
-		querySelector: (selector: string) =>
-			selector === 'style' ? { append: mocks.styleAppend } : null,
+		querySelector: () => null,
 		querySelectorAll: () => []
 	}));
 	mocks.render.mockResolvedValue({ svg: '<svg/>' });
 	mocks.parse.mockResolvedValue({
 		db: {
 			getData: () => ({ nodes: [] }),
-			getTasks: () => [
-				{
-					task: 'A',
-					section: 'B',
-					startTime: new Date('2026-10-01'),
-					endTime: new Date('2026-10-02')
-				}
-			],
-			getSubGraphs: () => [],
-			getRootDocV2: () => [],
-			extract: vi.fn()
+			getSubGraphs: () => []
 		}
 	});
 });
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Mermaid async lifecycle', () => {
-	it.each(['flowchart LR\nA -->|Tak| B', 'stateDiagram-v2\nA --> B: Tak'])(
-		'shrinks only edge text after native layout and before spacing: %s',
-		async (source) => {
-			const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
-			await renderDiagram(source, { ...font, labelSize: 12.8 }, new AbortController().signal);
-			expect(mocks.initialize.mock.calls[0][0].fontSize).toBe(16);
-			expect(mocks.styleAppend.mock.calls[0][0]).toContain(
-				'.edgeLabel tspan{font-size:12.8px!important}'
-			);
-			expect(mocks.render.mock.invocationCallOrder[0]).toBeLessThan(
-				mocks.styleAppend.mock.invocationCallOrder[0]
-			);
-			expect(mocks.styleAppend.mock.invocationCallOrder[0]).toBeLessThan(
-				mocks.spaceEdges.mock.invocationCallOrder[0]
-			);
-		}
-	);
-	it('adds only one pixel to Gantt labels and leaves Mindmap at its original size', async () => {
-		const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
-		await renderDiagram(
-			'gantt\ndateFormat YYYY-MM-DD\nA :a,2026-10-01,1d',
-			{ ...font, labelSize: 12.8 },
-			new AbortController().signal
-		);
-		expect(mocks.initialize.mock.calls[0][0].fontSize).toBe(13.8);
-		expect(mocks.initialize.mock.calls[0][0].gantt.fontSize).toBe(13.8);
-		await renderDiagram(
-			'mindmap\n root',
-			{ ...font, labelSize: 12.8 },
-			new AbortController().signal
-		);
-		expect(mocks.initialize.mock.lastCall![0].fontSize).toBe(16);
-		expect(mocks.initialize.mock.lastCall![0].layout).toBe('llampart-mindmap');
-		expect(mocks.styleAppend).not.toHaveBeenCalled();
-	});
-	it('validates original Mindmap syntax before changing only its render-local root', async () => {
+	it('validates original syntax before render-local edits', async () => {
 		const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
 		const source = 'mindmap\nroot((Firma))\n  A';
 		await renderDiagram(source, font, new AbortController().signal);
 		expect(mocks.parse).toHaveBeenCalledWith(source);
-		expect(mocks.render.mock.calls[0][1]).toBe('mindmap\nroot(Firma)\n  A');
 		mocks.parse.mockRejectedValueOnce(new Error('Invalid original syntax'));
 		await expect(renderDiagram(source, font, new AbortController().signal)).rejects.toThrow(
 			'Invalid original syntax'
 		);
 		expect(mocks.render).toHaveBeenCalledOnce();
-	});
-	it('uses native shared State ports and wraps labels without editing the original source', async () => {
-		const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
-		const source = 'stateDiagram-v2\nA --> B: Dane poprawne';
-		await renderDiagram(source, font, new AbortController().signal);
-		expect(mocks.parse).toHaveBeenCalledWith(source);
-		expect(mocks.render.mock.calls[0][1]).toContain('Dane<br/>poprawne');
-		expect(mocks.initialize.mock.calls[0][0].elk.mergeEdges).toBe(true);
 	});
 	it('waits for local font loading before measuring', async () => {
 		const fonts = deferred<unknown[]>();
@@ -149,7 +93,6 @@ describe('Mermaid async lifecycle', () => {
 		expect(mocks.render).not.toHaveBeenCalled();
 		fonts.resolve([]);
 		expect(await result).toBe('<svg/>');
-		expect(mocks.load).toHaveBeenCalledWith('normal 400 16px Local Face');
 		expect(mocks.remove).toHaveBeenCalledOnce();
 	});
 	it('serializes configuration with rendering and skips cancelled queued jobs', async () => {

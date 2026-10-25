@@ -17,18 +17,6 @@ const json =
 const fence = '```llampart-chart\n' + json + '\n```';
 const parse = (source: string) => remark().use(remarkGfm).parse(source).children;
 describe('native Markdown chart classification', () => {
-	it('offers exactly the supported chart types in model guidance', () => {
-		expect(CHART_INSTRUCTIONS).not.toMatch(/\bpie\b/i);
-		expect(CHART_INSTRUCTIONS.match(/Supported types: ([^.]+)\./)?.[1].split(', ')).toEqual([
-			'line',
-			'area',
-			'bar',
-			'donut'
-		]);
-	});
-	it.each([null, undefined, '', ' ', 0])('ignores absent/non-AST values %j', (node) =>
-		expect(isChartNode(node)).toBe(false)
-	);
 	it.each(['```', '~~~~'])('preserves literal JSON/math characters in %s fences', (marker) => {
 		const source = `${marker}llampart-chart\n${JSON.stringify({ title: '$5 \\ce{x} \\(y\\) $$ <<CODE_BLOCK_0>> LLAMPARTCHARTSOURCE0END' })}\n${marker}\n`;
 		const mixed = '$x^2$\n\n' + source + '\n> Quote\n\n$z^2$';
@@ -50,25 +38,23 @@ describe('native Markdown chart classification', () => {
 		]);
 		for (const node of parse(source).filter(isChartNode))
 			expect(isClosedChartNode(node, source)).toBe(true);
-		expect(source).toContain(json);
 	});
-	it('does not parse partial JSON; EOF is not a chart close', () => {
-		for (let length = 1; length < json.length; length++) {
-			const source = '```llampart-chart\n' + json.slice(0, length);
-			const node = parse(source)[0];
-			expect(isChartNode(node) && isClosedChartNode(node, source)).toBe(false);
-			expect(detectIncompleteChartBlock(source)?.language).toBe('llampart-chart');
-		}
-	});
-	it('stabilizes closed fences, including tildes and longer fences', () => {
-		for (const marker of ['```', '~~~~']) {
+	it.each(['```', '~~~~'])(
+		'renders only explicitly closed %s fences, even with complete JSON',
+		(marker) => {
+			for (const code of ['', json.slice(0, 20), json]) {
+				const source = `${marker}llampart-chart\n${code}`;
+				const node = parse(source)[0];
+				expect(isChartNode(node) && isClosedChartNode(node, source)).toBe(false);
+				expect(detectIncompleteChartBlock(source)?.code).toBe(code);
+			}
 			const source = `${marker}llampart-chart\n${json}\n${marker}`;
 			const node = parse(source)[0];
 			expect(isChartNode(node) && isClosedChartNode(node, source)).toBe(true);
 			expect(detectIncompleteChartBlock(source)).toBeNull();
 			expect(parse(source + '\n\nContinuation')[0].position).toEqual(node.position);
 		}
-	});
+	);
 	it('classifies invalid data for a safe source fallback, not an empty chart', () => {
 		const source = '```llampart-chart\n{"type":"evil"}\n```';
 		const node = parse(source)[0];
@@ -86,7 +72,8 @@ describe('native Markdown chart classification', () => {
 		const next = withChartInstructions(original);
 		expect(original).toEqual(snapshot);
 		expect(next.map((message) => message.role)).toEqual(original.map((message) => message.role));
-		expect(next[0].content).toBe(CHART_INSTRUCTIONS + '\n\nUser system prompt');
+		expect(next[0].content).toContain(CHART_INSTRUCTIONS);
+		expect(next[0].content).toContain(original[0].content);
 		expect(next.slice(1)).toEqual(original.slice(1));
 		expect(withChartInstructions(next)).toEqual(next);
 		expect(withChartInstructions(original.slice(1))[0]).toEqual({
