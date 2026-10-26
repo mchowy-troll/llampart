@@ -35,7 +35,8 @@ A distinctive, customizable interface built around the Frosted Glass visual them
 - An option to disable transparency for more opaque interface surfaces.
 - Bundled offline fonts, font variants, and adjustable text sizes.
 - Independent interface scaling and customizable sidebar layout.
-- 25 interface languages.
+
+**25 interface languages:** **Bulgarian**, **Croatian**, **Czech**, **Danish**, **Dutch**, **English**, **Estonian**, **Finnish**, **French**, **German**, **Greek**, **Hungarian**, **Irish**, **Italian**, **Kashubian**, **Latvian**, **Lithuanian**, **Maltese**, **Polish**, **Portuguese**, **Romanian**, **Slovak**, **Slovenian**, **Spanish**, **Swedish**.
 
 ### Models & Providers
 
@@ -46,7 +47,7 @@ Connect to different AI model servers through a provider-aware architecture.
 - **OpenAI-compatible** — connectivity to servers implementing supported OpenAI API endpoints.
 - Support for Chat Completions and Responses workflows where available.
 - Model selection, connection management, and provider-specific controls.
-- Model-aware reasoning settings and supported generation parameters.
+- Provider-specific generation parameters, with optional explicit reasoning controls through Custom JSON.
 
 Available capabilities depend on the connected server, model, and API implementation.
 
@@ -79,7 +80,7 @@ Visualizations are rendered locally in the browser. Their availability and corre
 
 Advanced interaction features for supported models and connected tools.
 
-- Reasoning display and model-dependent reasoning controls.
+- Display and persistence of structured reasoning returned by supported backends, with reasoning generation and effort controlled by the backend by default.
 - Tool calling and agentic workflows.
 - Model Context Protocol (MCP) integration.
 - MCP tools, prompts, and resources.
