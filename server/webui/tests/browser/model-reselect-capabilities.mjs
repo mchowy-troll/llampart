@@ -50,7 +50,7 @@ async function session(provider) {
 				aud008Rejections.push(String(event.reason))
 			);
 			localStorage.setItem('llama-webui-migration-v2-done', '1');
-			localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.1');
+			localStorage.setItem('Llampart.aboutDismissedVersion', '2.1.0');
 			localStorage.setItem(
 				'LlamaCppWebui.config',
 				JSON.stringify({

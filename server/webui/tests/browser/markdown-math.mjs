@@ -23,7 +23,7 @@ page.on('console', (message) => {
 	if (message.type() === 'error') console.log('Browser console:', message.text());
 });
 await page.addInitScript(() => {
-	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.1');
+	localStorage.setItem('Llampart.aboutDismissedVersion', '2.1.0');
 	localStorage.setItem(
 		'LlamaCppWebui.config',
 		JSON.stringify({

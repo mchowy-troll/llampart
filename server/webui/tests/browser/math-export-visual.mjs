@@ -80,7 +80,7 @@ for (const name of ['firefox', 'chromium']) {
 		if (m.type() === 'error') result.console.push(m.text());
 	});
 	await page.addInitScript(() => {
-		localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.1');
+		localStorage.setItem('Llampart.aboutDismissedVersion', '2.1.0');
 		localStorage.setItem(
 			'LlamaCppWebui.config',
 			JSON.stringify({

@@ -55,7 +55,7 @@ async function session(provider, vision, mode = 'selectable') {
 			if (localStorage.getItem('aud-002-seeded')) return;
 			localStorage.setItem('aud-002-seeded', '1');
 			localStorage.setItem('llama-webui-migration-v2-done', '1');
-			localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.1');
+			localStorage.setItem('Llampart.aboutDismissedVersion', '2.1.0');
 			localStorage.setItem(
 				'LlamaCppWebui.config',
 				JSON.stringify({

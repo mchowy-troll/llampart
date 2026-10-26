@@ -79,7 +79,7 @@ const browser = await chromium.launch({
 const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
 await context.addInitScript((backendUrl) => {
 	localStorage.setItem('llama-webui-migration-v2-done', '1');
-	localStorage.setItem('Llampart.aboutDismissedVersion', '2.0.1');
+	localStorage.setItem('Llampart.aboutDismissedVersion', '2.1.0');
 	if (!localStorage.getItem('LlamaCppWebui.config'))
 		localStorage.setItem(
 			'LlamaCppWebui.config',
