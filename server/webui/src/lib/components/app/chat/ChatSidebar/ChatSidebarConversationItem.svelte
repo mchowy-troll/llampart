@@ -1,8 +1,7 @@
 <script lang="ts">
-	import { Pencil, Download, Square, GitBranch, Clock, Calendar, Pin } from '@lucide/svelte';
+	import { Pencil, Download, GitBranch, Clock, Calendar, Pin } from '@lucide/svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { FORK_TREE_DEPTH_PADDING } from '$lib/constants';
-	import { getAllLoadingChats } from '$lib/stores/chat.svelte';
 	import { conversationsStore } from '$lib/stores/conversations.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
 	import { formatConversationTimestampParts } from '$lib/utils';
@@ -15,7 +14,6 @@
 		conversation: DatabaseConversation;
 		onEdit?: (id: string) => void;
 		onSelect?: (id: string) => void;
-		onStop?: (id: string) => void;
 		selectionChecked?: boolean;
 		selectionMode?: boolean;
 		selectionAriaLabel?: string;
@@ -27,7 +25,6 @@
 		conversation,
 		onEdit,
 		onSelect,
-		onStop,
 		selectionChecked = false,
 		selectionMode = false,
 		selectionAriaLabel,
@@ -37,7 +34,6 @@
 		depth = 0
 	}: Props = $props();
 
-	let isLoading = $derived(getAllLoadingChats().includes(conversation.id));
 	let shouldShowConversationTimestamp = $derived(
 		settingsStore.config.showConversationTimestamps !== false
 	);
@@ -63,11 +59,6 @@
 	function handleExport(event: Event) {
 		event.stopPropagation();
 		conversationsStore.downloadConversation(conversation.id);
-	}
-
-	function handleStop(event: Event) {
-		event.stopPropagation();
-		onStop?.(conversation.id);
 	}
 
 	function handleGlobalEditEvent(event: Event) {
@@ -213,26 +204,6 @@
 						</p>
 					</Tooltip.Content>
 				</Tooltip.Root>
-				{#if isLoading}
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							<div
-								class="stop-button flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
-								onclick={handleStop}
-								onkeydown={(e) => e.key === 'Enter' && handleStop(e)}
-								role="button"
-								tabindex="0"
-								aria-label={t('sidebar.stopGeneration')}
-							>
-								<Square class="stop-icon h-3 w-3 fill-current text-destructive" />
-							</div>
-						</Tooltip.Trigger>
-
-						<Tooltip.Content>
-							<p>{t('sidebar.stopGeneration')}</p>
-						</Tooltip.Content>
-					</Tooltip.Root>
-				{/if}
 			{/if}
 		</div>
 

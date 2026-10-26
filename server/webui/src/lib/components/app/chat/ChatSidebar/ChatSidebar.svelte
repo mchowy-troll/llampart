@@ -30,7 +30,6 @@
 		conversations,
 		buildConversationTree
 	} from '$lib/stores/conversations.svelte';
-	import { chatStore } from '$lib/stores/chat.svelte';
 	import { config } from '$lib/stores/settings.svelte';
 	import { getPreviewText } from '$lib/utils';
 	import { getChatSettingsDialogContext } from '$lib/contexts';
@@ -401,10 +400,6 @@
 		await goto(`#/chat/${id}`);
 	}
 
-	function handleStopGeneration(id: string) {
-		chatStore.stopGenerationForChat(id);
-	}
-
 	function handleSettingsClick() {
 		chatSettingsDialog.open();
 	}
@@ -669,7 +664,6 @@
 										onPinnedChange={handleConversationPinnedChange}
 										onSelect={selectConversation}
 										onEdit={handleEditConversation}
-										onStop={handleStopGeneration}
 									/>
 								</Sidebar.MenuItem>
 							{/each}
