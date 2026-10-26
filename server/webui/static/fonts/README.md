@@ -1,6 +1,6 @@
 # Local fonts
 
-All runtime faces are repository-local WOFF2 at `/fonts/`. No Google Fonts CSS,
+All selectable UI faces are repository-local WOFF2 at `/fonts/`. No Google Fonts CSS,
 CDN, runtime connection or font npm dependency is required.
 
 ## Sources and licenses
@@ -47,6 +47,20 @@ semantic italic uses the browser's synthesis, not a fictional declared face.
 Static-family emphasis is mapped to available real weights and capped at 700;
 the existing variable-family emphasis remains unchanged. Default/system,
 monospace and KaTeX families are not replaced.
+
+### Bundled mathematical fonts
+
+KaTeX 0.18.2 additionally supplies 20 WOFF2 faces from
+`node_modules/katex/dist/fonts/`, embedded unchanged in the generated CSS rather
+than served from `/fonts/`. `src/styles/katex-custom.scss` enables only WOFF2;
+KaTeX's WOFF and TTF alternatives are not distributed by this configuration.
+These fonts have their own SIL Open Font License 1.1, separate from the MIT
+license of the KaTeX code. Their complete license, copyright notices, Reserved
+Font Names, exact file-to-family mapping and official sources are in
+[`../licenses/katex-fonts.txt`](../licenses/katex-fonts.txt).
+
+System font stacks (including the code/monospace fallbacks) refer to fonts on the
+user's device, not additional bundled font files. No theme adds a font download.
 
 ## Text size
 

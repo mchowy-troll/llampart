@@ -68,6 +68,14 @@ are bundled locally under the SIL Open Font License 1.1. Their license
 texts, source/version records and WOFF2 inventory are in `server/webui/static/fonts/`.
 See that directory's `README.md` and `sources.json`; no runtime font CDN is used.
 
+The mathematical typefaces shipped with **KaTeX 0.18.2** are also distributed
+locally, embedded as WOFF2 data in the generated CSS. They are licensed under
+**SIL Open Font License 1.1**, not the MIT license of the KaTeX code. Their full
+license, Design Science / Khan Academy copyright notices, Reserved Font Names,
+file inventory and versioned upstream sources are preserved in
+`server/webui/static/licenses/katex-fonts.txt`. The existing KaTeX MIT notice in
+`server/webui/static/licenses/mermaid.txt` remains applicable to the code.
+
 ## npm dependencies
 
 The Web UI uses npm packages listed in:
