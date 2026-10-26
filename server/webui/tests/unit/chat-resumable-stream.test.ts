@@ -62,6 +62,17 @@ describe('ChatService resumable streams', () => {
 			const onError = vi.fn();
 			const onChunk = vi.fn();
 			const onStreamCheckpoint = vi.fn();
+			const originalError = console.error;
+			const errorLog = vi.spyOn(console, 'error').mockImplementation((...args) => {
+				if (
+					args.length !== 3 ||
+					args[0] !== 'Error in sendMessage:' ||
+					args[1] !== 'IncompleteStreamError' ||
+					args[2] !== 'Stream ended before a terminal event'
+				) {
+					originalError(...args);
+				}
+			});
 
 			const result = await ChatService.sendMessage(
 				[{ role: MessageRole.USER, content: 'hello' }],
@@ -99,7 +110,15 @@ describe('ChatService resumable streams', () => {
 			expect(onChunk.mock.calls).toEqual([['ż']]);
 			expect(onComplete).not.toHaveBeenCalled();
 			expect(onError).toHaveBeenCalledExactlyOnceWith(result);
-			expect(result).toMatchObject({ name: 'IncompleteStreamError' });
+			expect(result).toMatchObject({
+				name: 'IncompleteStreamError',
+				message: 'Stream ended before a terminal event'
+			});
+			expect(errorLog).toHaveBeenCalledExactlyOnceWith(
+				'Error in sendMessage:',
+				'IncompleteStreamError',
+				'Stream ended before a terminal event'
+			);
 			expect(onStreamCheckpoint).toHaveBeenCalledExactlyOnceWith(
 				expect.objectContaining({ content: 'ż', bytesReceived: encoder.encode(firstEvent).length })
 			);
