@@ -105,7 +105,7 @@ export class ChatService {
 	}
 
 	/**
-	 * Generates a short conversation title with a small auxiliary LLM request.
+	 * Generates a short conversation title with an auxiliary LLM request.
 	 * This does not use the conversation system prompt; backend generation defaults are preserved.
 	 */
 	static async generateTitle(
@@ -130,9 +130,11 @@ export class ChatService {
 					providerRequestContext: context,
 					operationModel: Object.freeze({ ...operation, conversationId: null }),
 					stream: true,
-					max_tokens: 64,
-					onChunk: (chunk: string) => {
-						titleResponse += chunk;
+					// Backend defaults may enable thinking. A tiny output budget can be
+					// exhausted entirely by reasoning before any title is produced.
+					// Only accept a successfully completed response, never a partial stream.
+					onComplete: (content?: string) => {
+						titleResponse = content ?? '';
 					}
 				},
 				undefined,
@@ -143,7 +145,7 @@ export class ChatService {
 			return '';
 		}
 
-		return titleResponse;
+		return signal?.aborted ? '' : titleResponse;
 	}
 
 	/**

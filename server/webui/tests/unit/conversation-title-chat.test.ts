@@ -95,6 +95,7 @@ beforeEach(() => {
 
 afterEach(() => {
 	vi.restoreAllMocks();
+	vi.unstubAllGlobals();
 	settingsStore.config = { ...originalConfig };
 	serverStore.role = originalRole;
 	modelsStore.selectedModelName = originalModel;
@@ -103,6 +104,268 @@ afterEach(() => {
 	chatStore.chatLoadingStates.clear();
 	chatStore.chatStreamingStates.clear();
 	chatStore.clearUIState();
+});
+
+describe('first-response LLM title lifecycle', () => {
+	beforeEach(() => {
+		failName = () => false;
+		settingsStore.config = { ...settingsStore.config, titleGenerationUseLLM: true };
+	});
+
+	it('does not request a title when disabled or after a later answer', async () => {
+		const generate = vi.spyOn(ChatService, 'generateTitle').mockResolvedValue('Generated title');
+		settingsStore.config = { ...settingsStore.config, titleGenerationUseLLM: false };
+		await chatStore.sendMessage('Standard title');
+		expect(owner.name).toBe('Standard title');
+		expect(generate).not.toHaveBeenCalled();
+		settingsStore.config = { ...settingsStore.config, titleGenerationUseLLM: true };
+		await chatStore.sendMessage('Later question');
+		expect(generate).not.toHaveBeenCalled();
+		expect(owner.name).toBe('Standard title');
+	});
+
+	it('requests only once even with duplicate completion callbacks and concurrent sends', async () => {
+		let release!: (title: string) => void;
+		const generate = vi.spyOn(ChatService, 'generateTitle').mockImplementation(
+			() =>
+				new Promise((resolve) => {
+					release = resolve;
+				})
+		);
+		vi.mocked(ChatService.sendMessage).mockImplementation(async (_history, options) => {
+			await Promise.all([options?.onComplete?.('Answer'), options?.onComplete?.('Answer')]);
+		});
+		const sending = chatStore.sendMessage('First question');
+		await vi.waitFor(() => expect(generate).toHaveBeenCalledTimes(1));
+		await Promise.all([chatStore.sendMessage('Duplicate'), chatStore.sendMessage('Duplicate')]);
+		release('Generated title');
+		await sending;
+		expect(ChatService.sendMessage).toHaveBeenCalledTimes(1);
+		expect(generate).toHaveBeenCalledTimes(1);
+		expect(owner.name).toBe('Generated title');
+	});
+
+	it.each(['Manual title', 'First question'])(
+		'preserves a manual Save during title inference, including the same name (%s)',
+		async (manualTitle) => {
+			let release!: (title: string) => void;
+			const generate = vi.spyOn(ChatService, 'generateTitle').mockImplementation(
+				() =>
+					new Promise((resolve) => {
+						release = resolve;
+					})
+			);
+			const sending = chatStore.sendMessage('First question');
+			await vi.waitFor(() => expect(generate).toHaveBeenCalledOnce());
+			await conversationsStore.updateConversationName('A', manualTitle);
+			release('Must not replace manual title');
+			await sending;
+			expect(owner.name).toBe(manualTitle);
+			expect(conversationsStore.activeConversation?.name).toBe(manualTitle);
+		}
+	);
+
+	it('skips inference if the user renamed while the first answer was streaming', async () => {
+		const generate = vi.spyOn(ChatService, 'generateTitle').mockResolvedValue('Wrong title');
+		vi.mocked(ChatService.sendMessage).mockImplementation(async (_history, options) => {
+			await conversationsStore.updateConversationName('A', 'Manual before completion');
+			await options?.onComplete?.('Answer');
+		});
+		await chatStore.sendMessage('First question');
+		expect(generate).not.toHaveBeenCalled();
+		expect(owner.name).toBe('Manual before completion');
+	});
+
+	it('preserves even a manual rename during first-message persistence', async () => {
+		const generate = vi.spyOn(ChatService, 'generateTitle').mockResolvedValue('Wrong title');
+		const create = vi.mocked(DatabaseService.createMessageBranch).getMockImplementation()!;
+		vi.mocked(DatabaseService.createMessageBranch).mockImplementation(async (input, parent) => {
+			const message = await create(input, parent);
+			if (input.role === MessageRole.USER) {
+				await conversationsStore.updateConversationName('A', 'Early manual title');
+			}
+			return message;
+		});
+		await chatStore.sendMessage('First question');
+		expect(generate).not.toHaveBeenCalled();
+		expect(owner.name).toBe('Early manual title');
+	});
+
+	it('persists only the original owner after navigation during inference', async () => {
+		vi.spyOn(ChatService, 'generateTitle').mockImplementation(async () => {
+			conversationsStore.activeConversation = {
+				id: 'B',
+				name: 'Other chat',
+				currNode: null,
+				lastModified: 1
+			};
+			return 'Generated for A';
+		});
+		await chatStore.sendMessage('First question');
+		expect(owner.name).toBe('Generated for A');
+		expect(conversationsStore.conversations.find((item) => item.id === 'A')?.name).toBe(
+			'Generated for A'
+		);
+		expect(conversationsStore.activeConversation?.name).toBe('Other chat');
+	});
+
+	it.each(['', '""', 'x', 'Title: "Useful topic"'])(
+		'uses existing cleanup/fallback for title response %j',
+		async (response) => {
+			vi.spyOn(ChatService, 'generateTitle').mockResolvedValue(response);
+			await chatStore.sendMessage('Fallback first line\nSecond line');
+			expect(owner.name).toBe(
+				response === ''
+					? 'Fallback first line\nSecond line'
+					: response.startsWith('Title:')
+						? 'Useful topic'
+						: 'Fallback first line'
+			);
+		}
+	);
+
+	it.each(['empty', 'error'])(
+		'does not generate a title after an %s main response',
+		async (outcome) => {
+			const generate = vi.spyOn(ChatService, 'generateTitle').mockResolvedValue('Wrong title');
+			vi.mocked(ChatService.sendMessage).mockImplementation(async (_history, options) => {
+				if (outcome === 'empty') await options?.onComplete?.('');
+				else throw new Error('Synthetic main request failure');
+			});
+			await chatStore.sendMessage('First question');
+			expect(generate).not.toHaveBeenCalled();
+			expect(owner.name).toBe('First question');
+		}
+	);
+
+	it('treats a failed auxiliary request as best-effort', async () => {
+		vi.spyOn(ChatService, 'generateTitle').mockRejectedValue(new Error('Title failure'));
+		await chatStore.sendMessage('First question');
+		expect(owner.name).toBe('First question');
+		expect(rows.find((item) => item.role === MessageRole.ASSISTANT)?.content).toBe(
+			'Synthetic answer'
+		);
+		expect(chatStore.chatLoadingStates.get('A')).toBeFalsy();
+	});
+
+	it('does not title a cancelled main response even if a late completion arrives', async () => {
+		const generate = vi.spyOn(ChatService, 'generateTitle').mockResolvedValue('Wrong title');
+		vi.spyOn(ChatService, 'stopResumableStream').mockResolvedValue();
+		vi.mocked(ChatService.sendMessage).mockImplementation(async (_history, options) => {
+			await chatStore.stopGenerationForChat('A');
+			await options?.onComplete?.('Late partial answer');
+		});
+		await chatStore.sendMessage('First question');
+		expect(generate).not.toHaveBeenCalled();
+		expect(owner.name).toBe('First question');
+	});
+
+	it.each(['completed', 'stopped', 'error', 'limit'] as const)(
+		'generates an agentic title only for a completed successful flow (%s)',
+		async (reason) => {
+			vi.mocked(agenticStore.getConfig).mockReturnValue({
+				enabled: true,
+				maxTurns: 1,
+				maxToolPreviewLines: 10
+			});
+			const generate = vi.spyOn(ChatService, 'generateTitle').mockResolvedValue('Agentic title');
+			vi.spyOn(DatabaseService, 'finishAgenticTurn').mockImplementation(async () => ({
+				...rows.find((item) => item.role === MessageRole.ASSISTANT)!,
+				content: 'Final agentic answer'
+			}));
+			vi.spyOn(agenticStore, 'runAgenticFlow').mockImplementation(async (input) => {
+				await input.callbacks.onFlowComplete?.({
+					identity: {
+						conversationId: 'A',
+						assistantMessageId: input.options!.assistantMessageId!,
+						operationId: input.options!.operationId!
+					},
+					reason
+				});
+				return { handled: true };
+			});
+			await chatStore.sendMessage('First question');
+			expect(generate).toHaveBeenCalledTimes(reason === 'completed' ? 1 : 0);
+			expect(owner.name).toBe(reason === 'completed' ? 'Agentic title' : 'First question');
+		}
+	);
+});
+
+describe('title service uses completed visible output with backend generation defaults', () => {
+	it.each(['llama-server', 'openai-compatible', 'vllm'])(
+		'allows thinking before a title without overriding backend defaults (%s)',
+		async (apiProvider) => {
+			vi.mocked(ChatService.sendMessage).mockRestore();
+			settingsStore.config = {
+				...settingsStore.config,
+				apiProvider,
+				serverBaseUrl: 'http://synthetic.invalid'
+			};
+			let body: Record<string, unknown> = {};
+			vi.stubGlobal(
+				'fetch',
+				vi.fn(async (_url, init) => {
+					body = JSON.parse(String(init?.body));
+					const exhausted = typeof body.max_tokens === 'number' && body.max_tokens <= 96;
+					return new Response(
+						[
+							'data: {"choices":[{"delta":{"reasoning_content":"Thinking for 96 tokens"}}]}\n\n',
+							exhausted ? '' : 'data: {"choices":[{"delta":{"content":"Verified title"}}]}\n\n',
+							`data: {"choices":[{"delta":{},"finish_reason":"${exhausted ? 'length' : 'stop'}"}]}\n\n`,
+							'data: [DONE]\n\n'
+						].join(''),
+						{ headers: { 'Content-Type': 'text/event-stream' } }
+					);
+				})
+			);
+			expect(
+				await ChatService.generateTitle(
+					{ role: 'user', content: 'Generate a title' },
+					'synthetic-model'
+				)
+			).toBe('Verified title');
+			expect(body).not.toHaveProperty('max_tokens');
+			expect(body).not.toHaveProperty('max_completion_tokens');
+			expect(body).not.toHaveProperty('reasoning_effort');
+			expect(body).not.toHaveProperty('chat_template_kwargs');
+			expect(body.messages).toEqual([{ role: 'user', content: 'Generate a title' }]);
+		}
+	);
+
+	it.each(['incomplete', 'abort', 'http-error'])(
+		'discards partial output when the title request ends with %s',
+		async (outcome) => {
+			vi.mocked(ChatService.sendMessage).mockRestore();
+			const controller = new AbortController();
+			vi.stubGlobal(
+				'fetch',
+				vi.fn(async () => {
+					if (outcome === 'http-error') return new Response('Synthetic failure', { status: 500 });
+					return new Response(
+						new ReadableStream({
+							start(stream) {
+								stream.enqueue(
+									new TextEncoder().encode(
+										'data: {"choices":[{"delta":{"content":"Partial title"}}]}\n\n'
+									)
+								);
+								if (outcome === 'abort') controller.abort();
+								stream.close();
+							}
+						}),
+						{ headers: { 'Content-Type': 'text/event-stream' } }
+					);
+				})
+			);
+			expect(
+				await ChatService.generateTitle(
+					{ role: 'user', content: 'Title' },
+					'synthetic-model',
+					controller.signal
+				)
+			).toBe('');
+		}
+	);
 });
 
 describe('AUD-006 automatic naming is best-effort, not a message failure', () => {

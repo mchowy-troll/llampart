@@ -74,6 +74,7 @@ export interface BulkConversationDeleteResult {
 
 class ConversationsStore {
 	private loadGeneration = 0;
+	private nameUpdateVersions = new Map<string, number>();
 	/**
 	 *
 	 *
@@ -507,13 +508,25 @@ class ConversationsStore {
 	 *
 	 */
 
+	/** Guard automatic naming against a later explicit name update in this session. */
+	getNameUpdateVersion(convId: string): number {
+		return this.nameUpdateVersions.get(convId) ?? 0;
+	}
+
 	/**
-	 * Updates the name of a conversation.
-	 * @param convId - The conversation ID to update
-	 * @param name - The new name for the conversation
+	 * Updates the name of a conversation, optionally only if naming is still unchanged.
 	 * @throws Persistence errors; in-memory names change only after the transaction commits.
 	 */
-	async updateConversationName(convId: string, name: string): Promise<void> {
+	async updateConversationName(
+		convId: string,
+		name: string,
+		expectedVersion?: number
+	): Promise<void> {
+		const version = this.getNameUpdateVersion(convId);
+		if (expectedVersion !== undefined && version !== expectedVersion) return;
+		// Invalidate pending automatic naming synchronously, including a manual
+		// Save of the same name or a save whose persistence has not finished yet.
+		this.nameUpdateVersions.set(convId, version + 1);
 		try {
 			await DatabaseService.updateConversation(convId, { name });
 

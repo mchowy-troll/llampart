@@ -584,6 +584,9 @@ class ChatStore {
 						? await DatabaseService.getConversation(lockedConversationId)
 						: null);
 			if (!currentConv) return;
+			// Capture ownership before message persistence, so even an early manual
+			// rename takes precedence over both standard and LLM naming.
+			let firstTitleNameVersion = conversationsStore.getNameUpdateVersion(currentConv.id);
 			if (!generationModel.operationModel.conversationId) {
 				generationModel = Object.freeze({
 					...generationModel,
@@ -625,7 +628,12 @@ class ChatStore {
 					allExtras,
 					currentConv.id
 				);
-				if (isNewConversation && content) {
+				if (
+					isNewConversation &&
+					content &&
+					conversationsStore.getNameUpdateVersion(currentConv.id) === firstTitleNameVersion
+				) {
+					firstTitleNameVersion += 1;
 					await conversationsStore
 						.updateConversationName(
 							currentConv.id,
@@ -645,7 +653,9 @@ class ChatStore {
 					undefined,
 					undefined,
 					generationModel,
-					config().titleGenerationUseLLM && isNewConversation ? content : undefined,
+					config().titleGenerationUseLLM && isNewConversation
+						? { userContent: content, nameVersion: firstTitleNameVersion }
+						: undefined,
 					perChatOverrides
 				);
 			} catch (error) {
@@ -745,7 +755,7 @@ class ChatStore {
 		onComplete: ((content: string) => Promise<void>) | undefined,
 		onError: ((error: Error) => void) | undefined,
 		generationModel: GenerationModel,
-		firstUserMessageContent?: string,
+		firstTitle?: { userContent: string; nameVersion: number },
 		perChatOverrides?: McpServerOverride[]
 	): Promise<void> {
 		const requestBinding = generationModel;
@@ -815,6 +825,26 @@ class ChatStore {
 		let currentModelInfo = verifiedModelInfo ?? undefined;
 		let modelWrites = Promise.resolve();
 		const convId = assistantMessage.convId;
+		let titleAttempted = false;
+		const generateFirstTitle = async (content: string): Promise<void> => {
+			if (
+				titleAttempted ||
+				!firstTitle?.userContent ||
+				!content.trim() ||
+				abortController.signal.aborted ||
+				conversationsStore.getNameUpdateVersion(convId) !== firstTitle.nameVersion
+			)
+				return;
+			titleAttempted = true;
+			await this.generateTitleWithLLM(
+				firstTitle.userContent,
+				content,
+				convId,
+				requestBinding,
+				firstTitle.nameVersion,
+				abortController.signal
+			);
+		};
 		const updateActiveMessage = (messageId: string, update: Partial<DatabaseMessage>): void => {
 			if (conversationsStore.activeConversation?.id !== convId) return;
 			const index = conversationsStore.findMessageIndex(messageId);
@@ -1071,6 +1101,7 @@ class ChatStore {
 
 				if (reason === 'completed' && onComplete) await onComplete(streamedContent);
 				if (isRouterMode()) modelsStore.fetchRouterModels().catch(console.error);
+				if (reason === 'completed') await generateFirstTitle(terminal.content);
 				// Pre-encode conversation in KV cache for providers that expose llama-server slots.
 				if (shouldPreEncode && reason === 'completed') {
 					const history = filterByLeafNodeId(
@@ -1137,15 +1168,6 @@ class ChatStore {
 				perChatOverrides
 			});
 			if (agenticResult.handled) {
-				if (firstUserMessageContent) {
-					await this.generateTitleWithLLM(
-						firstUserMessageContent,
-						streamedContent,
-						convId,
-						requestBinding
-					);
-				}
-
 				return;
 			}
 		}
@@ -1198,14 +1220,7 @@ class ChatStore {
 					cleanupStreamingState();
 					if (onComplete) await onComplete(content);
 					if (isRouterMode()) modelsStore.fetchRouterModels().catch(console.error);
-					if (firstUserMessageContent) {
-						await this.generateTitleWithLLM(
-							firstUserMessageContent,
-							content,
-							convId,
-							requestBinding
-						);
-					}
+					await generateFirstTitle(content);
 					if (shouldPreEncode) {
 						void this.triggerPreEncode(
 							allMessages,
@@ -1228,7 +1243,9 @@ class ChatStore {
 		userContent: string,
 		assistantContent: string,
 		convId: string,
-		requestBinding: GenerationModel
+		requestBinding: GenerationModel,
+		titleNameVersion: number,
+		signal: AbortSignal
 	): Promise<void> {
 		try {
 			const currentConfig = config();
@@ -1250,7 +1267,7 @@ class ChatStore {
 			const titleResponse = await ChatService.generateTitle(
 				titleMessage,
 				requestBinding.operationModel.model,
-				undefined,
+				signal,
 				requestBinding
 			);
 
@@ -1273,7 +1290,7 @@ class ChatStore {
 			}
 
 			if (cleanTitle && cleanTitle.length >= TITLE_GENERATION.MIN_LENGTH) {
-				await conversationsStore.updateConversationName(convId, cleanTitle);
+				await conversationsStore.updateConversationName(convId, cleanTitle, titleNameVersion);
 			}
 		} catch (error) {
 			console.warn('[ChatStore] Failed to generate LLM conversation title:', error);
