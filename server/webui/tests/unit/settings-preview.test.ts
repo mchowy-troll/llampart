@@ -65,6 +65,92 @@ afterEach(() => {
 
 // These tests use the production store with a Map-backed localStorage, not a browser.
 describe('settings preview with mock storage', () => {
+	it.each(['llama-server', 'vllm', 'openai-compatible'] as const)(
+		'saves appearance and an unreachable %s profile without HTTP or a false connected status',
+		async (provider) => {
+			const { PROVIDER_CONNECTION_SETTING_KEYS } = await import('$lib/constants');
+			const { providerConnectionStore } = await import('$lib/stores/provider-connection.svelte');
+			const keys = PROVIDER_CONNECTION_SETTING_KEYS[provider];
+			const fetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
+			const status = providerConnectionStore.status;
+			try {
+				const session = settingsStore.beginPreview();
+				const patch = {
+					apiProvider: provider,
+					[keys.serverBaseUrl]: 'http://unreachable.invalid:9999',
+					[keys.apiKey]: 'local-secret',
+					fontSize: '18',
+					frostedGlassWallpaper: 'frosted-glass-05'
+				};
+				expect(settingsStore.commitPreview(session, patch)).toEqual({ ok: true });
+				settingsStore.initialize();
+				expect(config()).toMatchObject(patch);
+				expect(providerConnectionStore.status).toBe(status);
+				expect(fetch).not.toHaveBeenCalled();
+			} finally {
+				fetch.mockRestore();
+			}
+		}
+	);
+	it('does not validate untouched incomplete profiles on an appearance Save', () => {
+		settingsStore.updateConfig('apiProvider', 'vllm');
+		const session = settingsStore.beginPreview();
+		expect(settingsStore.commitPreview(session, { fontSize: '18' })).toEqual({ ok: true });
+		expect(config().vllmBaseUrl).toBe('');
+		const selection = settingsStore.beginPreview();
+		expect(() =>
+			settingsStore.commitPreview(selection, { apiProvider: 'openai-compatible' })
+		).toThrow();
+		settingsStore.cancelPreview(selection);
+		const llama = settingsStore.beginPreview();
+		expect(settingsStore.commitPreview(llama, { apiProvider: 'llama-server' })).toEqual({
+			ok: true
+		});
+		expect(config().serverBaseUrl).toBe('');
+	});
+	it.each([
+		{ serverBaseUrl: 'http://user:secret@host' },
+		{ apiKey: 'secret\nvalue' },
+		{ vllmBaseUrl: 'http://user:secret@host' },
+		{ vllmBaseUrl: 'http://host?secret' },
+		{ vllmBaseUrl: 'http://host', vllmApiKey: 'secret\nvalue' }
+	])('rejects invalid profile %j before committing wallpaper resources', (profile) => {
+		const fetch = vi.spyOn(globalThis, 'fetch');
+		try {
+			const before = new Map(storage);
+			const session = settingsStore.beginPreview();
+			setCustomFrostedGlassWallpaperSrc('data:image/png;base64,bmV3');
+			expect(() => settingsStore.commitPreview(session, profile)).toThrow();
+			expect(storage).toEqual(before);
+			expect(settingsStore.isPreviewCurrent(session)).toBe(true);
+			expect(getCustomFrostedGlassWallpaperSrc()).toBe('data:image/png;base64,bmV3');
+			expect(fetch).not.toHaveBeenCalled();
+		} finally {
+			fetch.mockRestore();
+		}
+	});
+	it('preserves offline appearance choices through reload and reconnect /props synchronization', () => {
+		const session = settingsStore.beginPreview();
+		const patch = {
+			fontFamily: 'fira-sans',
+			fontSize: '18',
+			uiScale: '105',
+			frostedGlassWallpaper: 'frosted-glass-05',
+			frostedGlassMilkiness: 12
+		};
+		expect(settingsStore.commitPreview(session, patch)).toEqual({ ok: true });
+		settingsStore.initialize();
+		serverStore.props = {
+			default_generation_settings: { params: { temperature: 0.8 } },
+			ui_settings: { ...SETTING_CONFIG_DEFAULT }
+		} as unknown as ApiLlamaCppServerProps;
+		settingsStore.syncWithServerDefaults();
+		expect(config()).toMatchObject(patch);
+		settingsStore.initialize();
+		expect(config()).toMatchObject(patch);
+		settingsStore.syncWithServerDefaults();
+		expect(config()).toMatchObject(patch);
+	});
 	it.each(['add', 'edit', 'remove'] as const)(
 		'preserves immediate MCP %s through main Save and reload',
 		(operation) => {

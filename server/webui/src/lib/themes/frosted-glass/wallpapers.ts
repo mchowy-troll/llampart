@@ -21,6 +21,11 @@ export type FrostedGlassWallpaper = Readonly<{
 	isCustom?: boolean;
 }>;
 
+/** Bundled thumbnails share the original basename, independently of background cache. */
+export function getFrostedGlassWallpaperThumbnailSrc(source: string): string {
+	return source.replace(/\/([^/]+)\.jpg$/, '/thumbnails/$1.webp');
+}
+
 export const FROSTED_GLASS_WALLPAPERS = [
 	{
 		id: 'frosted-glass-01',

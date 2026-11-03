@@ -1,8 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { SETTING_CONFIG_DEFAULT } from '$lib/constants';
 import { resolveGlassMaterials } from '$lib/themes/frosted-glass/materials';
 import { frostedGlassTheme } from '$lib/themes/frosted-glass';
+import {
+	FROSTED_GLASS_WALLPAPERS,
+	getFrostedGlassWallpaperThumbnailSrc
+} from '$lib/themes/frosted-glass/wallpapers';
 import { getThemeOptions } from '$lib/themes/registry';
 import { applyTypography, getFontVariants, normalizeUiScalePreset } from '$lib/utils/typography';
 import {
@@ -21,6 +25,29 @@ import {
 const defaults = { ...SETTING_CONFIG_DEFAULT } as SettingsConfigType;
 
 describe('appearance settings and material palette', () => {
+	it('pairs all five original JPEGs with small, independent WebP thumbnails', () => {
+		expect(FROSTED_GLASS_WALLPAPERS).toHaveLength(5);
+		const paths = FROSTED_GLASS_WALLPAPERS.map(({ src }) => {
+			const thumbnail = getFrostedGlassWallpaperThumbnailSrc(src);
+			expect(thumbnail).toBe(
+				src
+					.replace('/frosted-glass/frosted-glass-', '/frosted-glass/thumbnails/frosted-glass-')
+					.replace('.jpg', '.webp')
+			);
+			const original = new URL(`../../static${src}`, import.meta.url);
+			const file = new URL(`../../static${thumbnail}`, import.meta.url);
+			const bytes = readFileSync(file);
+			expect(bytes.subarray(0, 4).toString()).toBe('RIFF');
+			expect(bytes.subarray(8, 12).toString()).toBe('WEBP');
+			expect(bytes.length).toBeLessThan(20_000);
+			expect(bytes.length).toBeLessThan(statSync(original).size);
+			return thumbnail;
+		});
+		expect(new Set(paths).size).toBe(5);
+		expect(
+			getFrostedGlassWallpaperThumbnailSrc('/wallpapers/frosted-glass/frosted-glass-06.jpg')
+		).toBe('/wallpapers/frosted-glass/thumbnails/frosted-glass-06.webp');
+	});
 	it('disables surface transparency and filters reversibly without opacity on children', () => {
 		const config = { ...defaults, frostedGlassMilkiness: 23 };
 		const before = resolveGlassMaterials(config);

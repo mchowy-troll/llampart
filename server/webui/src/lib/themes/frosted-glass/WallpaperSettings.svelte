@@ -9,16 +9,13 @@
 		CUSTOM_FROSTED_GLASS_WALLPAPER_MAX_SIZE_BYTES,
 		DEFAULT_FROSTED_GLASS_WALLPAPER_ID,
 		FROSTED_GLASS_WALLPAPERS,
+		getFrostedGlassWallpaperThumbnailSrc,
 		getCustomFrostedGlassWallpaperSrc,
 		isAcceptedCustomFrostedGlassWallpaperType,
 		resolveCustomWallpaperDisplaySrc,
 		setCustomFrostedGlassWallpaperSrc
 	} from './wallpapers';
 	import { t } from '$lib/i18n';
-	import {
-		BUNDLED_WALLPAPER_CACHE_EVENT,
-		getBundledWallpaperPreviewSrc
-	} from './bundled-wallpaper-cache';
 	import { onMount, onDestroy } from 'svelte';
 	import {
 		CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT,
@@ -45,27 +42,16 @@
 	let isCustomWallpaperSelected = $derived(selectedWallpaper === CUSTOM_FROSTED_GLASS_WALLPAPER_ID);
 	let wallpaperValidationDialog = $state<WallpaperValidationDialog | undefined>(undefined);
 	let mounted = true;
-	let bundledRevision = $state(0);
-	const bundledPreviews = $derived.by(() => {
-		void bundledRevision;
-		return FROSTED_GLASS_WALLPAPERS.map((wallpaper) => ({
-			...wallpaper,
-			src: getBundledWallpaperPreviewSrc(wallpaper.src)
-		}));
-	});
 	onDestroy(() => {
 		mounted = false;
 	});
 	onMount(() => {
 		const refresh = () => {
 			customWallpaperSrc = getCustomFrostedGlassWallpaperSrc();
-			bundledRevision++;
 		};
 		window.addEventListener(CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT, refresh);
-		window.addEventListener(BUNDLED_WALLPAPER_CACHE_EVENT, refresh);
 		return () => {
 			window.removeEventListener(CUSTOM_FROSTED_GLASS_WALLPAPER_EVENT, refresh);
-			window.removeEventListener(BUNDLED_WALLPAPER_CACHE_EVENT, refresh);
 		};
 	});
 
@@ -182,18 +168,27 @@
 </script>
 
 <div class="llampart-settings-wallpaper-selector" data-llampart-wallpaper-grid>
-	{#each bundledPreviews as wallpaper (wallpaper.id)}
+	{#each FROSTED_GLASS_WALLPAPERS as wallpaper (wallpaper.id)}
 		{@const isSelected = selectedWallpaper === wallpaper.id}
 		<button
 			type="button"
 			class={getWallpaperPreviewClass(isSelected)}
-			style={wallpaper.src ? `background-image: url("${wallpaper.src}")` : undefined}
 			onclick={() => selectBundledWallpaper(wallpaper.id)}
 			aria-label={t(wallpaper.labelKey)}
 			aria-pressed={isSelected}
 			data-llampart-wallpaper-preview
 			data-selected={isSelected ? 'true' : undefined}
 		>
+			<img
+				src={getFrostedGlassWallpaperThumbnailSrc(wallpaper.src)}
+				alt=""
+				class="absolute inset-0 h-full w-full object-cover"
+				onerror={(event) => {
+					// Keep the neutral button, its accessible name and selection action.
+					if (event.currentTarget instanceof HTMLImageElement)
+						event.currentTarget.style.visibility = 'hidden';
+				}}
+			/>
 			<span class="sr-only">{t(wallpaper.labelKey)}</span>
 		</button>
 	{/each}

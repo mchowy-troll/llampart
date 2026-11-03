@@ -110,6 +110,16 @@ export const SETTING_CONFIG_DEFAULT = {
 	pyInterpreterEnabled: false
 } satisfies Record<string, string | number | boolean | undefined>;
 
+/** Local appearance preview and explicit user preferences share one contract. */
+export const APPEARANCE_SETTING_KEYS = [
+	'theme',
+	'uiScale',
+	'fontFamily',
+	'fontVariant',
+	'fontSize',
+	...Object.keys(THEME_CONFIG_DEFAULTS)
+] as readonly string[];
+
 export const PROVIDER_CONNECTION_SETTING_KEYS = {
 	[API_PROVIDER_IDS.LLAMA_SERVER]: {
 		serverBaseUrl: 'llamaServerBaseUrl',

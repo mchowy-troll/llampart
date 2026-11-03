@@ -7,7 +7,6 @@
 		normalizeFontVariant
 	} from '$lib/utils/typography';
 	import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
-	import { connectionErrorMessage } from '$lib/utils/connection-error-message';
 	import {
 		Settings,
 		Code,
@@ -38,7 +37,6 @@
 		API_PROVIDER_OPTIONS,
 		PROVIDER_CONNECTION_SETTING_KEYS
 	} from '$lib/constants';
-	import { validateConnectionSettings } from '$lib/utils';
 	import { getApiProviderCapabilities } from '$lib/services/providers';
 	import {
 		API_PROVIDER_IDS,
@@ -838,10 +836,8 @@
 		fontSize: resolveFontSize(localConfig.fontSize)
 	});
 	let previewSession: symbol | undefined;
-	let formRevision = 0;
 
 	function cancelPreview() {
-		formRevision += 1;
 		if (previewSession) settingsStore.cancelPreview(previewSession);
 		previewSession = undefined;
 	}
@@ -1009,7 +1005,6 @@
 	}
 
 	function handleConfigChange(key: string, value: string | boolean | number) {
-		formRevision += 1;
 		const nextConfig = { ...localConfig, [key]: value };
 		if (key === SETTINGS_KEYS.FONT_FAMILY || key === SETTINGS_KEYS.FONT_VARIANT) {
 			// Editing a projected legacy selection makes the chosen family concrete,
@@ -1057,10 +1052,9 @@
 		settingsWarningDialogOpen = true;
 	}
 
-	async function handleSave() {
+	function handleSave() {
 		const session = previewSession;
 		if (!active || !session || !settingsStore.isPreviewCurrent(session)) return;
-		const revision = ++formRevision;
 		if (localConfig.custom && typeof localConfig.custom === 'string' && localConfig.custom.trim()) {
 			try {
 				JSON.parse(localConfig.custom);
@@ -1095,36 +1089,8 @@
 			}
 		}
 
-		const candidate = { ...config(), ...processedConfig };
-		const providerConnectionKeys = getConnectionKeys(candidate.apiProvider);
-		const connectionRead = Object.fromEntries(
-			['apiProvider', providerConnectionKeys.serverBaseUrl, providerConnectionKeys.apiKey].map(
-				(key) => [key, config()[key]]
-			)
-		);
-
-		const connectionValidation = await validateConnectionSettings(
-			String(candidate[providerConnectionKeys.serverBaseUrl] || ''),
-			String(candidate[providerConnectionKeys.apiKey] || ''),
-			String(candidate.apiProvider || '')
-		);
-		// Closing, resetting, editing or starting another save invalidates this result.
-		if (!active || revision !== formRevision || !settingsStore.isPreviewCurrent(session)) return;
-
-		if (!connectionValidation.ok) {
-			showSettingsWarning(
-				connectionErrorMessage(
-					connectionValidation.errorMessage,
-					undefined,
-					connectionValidation.status
-				),
-				t('settings.connectionValidationDialogTitle')
-			);
-			return;
-		}
-
 		try {
-			const result = settingsStore.commitPreview(session, processedConfig, connectionRead);
+			const result = settingsStore.commitPreview(session, processedConfig);
 			if (!result.ok) {
 				if (result.reason === 'resource') {
 					localConfig = { ...localConfig, ...result.configPatch };

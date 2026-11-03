@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
 	buildGatewayRequest,
 	DEFAULT_LLAMA_SERVER_BASE_URL,
-	normalizeGatewaySource
+	normalizeGatewaySource,
+	validateGatewayConnection
 } from '$lib/services/providers/provider-transport';
 
 describe('same-origin gateway transport', () => {
@@ -72,6 +73,30 @@ describe('same-origin gateway transport', () => {
 		'http://localhost//api'
 	])('rejects malformed or ambiguous %s', (address) => {
 		expect(() => normalizeGatewaySource('vllm', address)).toThrow();
+		expect(() => validateGatewayConnection('vllm', address, '')).toThrow();
+		expect(() => buildGatewayRequest('vllm', address, '/v1/models', '')).toThrow();
+	});
+	it('shares safe credential validation between offline preflight and transport, without HTTP', () => {
+		const fetch = vi.spyOn(globalThis, 'fetch');
+		try {
+			for (const key of ['secret\nvalue', 'secret\rvalue', 'secret\u007f', 'secret🔑']) {
+				for (const validate of [
+					() => validateGatewayConnection('vllm', 'http://unreachable.invalid', key),
+					() => buildGatewayRequest('vllm', 'http://unreachable.invalid', '/v1/models', key)
+				])
+					expect(validate).toThrow('Invalid API credential');
+			}
+			expect(
+				validateGatewayConnection('vllm', 'http://unreachable.invalid/v1', ' secret ')
+			).toMatchObject({
+				source: { baseUrl: 'http://unreachable.invalid' },
+				authorization: 'Bearer secret'
+			});
+			expect(validateGatewayConnection('llama-server', '', '').source.baseUrl).toBe('');
+			expect(fetch).not.toHaveBeenCalled();
+		} finally {
+			fetch.mockRestore();
+		}
 	});
 	it('keeps query, credentials and abort identity out of routing metadata', () => {
 		const signal = new AbortController().signal;

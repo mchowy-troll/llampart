@@ -100,6 +100,24 @@ export function normalizeGatewaySource(
 	return { baseUrl: `${scheme}://${authority}${path}`, scheme, host, port, prefix: path || '-' };
 }
 
+/** Shared, network-free preflight for Settings Save and actual requests. Never
+ * include input values in errors: both addresses and credentials may be secret. */
+export function validateGatewayConnection(
+	provider: GatewayProviderId,
+	serverBaseUrl: string,
+	apiKey: string
+): { source: GatewaySource; authorization: string | null } {
+	const source = normalizeGatewaySource(provider, serverBaseUrl);
+	if (hasControl(apiKey)) throw new Error('Invalid API credential');
+	try {
+		const headers = new Headers();
+		if (apiKey.trim()) headers.set('Authorization', `Bearer ${apiKey.trim()}`);
+		return { source, authorization: headers.get('Authorization') };
+	} catch {
+		throw new Error('Invalid API credential');
+	}
+}
+
 export function buildGatewayRequest(
 	provider: GatewayProviderId,
 	serverBaseUrl: string,
@@ -107,7 +125,7 @@ export function buildGatewayRequest(
 	apiKey: string,
 	init: RequestInit = {}
 ): { url: string; init: RequestInit } {
-	const source = normalizeGatewaySource(provider, serverBaseUrl);
+	const { source, authorization } = validateGatewayConnection(provider, serverBaseUrl, apiKey);
 	const path = endpoint.split('?')[0];
 	const method = (init.method ?? 'GET').toUpperCase();
 	if (
@@ -116,7 +134,6 @@ export function buildGatewayRequest(
 		/[#\\]/.test(endpoint)
 	)
 		throw new Error('Gateway endpoint or method not allowed');
-	if (hasControl(apiKey)) throw new Error('Invalid API credential');
 	const headers = new Headers(init.headers);
 	for (const name of headers.keys())
 		if (name.startsWith('x-llampart-'))
@@ -127,7 +144,7 @@ export function buildGatewayRequest(
 	headers.set('X-Llampart-Port', source.port);
 	headers.set('X-Llampart-Prefix', source.prefix);
 	headers.delete('Authorization');
-	if (apiKey.trim()) headers.set('Authorization', `Bearer ${apiKey.trim()}`);
+	if (authorization) headers.set('Authorization', authorization);
 	const headerRecord = Object.fromEntries(
 		[...headers].map(([name, value]) => [
 			name

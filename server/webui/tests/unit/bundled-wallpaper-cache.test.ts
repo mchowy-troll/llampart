@@ -44,6 +44,24 @@ async function ready(
 }
 
 describe('independent single-entry bundled wallpaper cache', () => {
+	it('resolves every gallery thumbnail without fetching or replacing the full-size cache', async () => {
+		const module = await import('$lib/themes/frosted-glass/bundled-wallpaper-cache');
+		await ready(module, 3);
+		const { FROSTED_GLASS_WALLPAPERS, getFrostedGlassWallpaperThumbnailSrc } =
+			await import('$lib/themes/frosted-glass/wallpapers');
+		fetchImage.mockClear();
+		cache.put.mockClear();
+		vi.stubGlobal('caches', undefined);
+		for (const wallpaper of FROSTED_GLASS_WALLPAPERS)
+			expect(getFrostedGlassWallpaperThumbnailSrc(wallpaper.src)).toMatch(
+				/\/thumbnails\/frosted-glass-0[1-5]\.webp$/
+			);
+		expect(fetchImage).not.toHaveBeenCalled();
+		expect(cache.put).not.toHaveBeenCalled();
+		expect(stored.get(module.BUNDLED_WALLPAPER_CACHE_KEY)?.headers.get('X-LLAMPART-Source')).toBe(
+			source(3)
+		);
+	});
 	it('deduplicates, replaces one independent entry and reopens without a network request', async () => {
 		const revoke = vi.spyOn(URL, 'revokeObjectURL');
 		const module = await import('$lib/themes/frosted-glass/bundled-wallpaper-cache');

@@ -82,13 +82,6 @@ export function resolveBundledWallpaperSrc(source: string): string {
 	return current.src;
 }
 
-// Thumbnails must not start cache replacements for all five images.
-export function getBundledWallpaperPreviewSrc(source: string): string {
-	if (current?.source === source) return current.src;
-	if (preview?.original?.source === source) return preview.original.src;
-	return `${source}?v=${BUNDLED_WALLPAPER_CACHE_VERSION}`;
-}
-
 export function beginBundledWallpaperPreview(): { commit: () => void; cancel: () => void } {
 	const draft = { original: current };
 	preview = draft;

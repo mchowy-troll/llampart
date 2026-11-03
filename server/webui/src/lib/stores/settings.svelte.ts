@@ -35,6 +35,7 @@ import { browser } from '$app/environment';
 import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
 import { SvelteSet } from 'svelte/reactivity';
 import {
+	APPEARANCE_SETTING_KEYS,
 	CONFIG_LOCALSTORAGE_KEY,
 	GLOBAL_CONFIG_STORAGE_DEFAULT,
 	PROVIDER_CONNECTION_SETTING_KEYS,
@@ -44,6 +45,7 @@ import {
 import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers';
 import type { ApiProviderId } from '$lib/constants/api-providers';
 import { ParameterSyncService } from '$lib/services/parameter-sync.service';
+import { validateGatewayConnection } from '$lib/services/providers/provider-transport';
 import { serverStore } from '$lib/stores/server.svelte';
 import { normalizeThemeId, THEME_REGISTRY } from '$lib/themes/registry';
 import type { ThemePreviewCommitResult, ThemeSettingsPreview } from '$lib/themes/types';
@@ -121,18 +123,8 @@ class SettingsStore {
 
 	updatePreview(session: symbol, updates: Partial<SettingsConfigType>): void {
 		if (!this.isPreviewCurrent(session)) return;
-		const appearanceKeys = [
-			'theme',
-			'uiScale',
-			'fontFamily',
-			'fontVariant',
-			'fontSize',
-			...Object.keys(THEME_REGISTRY).flatMap((id) =>
-				Object.keys(THEME_REGISTRY[id as keyof typeof THEME_REGISTRY].configDefaults)
-			)
-		];
 		const patch = Object.fromEntries(
-			Object.entries(updates).filter(([key]) => appearanceKeys.includes(key))
+			Object.entries(updates).filter(([key]) => APPEARANCE_SETTING_KEYS.includes(key))
 		);
 		this.preview = {
 			...this.preview,
@@ -186,6 +178,27 @@ class SettingsStore {
 		// overwrite: the user must close/reopen Settings against the current values.
 		if (conflicts.size) return { ok: false, reason: 'conflict', keys: [...conflicts] };
 		const next = this.prepareUpdate(patch);
+		// Only the Settings form's changed profiles/active selection need preflight.
+		// Import, Reset and immediate MCP writes retain their independent contracts.
+		for (const provider of Object.values(API_PROVIDER_IDS)) {
+			const keys = this.getConnectionKeys(provider);
+			if (
+				keys.serverBaseUrl in patch ||
+				keys.apiKey in patch ||
+				(('apiProvider' in patch || 'serverBaseUrl' in patch || 'apiKey' in patch) &&
+					next.config.apiProvider === provider)
+			) {
+				validateGatewayConnection(
+					provider,
+					String(next.config[keys.serverBaseUrl] ?? ''),
+					String(next.config[keys.apiKey] ?? '')
+				);
+			}
+		}
+		// A local choice must survive the first /props response, even when no
+		// server defaults existed at Save time. Persist through the usual writer.
+		for (const key of Object.keys(patch))
+			if (APPEARANCE_SETTING_KEYS.includes(key)) next.overrides.add(key);
 		while (this.previewResources.length) {
 			const result = this.previewResources[0].commit(this.config);
 			if (!result.ok) {
@@ -588,8 +601,9 @@ class SettingsStore {
 			const normalizedCurrent = normalizeFloatingPoint(currentValue);
 			const normalizedDefault = normalizeFloatingPoint(this.normalizeConfigValue(key, propsValue));
 
-			// if user value matches server, it's not a real override
-			if (normalizedCurrent === normalizedDefault) {
+			// Equal sampling defaults are redundant; explicit local appearance choices
+			// remain user-owned even when a server happens to advertise the same value.
+			if (normalizedCurrent === normalizedDefault && !APPEARANCE_SETTING_KEYS.includes(key)) {
 				overrides.delete(key);
 			}
 		}

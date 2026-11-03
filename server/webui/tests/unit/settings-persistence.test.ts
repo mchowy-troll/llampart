@@ -69,6 +69,7 @@ describe('Settings persistence boundary with mock storage', () => {
 	it.each([CONFIG_LOCALSTORAGE_KEY, USER_OVERRIDES_LOCALSTORAGE_KEY])(
 		'compensates failure at %s, retains draft and retries Save',
 		(failedKey) => {
+			const fetch = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
 			const before = { ...config() };
 			const disk = new Map(storage);
 			const overrides = [...settingsStore.userOverrides];
@@ -86,10 +87,14 @@ describe('Settings persistence boundary with mock storage', () => {
 			expect(settingsStore.commitPreview(session, patch)).toEqual({ ok: true });
 			expect(config()).toMatchObject(patch);
 			expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toEqual(config());
-			expect(JSON.parse(storage.get(USER_OVERRIDES_LOCALSTORAGE_KEY)!)).toEqual([]);
+			expect(JSON.parse(storage.get(USER_OVERRIDES_LOCALSTORAGE_KEY)!)).toEqual([
+				'uiScale',
+				'fontSize'
+			]);
 			settingsStore.initialize();
 			expect(config()).toMatchObject(patch);
-			expect([...settingsStore.userOverrides]).toEqual([]);
+			expect([...settingsStore.userOverrides]).toEqual(['uiScale', 'fontSize']);
+			expect(fetch).not.toHaveBeenCalled();
 		}
 	);
 
@@ -268,13 +273,13 @@ describe('import uses the Settings persistence boundary (AUD-001)', () => {
 		);
 		expect([...settingsStore.userOverrides]).toEqual(['temperature', 'systemMessage']);
 		expect(settingsStore.commitPreview(session, draft)).toEqual({ ok: true });
-		expect([...settingsStore.userOverrides]).toEqual(['temperature', 'systemMessage']);
+		expect([...settingsStore.userOverrides]).toEqual(['temperature', 'systemMessage', 'uiScale']);
 		settingsStore.initialize();
-		expect([...settingsStore.userOverrides]).toEqual(['temperature', 'systemMessage']);
+		expect([...settingsStore.userOverrides]).toEqual(['temperature', 'systemMessage', 'uiScale']);
 		// Synchronization still owns its established policy: an equal sampling
 		// override is redundant, while an explicit imported UI override survives.
 		settingsStore.syncWithServerDefaults();
-		expect([...settingsStore.userOverrides]).toEqual(['systemMessage']);
+		expect([...settingsStore.userOverrides]).toEqual(['systemMessage', 'uiScale']);
 		expect(config()).toMatchObject({
 			temperature: 0.8,
 			systemMessage: 'imported prompt',

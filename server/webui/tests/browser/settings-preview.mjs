@@ -4,7 +4,10 @@
  * LLAMPART_PLAYWRIGHT_MODULE=/absolute/path/to/playwright-core/index.mjs \
  * LLAMPART_TEST_URL=http://127.0.0.1:40133 node tests/browser/settings-preview.mjs
  * Optional: LLAMPART_CHROMIUM, LLAMPART_TEST_ARTIFACTS (outside the repository).
- * Provider HTTP responses are mocked; this does not test a real inference backend.
+ * Provider HTTP responses are mocked except --offline-only: serve a real static
+ * build with its API gateway pointing to an unavailable backend. That focused
+ * branch uses no dev-only imports. LLAMPART_BROWSER=firefox selects Firefox;
+ * LLAMPART_FIREFOX may point to an installed Playwright-compatible executable.
  */
 import assert from 'node:assert/strict';
 import { mkdir, readFile } from 'node:fs/promises';
@@ -12,15 +15,25 @@ import { mkdir, readFile } from 'node:fs/promises';
 assert(process.env.LLAMPART_PLAYWRIGHT_MODULE, 'Set LLAMPART_PLAYWRIGHT_MODULE');
 // Focused post-release regression: Reset + reasoning + eye, no preview suite.
 const resetOnly = process.argv.includes('--reset-only');
-const { chromium } = await import(process.env.LLAMPART_PLAYWRIGHT_MODULE);
-const browser = await chromium.launch({
-	executablePath: process.env.LLAMPART_CHROMIUM || '/usr/bin/chromium',
+const offlineOnly = process.argv.includes('--offline-only');
+const engines = await import(process.env.LLAMPART_PLAYWRIGHT_MODULE);
+const firefox = process.env.LLAMPART_BROWSER === 'firefox';
+const browser = await engines[firefox ? 'firefox' : 'chromium'].launch({
+	executablePath: firefox
+		? process.env.LLAMPART_FIREFOX
+		: process.env.LLAMPART_CHROMIUM || '/usr/bin/chromium',
 	headless: true,
-	args: ['--no-sandbox']
+	args: firefox ? [] : ['--no-sandbox']
 });
 const artifacts = process.env.LLAMPART_TEST_ARTIFACTS;
 if (artifacts) await mkdir(artifacts, { recursive: true });
-const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+const page = await browser.newPage({
+	viewport: {
+		width: Number(process.env.LLAMPART_TEST_WIDTH || 1920),
+		height: Number(process.env.LLAMPART_TEST_HEIGHT || 1080)
+	},
+	deviceScaleFactor: Number(process.env.LLAMPART_TEST_DPR || 1)
+});
 await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
 	await welcome.locator('#about-llampart-do-not-show-again').check();
 	await welcome.getByRole('button', { name: 'OK', exact: true }).click();
@@ -31,8 +44,8 @@ const storageKey = 'LlamaCppWebui.config';
 const wallpaperKey = 'llampart:frosted-glass:user-wallpaper';
 const initial = {
 	apiProvider: resetOnly ? 'llama-server' : 'vllm',
-	vllmBaseUrl: 'http://mock.invalid:8000',
-	serverBaseUrl: 'http://mock.invalid:8000',
+	vllmBaseUrl: offlineOnly ? 'http://127.0.0.1:9' : 'http://mock.invalid:8000',
+	serverBaseUrl: offlineOnly ? 'http://127.0.0.1:9' : 'http://mock.invalid:8000',
 	theme: 'frosted-glass',
 	interfaceLanguage: 'pl',
 	alwaysShowSidebarOnDesktop: true,
@@ -59,7 +72,6 @@ const initial = {
 		: {})
 };
 let validationMode = 'success';
-let heldRoutes = [];
 let nativeLevels = ['minimal', 'high', 'xhigh', 'max'];
 let smokeEnglish = false;
 const oldPng =
@@ -67,6 +79,7 @@ const oldPng =
 const models = { object: 'list', data: [{ id: 'mock/model' }] };
 await page.route('**/*', async (route) => {
 	const url = new URL(route.request().url());
+	if (offlineOnly) return route.continue();
 	if (resetOnly && url.hostname === 'mcp-smoke.invalid')
 		return route.fulfill({ status: 503, body: 'Isolated MCP smoke: no external backend' });
 	if (resetOnly && url.pathname.includes('/__llampart/api/')) {
@@ -100,10 +113,6 @@ await page.route('**/*', async (route) => {
 		return route.fulfill({ json: { status: 'ok' } });
 	}
 	if (url.pathname.includes('/__llampart/api/') && url.pathname.endsWith('/models')) {
-		if (validationMode === 'hold') {
-			heldRoutes.push(route);
-			return;
-		}
 		return validationMode === 'failure'
 			? route.fulfill({ status: 503, json: { error: 'Test connection failure' } })
 			: route.fulfill({ json: models });
@@ -116,6 +125,12 @@ await page.addInitScript(
 	},
 	{ key: storageKey, config: initial }
 );
+if (offlineOnly) {
+	await page.addInitScript(() => {
+		localStorage.setItem('Llampart.aboutDismissedVersion', '2.1.0');
+		Object.defineProperty(globalThis, 'caches', { value: undefined });
+	});
+}
 
 const dialog = page.locator('.llampart-chat-settings-dialog-content');
 const persisted = () => page.evaluate((key) => localStorage.getItem(key), storageKey);
@@ -199,6 +214,200 @@ async function run() {
 		(scale) => document.documentElement.dataset.llampartUiScale === scale,
 		initial.uiScale
 	);
+	if (offlineOnly) {
+		const requests = [];
+		page.on('request', (request) => requests.push(new URL(request.url()).pathname));
+		await page.locator('.llampart-provider-connection-notice').waitFor();
+		await open();
+		await appearance();
+		const images = dialog.locator('[data-llampart-wallpaper-grid] img');
+		assert.equal(await images.count(), 5);
+		const decoded = await images.evaluateAll(async (images) =>
+			Promise.all(
+				images.map(async (image) => {
+					await image.decode();
+					return {
+						src: image.getAttribute('src'),
+						width: image.naturalWidth,
+						height: image.naturalHeight
+					};
+				})
+			)
+		);
+		assert.deepEqual(
+			decoded.map((image) => image.width),
+			[768, 768, 768, 768, 768]
+		);
+		assert.deepEqual(
+			decoded.map((image) => image.height),
+			[430, 432, 512, 519, 512]
+		);
+		for (const [index, image] of decoded.entries())
+			assert.equal(
+				image.src,
+				`/wallpapers/frosted-glass/thumbnails/frosted-glass-0${index + 1}.webp`
+			);
+		assert.equal(await page.evaluate(() => globalThis.caches), undefined);
+		assert(!requests.some((path) => /frosted-glass-0[1345]\.jpg$/.test(path)));
+		const tileSizes = await images.evaluateAll((images) =>
+			images.map((image) => ({
+				pixels: image.getBoundingClientRect().width * devicePixelRatio,
+				available: image.naturalWidth
+			}))
+		);
+		for (const tile of tileSizes) assert(tile.available >= tile.pixels, JSON.stringify(tile));
+		if (artifacts)
+			await dialog
+				.locator('[data-llampart-wallpaper-grid]')
+				.screenshot({ path: `${artifacts}/decoded-gallery.png` });
+		await page.locator('#uiScale').fill('105');
+		await page.locator('#frostedGlassMilkiness').fill('17');
+		await page.getByRole('button', { name: 'Frosted Glass 05', exact: true }).click();
+		const background = await page.locator('html').evaluate(async (root) => {
+			const url = root.style
+				.getPropertyValue('--llampart-theme-wallpaper')
+				.match(/url\("(.*)"\)/)[1];
+			const image = new Image();
+			image.src = url;
+			await image.decode();
+			return { url, width: image.naturalWidth };
+		});
+		assert(background.url.includes('/frosted-glass-05.jpg'));
+		assert(!background.url.includes('/thumbnails/'));
+		assert.equal(background.width, 5120);
+		console.log(
+			JSON.stringify({
+				viewport: page.viewportSize(),
+				dpr: await page.evaluate(() => devicePixelRatio),
+				decoded,
+				tileSizes,
+				background
+			})
+		);
+		await dialog.getByRole('button', { name: 'Ogólne', exact: true }).click();
+		await appearance();
+		assert.equal(
+			await page
+				.getByRole('button', { name: 'Frosted Glass 05', exact: true })
+				.getAttribute('aria-pressed'),
+			'true'
+		);
+		await save();
+		await dialog.waitFor({ state: 'hidden' });
+		assert.equal(JSON.parse(await persisted()).frostedGlassWallpaper, 'frosted-glass-05');
+		await page.reload();
+		await page.waitForSelector('textarea');
+		await page.locator('.llampart-provider-connection-notice').waitFor();
+		assert.equal(JSON.parse(await persisted()).uiScale, '105');
+		await open();
+		await dialog.locator('#vllmBaseUrl').fill('http://127.0.0.1:9/v1');
+		await save();
+		await dialog.waitFor({ state: 'hidden' });
+		assert.equal(JSON.parse(await persisted()).vllmBaseUrl, 'http://127.0.0.1:9/v1');
+		await open();
+		const beforeInvalid = await persisted();
+		await dialog.locator('#vllmBaseUrl').fill('http://user:private-secret@host');
+		await save();
+		const warning = page.getByRole('alertdialog');
+		await warning.waitFor();
+		assert(!(await warning.innerText()).includes('private-secret'));
+		assert.equal(await persisted(), beforeInvalid);
+		await warning.getByRole('button', { name: 'Zamknij', exact: true }).click();
+		await close();
+		for (const [label, key, address] of [
+			['OpenAI-compatible', 'openAiCompatibleBaseUrl', 'http://127.0.0.1:9'],
+			['vLLM', 'vllmBaseUrl', 'http://127.0.0.1:9/v1'],
+			['llama-server', 'llamaServerBaseUrl', '']
+		]) {
+			await open();
+			await select('apiProvider', label);
+			await dialog.locator(`#${key}`).fill(address);
+			await save();
+			await dialog.waitFor({ state: 'hidden' });
+			assert.equal(JSON.parse(await persisted())[key], address);
+			await page.locator('.llampart-provider-connection-notice').waitFor();
+		}
+		// A single failed thumbnail remains a named, selectable tile; no JPG fallback.
+		await page.route('**/thumbnails/frosted-glass-01.webp', (route) =>
+			route.fulfill({ contentType: 'image/webp', body: 'invalid WebP' })
+		);
+		await open();
+		await appearance();
+		const failed = page.getByRole('button', { name: 'Frosted Glass 01', exact: true });
+		await page.waitForFunction(() => {
+			const image = document.querySelector('img[src$="thumbnails/frosted-glass-01.webp"]');
+			return image && getComputedStyle(image).visibility === 'hidden';
+		});
+		assert(await failed.isVisible());
+		await images.nth(1).evaluate((image) => image.decode());
+		const beforeFallback = requests.length;
+		await failed.click();
+		assert.equal(await failed.getAttribute('aria-pressed'), 'true');
+		await close('escape');
+		assert.equal(JSON.parse(await persisted()).frostedGlassWallpaper, 'frosted-glass-05');
+		assert(!requests.slice(beforeFallback).some((path) => /frosted-glass-0[2-4]\.jpg$/.test(path)));
+		await open();
+		await appearance();
+		await dialog.locator('input[type=file]').setInputFiles({
+			name: 'test.png',
+			mimeType: 'image/png',
+			buffer: Buffer.from(oldPng.split(',')[1], 'base64')
+		});
+		assert.equal(await page.evaluate((key) => localStorage.getItem(key), wallpaperKey), null);
+		await save();
+		await dialog.waitFor({ state: 'hidden' });
+		await page.reload();
+		await page.waitForSelector('textarea');
+		assert.equal(await page.evaluate((key) => localStorage.getItem(key), wallpaperKey), oldPng);
+		assert.equal(JSON.parse(await persisted()).frostedGlassWallpaper, 'frosted-glass-user');
+		await open();
+		await appearance();
+		assert.equal(
+			await dialog.locator('[data-llampart-user-wallpaper-preview]').getAttribute('aria-pressed'),
+			'true'
+		);
+		await close();
+		// Controlled reconnect metadata, not a claim of a real healthy LLM backend.
+		await page.route('**/__llampart/api/**', (route) => {
+			const path = new URL(route.request().url()).pathname;
+			return route.fulfill({
+				json: path.endsWith('/props')
+					? {
+							build_info: 'offline-reconnect-fixture',
+							model_path: 'fixture.gguf',
+							default_generation_settings: { params: { temperature: 0.8 } },
+							ui_settings: {
+								uiScale: '100',
+								fontSize: '13',
+								frostedGlassWallpaper: 'frosted-glass-03',
+								frostedGlassMilkiness: 75,
+								showMessageStats: false
+							}
+						}
+					: path.endsWith('/models')
+						? { object: 'list', data: [{ id: 'fixture.gguf' }] }
+						: []
+			});
+		});
+		await page.reload();
+		await page.waitForSelector('textarea');
+		await page.locator('.llampart-provider-connection-notice').waitFor({ state: 'hidden' });
+		await page.waitForFunction(
+			() => JSON.parse(localStorage.getItem('LlamaCppWebui.config')).showMessageStats === false
+		);
+		assert.equal(JSON.parse(await persisted()).uiScale, '105');
+		assert.equal(JSON.parse(await persisted()).frostedGlassMilkiness, 17);
+		assert.equal(JSON.parse(await persisted()).frostedGlassWallpaper, 'frosted-glass-user');
+		assert.equal(await page.evaluate((key) => localStorage.getItem(key), wallpaperKey), oldPng);
+		assert.deepEqual(errors, []);
+		console.log(
+			'REAL PASS: production-compatible UI; real unavailable API; offline appearance/profile Save, reload, preview/Cancel, custom wallpaper, five decoded WebP without Cache Storage'
+		);
+		console.log(
+			'MOCK PASS: corrupt single-thumbnail fallback; reconnect /props cannot overwrite saved appearance or user wallpaper'
+		);
+		return;
+	}
 	if (resetOnly) {
 		const base = process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40133';
 		const conversationId = await page.evaluate(async () => {
@@ -479,74 +688,24 @@ async function run() {
 	}
 	console.log('PASS A/B: preview + close button/Escape/outside + reopen, storage unchanged');
 
-	// D: failure keeps the form and preview; closing rolls it back without partial persistence.
+	// D: structural failure keeps the form/preview, without a network gate.
 	await open();
 	await appearance();
 	await preview();
 	await dialog.getByRole('button', { name: 'Ogólne', exact: true }).click();
-	await page.locator('#vllmBaseUrl').fill('http://invalid.example:9999');
+	await page.locator('#vllmBaseUrl').fill('ftp://invalid.example:9999');
 	validationMode = 'failure';
 	await save();
 	await page.getByRole('alertdialog').waitFor();
 	assert.equal(await persisted(), before);
 	assert.equal(await scale(), '110');
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Zamknij', exact: true }).click();
-	assert.equal(await page.locator('#vllmBaseUrl').inputValue(), 'http://invalid.example:9999');
+	assert.equal(await page.locator('#vllmBaseUrl').inputValue(), 'ftp://invalid.example:9999');
 	await close();
 	await page.waitForFunction(() => document.documentElement.dataset.llampartUiScale === '100');
-	console.log('PASS D: failed connection validation, editable draft, rollback on close');
+	console.log('PASS D: failed structural validation, editable draft, rollback on close');
 
-	// F: validation resolves only after the old dialog has closed and another session opened.
-	validationMode = 'hold';
-	await open();
-	await appearance();
-	await preview();
-	const validationRequest = page.waitForRequest(
-		(request) => request.url().includes('/__llampart/api/') && request.url().endsWith('/models')
-	);
-	await save();
-	await validationRequest;
-	assert(heldRoutes.length > 0, 'connection validation must be in flight');
-	await close('escape');
-	await open();
-	await appearance();
-	validationMode = 'success';
-	for (const route of heldRoutes) await route.fulfill({ json: models });
-	heldRoutes = [];
-	// Allow the fulfilled request and async continuation to run before asserting no commit.
-	await page.waitForTimeout(200);
-	assert.equal(await persisted(), before);
-	assert.equal(await scale(), '100');
-	assert(await dialog.isVisible());
-	await close();
-	console.log('PASS F: late validation cannot commit or close a newer settings session');
-
-	// Editing during validation invalidates it. Full Reset (including language and
-	// connection deletion) is covered by the focused branch, not a partial-reset test.
-	{
-		validationMode = 'hold';
-		await open();
-		await appearance();
-		await preview();
-		const request = page.waitForRequest(
-			(r) => r.url().includes('/__llampart/api/') && r.url().endsWith('/models')
-		);
-		await save();
-		await request;
-		await page.locator('#uiScale').fill('105');
-		const savedBeforeResult = await persisted();
-		validationMode = 'success';
-		for (const route of heldRoutes) await route.fulfill({ json: models });
-		heldRoutes = [];
-		await page.waitForTimeout(200);
-		assert.equal(await persisted(), savedBeforeResult);
-		assert.equal(await scale(), '105');
-		assert(await dialog.isVisible());
-		await close();
-	}
-	console.log('PASS additional race: edit during pending connection validation');
-
-	// C: real Save validates and commits changed fields; values survive a fresh app load.
+	// C: Save commits despite failed provider HTTP; values survive a fresh app load.
 	await open();
 	await appearance();
 	await preview();

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { FONT_SIZES, normalizeFontFamily, normalizeFontVariant } from '$lib/utils/typography';
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
-import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
+import { APPEARANCE_SETTING_KEYS, SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
 import { THEME_REGISTRY } from '$lib/themes/registry';
 import { INTERFACE_LANGUAGES } from '$lib/i18n/types';
 import type { SettingsConfigType, SettingsConfigValue } from '$lib/types/settings';
@@ -62,6 +62,7 @@ Object.assign(knownSettingsShape, {
 
 const settingsSchema = z.object(knownSettingsShape).partial().catchall(primitiveSettingSchema);
 const syncableSettingKeys = new Set([
+	...APPEARANCE_SETTING_KEYS,
 	'temperature',
 	'top_k',
 	'top_p',
