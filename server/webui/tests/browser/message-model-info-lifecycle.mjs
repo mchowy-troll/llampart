@@ -129,6 +129,29 @@ try {
 				page.evaluate(async () =>
 					life.db.getConversationMessages(life.conversations.activeConversation.id)
 				);
+			const assertFooterOwnership = async () => {
+				const names = await page.evaluate(() =>
+					life.conversations.activeMessages
+						.filter((m) => m.role === 'assistant' && m.content)
+						.map((m) => m.modelInfo.displayName)
+				);
+				await page.waitForFunction((names) => {
+					// Agentic turns may share one rendered footer; every visible name must be owned.
+					const labels = [...document.querySelectorAll('.llampart-message-model-badge')].map((b) =>
+						b.textContent.trim()
+					);
+					return (
+						labels.length > 0 &&
+						labels.every((name) => names.includes(name)) &&
+						labels[0] === names[0] &&
+						labels.at(-1) === names.at(-1)
+					);
+				}, names);
+				assert.equal(
+					await page.locator('.assistant-message-footer .llampart-model-selector-trigger').count(),
+					0
+				);
+			};
 			hold = true;
 			await start('Synthetic abort A');
 			await page.waitForFunction(() =>
@@ -149,6 +172,7 @@ try {
 			assert.equal(b.model, ids[1]);
 			assert.equal(b.modelInfo.modelId, ids[1]);
 			assert.deepEqual(all.find((m) => m.id === aborted.id).modelInfo, aborted.modelInfo);
+			await assertFooterOwnership();
 			results.push(`PASS ${provider} MODEL-11: actual Stop/partial stream A, next B isolated`);
 			if (provider === 'llama-server') {
 				const resumed = await page.evaluate(async (message) => {
@@ -193,6 +217,7 @@ try {
 			assert.equal(mismatch.modelInfo.identity, 'response-only');
 			assert.equal(mismatch.modelInfo.native, undefined);
 			assert.equal(mismatch.modelInfo.contextSize, undefined);
+			await assertFooterOwnership();
 			results.push(`PASS ${provider} PROV-10: response B replaces requested A without A details`);
 			responseModel = null;
 			// Real agentic lifecycle and database, only the tool registry/executor is synthetic.
@@ -277,6 +302,7 @@ try {
 			assert.equal(next.modelInfo.modelId, ids[1]);
 			assert.equal(next.modelInfo.native, undefined);
 			assert.deepEqual(all.find((m) => m.id === pendingId).modelInfo, pending.modelInfo);
+			await assertFooterOwnership();
 			results.push(
 				`PASS ${provider} PROV-09: HTTP pending A retains original provider after switch, next provider/B isolated`
 			);

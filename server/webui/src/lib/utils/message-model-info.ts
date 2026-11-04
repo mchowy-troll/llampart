@@ -5,6 +5,27 @@ import type { ApiLlamaCppServerProps } from '$lib/types/api';
 import type { ModelOption } from '$lib/types/models';
 import { normalizeModelName } from './model-names';
 
+/** Resolve presentation from the response's own evidence, never the live catalog/selection. */
+export function getMessageModelDisplayName(message: {
+	model?: string | null;
+	modelInfo?: MessageModelInfoSnapshot | null;
+}): string | null {
+	const snapshot = message.modelInfo;
+	if (snapshot?.identity === 'unavailable') return null;
+	const savedName = snapshot ? snapshot.displayName?.trim() || snapshot.modelId : message.model;
+	if (!savedName?.trim()) return null;
+	// Existing snapshots/legacy records may still contain a GGUF filename or path.
+	const name = normalizeModelName(savedName);
+	return (
+		(/\.gguf$/i.test(name)
+			? name
+					.split(/[\\/]/)
+					.pop()!
+					.replace(/\.gguf$/i, '')
+			: name) || null
+	);
+}
+
 export const MAX_MODEL_CHAT_TEMPLATE_LENGTH = 65_536;
 const text = (max: number) =>
 	z

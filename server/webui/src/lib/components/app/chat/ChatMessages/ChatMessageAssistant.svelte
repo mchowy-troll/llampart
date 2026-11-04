@@ -6,7 +6,7 @@
 	import ChatMessageStatistics from '$lib/components/app/chat/ChatMessages/ChatMessageStatistics.svelte';
 	import DialogModelInformation from '$lib/components/app/dialogs/DialogModelInformation.svelte';
 	import ModelBadge from '$lib/components/app/models/ModelBadge.svelte';
-	import ModelsSelector from '$lib/components/app/models/ModelsSelector.svelte';
+	import { getMessageModelDisplayName } from '$lib/utils/message-model-info';
 	import { getMessageEditContext } from '$lib/contexts';
 	import { useProcessingState } from '$lib/hooks/use-processing-state.svelte';
 	import { isLoading, isChatStreaming } from '$lib/stores/chat.svelte';
@@ -19,9 +19,6 @@
 	import { MessageRole, KeyboardKey, ChatMessageStatsView } from '$lib/enums';
 	import Label from '$lib/components/ui/label/label.svelte';
 	import { config } from '$lib/stores/settings.svelte';
-	import { isRouterMode } from '$lib/stores/server.svelte';
-	import { modelsStore } from '$lib/stores/models.svelte';
-	import { ServerModelStatus } from '$lib/enums';
 
 	import { hasAgenticContent } from '$lib/utils';
 
@@ -93,7 +90,6 @@
 	const processingState = useProcessingState();
 
 	let currentConfig = $derived(config());
-	let isRouter = $derived(isRouterMode());
 	let showModelDialog = $state(false);
 
 	let hideMinimalisticProcessingInfo = $derived(
@@ -156,7 +152,7 @@
 			(currentConfig.alwaysShowAgenticTurns || activeStatsView === ChatMessageStatsView.SUMMARY)
 	);
 
-	let displayedModel = $derived(message.model ?? null);
+	let displayedModel = $derived(getMessageModelDisplayName(message));
 
 	let isCurrentlyLoading = $derived(isLoading());
 	let isStreaming = $derived(isChatStreaming());
@@ -186,12 +182,10 @@
 	);
 
 	function handleCopyModel() {
-		void copyToClipboard(displayedModel ?? '');
+		if (displayedModel) void copyToClipboard(displayedModel);
 	}
 
 	function handleShowModelInformation() {
-		if (!displayedModel) return;
-
 		showModelDialog = true;
 	}
 
@@ -284,73 +278,61 @@
 					{#if message.timestamp && !editCtx.isEditing}
 						<div class="assistant-message-footer">
 							<div class="assistant-message-footer-left">
-								{#if displayedModel}
-									<div
-										bind:this={statsContainerEl}
-										class="assistant-message-footer-meta text-xs text-muted-foreground"
-									>
-										{#if isRouter}
-											<ModelsSelector
-												currentModel={displayedModel}
-												disabled={isLoading()}
-												onModelChange={async (modelId, modelName) => {
-													const status = modelsStore.getModelStatus(modelId);
+								<div
+									bind:this={statsContainerEl}
+									class="assistant-message-footer-meta max-w-full text-xs text-muted-foreground"
+								>
+									<!-- Render the resolved presentation name verbatim, not a transport ID. -->
+									<ModelBadge
+										class="llampart-message-model-badge"
+										model={displayedModel}
+										showRaw={true}
+										showTooltip={true}
+										onclick={displayedModel ? handleCopyModel : undefined}
+									/>
 
-													if (status !== ServerModelStatus.LOADED) {
-														await modelsStore.loadModel(modelId);
-													}
+									<ActionIcon
+										icon={Info}
+										tooltip={t('models.modelInformation')}
+										iconSize="h-2.5 w-2.5"
+										class="llampart-assistant-model-info-action h-3 w-3 hover:text-foreground"
+										onclick={handleShowModelInformation}
+									/>
 
-													onRegenerate(modelName);
-													return true;
-												}}
-											/>
-										{:else}
-											<ModelBadge model={displayedModel || undefined} onclick={handleCopyModel} />
-										{/if}
-
-										<ActionIcon
-											icon={Info}
-											tooltip={t('models.modelInformation')}
-											iconSize="h-2.5 w-2.5"
-											class="llampart-assistant-model-info-action h-3 w-3 hover:text-foreground"
-											onclick={handleShowModelInformation}
+									{#if currentConfig.showMessageStats && message.timings && (message.timings.provider || (message.timings.predicted_n && message.timings.predicted_ms))}
+										{@const agentic = message.timings.agentic}
+										<ChatMessageStatistics
+											provider={message.timings.provider}
+											promptTokens={agentic ? agentic.llm.prompt_n : message.timings.prompt_n}
+											promptMs={agentic ? agentic.llm.prompt_ms : message.timings.prompt_ms}
+											predictedTokens={agentic
+												? agentic.llm.predicted_n
+												: message.timings.predicted_n}
+											predictedMs={agentic
+												? agentic.llm.predicted_ms
+												: message.timings.predicted_ms}
+											agenticTimings={agentic}
+											onActiveViewChange={handleStatsViewChange}
 										/>
+									{:else if isLoading() && currentConfig.showMessageStats}
+										{@const liveStats = processingState.getLiveProcessingStats()}
+										{@const genStats = processingState.getLiveGenerationStats()}
+										{@const promptProgress = processingState.processingState?.promptProgress}
+										{@const isStillProcessingPrompt =
+											promptProgress && promptProgress.processed < promptProgress.total}
 
-										{#if currentConfig.showMessageStats && message.timings && (message.timings.provider || (message.timings.predicted_n && message.timings.predicted_ms))}
-											{@const agentic = message.timings.agentic}
+										{#if liveStats || genStats}
 											<ChatMessageStatistics
-												provider={message.timings.provider}
-												promptTokens={agentic ? agentic.llm.prompt_n : message.timings.prompt_n}
-												promptMs={agentic ? agentic.llm.prompt_ms : message.timings.prompt_ms}
-												predictedTokens={agentic
-													? agentic.llm.predicted_n
-													: message.timings.predicted_n}
-												predictedMs={agentic
-													? agentic.llm.predicted_ms
-													: message.timings.predicted_ms}
-												agenticTimings={agentic}
-												onActiveViewChange={handleStatsViewChange}
+												isLive
+												isProcessingPrompt={!!isStillProcessingPrompt}
+												promptTokens={liveStats?.tokensProcessed}
+												promptMs={liveStats?.timeMs}
+												predictedTokens={genStats?.tokensGenerated}
+												predictedMs={genStats?.timeMs}
 											/>
-										{:else if isLoading() && currentConfig.showMessageStats}
-											{@const liveStats = processingState.getLiveProcessingStats()}
-											{@const genStats = processingState.getLiveGenerationStats()}
-											{@const promptProgress = processingState.processingState?.promptProgress}
-											{@const isStillProcessingPrompt =
-												promptProgress && promptProgress.processed < promptProgress.total}
-
-											{#if liveStats || genStats}
-												<ChatMessageStatistics
-													isLive
-													isProcessingPrompt={!!isStillProcessingPrompt}
-													promptTokens={liveStats?.tokensProcessed}
-													promptMs={liveStats?.timeMs}
-													predictedTokens={genStats?.tokensGenerated}
-													predictedMs={genStats?.timeMs}
-												/>
-											{/if}
 										{/if}
-									</div>
-								{/if}
+									{/if}
+								</div>
 							</div>
 
 							<div class="assistant-message-footer-right">
@@ -388,7 +370,7 @@
 	bind:open={showModelDialog}
 	source="snapshot"
 	snapshot={message.modelInfo}
-	modelId={displayedModel}
+	modelId={message.modelInfo ? message.modelInfo.modelId : (message.model ?? null)}
 />
 
 <style>

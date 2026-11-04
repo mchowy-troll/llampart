@@ -4,21 +4,22 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { mkdir, writeFile } from 'node:fs/promises';
-const { chromium } = await import(process.env.LLAMPART_PLAYWRIGHT_MODULE);
+const { chromium, firefox } = await import(process.env.LLAMPART_PLAYWRIGHT_MODULE);
 const out = process.env.LLAMPART_TEST_ARTIFACTS;
 await mkdir(out, { recursive: true });
-const browser = await chromium.launch({
-	executablePath: '/usr/bin/chromium',
+const useFirefox = process.env.LLAMPART_TEST_BROWSER === 'firefox';
+const browser = await (useFirefox ? firefox : chromium).launch({
+	executablePath: useFirefox ? '/usr/bin/firefox' : '/usr/bin/chromium',
 	headless: true,
-	args: ['--no-sandbox', '--disable-background-networking']
+	args: useFirefox ? [] : ['--no-sandbox', '--disable-background-networking']
 });
 const results = [];
-const ids = { A: 'Qwen-Test-A', B: 'Gemma-Test-B' };
+const ids = { A: 'Qwen3.8-27B-Q8_0', B: 'Gemma-Test-B' };
 function properties(version) {
 	return {
 		role: 'model',
 		model_alias: ids[version],
-		model_path: `/synthetic/models/${version === 'A' ? 'qwen-a' : 'gemma-b'}.gguf`,
+		model_path: `/synthetic/models/vendor/releases/${ids[version]}.gguf`,
 		default_generation_settings: { n_ctx: version === 'A' ? 65536 : 32768, params: {} },
 		total_slots: version === 'A' ? 2 : 4,
 		build_info: `build-${version}`,
@@ -98,7 +99,9 @@ try {
 				});
 			if (url.pathname.endsWith('/chat/completions') || url.pathname.endsWith('/responses')) {
 				const v = body.model === ids.B ? 'B' : body.model === ids.A ? 'A' : active;
-				const model = returnedModel ?? ids[v];
+				const model =
+					returnedModel ??
+					(provider === 'llama-server' && v === 'A' ? properties(v).model_path : ids[v]);
 				const content = `Synthetic answer ${v}`;
 				res.writeHead(200, { 'Content-Type': 'text/event-stream' });
 				if (protocol === 'responses')
@@ -140,6 +143,7 @@ try {
 							interfaceLanguage: 'en',
 							preEncodeConversation: false,
 							titleGenerationUseLLM: false,
+							showMessageStats: true,
 							askForTitleConfirmation: false,
 							showThoughtInProgress: true,
 							alwaysShowSidebarOnDesktop: false
@@ -167,9 +171,87 @@ try {
 					globalThis.modelAudit = { ...stores, db };
 				});
 			await setup();
+			// Capture the clipboard boundary, not OS permissions; the UI copy path remains real.
+			await page.evaluate(() => {
+				globalThis.copiedModelNames = [];
+				Object.defineProperty(navigator.clipboard, 'writeText', {
+					value: async (text) => copiedModelNames.push(text),
+					configurable: true
+				});
+			});
+			const footers = page.locator('.assistant-message-footer-meta');
+			const badges = footers.locator('.llampart-message-model-badge');
+			const footerName = async (index, name) => {
+				await page.waitForFunction(
+					({ index, name }) => {
+						const badge = document.querySelectorAll('.llampart-message-model-badge')[index];
+						return badge?.textContent.trim() === name;
+					},
+					{ index, name }
+				);
+				assert.equal(await footers.locator('.llampart-model-selector-trigger').count(), 0);
+				assert.equal(await badges.nth(index).locator('svg').count(), 1);
+				assert.equal(await badges.nth(index).locator('button').count(), 0);
+			};
+			const assertModelTooltip = async (index, name) => {
+				if (
+					width >= 768 &&
+					(await page.locator('[data-slot="sidebar"][data-state="expanded"]').count()) > 0
+				) {
+					await page.keyboard.press('Control+b');
+					await page
+						.locator('[data-slot="sidebar"][data-state="collapsed"]')
+						.waitFor({ state: 'attached' });
+				}
+				assert.equal(await badges.nth(index).getAttribute('title'), null, 'No native tooltip');
+				await badges.nth(index).hover();
+				const tooltip = page.locator('[data-slot="tooltip-content"]').filter({ hasText: name });
+				await tooltip.waitFor();
+				assert.equal(
+					(await tooltip.innerText()).trim(),
+					name,
+					'Standard tooltip contains only the model name'
+				);
+				assert.equal(await tooltip.getAttribute('data-slot'), 'tooltip-content');
+				assert.equal(
+					await tooltip.locator('div.rotate-45[data-side]').count(),
+					1,
+					'Shared tooltip arrow'
+				);
+				await tooltip.evaluate((el) =>
+					Promise.all(el.getAnimations().map((animation) => animation.finished))
+				);
+				const tooltipClass = await tooltip.getAttribute('class');
+				const tooltipSide = await tooltip.getAttribute('data-side');
+				await page.screenshot({
+					path: `${out}/${label}-model-tooltip-${router ? 'ROUTER' : 'MODEL'}.png`
+				});
+				await page
+					.locator('.llampart-message-actions-assistant')
+					.nth(index)
+					.locator('button[aria-label="Download response as Markdown"]')
+					.hover();
+				const downloadTooltip = page
+					.locator('[data-slot="tooltip-content"]')
+					.filter({ hasText: 'Download response as Markdown' });
+				await downloadTooltip.waitFor();
+				assert.equal(
+					await downloadTooltip.getAttribute('class'),
+					tooltipClass,
+					'Same appearance as Markdown action'
+				);
+				assert.equal(
+					await downloadTooltip.getAttribute('data-side'),
+					tooltipSide,
+					'Same placement as Markdown action'
+				);
+				assert.equal(await downloadTooltip.locator('div.rotate-45[data-side]').count(), 1);
+				await page.mouse.move(width / 2, 20);
+				await page.keyboard.press('Escape');
+			};
 			if (
 				width >= 768 &&
-				(await page.locator('[data-slot="sidebar"][data-state="expanded"]').isVisible())
+				(await page.locator('[data-slot="sidebar"][data-state="expanded"]').count()) > 0
 			)
 				await page.keyboard.press('Control+b');
 			const messages = () =>
@@ -196,12 +278,14 @@ try {
 				.getByRole('dialog')
 				.filter({ has: page.locator('.llampart-model-info-scroll-viewport') });
 			const inspect = async (index, version, suffix, native = provider === 'llama-server') => {
+				await footerName(index, ids[version]);
 				await page.evaluate(() => new Promise(requestAnimationFrame));
 				await page.waitForFunction(() => !modelAudit.models.loading && !modelAudit.models.updating);
-				// Branch navigation can schedule the existing selector's catalog refresh
-				// after its first paint. Settle that independent LIVE activity first.
+				// Settle independent LIVE composer/catalog activity first.
 				await page.waitForTimeout(250);
 				await page.waitForLoadState('networkidle');
+				await page.mouse.move(width / 2, 20);
+				await page.keyboard.press('Escape');
 				const before = requests.length;
 				if (suffix === 'initial' || suffix === 'active-B') await info.nth(index).click();
 				else await info.nth(index).press('Enter');
@@ -229,8 +313,22 @@ try {
 			await send('Synthetic question A');
 			let all = await messages();
 			const a = all.find((m) => m.role === 'assistant');
-			assert.equal(a.model, ids.A);
-			assert.equal(a.modelInfo.modelId, ids.A);
+			assert.equal(a.model, provider === 'llama-server' ? `${ids.A}.gguf` : ids.A);
+			assert.equal(
+				a.modelInfo.modelId,
+				provider === 'llama-server' ? properties('A').model_path : ids.A
+			);
+			for (const showRawModelNames of [false, true]) {
+				await page.evaluate(
+					(value) => modelAudit.settings.updateMultipleConfig({ showRawModelNames: value }),
+					showRawModelNames
+				);
+				await footerName(0, ids.A);
+				await badges.first().press('Enter');
+				assert.equal(await page.evaluate(() => copiedModelNames.at(-1)), ids.A);
+				await assertModelTooltip(0, ids.A);
+			}
+			const modelBadgeMarkup = await badges.first().innerHTML();
 			await inspect(0, 'A', 'initial');
 			const composer = page.locator('.llampart-chat-form-root .llampart-model-selector-trigger');
 			if (provider === 'llama-server') {
@@ -249,9 +347,10 @@ try {
 			const assistants = all.filter((m) => m.role === 'assistant');
 			assert.deepEqual(
 				assistants.map((m) => m.model),
-				[ids.A, ids.B]
+				[a.model, ids.B]
 			);
 			assert.deepEqual(assistants[0].modelInfo, a.modelInfo);
+			await page.evaluate(async () => modelAudit.models.refreshBackend());
 			await inspect(0, 'A', 'active-B');
 			await inspect(1, 'B', 'active-B');
 			await page.screenshot({ path: `${out}/${label}-footers-A-B.png` });
@@ -307,6 +406,20 @@ try {
 				await page.keyboard.press('Escape');
 				router = true;
 				await page.evaluate(async () => modelAudit.models.refreshBackend());
+				await footerName(0, ids.A);
+				assert.equal(
+					await badges.first().innerHTML(),
+					modelBadgeMarkup,
+					'MODEL/ROUTER badge markup'
+				);
+				for (const value of [false, true]) {
+					await page.evaluate(
+						(showRawModelNames) => modelAudit.settings.updateMultipleConfig({ showRawModelNames }),
+						value
+					);
+					await footerName(0, ids.A);
+					await assertModelTooltip(0, ids.A);
+				}
 				await composer.click();
 				const menu = page.locator('.llampart-model-selector-menu');
 				await menu.waitFor();
@@ -340,23 +453,38 @@ try {
 				assert((await dialog.innerText()).includes('build-A'));
 				await page.screenshot({ path: `${out}/${label}-ROUTER-live-info-A.png` });
 				await page.keyboard.press('Escape');
-				await page.keyboard.press('Escape');
-				// The pre-existing footer selector still regenerates with the selected model.
-				await page
-					.locator('.assistant-message-footer-left .llampart-model-selector-trigger')
-					.last()
-					.press('Enter');
-				await menu.waitFor();
-				await menu.locator('input').fill(ids.A);
-				await page.getByRole('option').filter({ hasText: ids.A }).click();
-				await menu.waitFor({ state: 'hidden' });
+				// Ordinary regeneration retains its existing contract: B must already be loaded.
+				await search.fill(ids.B);
+				option = page.getByRole('option').filter({ hasText: ids.B });
+				await option.hover();
+				await option.locator('button[aria-label="Load model"]').click();
 				await page.waitForFunction(
 					() =>
+						modelAudit.models.isModelLoaded('Gemma-Test-B') &&
+						!modelAudit.models.isModelOperationInProgress('Gemma-Test-B')
+				);
+				await page.keyboard.press('Escape');
+				// Ordinary message action still regenerates B and creates a sibling branch.
+				await page
+					.locator('.llampart-message-actions-assistant')
+					.last()
+					.locator('button[aria-label="Regenerate"]')
+					.press('Enter');
+				await page.waitForFunction(
+					(oldId) =>
 						!modelAudit.chat.isLoading &&
-						modelAudit.conversations.activeMessages.at(-1)?.model === 'Qwen-Test-A'
+						modelAudit.conversations.activeMessages.at(-1)?.model === 'Gemma-Test-B' &&
+						modelAudit.conversations.activeMessages.at(-1)?.id !== oldId,
+					assistants[1].id
 				);
 				assert.equal((await messages()).filter((m) => m.role === 'assistant').length, 3);
-				await inspect(1, 'A', 'regenerated-ROUTER');
+				await inspect(1, 'B', 'regenerated-ROUTER');
+				assert.equal(
+					(await messages()).filter(
+						(m) => m.parent === assistants[1].parent && m.role === 'assistant'
+					).length,
+					2
+				);
 				const oldB = (await messages()).find((m) => m.model === ids.B);
 				assert.equal(oldB.modelInfo.native.build_info, 'build-B');
 				await page.evaluate(async (id) => {
@@ -381,7 +509,7 @@ try {
 			if (provider === 'llama-server') {
 				await composer.click();
 				await page.locator('.llampart-model-selector-menu').waitFor();
-				assert.equal(await page.evaluate(() => modelAudit.models.isFavorite('Qwen-Test-A')), true);
+				assert.equal(await page.evaluate((id) => modelAudit.models.isFavorite(id), ids.A), true);
 				await page.keyboard.press('Escape');
 			}
 			await page.evaluate(async (id) => {
@@ -414,10 +542,94 @@ try {
 					async (id) => modelAudit.conversations.navigateToSibling(id),
 					assistants[1].id
 				);
+			const patchFirst = async (patch) =>
+				page.evaluate(async (patch) => {
+					const m = modelAudit.conversations.activeMessages.find((m) => m.role === 'assistant');
+					await modelAudit.db.updateMessage(m.id, patch);
+					modelAudit.conversations.updateMessageAtIndex(
+						modelAudit.conversations.findMessageIndex(m.id),
+						patch
+					);
+				}, patch);
+			await patchFirst({ model: 'wrong-legacy-name' });
+			await footerName(0, ids.A); // Snapshot presentation wins over message.model.
+			const longName = `Qwen-${'variant-'.repeat(50)}27B-Q8_0`;
+			await patchFirst({ modelInfo: { ...a.modelInfo, displayName: longName } });
+			await footerName(0, longName);
+			assert(
+				await badges.first().evaluate((el) => {
+					const rect = el.getBoundingClientRect();
+					return (
+						rect.right <= innerWidth &&
+						rect.width <= el.closest('.assistant-message-footer-left').clientWidth
+					);
+				}),
+				'Long name must stay inside footer/viewport'
+			);
+			await page.screenshot({ path: `${out}/${label}-long-name.png` });
+			await page.evaluate(() =>
+				Object.defineProperty(navigator.clipboard, 'writeText', {
+					value: async (text) => {
+						globalThis.lastCopiedName = text;
+					},
+					configurable: true
+				})
+			);
+			const separated = 'org/model:variant:Q8_0';
+			await patchFirst({ modelInfo: { ...a.modelInfo, displayName: separated } });
+			await footerName(0, separated);
+			await badges.first().press('Space');
+			assert.equal(await page.evaluate(() => lastCopiedName), separated);
+			if (provider === 'llama-server') {
+				router = false;
+				await page.evaluate(async () => modelAudit.models.refreshBackend());
+			}
+			assert.equal(await page.evaluate(() => modelAudit.models.singleModelName), ids.B);
+			await patchFirst({
+				modelInfo: {
+					...a.modelInfo,
+					identity: 'unavailable',
+					modelId: null,
+					displayName: null,
+					native: undefined
+				},
+				timings: { predicted_n: 12, predicted_ms: 1000 }
+			});
+			await footerName(0, 'Unknown Model');
+			assert(await badges.first().isDisabled());
+			assert(await footers.first().locator('.llampart-chat-message-statistics').isVisible());
+			await page.screenshot({ path: `${out}/${label}-unknown-with-stats.png` });
+			await patchFirst({ modelInfo: undefined, model: undefined });
+			await footerName(0, 'Unknown Model');
+			assert(await badges.first().isDisabled());
+			assert(await footers.first().locator('.llampart-chat-message-statistics').isVisible());
+			if (provider === 'llama-server') {
+				router = true;
+				await page.evaluate(async () => modelAudit.models.refreshBackend());
+				await footerName(0, 'Unknown Model');
+			}
+			await patchFirst({ model: a.model, modelInfo: a.modelInfo, timings: a.timings });
+			results.push(
+				`PASS ${label} footer presentation/clipboard/legacy/unknown/stats/long-name ownership`
+			);
 			server.closeAllConnections();
 			await new Promise((done) => server.close(done));
+			const disconnected = await page.evaluate(async () => {
+				try {
+					await modelAudit.models.refreshBackend();
+					return false;
+				} catch {
+					return true;
+				}
+			});
+			assert(disconnected, 'Synthetic provider must actually be offline');
 			await inspect(0, 'A', 'backend-offline');
 			await inspect(1, 'B', 'backend-offline');
+			await page.reload();
+			await page.locator('textarea').first().waitFor();
+			await setup();
+			await inspect(0, 'A', 'offline-reload');
+			await inspect(1, 'B', 'offline-reload');
 			assert.deepEqual(errors, []);
 			assert.deepEqual(await page.evaluate(() => auditRejections), []);
 			assert(!consoleErrors.some((e) => /css|import|uncaught/i.test(e)), consoleErrors.join('\n'));
@@ -430,6 +642,25 @@ try {
 			);
 		} catch (error) {
 			results.push(`FAIL ${label}: ${error.stack}`);
+			const page = context.pages()[0];
+			await writeFile(
+				`${out}/${label}-failure.json`,
+				JSON.stringify(
+					{
+						error: String(error),
+						requests,
+						errors,
+						consoleErrors,
+						state: await page.evaluate(() => ({
+							text: document.body.innerText,
+							messages: globalThis.modelAudit?.conversations.activeMessages,
+							error: globalThis.modelAudit?.chat.errorDialogState
+						}))
+					},
+					null,
+					2
+				)
+			);
 			throw error;
 		} finally {
 			await context.close();

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	captureMessageModelInfo,
+	getMessageModelDisplayName,
 	modelInfoForResponse,
 	messageModelInfoSnapshotSchema,
 	MAX_MODEL_CHAT_TEMPLATE_LENGTH
@@ -60,6 +61,58 @@ const record = (modelInfo = make()) => ({
 			timings: { predicted_n: 3 }
 		}
 	]
+});
+
+describe('message-owned footer presentation', () => {
+	it('prefers saved presentation over technical ID and legacy model, preserving variant/quantization', () => {
+		const modelInfo = {
+			...make(),
+			modelId: '/models/vendor/releases/transport.gguf',
+			displayName: 'Qwen3.8-27B-Q8_0'
+		};
+		expect(getMessageModelDisplayName({ model: 'wrong-model', modelInfo })).toBe(
+			'Qwen3.8-27B-Q8_0'
+		);
+		expect(modelInfo.modelId).toBe('/models/vendor/releases/transport.gguf');
+	});
+	it.each([
+		'Qwen3.8-27B-Q8_0',
+		'/models/vendor/releases/Qwen3.8-27B-Q8_0.gguf',
+		'models/Qwen3.8-27B-Q8_0.GGUF',
+		'C:\\models\\Qwen3.8-27B-Q8_0.gguf'
+	])('presents saved GGUF evidence and legacy names without transport paths: %s', (name) => {
+		expect(getMessageModelDisplayName({ model: name })).toBe('Qwen3.8-27B-Q8_0');
+		expect(getMessageModelDisplayName({ modelInfo: { ...make(), displayName: name } })).toBe(
+			'Qwen3.8-27B-Q8_0'
+		);
+	});
+	it('uses only saved technical evidence when a snapshot has no presentation name', () => {
+		expect(
+			getMessageModelDisplayName({
+				model: 'wrong-model',
+				modelInfo: { ...make(), displayName: null, modelId: '/models/Qwen3.8-27B-Q8_0.gguf' }
+			})
+		).toBe('Qwen3.8-27B-Q8_0');
+		expect(getMessageModelDisplayName({ model: 'org/model:variant:Q8_0' })).toBe(
+			'org/model:variant:Q8_0'
+		);
+	});
+	it('never replaces explicitly unavailable or missing snapshot evidence with legacy selection', () => {
+		expect(
+			getMessageModelDisplayName({
+				model: 'active-model',
+				modelInfo: { ...make(), identity: 'unavailable' }
+			})
+		).toBeNull();
+		expect(
+			getMessageModelDisplayName({
+				model: 'active-model',
+				modelInfo: { ...make(), modelId: null, displayName: null }
+			})
+		).toBeNull();
+		for (const model of [undefined, null, '', '   '])
+			expect(getMessageModelDisplayName({ model })).toBeNull();
+	});
 });
 
 describe('AUD-010 bounded message evidence', () => {

@@ -70,6 +70,7 @@ try {
 						data: [
 							{
 								id: 'model-A',
+								status: { value: 'loaded' },
 								capabilities: {
 									vision: false,
 									...(protocol === 'responses' ? { required_protocol: 'responses' } : {})
@@ -77,6 +78,7 @@ try {
 							},
 							{
 								id: 'model-B',
+								status: { value: 'loaded' },
 								capabilities: {
 									vision: true,
 									...(protocol === 'responses' ? { required_protocol: 'responses' } : {})
@@ -84,6 +86,7 @@ try {
 							},
 							{
 								id: 'unknown-model',
+								status: { value: 'loaded' },
 								capabilities: protocol === 'responses' ? { required_protocol: 'responses' } : {}
 							}
 						]
@@ -250,7 +253,10 @@ try {
 			await page.locator('.llampart-composer-stop-action').isVisible(),
 			`${viewport.width}: Stop during tool`
 		);
-		await page.locator('.llampart-model-selector-trigger').last().click();
+		const composerSelector = page.locator(
+			'.llampart-chat-form-root .llampart-model-selector-trigger'
+		);
+		await composerSelector.click();
 		await page.getByRole('option').filter({ hasText: 'model-B' }).click();
 		await page.waitForFunction(() => own006.models.selectedModelName === 'model-B');
 		check(requests === 1, `${viewport.width}: selector must not restart generation`);
@@ -267,6 +273,11 @@ try {
 			`${viewport.width}: FAIL operation payloads ${JSON.stringify(payloads.map((item) => item.body.model))}`
 		);
 		await page.getByText('FINAL OWN006', { exact: true }).waitFor();
+		assert.equal(
+			await page.locator('.assistant-message-footer .llampart-model-selector-trigger').count(),
+			0
+		);
+		assert.equal(await page.locator('.llampart-message-model-badge').last().innerText(), 'model-A');
 		if (out) await page.screenshot({ path: `${out}/${viewport.width}-completed.png` });
 		const firstPayloads = structuredClone(payloads);
 		toolTurns = 0;
@@ -279,6 +290,12 @@ try {
 					.length === 2
 		);
 		check(payloads.at(-1).body.model === 'model-B', `${viewport.width}: next operation respects B`);
+		assert.deepEqual(
+			(await page.locator('.llampart-message-model-badge').allTextContents()).map((name) =>
+				name.trim()
+			),
+			['model-A', 'model-B']
+		);
 		requests = 0;
 		toolTurns = 1;
 		const permissionStart = payloads.length;
@@ -369,6 +386,15 @@ try {
 		);
 		assert.deepEqual(reloaded.rows, saved.rows);
 		assert.equal(reloaded.conversation.currNode, saved.conversation.currNode);
+		await page.waitForFunction(
+			() => document.querySelectorAll('.llampart-message-model-badge').length >= 2
+		);
+		assert.deepEqual(
+			(await page.locator('.llampart-message-model-badge').allTextContents())
+				.slice(0, 2)
+				.map((name) => name.trim()),
+			['model-A', 'model-B']
+		);
 		check(
 			reloaded.rows.some((row) => row.role === 'tool' && row.content === 'CONFIRMED OWN006'),
 			'durable tool result after reload'
