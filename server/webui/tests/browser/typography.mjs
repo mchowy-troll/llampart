@@ -118,7 +118,9 @@ async function open() {
 }
 async function select(id, label) {
 	await page.locator('#' + id).click();
-	await page.getByRole('option', { name: label, exact: true }).click();
+	const option = page.getByRole('option', { name: label, exact: true });
+	if (await option.count()) await option.click();
+	else await page.getByRole('option', { name: `${label} (domyślna)`, exact: true }).click();
 	await page.evaluate(() => document.fonts.ready);
 }
 async function cancel() {
@@ -209,22 +211,28 @@ try {
 	await frames.nth(3).waitFor();
 	const initial = await sizes();
 	assert.equal(initial.root, 12);
-	assert.equal(initial.body, 12);
+	assert.equal(initial.body, 13);
 	const cdp = await context.newCDPSession(page);
 	await cdp.send('DOM.enable');
 	await cdp.send('CSS.enable');
 	const evidence = [];
 	for (const [id, label, weights, italic] of [
-		['crimson-text', 'Crimson Text', [400, 600, 700], true],
-		['libre-caslon-condensed', 'Libre Caslon Condensed', [400, 500, 600, 700], true],
-		['fira-sans', 'Fira Sans', [400, 500, 600, 700], true]
+		['merriweather', 'Merriweather (domyślna)', [400, 500, 600, 700], true],
+		['google-sans', 'Google Sans', [400, 500, 600, 700], true],
+		['barlow', 'Barlow', [400, 500, 600, 700], true],
+		['inter', 'Inter', [400, 500, 600, 700], true],
+		['fira-sans', 'Fira Sans', [400, 500, 600, 700], true],
+		['literata', 'Literata', [400, 500, 600, 700], true],
+		['domine', 'Domine', [400, 500, 600, 700], false]
 	]) {
 		await open();
 		await select('fontFamily', label);
 		await select('fontSize', '18 px');
 		await page.locator('#fontVariant').click();
 		assert.deepEqual(
-			(await page.getByRole('option').allTextContents()).map((s) => s.trim()),
+			(await page.getByRole('option').allTextContents()).map((s) =>
+				s.trim().replace(' (domyślna)', '')
+			),
 			weights.map(
 				(w) => ({ 400: 'Regular', 500: 'Medium', 600: 'SemiBold', 700: 'Bold' })[w] + ` — ${w}`
 			)
@@ -246,7 +254,7 @@ try {
 		assert.equal(selected.code, initial.code);
 		assert.equal(selected.math, initial.math);
 		for (const key of ['paragraph', 'heading', 'table'])
-			assert(Math.abs(selected[key] / initial[key] - 1.5) < 0.001, key);
+			assert(Math.abs(selected[key] / initial[key] - 18 / 13) < 0.001, key);
 		for (const weight of weights) {
 			await select(
 				'fontVariant',
@@ -305,15 +313,15 @@ try {
 			family: getComputedStyle(n).fontFamily,
 			size: getComputedStyle(n).fontSize
 		}));
-		assert(tooltip.family.includes(label));
+		assert(tooltip.family.includes(label.split(' (')[0]));
 		assert.equal(tooltip.size, '14.4px');
 		await page.screenshot({ path: `${artifacts}/${id}-tooltip.png` });
 		await page.mouse.move(5, 5);
 		for (let i = 0; i < 4; i++) await exports(i, id);
 		// Restore the actual initial baseline through the same form before the next family.
 		await open();
-		await select('fontFamily', 'Domyślna');
-		await select('fontSize', 'Domyślna');
+		await select('fontFamily', 'Merriweather (domyślna)');
+		await select('fontSize', '13 px (domyślny)');
 		await dialog.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click();
 		await dialog.waitFor({ state: 'hidden' });
 		console.log(
@@ -326,7 +334,7 @@ try {
 		await page.waitForSelector('textarea');
 		await open();
 		await page.setViewportSize({ width, height: 1000 });
-		await select('fontFamily', 'Libre Caslon Condensed');
+		await select('fontFamily', 'Inter');
 		await select('fontSize', '20 px');
 		for (const id of ['fontFamily', 'fontVariant', 'fontSize']) {
 			const control = page.locator('#' + id);
@@ -338,13 +346,13 @@ try {
 		await page.screenshot({ path: `${artifacts}/responsive-${width}.png` });
 		await cancel();
 	}
-	assert.equal((await sizes()).body, 16);
+	assert.equal((await sizes()).body, 13);
 	await page.setViewportSize({ width: 1920, height: 1080 });
 	await page.reload();
 	await page.waitForSelector('textarea');
 	await open();
 	for (const n of [12, 13, 14, 15, 16, 17, 18, 19, 20]) {
-		await select('fontSize', `${n} px`);
+		await select('fontSize', n === 13 ? '13 px (domyślny)' : `${n} px`);
 		assert.equal((await sizes()).body, n);
 		assert.equal((await sizes()).root, 12);
 	}
@@ -360,7 +368,7 @@ try {
 			) < 0.001
 	);
 	await cancel();
-	assert.equal((await sizes()).body, 12);
+	assert.equal((await sizes()).body, 13);
 	assert.deepEqual(errors, []);
 	assert.deepEqual(external, []);
 	assert(fonts.length > 0 && fonts.every((url) => new URL(url).pathname.endsWith('.woff2')));
@@ -373,7 +381,7 @@ try {
 		)
 	);
 	console.log(
-		'PASS responsive default 12/16 px, 12–20 px, independent UI Scale, unchanged code/KaTeX families, local-only WOFF2 Network'
+		'PASS default 13 px, 12–20 px, independent UI Scale, unchanged code/KaTeX families, local-only WOFF2 Network'
 	);
 } catch (e) {
 	console.error(

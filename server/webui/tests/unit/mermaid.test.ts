@@ -24,7 +24,7 @@ import { preprocessChartMarkdown, isChartNode } from '$lib/markdown/chart-blocks
 import { preprocessLaTeX } from '$lib/utils/latex-protection';
 
 const font = {
-	family: '"Llampart Crimson Text"',
+	family: '"Llampart Barlow", "Llampart Inter"',
 	size: 20,
 	weight: '600',
 	style: 'italic',

@@ -1,17 +1,68 @@
-/** Discover the active local faces from CSSOM; no second font registry. */
-export async function embeddedSvgFonts(families: string, source: HTMLElement): Promise<string> {
-	const weightNumber = (weight: string) =>
-		weight === 'normal' ? 400 : weight === 'bold' ? 700 : Number(weight);
-	const names = families.split(',').map((name) => name.trim().replace(/^["']|["']$/g, ''));
-	const nodes: Element[] = [source, ...Array.from(source.querySelectorAll('*'))];
+function familyNames(families: string): string[] {
+	return families.split(',').map((name) => name.trim().replace(/^["']|["']$/g, ''));
+}
+
+function covers(rule: CSSFontFaceRule, codepoint: number): boolean {
+	const range = rule.style.getPropertyValue('unicode-range');
+	if (!range) return true;
+	return range.split(',').some((part) => {
+		const value = part.trim().replace(/^U\+/i, '');
+		const [start, end = start] = value.includes('?')
+			? [value.replaceAll('?', '0'), value.replaceAll('?', 'F')]
+			: value.split('-');
+		return codepoint >= parseInt(start, 16) && codepoint <= parseInt(end, 16);
+	});
+}
+
+const weightNumber = (weight: string) =>
+	weight === 'normal' ? 400 : weight === 'bold' ? 700 : Number(weight);
+
+/** CSS Fonts weight matching, including static fallbacks of a variable family. */
+function weightRank(rule: CSSFontFaceRule, target: number): number {
+	const [min, max = min] = rule.style.fontWeight.split(/\s+/).map(weightNumber);
+	if (target >= min && target <= max) return 0;
+	const weight = target < min ? min : max;
+	if (target >= 400 && target <= 500) {
+		if (weight >= target && weight <= 500) return weight - target;
+		return weight < target ? 1000 + target - weight : 2000 + weight - target;
+	}
+	return (target < 400 ? weight <= target : weight >= target)
+		? Math.abs(weight - target)
+		: 1000 + Math.abs(weight - target);
+}
+
+/** Discover used local faces from CSSOM and actual text; no second font registry. */
+export async function embeddedSvgFonts(
+	families: string,
+	source: HTMLElement,
+	textSources: Element[] = [source]
+): Promise<string> {
+	const names = familyNames(families);
+	const nodes: Element[] = textSources.flatMap((node) => [
+		node,
+		...Array.from(node.querySelectorAll('*'))
+	]);
 	// Diagram text lives in open shadow roots; include its actual bold/italic
 	// faces too, without a second font registry or new embedding limits.
 	for (const node of nodes) {
 		if (node.shadowRoot) nodes.push(...Array.from(node.shadowRoot.querySelectorAll('*')));
 	}
-	const used = nodes.map((node) => {
+	const used = nodes.flatMap((node) => {
+		if (['STYLE', 'SCRIPT', 'style', 'script'].includes(node.nodeName)) return [];
+		const text = Array.from(node.childNodes)
+			.filter((child) => child.nodeType === 3)
+			.map((child) => child.textContent ?? '')
+			.join('');
+		if (!text.trim()) return [];
 		const style = getComputedStyle(node);
-		return { weight: weightNumber(style.fontWeight), style: style.fontStyle };
+		return [
+			{
+				weight: weightNumber(style.fontWeight),
+				style: style.fontStyle,
+				families: familyNames(style.fontFamily),
+				text
+			}
+		];
 	});
 	const rules: CSSFontFaceRule[] = [];
 	function collect(list: CSSRuleList) {
@@ -33,18 +84,33 @@ export async function embeddedSvgFonts(families: string, source: HTMLElement): P
 	}
 	let totalBytes = 0;
 	const embedded = [];
-	// A static family has separate files per weight. Keep the existing limits,
-	// but do not let unused italic faces displace the actual upright chart faces.
-	const needed = rules.filter((rule) => {
-		const weights = rule.style.fontWeight.split(/\s+/).map(weightNumber);
-		return used.some(
-			(face) =>
-				face.style === rule.style.fontStyle &&
-				face.weight >= weights[0] &&
-				face.weight <= (weights[1] ?? weights[0])
-		);
-	});
-	if (needed.length > 12) throw new Error('Font face embedding limit');
+	const needed = new Set<CSSFontFaceRule>();
+	for (const face of used) {
+		for (const char of new Set(face.text)) {
+			const codepoint = char.codePointAt(0)!;
+			for (const family of face.families) {
+				const familyRules = rules.filter(
+					(rule) => familyNames(rule.style.fontFamily)[0] === family
+				);
+				const matchedStyle = familyRules.some((rule) => rule.style.fontStyle === face.style)
+					? face.style
+					: 'normal';
+				const candidates = familyRules.filter(
+					(rule) => rule.style.fontStyle === matchedStyle && covers(rule, codepoint)
+				);
+				// Later same-range declarations win, as in CSS. Never embed unrelated
+				// Cyrillic/Greek styles just because they share the selected family.
+				candidates
+					.reverse()
+					.sort((a, b) => weightRank(a, face.weight) - weightRank(b, face.weight));
+				if (candidates[0]) {
+					needed.add(candidates[0]);
+					break;
+				}
+			}
+		}
+	}
+	if (needed.size > 12) throw new Error('Font face embedding limit');
 	for (const rule of needed) {
 		const copy = rule.style.cssText;
 		const match = /url\(["']?([^"')]+)["']?\)/.exec(rule.style.getPropertyValue('src'));

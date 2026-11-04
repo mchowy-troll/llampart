@@ -15,13 +15,26 @@ export async function chartSvg(frame: HTMLElement, plot: HTMLElement): Promise<s
 	const style = getComputedStyle(frame);
 	const svg = document.createElementNS(NS, 'svg');
 	svg.setAttribute('xmlns', NS);
+	svg.setAttribute(
+		'lang',
+		frame.closest('[lang]')?.getAttribute('lang') || document.documentElement.lang
+	);
 	svg.style.fontFamily = style.fontFamily;
 	svg.style.fontWeight = style.fontWeight;
 	svg.style.fontStyle = style.fontStyle;
+	svg.style.fontOpticalSizing = style.fontOpticalSizing;
 	svg.style.setProperty('font-synthesis', 'none');
 	const defs = document.createElementNS(NS, 'defs');
 	const fonts = document.createElementNS(NS, 'style');
-	fonts.textContent = await embeddedSvgFonts(style.fontFamily, frame);
+	// Only exported text participates: toolbar/tooltip faces must not consume
+	// the unchanged 12-face limit or inflate the downloaded SVG.
+	const textSources = [
+		plot,
+		...frame.querySelectorAll(
+			'.chart-title, .chart-description, .chart-legend button[aria-pressed="true"]'
+		)
+	];
+	fonts.textContent = await embeddedSvgFonts(style.fontFamily, frame, textSources);
 	defs.append(fonts);
 	svg.append(defs);
 	// No document backdrop: only visualization marks, text and legend are exported.

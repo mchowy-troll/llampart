@@ -16,6 +16,7 @@ import type { InterfaceLanguage } from '$lib/i18n/types';
 import type { ConversationTimestampFormat } from '$lib/utils/conversation-timestamp';
 import type { ColorMode } from '$lib/enums/ui';
 import type { ResponsePreferenceKey } from '$lib/utils/response-preferences';
+import type { FontFamilySetting } from '$lib/constants/typography';
 
 export interface ChatStreamCheckpoint {
 	providerContinuation?: import('./provider').ProviderContinuation;
@@ -194,8 +195,14 @@ type DefaultSettingsConfig = {
 
 export type KnownSettingsConfig = Omit<
 	DefaultSettingsConfig,
-	'apiProvider' | 'theme' | 'interfaceLanguage' | 'uiScale' | 'conversationTimestampFormat'
+	| 'apiProvider'
+	| 'theme'
+	| 'interfaceLanguage'
+	| 'uiScale'
+	| 'conversationTimestampFormat'
+	| 'fontFamily'
 > & {
+	fontFamily: FontFamilySetting;
 	apiProvider: ApiProviderId;
 	theme: ColorMode;
 	interfaceLanguage: InterfaceLanguage;

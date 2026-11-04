@@ -89,7 +89,7 @@ describe('appearance settings and material palette', () => {
 		const patch = {
 			frostedGlassMilkiness: 37,
 			frostedGlassOpaque: true,
-			fontFamily: 'crimson-text',
+			fontFamily: 'barlow',
 			fontVariant: '400',
 			fontSize: '18',
 			uiScale: '105'
@@ -168,9 +168,9 @@ describe('local typography', () => {
 	});
 
 	it('normalizes an unsupported font weight consistently in storage and runtime and cleans up', () => {
-		const config = parseSettingsConfig({ fontFamily: 'crimson-text', fontVariant: '500' });
+		const config = parseSettingsConfig({ fontFamily: 'barlow', fontVariant: '350' });
 		const { root, values } = rootFixture();
-		const cleanup = applyTypography(root, { ...config, fontVariant: '500' });
+		const cleanup = applyTypography(root, { ...config, fontVariant: '350' });
 		expect(getFontVariants(config.fontFamily).map(({ value }) => value)).toContain(
 			config.fontVariant
 		);

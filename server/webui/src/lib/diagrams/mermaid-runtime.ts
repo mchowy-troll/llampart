@@ -49,9 +49,9 @@ export function renderDiagram(
 		engine ??= import('mermaid');
 		const { default: mermaid } = await engine;
 		signal.throwIfAborted();
-		await document.fonts.load(`${font.style} ${font.weight} ${font.size}px ${font.family}`);
+		await document.fonts.load(`${font.style} ${font.weight} ${font.size}px ${font.family}`, source);
 		if (type === 'flowchart')
-			await document.fonts.load(`${font.style} 700 ${font.size}px ${font.family}`);
+			await document.fonts.load(`${font.style} 700 ${font.size}px ${font.family}`, source);
 		await document.fonts.ready;
 		signal.throwIfAborted();
 		const host = document.createElement('div');
@@ -134,7 +134,7 @@ export function renderDiagram(
 			if (type === 'mindmap') finishMindmapPresentation(safe);
 			if (type === 'gantt') spaceGanttLabels(safe, font.size, availableWidth);
 			if (type === 'stateDiagram-v2') {
-				await document.fonts.load(`${font.style} 700 ${font.size}px ${font.family}`);
+				await document.fonts.load(`${font.style} 700 ${font.size}px ${font.family}`, source);
 				signal.throwIfAborted();
 				centerStateLabels(safe);
 				stateSectionPresentation(safe, font);

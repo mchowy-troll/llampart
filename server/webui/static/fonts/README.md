@@ -1,125 +1,103 @@
 # Local fonts
 
-All selectable UI faces are repository-local WOFF2 at `/fonts/`. No Google Fonts CSS,
-CDN, runtime connection or font npm dependency is required.
+Seven Settings options, in order: **Merriweather, Google Sans, Barlow, Inter,
+Fira Sans, Literata, Domine**. The last two extend the original five-family task
+at the user's request. `src/lib/constants/typography.ts` owns IDs, labels, weights
+and fallback stacks; Settings renders that catalog. Defaults remain Merriweather,
+400, 13px. The internal `default` sentinel is not another selectable option.
+Retired IDs migrate individually to Merriweather without resetting other settings.
 
-## Sources and licenses
+All assets are local WOFF2. No runtime CDN, `local()` lookup, font npm dependency,
+PWA or service worker is used. Download URLs below are provenance only.
 
-Existing Merriweather and Frank Ruhl Libre assets are unchanged:
-`@fontsource-variable/merriweather@5.3.0` from jsDelivr and
-`@fontsource-variable/frank-ruhl-libre@5.3.0` from unpkg. Their unmodified OFL
-licenses remain alongside the files.
+## Inventory and provenance
 
-New assets were downloaded on 2026-10-16 directly from the Google Fonts CSS2 API
-and its official WOFF2 distribution (`fonts.gstatic.com`), not converted or
-renamed internally. Exact URLs, internal versions, sizes and SHA-256 checksums
-are recorded in `sources.json`. Distribution versions: Crimson Text **v19**,
-Libre Caslon Condensed **v3**, Fira Sans **v18**. Google Fonts specimen pages:
+`sources.json` records **every** distributed WOFF2, exact version, source URL,
+SHA-256, size, CSS family, style, weight, axes, actual CSS-visible cmap range and
+any conversion. Retained Latin assets are byte-identical to their previous files.
 
-- https://fonts.google.com/specimen/Crimson+Text
-- https://fonts.google.com/specimen/Libre+Caslon+Condensed
-- https://fonts.google.com/specimen/Fira+Sans
-
-The SIL Open Font License 1.1 texts come from
-`https://raw.githubusercontent.com/google/fonts/main/ofl/<family>/OFL.txt`,
-where `<family>` is `crimsontext`, `librecasloncondensed` or `firasans`.
-These source URLs are documentation only; the app never contacts them.
-License wording is preserved; trailing whitespace on one line in each of the
-Crimson Text and Libre Caslon Condensed OFL files is normalized for Git checks.
-
-| Family | Internal version | Local faces | Selectable base weights | License file |
+| Family | Version / official source | Faces and weights | Coverage / fallback | Legal text |
 | --- | --- | --- | --- | --- |
-| Merriweather | unchanged Fontsource 5.3.0 | variable 300–900, normal and italic | 400, 500, 600, 700 | `merriweather-OFL.txt` |
-| Frank Ruhl Libre | unchanged Fontsource 5.3.0 | variable 300–900, normal only | 400, 500, 600, 700 | `frank-ruhl-libre-OFL.txt` |
-| Crimson Text | 1.100 | static normal and italic | 400, 600, 700 | `crimson-text-OFL.txt` |
-| Libre Caslon Condensed | 2.000 | variable 400–700, normal and italic | 400, 500, 600, 700 | `libre-caslon-condensed-OFL.txt` |
-| Fira Sans | 4.203 | static normal and italic | 400, 500, 600, 700 | `fira-sans-OFL.txt` |
+| Merriweather | 2.100 normal / 2.101 italic; Merriweather4 4.008, Google Fonts v33; existing Latin from Fontsource-variable 5.3.0 | variable 300–900, normal/italic | Latin unchanged; separate Cyrillic and Cyrillic Extended; Greek → Tinos | `merriweather-OFL.txt` |
+| Google Sans | official [v14.000](https://github.com/googlefonts/googlesans/releases/tag/v14.000), revision 08f2ac800 | variable 400–700, normal/italic | PL/BG/EL; opsz default **18**, GRAD default **0** | `google-sans-OFL.txt`, `google-sans-TRADEMARKS.txt` |
+| Barlow | 1.408; [upstream](https://github.com/jpt/barlow/tree/b4726ddf91525818e85e5fce111c285b9273d764) | static 400/500/600/700, normal/italic | Latin/PL; BG/EL → local Inter | `barlow-OFL.txt` |
+| Inter | 4.001;git-9221beed3; official [v4.1](https://github.com/rsms/inter/tree/v4.1) | variable 100–900, normal/italic | PL/BG/EL; no claim of BGR locl | `inter-OFL.txt` |
+| Fira Sans | 4.203; [FiraGFVersion](https://github.com/googlefonts/FiraGFVersion/tree/a7d6892325d5b7382e426bea13bd3ef2c32bd53e) | static 400/500/600/700, normal/italic | retained Latin/Latin Extended; full upstream fonts restricted by CSS to Greek/Cyrillic/combining marks | `fira-sans-OFL.txt` |
+| Literata | 3.103; [upstream](https://github.com/googlefonts/literata/tree/0c2761b727a1b3a7cffd313c37f0f5163dfc7a63) | variable 200–900, normal/italic; opsz 7–72, default 12 | PL/BG/EL | `literata-OFL.txt` |
+| Domine | 2.000; [upstream](https://github.com/googlefonts/Domine/tree/2974ac627aad3a34190288c07fd0a0040d38550f) | variable 400–700, **normal only** | Latin/PL; BG/EL → local Literata; no genuine Domine italic exists | `domine-OFL.txt` |
+| Tinos (internal only) | 1.340; [upstream](https://github.com/googlefonts/tinos/tree/3b4482a99b80ea5fc75f187b1be3120a3f5905b3) | static 400/700, normal/italic | Greek/Greek Extended/combining marks; only in Merriweather stack | `tinos-OFL.txt` |
 
-Only Latin and Latin Extended subsets are shipped. Every weight/style's combined
-actual `cmap` was checked using fontTools for English, Polish, German, French,
-Italian and Spanish, including `ąćęłńóśźż ĄĆĘŁŃÓŚŹŻ`, `ß`, `æ`, `œ`, `ñ`,
-accented vowels and inverted Spanish punctuation. Both subsets are necessary:
-Latin alone does **not** cover all Polish characters in Libre Caslon Condensed.
-No Cyrillic, Greek, Hebrew or Vietnamese subset is included.
+Tinos is never a Settings option or a fallback for another family. Its full official
+WOFF2 bytes are retained; CSS restricts use to actual Greek and combining cmap
+entries. Barlow's CSS excludes its incidental Greek symbols so complete Greek
+words use Inter consistently. Domine has no declared italic face: CSS uses its
+upright face for Latin emphasis (exports disable synthetic outlines); this is not
+a claim of a real italic design.
 
-Frank Ruhl Libre does not supply italic outlines:
-semantic italic uses the browser's synthesis, not a fictional declared face.
-Static-family emphasis is mapped to available real weights and capped at 700;
-the existing variable-family emphasis remains unchanged. Default/system,
-monospace and KaTeX families are not replaced.
+Merriweather Cyrillic Extended costs 71,952 bytes for both styles and adds a
+separate, verified alphabet range without changing ordinary Bulgarian or Latin.
+All CSS unicode ranges are intersections with actual cmap, not invented coverage.
+Fira's supplementary files keep the full original repertoire in the binary but
+expose only the missing scripts through CSS; this deliberately trades disk size
+for unmodified outlines/names and preservation of existing Latin rendering.
 
-### Bundled mathematical fonts
+### Conversion and legal notices
 
-KaTeX 0.18.2 additionally supplies 20 WOFF2 faces from
-`node_modules/katex/dist/fonts/`, embedded unchanged in the generated CSS rather
-than served from `/fonts/`. `src/styles/katex-custom.scss` enables only WOFF2;
-KaTeX's WOFF and TTF alternatives are not distributed by this configuration.
-These fonts have their own SIL Open Font License 1.1, separate from the MIT
-license of the KaTeX code. Their complete license, copyright notices, Reserved
-Font Names, exact file-to-family mapping and official sources are in
-[`../licenses/katex-fonts.txt`](../licenses/katex-fonts.txt).
+All eight families use **SIL OFL 1.1**; complete upstream notices are beside the
+assets. Reserved Font Names: **Merriweather**, **Domine**
+(see each exact OFL text). Google Sans, Barlow, Inter, Fira Sans, Literata and current Tinos OFL
+texts do not declare RFNs. These are CSS aliases, not renamed internal fonts.
 
-System font stacks (including the code/monospace fallbacks) refer to fonts on the
-user's device, not additional bundled font files. No theme adds a font download.
+Google Sans is not Google Sans Flex. Its official OFL credits the "Google Sans
+Flex Project Authors"; that upstream wording is intentionally preserved.
+Official trademark notes are preserved, and llampart has no Google affiliation.
 
-## Text size
+Google Sans, Barlow, supplementary Fira Sans, Literata and Domine were compressed
+from pinned official TTFs using Google **woff2_compress 1.0.2** (no subsetting,
+axis instancing or name edits). Decompression and fontTools 4.68.0 verified
+identical cmap/name/GSUB/GPOS/fvar tables. Sources include original TTF hashes
+and, for Google Sans, the release ZIP hash and member names. WOFF2 compression
+alone is covered by the OFL webfont compression exception; see
+<https://openfontlicense.org/ofl-faq/>. No custom Merriweather subset was made.
 
-`fontSize` uses the existing settings storage/preview transaction. Explicit values
-are **12–20 px** in 1 px steps. The default sentinel `default` intentionally retains
-the existing responsive baseline: 16 px below 1024 CSS px, desktop root rem
-clamped to 12–14.4 px at UI Scale 100% (12 px at 1920 CSS px). Other UI Scale
-presets retain their original root-rem behavior. There is no single fixed default
-pixel size across viewports, so replacing it with a fixed number would change the
-existing appearance.
+## Owners, loading, language and exports
 
-Explicit `fontSize` changes `--llampart-text-unit` only. Tailwind text tokens and
-custom text sizes use this unit; spacing, root rem, windows, buttons, icons and
-chart geometry do not. Headings/captions keep their ratios. UI Scale continues to
-control layout independently. Existing fixed-pixel caption utilities use the
-chosen text size relative to the unchanged rem baseline, including on resize.
-Chart SVG/PNG captures computed text sizes and
-embeds only used local styles/weights, within the existing 12-face/4-MiB limits.
-Fonts unsupported by an SVG consumer may still be substituted by that consumer.
+`sources.json` owns the binary/CSS inventory; `scripts/generate-font-css.mjs`
+regenerates `local-fonts.css` without downloading anything. `typography.css` owns
+typographic rules, including disabling optical sizing for Google Sans so the
+font's original opsz=18 default is not replaced with Google Sans Text (17).
+Code keeps its existing system monospace stack, not the selected prose font.
+KaTeX retains its 20 unchanged WOFF2 data fonts and independent OFL/RFN notice in
+`static/licenses/katex-fonts.txt`; no mathematical font was removed.
 
-`tests/browser/typography.mjs` checks actual Chromium platform fonts (no fallback
-glyphs for the six-language sample), local-only Network requests, pixel sizes,
-independent UI Scale, responsive controls and standalone PNG/SVG for every new
-family and all four chart types. Run with `LLAMPART_PLAYWRIGHT_MODULE`,
-`LLAMPART_TEST_URL` and an external `LLAMPART_TEST_ARTIFACTS` directory.
+Browser font matching downloads only used scripts, weights and styles. Exports
+discover actual text, style, fallback and cmap ranges from CSSOM, including open
+shadow roots. The existing **12-face / 4-MiB** embedding limits remain explicit
+errors, not silent truncation or arbitrary increases. Highly heterogeneous text
+requiring more than these limits is not supported. Mermaid waits on the actual
+source text before measuring, rather than loading only the default Latin sample.
+SVG roots retain the source's known language.
 
-## New files (bytes)
+The document `lang` follows the committed interface language, just like `t()`;
+an unsaved language draft does not relabel an interface that has not translated.
+Explicit `lang="bg"` activates Merriweather BGR `locl`, including ѝ/Ѝ at 400/700
+normal/italic. No alphabet-based language guessing, message schema change or raw
+HTML Markdown passthrough is introduced. Unannotated Bulgarian messages under a
+non-Bulgarian UI do **not** claim localized Bulgarian glyph forms.
 
-| File | Bytes |
-| --- | ---: |
-| crimson-text-latin-ext-400-italic.woff2 | 20800 |
-| crimson-text-latin-400-italic.woff2 | 26052 |
-| crimson-text-latin-ext-600-italic.woff2 | 21036 |
-| crimson-text-latin-600-italic.woff2 | 26064 |
-| crimson-text-latin-ext-700-italic.woff2 | 21060 |
-| crimson-text-latin-700-italic.woff2 | 26612 |
-| crimson-text-latin-ext-400-normal.woff2 | 20212 |
-| crimson-text-latin-400-normal.woff2 | 25184 |
-| crimson-text-latin-ext-600-normal.woff2 | 21260 |
-| crimson-text-latin-600-normal.woff2 | 26012 |
-| crimson-text-latin-ext-700-normal.woff2 | 20832 |
-| crimson-text-latin-700-normal.woff2 | 25540 |
-| libre-caslon-condensed-latin-ext-wght-normal.woff2 | 21752 |
-| libre-caslon-condensed-latin-wght-normal.woff2 | 38456 |
-| libre-caslon-condensed-latin-ext-wght-italic.woff2 | 22552 |
-| libre-caslon-condensed-latin-wght-italic.woff2 | 41760 |
-| fira-sans-latin-ext-400-italic.woff2 | 47532 |
-| fira-sans-latin-400-italic.woff2 | 24908 |
-| fira-sans-latin-ext-500-italic.woff2 | 48380 |
-| fira-sans-latin-500-italic.woff2 | 24864 |
-| fira-sans-latin-ext-600-italic.woff2 | 51772 |
-| fira-sans-latin-600-italic.woff2 | 25952 |
-| fira-sans-latin-ext-700-italic.woff2 | 52112 |
-| fira-sans-latin-700-italic.woff2 | 26112 |
-| fira-sans-latin-ext-400-normal.woff2 | 46400 |
-| fira-sans-latin-400-normal.woff2 | 23872 |
-| fira-sans-latin-ext-500-normal.woff2 | 46996 |
-| fira-sans-latin-500-normal.woff2 | 24056 |
-| fira-sans-latin-ext-600-normal.woff2 | 50268 |
-| fira-sans-latin-600-normal.woff2 | 24844 |
-| fira-sans-latin-ext-700-normal.woff2 | 50368 |
-| fira-sans-latin-700-normal.woff2 | 25012 |
+The default text unit is **13px**; explicit sizes are 12–20px. UI Scale remains
+independent. Local serving without internet works; a reload disconnected from
+the local server does not provide an offline application shell.
+
+## Verification
+
+- `python3 scripts/validate-local-fonts.py`: offline SHA-256, cmap, real axes,
+  style, weight, license, Greek NFC/NFD shaping and HarfBuzz BGR locl. Requires
+  fontTools, Google woff2 tools and libharfbuzz; writes only temporary copies.
+- Unit tests: `local-fonts`, `appearance`, settings preview/schema and `svg-fonts`.
+- Browser tests use `LLAMPART_PLAYWRIGHT_MODULE`, `LLAMPART_TEST_URL` and external
+  `LLAMPART_TEST_ARTIFACTS`; real production rendering/CDP and export reopening,
+  with synthetic provider HTTP/SSE explicitly distinguished from real inference.
+
+No static production assets in the original checkout are overwritten by tests;
+production validation is performed on a separate build copy.

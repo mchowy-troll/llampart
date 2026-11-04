@@ -14,13 +14,20 @@ export function pngDimensions(width: number, height: number) {
 
 export async function diagramSvg(source: string, frame: HTMLElement): Promise<string> {
 	const svg = verifiedDiagramSvg(source);
+	svg.setAttribute(
+		'lang',
+		frame.closest('[lang]')?.getAttribute('lang') || document.documentElement.lang
+	);
 	const { width, height } = svg.viewBox.baseVal;
 	svg.setAttribute('width', String(Math.ceil(width)));
 	svg.setAttribute('height', String(Math.ceil(height)));
 	svg.style.maxWidth = 'none';
+	svg.style.fontOpticalSizing = getComputedStyle(frame).fontOpticalSizing;
 	// Keep native marks/fills, but never add a whole-document backdrop.
 	// Use the existing CSSOM font registry, not a Mermaid-specific font list.
-	const fonts = await embeddedSvgFonts(getComputedStyle(frame).fontFamily, frame);
+	const fonts = await embeddedSvgFonts(getComputedStyle(frame).fontFamily, frame, [
+		frame.querySelector('.diagram-surface') ?? frame
+	]);
 	const withoutFonts = fonts.replace(
 		/url\("data:font\/(?:woff2?|ttf);base64,[A-Za-z0-9+/=]+"\)/g,
 		''

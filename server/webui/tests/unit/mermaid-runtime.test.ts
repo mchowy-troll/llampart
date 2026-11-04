@@ -88,11 +88,14 @@ describe('Mermaid async lifecycle', () => {
 		const fonts = deferred<unknown[]>();
 		mocks.load.mockReturnValueOnce(fonts.promise);
 		const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
-		const result = renderDiagram('flowchart LR\nA --> B', font, new AbortController().signal);
+		const source = 'flowchart LR\nA["Łódź София Αθήνα"] --> B';
+		const result = renderDiagram(source, font, new AbortController().signal);
 		await vi.waitFor(() => expect(mocks.load).toHaveBeenCalled());
+		expect(mocks.load).toHaveBeenCalledWith('normal 400 16px Local Face', source);
 		expect(mocks.render).not.toHaveBeenCalled();
 		fonts.resolve([]);
 		expect(await result).toBe('<svg/>');
+		expect(mocks.load).toHaveBeenCalledWith('normal 700 16px Local Face', source);
 		expect(mocks.remove).toHaveBeenCalledOnce();
 	});
 	it('serializes configuration with rendering and skips cancelled queued jobs', async () => {

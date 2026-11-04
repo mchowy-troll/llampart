@@ -92,6 +92,12 @@
 	});
 
 	$effect(() => {
+		// Match the same committed language used by t(); changing the draft does
+		// not translate the UI until Save, so it must not relabel its text either.
+		if (browser) document.documentElement.lang = config().interfaceLanguage;
+	});
+
+	$effect(() => {
 		if (!browser) return;
 		return applyTypography(document.documentElement, settingsStore.appearanceConfig);
 	});

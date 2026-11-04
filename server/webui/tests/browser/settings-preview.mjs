@@ -168,7 +168,9 @@ async function close(method = 'button') {
 }
 async function select(id, name) {
 	await page.locator(`#${id}`).click();
-	await page.getByRole('option', { name, exact: true }).click();
+	const option = page.getByRole('option', { name, exact: true });
+	if (await option.count()) await option.click();
+	else await page.getByRole('option', { name: `${name} (domyślna)`, exact: true }).click();
 }
 async function preview() {
 	await page.locator('#uiScale').fill('110');
@@ -682,7 +684,7 @@ async function run() {
 				.locator('#fontFamily')
 				.textContent()
 				.then((v) => v.trim()),
-			'Domyślna'
+			'Merriweather (domyślna)'
 		);
 		await close();
 	}
@@ -727,7 +729,7 @@ async function run() {
 	await appearance();
 	assert.equal(await page.locator('#uiScale').inputValue(), '110');
 	await select('fontVariant', 'Medium — 500');
-	await select('fontFamily', 'Crimson Text');
+	await select('fontFamily', 'Barlow');
 	assert.match(await page.locator('#fontVariant').textContent(), /400/);
 	await save();
 	await dialog.waitFor({ state: 'hidden' });

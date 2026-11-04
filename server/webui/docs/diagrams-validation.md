@@ -82,7 +82,8 @@ Nie zmieniano `ChartFrame.svelte`, wyglądu/gradientów/danych wykresów, wersji
 
 Dev: dwa poziomy złożoności każdej rodziny, dwie tapety i różne fonty/rozmiary/wagi.
 W aktualnym zestawie **0 nierozwiązanych etykiet** — także złożony State z Fira Sans
-16px i Crimson Text 20px. Test nie pomija już kolizji złożonego State. Dodatkowe
+16px. Historyczny wynik dla wycofanej rodziny 20px nie jest walidacją nowego
+katalogu; aktualny fixture 20px używa Barlow. Test nie pomija kolizji złożonego State. Dodatkowe
 asercje sprawdzają centrowanie w obu osiach, zachowanie pięciu relacji przy wspólnym
 terminalu, natywny zaokrąglony root i grubsze łuki Mindmap, odstępy zewnętrznych nazw
 Gantta od belek/rombów, daty na granicy stycznia/lutego i brak podwójnego tytułu.

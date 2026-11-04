@@ -476,7 +476,7 @@ try {
 		.waitFor({ state: 'visible' });
 	await page.screenshot({ path: `${artifacts}/chart-active-tooltip.png` });
 	await settings({
-		fontFamily: 'crimson-text',
+		fontFamily: 'barlow',
 		fontSize: '20',
 		frostedGlassWallpaper: 'frosted-glass-02'
 	});
@@ -492,8 +492,8 @@ try {
 	await page.keyboard.press('Escape');
 	await settings({ fontFamily: 'fira-sans', fontSize: 'default' });
 	for (const [family, size, variant] of [
-		['crimson-text', '16', '600'],
-		['libre-caslon-condensed', '20', '400'],
+		['barlow', '16', '600'],
+		['inter', '20', '400'],
 		['fira-sans', 'default', '400']
 	]) {
 		await settings({ fontFamily: family, fontSize: size, fontVariant: variant });
@@ -652,7 +652,7 @@ try {
 	const geometry = [];
 	for (const [wallpaper, family, size] of [
 		['frosted-glass-02', 'fira-sans', '16'],
-		['frosted-glass-04', 'crimson-text', '20']
+		['frosted-glass-04', 'barlow', '20']
 	]) {
 		await setContent(complexSamples.map(([, source]) => fence(source)).join('\n\n'));
 		await settings({ frostedGlassWallpaper: wallpaper, fontFamily: family, fontSize: size });
@@ -765,7 +765,7 @@ try {
 		const { settings } = window.diagramTest;
 		window.diagramPreview = settings.beginPreview();
 		settings.updatePreview(window.diagramPreview, {
-			fontFamily: 'crimson-text',
+			fontFamily: 'barlow',
 			fontSize: '20',
 			fontVariant: '600'
 		});
@@ -794,11 +794,11 @@ try {
 		const { settings } = window.diagramTest;
 		window.diagramPreview = settings.beginPreview();
 		settings.updatePreview(window.diagramPreview, {
-			fontFamily: 'libre-caslon-condensed',
+			fontFamily: 'inter',
 			fontSize: '16'
 		});
 		settings.commitPreview(window.diagramPreview, {
-			fontFamily: 'libre-caslon-condensed',
+			fontFamily: 'inter',
 			fontSize: '16'
 		});
 	});
@@ -810,7 +810,7 @@ try {
 				.locator('text')
 				.first()
 				.evaluate((el) => getComputedStyle(el).fontFamily)
-		).includes('Libre Caslon')
+		).includes('Inter')
 	);
 	await page.evaluate(async () => {
 		const { SETTING_CONFIG_DEFAULT } = await import('/src/lib/constants/settings-config.ts');
@@ -954,7 +954,7 @@ try {
 	await setContent(fence(big));
 	await page.evaluate(async (latest) => {
 		const { conversations, settings } = window.diagramTest;
-		for (const family of ['crimson-text', 'libre-caslon-condensed', 'fira-sans'])
+		for (const family of ['barlow', 'inter', 'fira-sans'])
 			settings.updateConfig('fontFamily', family);
 		const message = conversations.activeMessages.find((m) => m.role === 'assistant');
 		conversations.updateMessageAtIndex(conversations.findMessageIndex(message.id), {

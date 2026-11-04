@@ -63,10 +63,16 @@ source-availability information with redistributions; this does not change llamp
 
 ## Local typefaces
 
-Merriweather, Frank Ruhl Libre, Crimson Text, Libre Caslon Condensed and Fira Sans
-are bundled locally under the SIL Open Font License 1.1. Their license
+Merriweather, Google Sans, Barlow, Inter, Fira Sans, Literata and Domine,
+plus Tinos as Merriweather's internal Greek fallback, are bundled locally under
+the SIL Open Font License 1.1. Their complete copyright and license
 texts, source/version records and WOFF2 inventory are in `server/webui/static/fonts/`.
 See that directory's `README.md` and `sources.json`; no runtime font CDN is used.
+
+Google Sans is the official v14.000 family, not Google Sans Flex. Its original
+trademark notice is retained in `google-sans-TRADEMARKS.txt`; llampart is not
+affiliated with or endorsed by Google. Original RFNs and compression-only
+conversions are documented alongside the assets. The application remains MIT.
 
 The mathematical typefaces shipped with **KaTeX 0.18.2** are also distributed
 locally, embedded as WOFF2 data in the generated CSS. They are licensed under

@@ -306,7 +306,7 @@ try {
 
 	const saved = await page.evaluate(() => localStorage.getItem('LlamaCppWebui.config'));
 	await openSettings();
-	await select('fontFamily', 'Crimson Text');
+	await select('fontFamily', 'Barlow');
 	await page.locator('#uiScale').fill('110');
 	await page.getByRole('button', { name: 'Frosted Glass 05', exact: true }).click();
 	await page.locator('#frostedGlassMilkiness').fill('17');
@@ -615,7 +615,7 @@ try {
 		return frames.length === 6 && frames.every((frame) => frame.querySelector('.lc-layout-svg'));
 	});
 	await openSettings();
-	await select('fontFamily', 'Crimson Text');
+	await select('fontFamily', 'Barlow');
 	await page.getByRole('button', { name: 'Frosted Glass 05', exact: true }).click();
 	await page.getByLabel('Wyłącz przezroczystość', { exact: true }).check();
 	await dialog.getByRole('button', { name: 'Zapisz ustawienia', exact: true }).click();

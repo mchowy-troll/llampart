@@ -54,7 +54,7 @@ await page.addInitScript(() => {
 			llamaServerBaseUrl: 'http://diagrams.test',
 			theme: 'frosted-glass',
 			interfaceLanguage: 'pl',
-			fontFamily: 'crimson-text',
+			fontFamily: 'barlow',
 			fontVariant: '600',
 			fontSize: '16',
 			titleGenerationUseLLM: false,
@@ -170,7 +170,7 @@ try {
 					family: getComputedStyle(n).fontFamily,
 					size: parseFloat(getComputedStyle(n).fontSize)
 				}));
-				assert(style.family.includes('Crimson Text'), `${type} ${role}: ${style.family}`);
+				assert(style.family.includes('Barlow'), `${type} ${role}: ${style.family}`);
 				assert.equal(
 					style.size,
 					type === 'gantt' ? labelSize + 1 : role === 'edge' ? labelSize : bodySize,
@@ -188,7 +188,7 @@ try {
 			weight: getComputedStyle(n).fontWeight,
 			medium: getComputedStyle(n).getPropertyValue('--llampart-font-medium').trim() || '500'
 		}));
-		assert(titleStyle.family.includes('Crimson Text'));
+		assert(titleStyle.family.includes('Barlow'));
 		assert.equal(titleStyle.size, bodySize, `${type}: header inherits body typography`);
 		assert.equal(titleStyle.weight, titleStyle.medium, `${type}: header uses medium token`);
 		await frame.getByRole('button', { name: 'Podgląd diagramu', exact: true }).click();

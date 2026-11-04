@@ -16,6 +16,7 @@ import {
 	importApplicationSettings
 } from '$lib/utils/settings-import-export';
 import { parseSettingsStorage } from '$lib/utils/settings-schema';
+import { FONT_CATALOG, RETIRED_FONT_IDS, type FontFamilyId } from '$lib/constants/typography';
 import {
 	CUSTOM_FROSTED_GLASS_WALLPAPER_LOCALSTORAGE_KEY,
 	CUSTOM_FROSTED_GLASS_WALLPAPER_ID,
@@ -64,7 +65,57 @@ afterEach(() => {
 });
 
 // These tests use the production store with a Map-backed localStorage, not a browser.
+function importFontPatch(settings: Record<string, unknown>) {
+	importApplicationSettings(
+		JSON.stringify({ type: 'llampart-settings-export', formatVersion: 1, settings })
+	);
+	settingsStore.initialize();
+}
 describe('settings preview with mock storage', () => {
+	it.each(Object.keys(FONT_CATALOG) as FontFamilyId[])(
+		'previews/cancels/saves/reloads/imports %s through the real store',
+		(fontFamily) => {
+			const before = storage.get(CONFIG_LOCALSTORAGE_KEY);
+			let session = settingsStore.beginPreview();
+			settingsStore.updatePreview(session, { fontFamily, fontVariant: '700' });
+			expect(settingsStore.appearanceConfig.fontFamily).toBe(fontFamily);
+			expect(storage.get(CONFIG_LOCALSTORAGE_KEY)).toBe(before);
+			settingsStore.cancelPreview(session);
+			expect(config().fontFamily).toBe('merriweather');
+			session = settingsStore.beginPreview();
+			expect(settingsStore.commitPreview(session, { fontFamily, fontVariant: '700' })).toEqual({
+				ok: true
+			});
+			settingsStore.initialize();
+			expect(config()).toMatchObject({ fontFamily, fontVariant: '700' });
+			importFontPatch({ fontFamily, fontVariant: '500', fontSize: '18' });
+			settingsStore.initialize();
+			expect(config()).toMatchObject({ fontFamily, fontVariant: '500', fontSize: '18' });
+		}
+	);
+	it.each(RETIRED_FONT_IDS)(
+		'migrates persisted and imported %s without dropping other preferences',
+		(fontFamily) => {
+			storage.set(
+				CONFIG_LOCALSTORAGE_KEY,
+				JSON.stringify({ fontFamily, fontVariant: '600', fontSize: '19', temperature: 0.3 })
+			);
+			settingsStore.initialize();
+			expect(config()).toMatchObject({
+				fontFamily: 'merriweather',
+				fontVariant: '600',
+				fontSize: '19',
+				temperature: 0.3
+			});
+			importFontPatch({ fontFamily, fontVariant: '700', fontSize: '18' });
+			expect(config()).toMatchObject({
+				fontFamily: 'merriweather',
+				fontVariant: '700',
+				fontSize: '18',
+				temperature: 0.3
+			});
+		}
+	);
 	it.each(['llama-server', 'vllm', 'openai-compatible'] as const)(
 		'saves appearance and an unreachable %s profile without HTTP or a false connected status',
 		async (provider) => {
@@ -402,20 +453,20 @@ describe('settings preview with mock storage', () => {
 	it('keeps server-default synchronization stable instead of replacing its reactive dependency', () => {
 		serverStore.props = {
 			default_generation_settings: { params: { temperature: 0.8, top_p: 0.95 } },
-			ui_settings: { fontFamily: 'crimson-text', fontVariant: '500' }
+			ui_settings: { fontFamily: 'barlow', fontVariant: '350' }
 		} as unknown as ApiLlamaCppServerProps;
 		const committed = settingsStore.config;
 		const session = settingsStore.beginPreview();
 		settingsStore.updatePreview(session, { uiScale: '110' });
 		settingsStore.syncWithServerDefaults();
 		expect(settingsStore.config).toBe(committed);
-		expect(config()).toMatchObject({ fontFamily: 'crimson-text', fontVariant: '400' });
+		expect(config()).toMatchObject({ fontFamily: 'barlow', fontVariant: '400' });
 		settingsStore.syncWithServerDefaults();
 		expect(settingsStore.config).toBe(committed);
 		expect(settingsStore.appearanceConfig.uiScale).toBe('110');
 		expect(parseSettingsStorage(storage.get(CONFIG_LOCALSTORAGE_KEY)!)).toMatchObject({
 			uiScale: '100',
-			fontFamily: 'crimson-text',
+			fontFamily: 'barlow',
 			fontVariant: '400'
 		});
 	});
@@ -428,8 +479,8 @@ describe('settings preview with mock storage', () => {
 		const appearance = {
 			theme: 'frosted-glass',
 			uiScale: '110',
-			fontFamily: 'crimson-text',
-			fontVariant: '500',
+			fontFamily: 'barlow',
+			fontVariant: '350',
 			fontSize: '20',
 			frostedGlassWallpaper: 'frosted-glass-05',
 			frostedGlassMilkiness: 12,
@@ -473,7 +524,7 @@ describe('settings preview with mock storage', () => {
 		const session = settingsStore.beginPreview();
 		const patch = {
 			uiScale: '105',
-			fontFamily: 'frank-ruhl-libre',
+			fontFamily: 'google-sans',
 			fontSize: '16',
 			fontVariant: '600',
 			keepStatsVisible: true
@@ -543,7 +594,7 @@ describe('settings preview with mock storage', () => {
 	it('exports only committed configuration while a different font is previewed', async () => {
 		settingsStore.updateMultipleConfig({ fontFamily: 'merriweather', fontVariant: '700' });
 		const session = settingsStore.beginPreview();
-		settingsStore.updatePreview(session, { fontFamily: 'crimson-text', fontSize: '19' });
+		settingsStore.updatePreview(session, { fontFamily: 'barlow', fontSize: '19' });
 		let exported: Blob | undefined;
 		const create = vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
 			exported = blob as Blob;
@@ -673,16 +724,16 @@ describe('contextual font normalization through store entry points', () => {
 	}
 
 	it('normalizes unsupported weights and preserves supported weights on family-only changes', () => {
-		settingsStore.updateConfig('fontFamily', 'crimson-text');
-		settingsStore.updateConfig('fontVariant', '500');
-		expectFont('crimson-text', '400');
+		settingsStore.updateConfig('fontFamily', 'barlow');
+		settingsStore.updateConfig('fontVariant', '350');
+		expectFont('barlow', '400');
 		settingsStore.updateMultipleConfig({ fontFamily: 'merriweather', fontVariant: '700' });
 		expectFont('merriweather', '700');
-		settingsStore.updateConfig('fontFamily', 'frank-ruhl-libre');
-		expectFont('frank-ruhl-libre', '700');
+		settingsStore.updateConfig('fontFamily', 'google-sans');
+		expectFont('google-sans', '700');
 		const session = settingsStore.beginPreview();
-		settingsStore.updatePreview(session, { fontFamily: 'crimson-text' });
-		settingsStore.updatePreview(session, { fontVariant: '500' });
+		settingsStore.updatePreview(session, { fontFamily: 'barlow' });
+		settingsStore.updatePreview(session, { fontVariant: '350' });
 		expect(settingsStore.appearanceConfig.fontVariant).toBe('400');
 	});
 
@@ -693,11 +744,11 @@ describe('contextual font normalization through store entry points', () => {
 			);
 			settingsStore.initialize();
 		};
-		settingsStore.updateConfig('fontFamily', 'crimson-text');
-		importPatch({ fontVariant: '500' });
-		expectFont('crimson-text', '400');
+		settingsStore.updateConfig('fontFamily', 'barlow');
+		importPatch({ fontVariant: '350' });
+		expectFont('barlow', '400');
 		importPatch({ fontFamily: 'merriweather', fontVariant: '700' });
-		importPatch({ fontFamily: 'frank-ruhl-libre' });
-		expectFont('frank-ruhl-libre', '700');
+		importPatch({ fontFamily: 'google-sans' });
+		expectFont('google-sans', '700');
 	});
 });

@@ -7,6 +7,7 @@
 		normalizeFontVariant
 	} from '$lib/utils/typography';
 	import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
+	import { FONT_CATALOG } from '$lib/constants/typography';
 	import {
 		Settings,
 		Code,
@@ -305,18 +306,12 @@
 							order: 1,
 							label: t('settings.fieldFontFamily'),
 							type: SettingsFieldType.SELECT,
-							options: [
-								{ value: 'merriweather', label: 'Merriweather' },
-								{ value: 'frank-ruhl-libre', label: 'Frank Ruhl Libre' },
-								{ value: 'crimson-text', label: 'Crimson Text' },
-								{ value: 'libre-caslon-condensed', label: 'Libre Caslon Condensed' },
-								{ value: 'fira-sans', label: 'Fira Sans' }
-							].map((option) => ({
-								...option,
+							options: Object.entries(FONT_CATALOG).map(([value, { label }]) => ({
+								value,
 								label:
-									option.value === SETTING_CONFIG_DEFAULT.fontFamily
-										? t('settings.fontDefault').replace('{font}', option.label)
-										: option.label
+									value === SETTING_CONFIG_DEFAULT.fontFamily
+										? t('settings.fontDefault').replace('{font}', label)
+										: label
 							}))
 						},
 						{

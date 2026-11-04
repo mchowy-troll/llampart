@@ -233,7 +233,7 @@ describe('settings JSON import/export compatibility', () => {
 				CONFIG_LOCALSTORAGE_KEY,
 				serializeSettingsStorage({
 					...SETTING_CONFIG_DEFAULT,
-					fontFamily: 'crimson-text',
+					fontFamily: 'barlow',
 					fontVariant: '600',
 					fontSize: '20'
 				})
@@ -250,7 +250,7 @@ describe('settings JSON import/export compatibility', () => {
 				settings: storedFont
 			});
 			settingsStore.updateMultipleConfig({
-				fontFamily: 'crimson-text',
+				fontFamily: 'barlow',
 				fontVariant: '600',
 				fontSize: '20'
 			});
