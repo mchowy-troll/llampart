@@ -1,5 +1,131 @@
 import assert from 'node:assert/strict';
 
+/** UI transparency is separate from the downloaded image's alpha below.
+ * Code tooltips are real, out-of-hitbox pseudo elements, not button surfaces. */
+export async function assertTextActionStyles(page, button) {
+	const states = {};
+	for (const state of ['rest', 'hover', 'focus', 'active']) {
+		await page.mouse.move(0, 0);
+		await page.evaluate(() => document.activeElement?.blur());
+		await button.scrollIntoViewIfNeeded();
+		if (state === 'hover' || state === 'active') await button.hover();
+		if (state === 'active') await page.mouse.down();
+		if (state === 'focus') {
+			await button.focus();
+			await page.keyboard.press('Tab');
+			await page.keyboard.press('Shift+Tab');
+		}
+		try {
+			const measured = await button.evaluate(async (el) => {
+				await document.fonts.ready;
+				await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+				await Promise.all(el.getAnimations().map((animation) => animation.finished));
+				const css = getComputedStyle(el);
+				const box = el.getBoundingClientRect();
+				return {
+					...Object.fromEntries(
+						[
+							'backgroundColor',
+							'backgroundImage',
+							'boxShadow',
+							'backdropFilter',
+							'filter',
+							'borderRadius',
+							'height',
+							'padding',
+							'fontFamily',
+							'fontSize',
+							'fontWeight',
+							'lineHeight',
+							'textDecorationLine',
+							'outlineStyle',
+							'transitionDuration'
+						].map((key) => [key, css[key]])
+					),
+					width: box.width,
+					rootSize: parseFloat(getComputedStyle(document.documentElement).fontSize),
+					borders: ['Top', 'Right', 'Bottom', 'Left'].map((side) => ({
+						width: css[`border${side}Width`],
+						color: css[`border${side}Color`],
+						style: css[`border${side}Style`]
+					})),
+					classes: [...el.classList],
+					focused: document.activeElement === el,
+					focusVisible: el.matches(':focus-visible'),
+					hover: el.matches(':hover'),
+					active: el.matches(':active'),
+					tooltip: el.dataset.llampartCodeTooltip,
+					pseudo: ['::before', '::after'].map((pseudo) => {
+						const s = getComputedStyle(el, pseudo);
+						return {
+							pseudo,
+							content: s.content,
+							top: s.top,
+							position: s.position,
+							pointerEvents: s.pointerEvents,
+							background: s.backgroundColor
+						};
+					})
+				};
+			});
+			states[state] = measured;
+			assert(measured.classes.includes('llampart-button-text-action'));
+			assert(!measured.classes.some((name) => name.includes('backdrop-blur-')));
+			assert.equal(measured.backgroundColor, 'rgba(0, 0, 0, 0)', state);
+			assert.equal(measured.backgroundImage, 'none', state);
+			assert.equal(measured.boxShadow, 'none', state);
+			assert.equal(measured.backdropFilter, 'none', state);
+			assert.equal(measured.filter, 'none', state);
+			assert(
+				measured.borders.every(
+					(b) => b.width === '0px' || b.style === 'none' || b.color === 'rgba(0, 0, 0, 0)'
+				),
+				state
+			);
+			assert.equal(parseFloat(measured.height), measured.rootSize * 1.75, 'existing hitbox height');
+			assert.equal(
+				measured.padding,
+				`${Number((measured.rootSize * 0.25).toFixed(6))}px ${Number((measured.rootSize * 0.4).toFixed(6))}px`
+			);
+			assert(measured.width > 0);
+			if (state !== 'rest') assert.equal(measured.width, states.rest.width, 'stable hitbox width');
+			if (state === 'focus') {
+				assert(measured.focused && measured.focusVisible, 'actual keyboard focus-visible');
+				assert(measured.textDecorationLine.includes('underline'), 'visible text focus indicator');
+			}
+			if (state === 'hover' || state === 'active') assert(measured.hover);
+			if (state === 'active') assert(measured.active, 'measure while mouse is down');
+			for (const pseudo of measured.pseudo) {
+				if (pseudo.content === 'none' || pseudo.content === 'normal') continue;
+				assert(
+					(measured.tooltip && measured.hover) || (measured.tooltip && measured.focusVisible),
+					'only the existing code tooltip may generate pseudo content'
+				);
+				assert.equal(pseudo.position, 'absolute');
+				assert.equal(pseudo.pointerEvents, 'none');
+				assert(parseFloat(pseudo.top) >= parseFloat(measured.height), 'tooltip outside hitbox');
+				if (pseudo.pseudo === '::after')
+					assert.equal(pseudo.content, JSON.stringify(measured.tooltip));
+			}
+			if (measured.tooltip && (state === 'hover' || state === 'focus')) {
+				assert.equal(
+					measured.pseudo[1].content,
+					JSON.stringify(measured.tooltip),
+					'export tooltip'
+				);
+			}
+		} finally {
+			if (state === 'active') {
+				await page.mouse.move(0, 0);
+				await page.mouse.up();
+			}
+		}
+	}
+	await page.mouse.move(0, 0);
+	await page.evaluate(() => document.activeElement?.blur());
+	return states;
+}
+
 /** Inspect actual downloaded bytes in Chromium, not file-name/source heuristics.
  * Both formats must rasterize with alpha=0 at all four canvas corners while
  * retaining visible artwork. SVG additionally has no full-document paint rect. */

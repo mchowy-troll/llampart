@@ -943,8 +943,12 @@
 				)?.textContent;
 				const { label } = codeFileFormat(language ?? '');
 				downloadButton.textContent = label;
-				downloadButton.classList.add(
+				// Reconciled HTML may already carry the old ghost variant, including its blur.
+				downloadButton.classList.remove(
 					...buttonVariants({ variant: 'ghost', size: 'sm' }).split(' ')
+				);
+				downloadButton.classList.add(
+					...buttonVariants({ variant: 'text-action', size: 'sm' }).split(' ')
 				);
 				downloadButton.dataset.slot = 'button';
 				const description = t('common.downloadCode').replace('{format}', label);
@@ -1025,7 +1029,8 @@
 		for (const button of [...copyButtons, ...csvButtons]) {
 			const isCsv = button.matches(MARKDOWN_PRESENTATION_SELECTORS.tableCsvButton);
 			if (isCsv) {
-				button.classList.add(...buttonVariants({ variant: 'ghost', size: 'sm' }).split(' '));
+				button.classList.remove(...buttonVariants({ variant: 'ghost', size: 'sm' }).split(' '));
+				button.classList.add(...buttonVariants({ variant: 'text-action', size: 'sm' }).split(' '));
 				button.dataset.slot = 'button';
 			}
 			const label = isCsv ? t('common.exportTableCsv') : t('common.copyTable');
@@ -2126,7 +2131,7 @@
 		transition: none;
 	}
 
-	/* Ghost styling comes from the shared Button primitive; export sizing is shared with charts. */
+	/* Text action styling comes from the shared Button primitive; sizing is shared with charts. */
 	div :global(.table-csv-button) {
 		cursor: pointer;
 	}

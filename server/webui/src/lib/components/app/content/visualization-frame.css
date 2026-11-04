@@ -62,29 +62,6 @@
 	transition: none;
 }
 
-/* Export labels opt out of both ghost blur and theme glass. Transparency alone
- * still paints a capsule over a textured backdrop. Do not change hitboxes. */
-:is(.format-export-action, .table-csv-button, .download-code-btn),
-:is(.format-export-action, .table-csv-button, .download-code-btn):is(
-	:hover,
-	:focus-visible,
-	:active
-) {
-	background: transparent !important;
-	border-color: transparent !important;
-	box-shadow: none !important;
-	backdrop-filter: none !important;
-	-webkit-backdrop-filter: none !important;
-	filter: none !important;
-}
-:is(.format-export-action, .table-csv-button, .download-code-btn)::before,
-:is(.format-export-action, .table-csv-button, .download-code-btn)::after {
-	content: none !important;
-}
-:is(.format-export-action, .table-csv-button, .download-code-btn):focus-visible {
-	outline: 2px solid currentColor;
-	outline-offset: 2px;
-}
 .visualization-actions .visualization-preview-action:is(:hover, :focus-visible, :active) {
 	background: transparent;
 	color: inherit;

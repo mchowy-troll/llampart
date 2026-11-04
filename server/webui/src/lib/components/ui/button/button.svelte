@@ -13,6 +13,8 @@
 				outline: 'bg-background shadow-xs hover:bg-accent hover:text-accent-foreground border',
 				secondary: 'bg-background shadow-sm text-foreground hover:bg-muted-foreground/20',
 				ghost: 'hover:text-accent-foreground hover:bg-muted-foreground/10 backdrop-blur-sm',
+				'text-action':
+					'llampart-button-text-action border-0 bg-transparent bg-none underline-offset-4 hover:text-accent-foreground focus-visible:border-transparent focus-visible:underline focus-visible:ring-0',
 				'bare-icon':
 					'llampart-button-bare-icon border-0 bg-transparent shadow-none outline-none ring-0 transition-none animate-none hover:bg-transparent hover:shadow-none focus:bg-transparent focus:outline-none focus:ring-0 focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0 active:bg-transparent active:shadow-none',
 				link: 'text-primary underline-offset-4 hover:underline'
@@ -86,6 +88,12 @@
 	a,
 	button {
 		cursor: pointer;
+	}
+
+	/* Text actions never paint the base Button ring, including a transparent ring-0 shadow.
+	 * Keep this shared with buttonVariants consumers in generated Markdown HTML. */
+	:global(.llampart-button-text-action) {
+		box-shadow: none;
 	}
 
 	/* Shared bare icon action primitive: no button surface, focus ring, or motion in any interaction state. */

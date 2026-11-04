@@ -4,6 +4,7 @@
  */
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { assertTextActionStyles, assertTransparentExport } from './export-transparency.mjs';
 
 const { chromium } = await import(process.env.LLAMPART_PLAYWRIGHT_MODULE);
 const artifacts = process.env.LLAMPART_TEST_ARTIFACTS || '/tmp/opencode/llampart-code-blocks';
@@ -44,7 +45,10 @@ const chart =
 		title: 'Kontrola',
 		xKey: 'x',
 		series: [{ key: 'y', label: 'Wartość' }],
-		data: [{ x: 'Łódź', y: 42 }]
+		data: [
+			{ x: 'Łódź', y: 42 },
+			{ x: 'Kraków', y: 21 }
+		]
 	}) +
 	'\n```';
 const content =
@@ -52,9 +56,8 @@ const content =
 	samples.map(([language, , , source]) => `\`\`\`${language}\n${source}\n\`\`\``).join('\n\n') +
 	'\n\n| Miasto | Liczba |\n|---|---|\n| Łódź | 42 |\n\n' +
 	chart +
-	'\n\n```mermaid\nflowchart LR\n A[Start] --> B[Koniec]\n```\n\nKoniec.';
+	'\n\n```mermaid\nflowchart LR\n A[Start] --> B[Koniec]\n```\n\n\\[x^2+\\frac{1}{2}\\]\n\nKoniec.';
 const reports = [];
-const surfaceBaseline = process.env.LLAMPART_EXPORT_BASELINE === '1';
 
 try {
 	for (const fullHeight of [false, true]) {
@@ -84,6 +87,7 @@ try {
 						llamaServerBaseUrl: 'http://code.test',
 						interfaceLanguage: 'pl',
 						theme: 'frosted-glass',
+						frostedGlassOpaque: fullHeight,
 						fontFamily,
 						fontVariant: '400',
 						fullHeightCodeBlocks: fullHeight,
@@ -96,12 +100,13 @@ try {
 			},
 			{ fullHeight, fontFamily }
 		);
+		let responseContent = content;
 		await page.route('**/__llampart/api/**', (route) => {
 			const path = new URL(route.request().url()).pathname;
 			if (path.endsWith('/chat/completions'))
 				return route.fulfill({
 					contentType: 'text/event-stream',
-					body: `data: ${JSON.stringify({ choices: [{ delta: { content, reasoning_content: '```python\nprint("Myślenie Łódź")\n```' } }] })}\n\ndata: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n`
+					body: `data: ${JSON.stringify({ choices: [{ delta: { content: responseContent, reasoning_content: '```python\nprint("Myślenie Łódź")\n```' } }] })}\n\ndata: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n`
 				});
 			return route.fulfill({
 				json: path.endsWith('/props')
@@ -116,18 +121,24 @@ try {
 			});
 		});
 		await page.goto(process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40138');
-		await page.waitForFunction(async () => {
-			const { modelsStore } = await import('/src/lib/stores/models.svelte.ts');
-			return modelsStore.capabilitySnapshot?.model === 'code.gguf';
-		});
 		await page.locator('textarea').first().fill('Pokaż kod');
+		await page.waitForFunction(
+			() => document.querySelector('.llampart-composer-send-button')?.disabled === false
+		);
 		await page.locator('textarea').first().press('Enter');
-		await page.screenshot({ path: `${artifacts}/sent-${fullHeight}.png` });
 		const assistant = page.locator('.llampart-assistant-markdown').first();
 		const blocks = assistant.locator('.code-block-wrapper');
 		await blocks.nth(6).locator('.download-code-btn[data-listener-bound=true]').waitFor();
 		await assistant.locator('.llampart-chart-frame svg').first().waitFor();
 		await assistant.locator('.llampart-diagram-frame svg').first().waitFor();
+		await assistant.locator('.llampart-math-frame .format-export-action').last().waitFor();
+		await page.locator('.llampart-composer-stop-action').waitFor({ state: 'hidden' });
+		assert.equal(
+			await page
+				.locator('html')
+				.evaluate((el) => el.classList.contains('has-frosted-glass-opaque')),
+			fullHeight
+		);
 		assert.equal(await blocks.count(), samples.length);
 		async function download(button, filename, expected, key) {
 			const pending = page.waitForEvent('download');
@@ -165,7 +176,7 @@ try {
 				label: getComputedStyle(el.querySelector('.code-language')).color,
 				font: getComputedStyle(el.querySelector('code')).fontFamily
 			}));
-			assert.equal(style.background, 'rgba(34, 40, 49, 0.9)');
+			assert.equal(style.background, fullHeight ? 'rgb(34, 40, 49)' : 'rgba(34, 40, 49, 0.9)');
 			assert.equal(style.backdrop, 'none');
 			assert.equal(style.label, 'rgb(230, 237, 243)');
 			assert(
@@ -212,96 +223,45 @@ try {
 		}
 		const codeButton = blocks.first().locator('.download-code-btn');
 		const chartButton = assistant.locator('.chart-actions button').filter({ hasText: /^CSV$/ });
-		async function style(button, state) {
-			await page.mouse.move(0, 0);
-			await page.evaluate(() => document.activeElement?.blur());
-			await button.scrollIntoViewIfNeeded();
-			if (state === 'hover') await button.hover();
-			if (state === 'focus') {
-				await page.keyboard.press('Tab');
-				await button.focus();
-			}
-			return button.evaluate(async (el) => {
-				await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-				await Promise.all(el.getAnimations().map((animation) => animation.finished));
-				const css = getComputedStyle(el);
-				return Object.fromEntries(
-					[
-						'backgroundColor',
-						'borderRadius',
-						'height',
-						'padding',
-						'fontFamily',
-						'fontSize',
-						'fontWeight',
-						'lineHeight',
-						'transitionProperty',
-						'transitionDuration',
-						'transitionTimingFunction',
-						'backdropFilter',
-						'outlineStyle',
-						'boxShadow',
-						'transform'
-					].map((key) => [key, css[key]])
-				);
-			});
-		}
-		const states = {};
-		for (const state of ['rest', 'hover', 'focus']) {
-			const reference = await style(chartButton, state);
-			states[state] = await style(codeButton, state);
-			assert.deepEqual(states[state], reference, `Shared chart/code action style: ${state}`);
-		}
-		if (!surfaceBaseline) assert.equal(states.hover.backgroundColor, 'rgba(0, 0, 0, 0)');
-		assert.notEqual(states.hover.transitionDuration, '0s');
-		assert.notEqual(states.focus.boxShadow, 'none');
 		const formatStates = [];
 		const formatButtons = assistant.locator(
 			'.format-export-action, .table-csv-button, .download-code-btn'
 		);
 		for (const button of await formatButtons.all()) {
 			const label = (await button.innerText()).trim();
-			const measured = {};
-			for (const state of ['rest', 'hover', 'focus', 'active']) {
-				measured[state] = await style(button, state === 'active' ? 'hover' : state);
-				if (state === 'active') {
-					await page.mouse.down();
-					measured[state] = await button.evaluate((el) => {
-						const css = getComputedStyle(el);
-						return { backgroundColor: css.backgroundColor, boxShadow: css.boxShadow };
-					});
-					await page.mouse.move(0, 0);
-					await page.mouse.up();
-				}
-				if (!surfaceBaseline) {
-					assert.equal(measured[state].backgroundColor, 'rgba(0, 0, 0, 0)', `${label} ${state}`);
-					const borders = await button.evaluate((el) => {
-						const s = getComputedStyle(el);
-						return ['Top', 'Right', 'Bottom', 'Left'].map((side) => [
-							s[`border${side}Width`],
-							s[`border${side}Color`]
-						]);
-					});
-					assert(
-						borders.every(([width, color]) => width === '0px' || color === 'rgba(0, 0, 0, 0)')
-					);
-					if (state === 'rest' || state === 'hover')
-						assert.equal(measured[state].boxShadow, 'none');
-				}
-			}
+			const measured = await assertTextActionStyles(page, button);
 			formatStates.push({ label, measured });
 		}
 		assert.deepEqual(
 			formatStates.map(({ label }) => label),
-			['PY', 'JS', 'HTML', 'TXT', 'TXT', 'TS', 'MD', 'CSV', 'PNG', 'SVG', 'CSV', 'PNG', 'SVG']
+			[
+				'PY',
+				'JS',
+				'HTML',
+				'TXT',
+				'TXT',
+				'TS',
+				'MD',
+				'CSV',
+				'PNG',
+				'SVG',
+				'CSV',
+				'PNG',
+				'SVG',
+				'PNG',
+				'SVG'
+			]
 		);
 		for (const frame of [
 			assistant.locator('.llampart-chart-frame'),
-			assistant.locator('.llampart-diagram-frame')
+			assistant.locator('.llampart-diagram-frame'),
+			assistant.locator('.llampart-math-frame')
 		]) {
 			for (const format of ['PNG', 'SVG']) {
 				const pending = page.waitForEvent('download');
-				await frame.getByRole('button', { name: new RegExp(` ${format}$`) }).click();
+				await frame
+					.getByRole('button', { name: new RegExp(` ${format}$`) })
+					.press(format === 'PNG' ? 'Space' : 'Enter');
 				const file = await pending;
 				assert(file.suggestedFilename().endsWith(`.${format.toLowerCase()}`));
 				const path = `${artifacts}/${fullHeight}-${file.suggestedFilename()}`;
@@ -309,12 +269,30 @@ try {
 				const bytes = await readFile(path);
 				if (format === 'PNG') assert.equal(bytes.subarray(1, 4).toString(), 'PNG');
 				else assert.match(bytes.toString(), /<svg[\s>]/);
+				await assertTransparentExport(page, bytes, format);
 			}
-			await frame.locator('.visualization-preview-action').click();
+			await frame.locator('.visualization-preview-action').last().click();
 			await page.locator('[role="dialog"]').waitFor();
 			await page.keyboard.press('Escape');
 		}
 		await codeButton.hover();
+		assert.equal(
+			await codeButton.evaluate((el) => getComputedStyle(el, '::after').content),
+			'"Pobierz kod jako PY"'
+		);
+		for (const selector of ['.copy-code-btn', '.preview-code-btn']) {
+			const icon = blocks.nth(2).locator(selector);
+			await icon.hover();
+			assert.equal(
+				await icon.evaluate((el) => getComputedStyle(el, '::after').content),
+				JSON.stringify(await icon.getAttribute('data-llampart-code-tooltip'))
+			);
+		}
+		await assistant.locator('.chart-actions .format-export-action').first().hover();
+		await page
+			.locator('[data-slot="tooltip-content"]')
+			.filter({ hasText: 'Eksportuj wykres jako PNG' })
+			.waitFor();
 		await page.screenshot({ path: `${artifacts}/code-hover-${fullHeight}.png` });
 		await blocks.nth(2).locator('.preview-code-btn').click();
 		await page.locator('[role="dialog"]').waitFor();
@@ -324,7 +302,11 @@ try {
 			'table-1.csv',
 			'\uFEFFMiasto,Liczba\r\nŁódź,42\r\n'
 		);
-		await download(chartButton, 'chart-Kontrola.csv', '\uFEFFx,Wartość\r\nŁódź,42\r\n');
+		await download(
+			chartButton,
+			'chart-Kontrola.csv',
+			'\uFEFFx,Wartość\r\nŁódź,42\r\nKraków,21\r\n'
+		);
 		const reasoning = page.locator('.llampart-agentic-panel').first();
 		await reasoning.locator('button[aria-expanded]').click();
 		const reasoningCode = reasoning.locator('pre code');
@@ -344,53 +326,145 @@ try {
 			'print("Myślenie Łódź")\n'
 		);
 		await reasoning.locator('button[aria-expanded]').click();
-		if (!process.env.LLAMPART_TEST_PRODUCTION) {
-			async function update(content) {
-				await page.evaluate(async (content) => {
-					const { conversations } = await import('/tests/browser/charts-harness.ts');
-					const message = conversations.activeMessages.find(
-						(message) => message.role === 'assistant'
-					);
-					conversations.updateMessageAtIndex(conversations.findMessageIndex(message.id), {
-						content
-					});
-				}, content);
+		// Same real ChatService stream/finalization in dev and production, no source imports.
+		await page.evaluate(() => {
+			const original = window.fetch;
+			window.fetch = (input, init) => {
+				const url =
+					typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+				if (!url.includes('/chat/completions')) return original(input, init);
+				const encoder = new TextEncoder();
+				return Promise.resolve(
+					new Response(
+						new ReadableStream({
+							start(controller) {
+								window.codeToken = (content) =>
+									controller.enqueue(
+										encoder.encode(
+											`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`
+										)
+									);
+								window.finishCode = () => {
+									controller.enqueue(
+										encoder.encode(
+											'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'
+										)
+									);
+									controller.close();
+									window.fetch = original;
+								};
+							}
+						}),
+						{ headers: { 'Content-Type': 'text/event-stream' } }
+					)
+				);
+			};
+		});
+		await page.locator('textarea').first().fill('Strumień kodu');
+		await page.locator('textarea').first().press('Enter');
+		await page.waitForFunction(() => typeof window.codeToken === 'function');
+		await page.evaluate(() =>
+			window.codeToken('```js\nconst first = 1;\n```\n\n```python\nprint("Strumień')
+		);
+		const streaming = page.locator('.llampart-assistant-markdown').last();
+		const pending = streaming.locator('.streaming-code-block .download-code-btn');
+		await pending.waitFor();
+		assert(await pending.isDisabled());
+		const disabled = await pending.evaluate((el) => ({
+			classes: [...el.classList],
+			pointerEvents: getComputedStyle(el).pointerEvents,
+			opacity: getComputedStyle(el).opacity,
+			height: el.getBoundingClientRect().height,
+			backdrop: getComputedStyle(el).backdropFilter
+		}));
+		assert(disabled.classes.includes('llampart-button-text-action'));
+		assert(!disabled.classes.includes('backdrop-blur-sm'));
+		assert.equal(disabled.pointerEvents, 'none');
+		assert.equal(disabled.opacity, '0.5');
+		assert.equal(disabled.backdrop, 'none');
+		let disabledDownloads = 0;
+		const onDownload = () => disabledDownloads++;
+		page.on('download', onDownload);
+		await pending.evaluate((el) => el.click());
+		await page.keyboard.press('Tab');
+		assert(await pending.evaluate((el) => document.activeElement !== el));
+		await page.evaluate(() => {
+			window.codeToken(' Łódź")\n```');
+			window.finishCode();
+		});
+		await page.locator('.llampart-composer-stop-action').waitFor({ state: 'hidden' });
+		await streaming.locator('.streaming-code-block').waitFor({ state: 'hidden' });
+		assert.equal(disabledDownloads, 0);
+		page.off('download', onDownload);
+		const finalized = streaming.locator('.download-code-btn').nth(1);
+		assert(await finalized.isEnabled());
+		assert.equal(
+			await finalized.evaluate((el) => el.getBoundingClientRect().height),
+			disabled.height
+		);
+		await assertTextActionStyles(page, finalized);
+		await download(finalized, 'code-block-2.py', 'print("Strumień Łódź")\n', 'Enter');
+		const longSource = 'const x = "' + 'x'.repeat(300) + '";\n' + '// Łódź\n'.repeat(100);
+		responseContent = '```js\n' + longSource + '```';
+		await page.locator('textarea').first().fill('Długi kod');
+		await page.locator('textarea').first().press('Enter');
+		const longBlock = page
+			.locator('.llampart-assistant-markdown')
+			.last()
+			.locator('.code-block-wrapper');
+		await longBlock.locator('code').filter({ hasText: 'const x' }).waitFor();
+		const geometry = await longBlock.locator('.code-block-scroll-container').evaluate((el) => ({
+			maxHeight: getComputedStyle(el).maxHeight,
+			width: el.clientWidth,
+			scrollWidth: el.scrollWidth,
+			height: el.clientHeight
+		}));
+		assert.equal(geometry.maxHeight, 'none');
+		assert(geometry.scrollWidth > geometry.width && geometry.height > 1000);
+		await download(longBlock.locator('.download-code-btn'), 'code-block-1.js', longSource);
+		const productionCss = await page.evaluate(() => {
+			function rules(list) {
+				return [...list].flatMap((r) => [
+					...(r.selectorText?.includes('.llampart-button-text-action') ? [r.cssText] : []),
+					...(r.cssRules ? rules(r.cssRules) : [])
+				]);
 			}
-			const prefix = '```js\nconst first = 1;\n```\n\n';
-			await update(prefix + '```python\nprint("Strumień")');
-			const pending = assistant.locator('.streaming-code-block .download-code-btn');
-			await pending.waitFor();
-			assert(await pending.isDisabled());
-			await update(prefix + '```python\nprint("Strumień Łódź")\n```');
-			await assistant.locator('.streaming-code-block').waitFor({ state: 'hidden' });
-			await download(
-				blocks.nth(1).locator('.download-code-btn'),
-				'code-block-2.py',
-				'print("Strumień Łódź")\n'
+			return [...document.styleSheets].map((sheet) => ({
+				href: sheet.href,
+				rules: rules(sheet.cssRules)
+			}));
+		});
+		assert(
+			productionCss.some((sheet) => sheet.rules.some((rule) => rule.includes('box-shadow: none')))
+		);
+		assert(
+			productionCss.every((sheet) => sheet.rules.every((rule) => !rule.includes('!important')))
+		);
+		if (process.env.LLAMPART_TEST_PRODUCTION) {
+			assert(
+				productionCss.some(
+					(sheet) => sheet.rules.length && sheet.href?.includes('/_app/immutable/assets/')
+				),
+				'assert the final transformed production CSS chunk, not dev CSS'
 			);
-			const longSource = 'const x = "' + 'x'.repeat(300) + '";\n' + '// Łódź\n'.repeat(100);
-			await update('```js\n' + longSource + '```');
-			await blocks.first().locator('code').filter({ hasText: 'const x' }).waitFor();
-			const geometry = await blocks
-				.first()
-				.locator('.code-block-scroll-container')
-				.evaluate((el) => ({
-					maxHeight: getComputedStyle(el).maxHeight,
-					width: el.clientWidth,
-					scrollWidth: el.scrollWidth,
-					height: el.clientHeight
-				}));
-			assert.equal(geometry.maxHeight, 'none');
-			assert(geometry.scrollWidth > geometry.width && geometry.height > 1000);
-			await download(blocks.first().locator('.download-code-btn'), 'code-block-1.js', longSource);
 		}
 		assert.deepEqual(errors, []);
-		reports.push({ fullHeight, fontFamily, colors, tokenColors, states, formatStates, errors });
+		reports.push({
+			fullHeight,
+			opaque: fullHeight,
+			fontFamily,
+			colors,
+			tokenColors,
+			formatStates,
+			disabled,
+			productionCss,
+			errors
+		});
 		await context.close();
 	}
 	await writeFile(`${artifacts}/report.json`, JSON.stringify(reports, null, 2));
 	console.log(
-		'PASS: code blocks, UTF-8 downloads, copy, chart action parity, reasoning, streaming, overflow, tables, charts and Mermaid (both height settings).'
+		'REAL PASS UI/export/CSS; MOCK provider HTTP/SSE: code, Markdown, tables, charts, Mermaid, KaTeX, tooltips, keyboard, disabled/finalization, overflow; Frosted Glass and opaque mode.'
 	);
 } finally {
 	await browser.close();

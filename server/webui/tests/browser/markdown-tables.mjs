@@ -5,6 +5,7 @@
  */
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { assertTextActionStyles } from './export-transparency.mjs';
 
 const { chromium } = await import(process.env.LLAMPART_PLAYWRIGHT_MODULE);
 const artifacts = process.env.LLAMPART_TEST_ARTIFACTS || '/tmp/opencode/llampart-markdown-tables';
@@ -125,6 +126,9 @@ try {
 		});
 		await page.goto(base);
 		await page.locator('textarea').first().fill('Długa wiadomość użytkownika.\n'.repeat(120));
+		await page.waitForFunction(
+			() => document.querySelector('.llampart-composer-send-button')?.disabled === false
+		);
 		await page.locator('textarea').first().press('Enter');
 		const assistant = page.locator('.llampart-assistant-markdown').first();
 		const blocks = assistant.locator('.table-block');
@@ -229,7 +233,14 @@ try {
 				await page.screenshot({ path: `${artifacts}/tooltip-failure.png` });
 				throw error;
 			});
-		assert(await csvButton.evaluate((el) => getComputedStyle(el).boxShadow !== 'none'));
+		assert(
+			await csvButton.evaluate(
+				(el) =>
+					el.matches(':focus-visible') &&
+					getComputedStyle(el).textDecorationLine.includes('underline')
+			)
+		);
+		assert.equal(await csvButton.evaluate((el) => getComputedStyle(el).boxShadow), 'none');
 		assert(
 			await page
 				.locator('[data-slot="tooltip-content"]')
@@ -261,54 +272,24 @@ try {
 				.evaluate((el) => getComputedStyle(el).fontSize)
 		);
 		const chartCsvButton = assistant.locator('.chart-actions button').filter({ hasText: /^CSV$/ });
-		async function exportButtonStyle(button, state) {
-			await page.mouse.move(0, 0);
-			await page.evaluate(() => document.activeElement?.blur());
-			await button.scrollIntoViewIfNeeded();
-			if (state === 'hover') await button.hover();
-			if (state === 'focus') {
-				await page.keyboard.press('Tab');
-				await button.focus();
-			}
-			return button.evaluate(async (el) => {
-				await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-				await Promise.all(el.getAnimations().map((animation) => animation.finished));
-				const css = getComputedStyle(el);
-				return Object.fromEntries(
-					[
-						'backgroundColor',
-						'borderRadius',
-						'height',
-						'padding',
-						'fontSize',
-						'fontWeight',
-						'lineHeight',
-						'transitionProperty',
-						'transitionDuration',
-						'transitionTimingFunction',
-						'backdropFilter',
-						'outlineStyle',
-						'boxShadow',
-						'transform'
-					].map((key) => [key, css[key]])
+		const buttonStyles = await assertTextActionStyles(page, csvButton);
+		const chartStyles = await assertTextActionStyles(page, chartCsvButton);
+		for (const state of ['rest', 'hover', 'focus', 'active']) {
+			const geometry = (style) =>
+				Object.fromEntries(
+					['height', 'padding', 'fontSize', 'fontWeight', 'lineHeight'].map((key) => [
+						key,
+						style[key]
+					])
 				);
-			});
-		}
-		const buttonStyles = {};
-		for (const state of ['rest', 'hover', 'focus']) {
-			const reference = await exportButtonStyle(chartCsvButton, state);
-			buttonStyles[state] = await exportButtonStyle(csvButton, state);
 			assert.deepEqual(
-				buttonStyles[state],
-				reference,
-				`Table CSV must match chart ghost style: ${state}`
+				geometry(buttonStyles[state]),
+				geometry(chartStyles[state]),
+				`Table CSV must retain shared chart text action geometry: ${state}`
 			);
 		}
-		assert.notEqual(buttonStyles.hover.backgroundColor, buttonStyles.rest.backgroundColor);
-		assert.notEqual(buttonStyles.hover.transitionDuration, '0s');
-		assert.notEqual(buttonStyles.focus.boxShadow, 'none');
 		await csvButton.hover();
-		await page.screenshot({ path: `${artifacts}/csv-ghost-hover-${fullHeight}.png` });
+		await page.screenshot({ path: `${artifacts}/csv-text-hover-${fullHeight}.png` });
 
 		const eye = blocks.first().locator('.table-preview-button');
 		const preview = page.locator('.llampart-table-preview-dialog');
@@ -423,11 +404,23 @@ try {
 				await settingsDialog
 					.locator('input[type=file]')
 					.setInputFiles({ name: 'test.png', mimeType: 'image/png', buffer: image });
+				// Wallpaper persistence is a Data URL, but the renderer now owns a short Blob URL.
 				await page.waitForFunction(() =>
 					document.documentElement.style
 						.getPropertyValue('--llampart-theme-wallpaper')
-						.includes('data:image/png')
+						.includes('blob:')
 				);
+				const uploaded = await page.evaluate(async () => {
+					const css = document.documentElement.style.getPropertyValue('--llampart-theme-wallpaper');
+					const url = css.match(/url\(["']?([^"')]+)["']?\)/)[1];
+					const response = await fetch(url);
+					return {
+						type: response.headers.get('content-type'),
+						bytes: [...new Uint8Array(await response.arrayBuffer())]
+					};
+				});
+				assert.equal(uploaded.type, 'image/png');
+				assert.deepEqual(uploaded.bytes, [...image]);
 				await endSettings(save);
 				await openPreview();
 				if (save) assert.notEqual((await colors()).even, wallpaperColors.at(-1).even);

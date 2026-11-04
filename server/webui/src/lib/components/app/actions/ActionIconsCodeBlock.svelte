@@ -33,7 +33,7 @@
 
 <div class="code-block-actions">
 	<Button
-		variant="ghost"
+		variant="text-action"
 		size="sm"
 		class="download-code-btn"
 		{disabled}

@@ -40,7 +40,7 @@
 						<Button
 							{...props}
 							class="format-export-action"
-							variant="ghost"
+							variant="text-action"
 							size="sm"
 							disabled={exporting}
 							aria-label={`${exportLabel} ${format.toUpperCase()}`}
