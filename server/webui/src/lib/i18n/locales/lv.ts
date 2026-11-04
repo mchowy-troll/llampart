@@ -9,6 +9,7 @@ export const lv: TranslationDictionary = {
 		exportError: 'Neizdevās eksportēt formulu. Lūdzu, mēģiniet vēlreiz.'
 	},
 	diagrams: {
+		disabled: 'Diagrammu attēlošana ir izslēgta iestatījumos.',
 		title: 'Diagramma',
 		preview: 'Priekšskatīt diagrammu',
 		preparing: 'Sagatavo diagrammu…',
@@ -18,6 +19,7 @@ export const lv: TranslationDictionary = {
 		exportError: 'Neizdevās eksportēt diagrammu. Lūdzu, mēģiniet vēlreiz.'
 	},
 	charts: {
+		disabled: 'Grafiku attēlošana ir izslēgta iestatījumos.',
 		preview: 'Priekšskatīt grafiku',
 		title: 'Grafiks',
 		preparing: 'Sagatavo grafiku…',
@@ -183,6 +185,9 @@ export const lv: TranslationDictionary = {
 		enterNewConversationName: 'Ievadiet jaunu nosaukumu'
 	},
 	settings: {
+		groupVisualizations: 'Vizualizācijas iespējas',
+		fieldChartsEnabled: 'Iespējot grafikus',
+		fieldDiagramsEnabled: 'Iespējot diagrammas',
 		storageSaveError:
 			'Neizdevās saglabāt iestatījumus pārlūka krātuvē. Veidlapā veiktās izmaiņas ir saglabājušās; pārbaudiet pieejamo vietu un pārlūka atļaujas, pēc tam mēģiniet vēlreiz.',
 		storageRollbackError:
@@ -450,6 +455,10 @@ export const lv: TranslationDictionary = {
 			noConversationsToDelete: 'Nav sarunu, ko dzēst'
 		},
 		info: {
+			chartsEnabled:
+				'Iespējo grafiku formāta norādījumus, attēlošanu, priekšskatījumu un eksportu. Atbilžu preferences tiek saglabātas neatkarīgi.',
+			diagramsEnabled:
+				'Iespējo Mermaid formāta norādījumus, diagrammu attēlošanu, priekšskatījumu un eksportu. Atbilžu preferences tiek saglabātas neatkarīgi.',
 			apiProvider: 'Izvēlieties API pakalpojuma sniedzēju.',
 			serverBaseUrl: 'Tā servera adrese, ar kuru vēlaties izveidot savienojumu.',
 			apiKey: 'API atslēga, ja serveris to pieprasa.',

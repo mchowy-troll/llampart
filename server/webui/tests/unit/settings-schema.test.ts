@@ -56,6 +56,44 @@ beforeEach(() => {
 });
 
 describe('settings JSON import/export compatibility', () => {
+	it('defaults capabilities on, validates strict booleans, and preserves absent imported keys', async () => {
+		expect(parseSettingsStorage(null)).toMatchObject({
+			chartsEnabled: true,
+			diagramsEnabled: true
+		});
+		expect(parseSettingsStorage('{"responsePrefCharts":true}')).toMatchObject({
+			chartsEnabled: true,
+			diagramsEnabled: true,
+			responsePrefCharts: true
+		});
+		for (const key of ['chartsEnabled', 'diagramsEnabled']) {
+			for (const value of ['false', 0, null])
+				expect(() => validateSettingsPatch({ [key]: value })).toThrow(key);
+		}
+		settingsStore.updateMultipleConfig({
+			chartsEnabled: false,
+			diagramsEnabled: true,
+			responsePrefCharts: true,
+			responsePrefDiagrams: true
+		});
+		const { text, data } = await exportFile();
+		expect(data.settings).toMatchObject({ chartsEnabled: false, diagramsEnabled: true });
+		settingsStore.updateMultipleConfig({ chartsEnabled: true, diagramsEnabled: false });
+		importApplicationSettings(text);
+		expect(settingsStore.config).toMatchObject({ chartsEnabled: false, diagramsEnabled: true });
+		importApplicationSettings(
+			JSON.stringify({
+				type: 'llampart-settings-export',
+				formatVersion: 1,
+				settings: { responsePrefConcise: true }
+			})
+		);
+		expect(settingsStore.config).toMatchObject({ chartsEnabled: false, diagramsEnabled: true });
+		settingsStore.initialize();
+		expect(settingsStore.config).toMatchObject({ chartsEnabled: false, diagramsEnabled: true });
+		settingsStore.resetAll();
+		expect(settingsStore.config).toMatchObject({ chartsEnabled: true, diagramsEnabled: true });
+	});
 	it('round-trips a non-default language and rejects an unsupported language without changing config', async () => {
 		const language = 'csb';
 		const expected = { ...settingsStore.config, interfaceLanguage: language };

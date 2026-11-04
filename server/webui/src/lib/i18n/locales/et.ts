@@ -9,6 +9,7 @@ export const et: TranslationDictionary = {
 		exportError: 'Valemit ei õnnestunud eksportida. Proovi uuesti.'
 	},
 	diagrams: {
+		disabled: 'Diagrammide kuvamine on seadetes välja lülitatud.',
 		title: 'Diagramm',
 		preview: 'Diagrammi eelvaade',
 		preparing: 'Diagrammi ettevalmistamine…',
@@ -18,6 +19,7 @@ export const et: TranslationDictionary = {
 		exportError: 'Diagrammi ei õnnestunud eksportida. Proovi uuesti.'
 	},
 	charts: {
+		disabled: 'Graafikute kuvamine on seadetes välja lülitatud.',
 		preview: 'Graafiku eelvaade',
 		title: 'Graafik',
 		preparing: 'Graafiku ettevalmistamine…',
@@ -183,6 +185,9 @@ export const et: TranslationDictionary = {
 		enterNewConversationName: 'Sisesta uus nimi'
 	},
 	settings: {
+		groupVisualizations: 'Visualiseerimisvõimalused',
+		fieldChartsEnabled: 'Luba graafikud',
+		fieldDiagramsEnabled: 'Luba diagrammid',
 		storageSaveError:
 			'Seadeid ei saanud brauseri salvestusruumi salvestada. Sinu muudatused on endiselt vormil alles; kontrolli vaba ruumi ja brauseri õigusi ning proovi uuesti.',
 		storageRollbackError:
@@ -449,6 +454,10 @@ export const et: TranslationDictionary = {
 			noConversationsToDelete: 'Kustutatavaid vestlusi pole'
 		},
 		info: {
+			chartsEnabled:
+				'Lubab graafikute vormingujuhised, kuvamise, eelvaate ja ekspordi. Vastuseelistused salvestatakse eraldi.',
+			diagramsEnabled:
+				'Lubab Mermaid-vormingujuhised ning diagrammide kuvamise, eelvaate ja ekspordi. Vastuseelistused salvestatakse eraldi.',
 			apiProvider: 'Vali API teenusepakkuja.',
 			serverBaseUrl: 'Selle serveri aadress, millega soovid ühenduse luua.',
 			apiKey: 'API võti, kui server seda nõuab.',

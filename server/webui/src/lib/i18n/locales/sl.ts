@@ -9,6 +9,7 @@ export const sl: TranslationDictionary = {
 		exportError: 'Formule ni bilo mogoče izvoziti. Poskusite znova.'
 	},
 	diagrams: {
+		disabled: 'Izris diagramov je v nastavitvah izklopljen.',
 		title: 'Diagram',
 		preview: 'Predogled diagrama',
 		preparing: 'Pripravljanje diagrama…',
@@ -18,6 +19,7 @@ export const sl: TranslationDictionary = {
 		exportError: 'Diagrama ni bilo mogoče izvoziti. Poskusite znova.'
 	},
 	charts: {
+		disabled: 'Izris grafikonov je v nastavitvah izklopljen.',
 		preview: 'Predogled grafikona',
 		title: 'Grafikon',
 		preparing: 'Pripravljanje grafikona…',
@@ -184,6 +186,9 @@ export const sl: TranslationDictionary = {
 		enterNewConversationName: 'Vnesite novo ime'
 	},
 	settings: {
+		groupVisualizations: 'Zmožnosti vizualizacije',
+		fieldChartsEnabled: 'Omogoči grafikone',
+		fieldDiagramsEnabled: 'Omogoči diagrame',
 		storageSaveError:
 			'Nastavitev ni bilo mogoče shraniti v shrambo brskalnika. Spremembe ostajajo v obrazcu; preverite razpoložljivi prostor in dovoljenja brskalnika ter poskusite znova.',
 		storageRollbackError:
@@ -455,6 +460,10 @@ export const sl: TranslationDictionary = {
 			noConversationsToDelete: 'Ni pogovorov za brisanje'
 		},
 		info: {
+			chartsEnabled:
+				'Omogoči navodila za obliko, izris, predogled in izvoz grafikonov. Nastavitve odgovorov se shranjujejo neodvisno.',
+			diagramsEnabled:
+				'Omogoči navodila za obliko Mermaid, izris, predogled in izvoz diagramov. Nastavitve odgovorov se shranjujejo neodvisno.',
 			apiProvider: 'Izberite ponudnika API.',
 			serverBaseUrl: 'Naslov strežnika, s katerim se želite povezati.',
 			apiKey: 'Ključ API, če ga strežnik zahteva.',

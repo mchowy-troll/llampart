@@ -9,6 +9,7 @@ export const fr: TranslationDictionary = {
 		exportError: 'Impossible d’exporter la formule. Veuillez réessayer.'
 	},
 	diagrams: {
+		disabled: 'Le rendu des diagrammes est désactivé dans les paramètres.',
 		title: 'Diagramme',
 		preview: 'Aperçu du diagramme',
 		preparing: 'Préparation du diagramme…',
@@ -18,6 +19,7 @@ export const fr: TranslationDictionary = {
 		exportError: 'Impossible d’exporter le diagramme. Veuillez réessayer.'
 	},
 	charts: {
+		disabled: 'Le rendu des graphiques est désactivé dans les paramètres.',
 		preview: 'Aperçu du graphique',
 		title: 'Graphique',
 		preparing: 'Préparation du graphique…',
@@ -184,6 +186,9 @@ export const fr: TranslationDictionary = {
 		enterNewConversationName: 'Entrez un nouveau nom'
 	},
 	settings: {
+		groupVisualizations: 'Fonctionnalités de visualisation',
+		fieldChartsEnabled: 'Activer les graphiques',
+		fieldDiagramsEnabled: 'Activer les diagrammes',
 		storageSaveError:
 			'Impossible de sauvegarder les paramètres dans le navigateur. Vos modifications restent ouvertes ; vérifiez l’espace disponible et les autorisations du navigateur, puis réessayez.',
 		storageRollbackError:
@@ -457,6 +462,10 @@ export const fr: TranslationDictionary = {
 			noConversationsToDelete: 'Aucune conversation à supprimer'
 		},
 		info: {
+			chartsEnabled:
+				'Active les instructions de format, le rendu, l’aperçu et l’export des graphiques. Les préférences de réponse sont enregistrées indépendamment.',
+			diagramsEnabled:
+				'Active les instructions de format Mermaid, le rendu, l’aperçu et l’export des diagrammes. Les préférences de réponse sont enregistrées indépendamment.',
 			apiProvider: 'Choisissez le fournisseur d’API.',
 			serverBaseUrl: 'Adresse du serveur auquel vous souhaitez vous connecter.',
 			apiKey: 'Clé API, si elle est requise par le serveur.',

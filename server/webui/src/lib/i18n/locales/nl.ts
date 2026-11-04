@@ -9,6 +9,7 @@ export const nl: TranslationDictionary = {
 		exportError: 'De formule kon niet worden geëxporteerd. Probeer het opnieuw.'
 	},
 	diagrams: {
+		disabled: 'De weergave van diagrammen is uitgeschakeld in de instellingen.',
 		title: 'Diagram',
 		preview: 'Diagram bekijken',
 		preparing: 'Diagram voorbereiden…',
@@ -18,6 +19,7 @@ export const nl: TranslationDictionary = {
 		exportError: 'Het diagram kon niet worden geëxporteerd. Probeer het opnieuw.'
 	},
 	charts: {
+		disabled: 'De weergave van grafieken is uitgeschakeld in de instellingen.',
 		preview: 'Grafiek bekijken',
 		title: 'Grafiek',
 		preparing: 'Grafiek voorbereiden…',
@@ -184,6 +186,9 @@ export const nl: TranslationDictionary = {
 		enterNewConversationName: 'Voer een nieuwe naam in'
 	},
 	settings: {
+		groupVisualizations: 'Visualisatiefuncties',
+		fieldChartsEnabled: 'Grafieken inschakelen',
+		fieldDiagramsEnabled: 'Diagrammen inschakelen',
 		storageSaveError:
 			'De instellingen konden niet worden opgeslagen in de browseropslag. Je wijzigingen blijven openstaan; controleer de beschikbare ruimte en browsermachtigingen en probeer het opnieuw.',
 		storageRollbackError:
@@ -458,6 +463,10 @@ export const nl: TranslationDictionary = {
 			noConversationsToDelete: 'Geen gesprekken om te verwijderen'
 		},
 		info: {
+			chartsEnabled:
+				'Schakelt formaatinstructies, weergave, voorbeelden en export van grafieken in. Antwoordvoorkeuren worden onafhankelijk opgeslagen.',
+			diagramsEnabled:
+				'Schakelt Mermaid-formaatinstructies, weergave, voorbeelden en export van diagrammen in. Antwoordvoorkeuren worden onafhankelijk opgeslagen.',
 			apiProvider: 'Kies de API-aanbieder.',
 			serverBaseUrl: 'Het adres van de server waarmee je verbinding wilt maken.',
 			apiKey: 'API-sleutel, als de server deze vereist.',

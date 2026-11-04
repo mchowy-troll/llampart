@@ -9,6 +9,7 @@ export const csb: TranslationDictionary = {
 		exportError: 'Nie dało sã wëekspòrtowac fòrmùłë. Spróbùjë jesz rôz.'
 	},
 	diagrams: {
+		disabled: 'Renderowanié diagramów je wëłączoné w ùstawach.',
 		title: 'Diagram',
 		preview: 'Pòdzerk diagramù',
 		preparing: 'Przërëchtowanié diagramù…',
@@ -18,6 +19,7 @@ export const csb: TranslationDictionary = {
 		exportError: 'Nie dało sã wëekspòrtowac diagramù. Spróbùjë jesz rôz.'
 	},
 	charts: {
+		disabled: 'Renderowanié wëkresów je wëłączoné w ùstawach.',
 		preview: 'Pòdzerk wëkresu',
 		title: 'Wëkres',
 		preparing: 'Przërëchtowanié wëkresu…',
@@ -182,6 +184,9 @@ export const csb: TranslationDictionary = {
 		enterNewConversationName: 'Wpiszë nowé miono'
 	},
 	settings: {
+		groupVisualizations: 'Mòżlëwòtë wizualizacji',
+		fieldChartsEnabled: 'Włączë wëkresë',
+		fieldDiagramsEnabled: 'Włączë diagramë',
 		storageSaveError:
 			'Nie dało sã zapisac ùstôwów w pamiãcë przezérnika. Twòje zmianë òstôwają w fòrmùlaru; sprôwdzë wòlny plac ë ùprawnienia przezérnika, a pòtemù spróbùjë jesz rôz.',
 		storageRollbackError:
@@ -445,6 +450,10 @@ export const csb: TranslationDictionary = {
 			noConversationsToDelete: 'Felënk rozmòwów do ùsëniãcô'
 		},
 		info: {
+			chartsEnabled:
+				'Włączô instrukcje fòrmatù, renderowanié, pòdzerk ë ekspòrt wëkresów. Preferencje òdpòwiesców są zapiśiwóné òsóbno.',
+			diagramsEnabled:
+				'Włączô instrukcje fòrmatù Mermaid, renderowanié, pòdzerk ë ekspòrt diagramów. Preferencje òdpòwiesców są zapiśiwóné òsóbno.',
 			apiProvider: 'Wëbierzë dostôwcã API.',
 			serverBaseUrl: 'Adresa serwera, z chtërnym chcesz sã sparłãczëc.',
 			apiKey: 'Klucz API, jeżlë serwer gò wëmagô.',

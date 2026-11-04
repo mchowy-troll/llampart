@@ -164,6 +164,9 @@ export interface CapabilitySnapshot {
 /** Operation-owned selection, including an intentional absence of a wire model.
  * Capabilities are captured once for this model/source, never the later UI selection. */
 export interface OperationModel {
+	readonly chatInstructions?: Readonly<
+		import('$lib/utils/response-preferences').ChatInstructionSettings
+	>;
 	readonly conversationId: string | null;
 	readonly model: string | null;
 	readonly requestContext: ProviderRequestContext;

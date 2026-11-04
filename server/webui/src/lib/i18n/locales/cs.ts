@@ -9,6 +9,7 @@ export const cs: TranslationDictionary = {
 		exportError: 'Vzorec se nepodařilo exportovat. Zkuste to znovu.'
 	},
 	diagrams: {
+		disabled: 'Vykreslování diagramů je v nastavení vypnuto.',
 		title: 'Diagram',
 		preview: 'Náhled diagramu',
 		preparing: 'Připravuje se diagram…',
@@ -18,6 +19,7 @@ export const cs: TranslationDictionary = {
 		exportError: 'Diagram se nepodařilo exportovat. Zkuste to znovu.'
 	},
 	charts: {
+		disabled: 'Vykreslování grafů je v nastavení vypnuto.',
 		preview: 'Náhled grafu',
 		title: 'Graf',
 		preparing: 'Připravuje se graf…',
@@ -183,6 +185,9 @@ export const cs: TranslationDictionary = {
 		enterNewConversationName: 'Zadejte nový název'
 	},
 	settings: {
+		groupVisualizations: 'Možnosti vizualizací',
+		fieldChartsEnabled: 'Povolit grafy',
+		fieldDiagramsEnabled: 'Povolit diagramy',
 		storageSaveError:
 			'Nastavení se nepodařilo uložit do úložiště prohlížeče. Vaše změny zůstávají ve formuláři; zkontrolujte volné místo a oprávnění prohlížeče a zkuste to znovu.',
 		storageRollbackError:
@@ -452,6 +457,10 @@ export const cs: TranslationDictionary = {
 			noConversationsToDelete: 'Nejsou žádné konverzace ke smazání'
 		},
 		info: {
+			chartsEnabled:
+				'Povoluje pokyny k formátu, vykreslování, náhled a export grafů. Předvolby odpovědí se ukládají nezávisle.',
+			diagramsEnabled:
+				'Povoluje pokyny k formátu Mermaid, vykreslování, náhled a export diagramů. Předvolby odpovědí se ukládají nezávisle.',
 			apiProvider: 'Vyberte poskytovatele API.',
 			serverBaseUrl: 'Adresa serveru, ke kterému se chcete připojit.',
 			apiKey: 'Klíč API, pokud jej server vyžaduje.',

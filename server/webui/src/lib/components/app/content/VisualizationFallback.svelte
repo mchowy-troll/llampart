@@ -4,8 +4,12 @@
 	import { copyCodeToClipboard } from '$lib/utils/clipboard';
 	import { t } from '$lib/i18n';
 
-	let { source, title, kind }: { source: string; title: string; kind: 'diagram' | 'chart' } =
-		$props();
+	let {
+		source,
+		title,
+		kind,
+		disabled = false
+	}: { source: string; title: string; kind: 'diagram' | 'chart'; disabled?: boolean } = $props();
 	let open = $state(false);
 	let trigger = $state<HTMLButtonElement | null>(null);
 </script>
@@ -13,7 +17,17 @@
 <div class="llampart-visualization-frame llampart-visualization-fallback llampart-{kind}-fallback">
 	<div class="fallback-title">{title}</div>
 	<div role="status" class="fallback-message">
-		<p>{t(kind === 'diagram' ? 'diagrams.invalid' : 'charts.invalid')}</p>
+		<p>
+			{t(
+				kind === 'diagram'
+					? disabled
+						? 'diagrams.disabled'
+						: 'diagrams.invalid'
+					: disabled
+						? 'charts.disabled'
+						: 'charts.invalid'
+			)}
+		</p>
 	</div>
 	<div class="fallback-actions">
 		<Button bind:ref={trigger} variant="outline" size="sm" onclick={() => (open = true)}

@@ -9,6 +9,7 @@ export const da: TranslationDictionary = {
 		exportError: 'Formlen kunne ikke eksporteres. Prøv igen.'
 	},
 	diagrams: {
+		disabled: 'Visning af diagrammer er slået fra i indstillingerne.',
 		title: 'Diagram',
 		preview: 'Forhåndsvis diagram',
 		preparing: 'Forbereder diagram…',
@@ -18,6 +19,7 @@ export const da: TranslationDictionary = {
 		exportError: 'Diagrammet kunne ikke eksporteres. Prøv igen.'
 	},
 	charts: {
+		disabled: 'Visning af grafer er slået fra i indstillingerne.',
 		preview: 'Forhåndsvis graf',
 		title: 'Graf',
 		preparing: 'Forbereder graf…',
@@ -184,6 +186,9 @@ export const da: TranslationDictionary = {
 		enterNewConversationName: 'Indtast et nyt navn'
 	},
 	settings: {
+		groupVisualizations: 'Visualiseringsfunktioner',
+		fieldChartsEnabled: 'Aktivér grafer',
+		fieldDiagramsEnabled: 'Aktivér diagrammer',
 		storageSaveError:
 			'Indstillingerne kunne ikke gemmes i browserens lager. Dine ændringer er bevaret i formularen. Kontrollér ledig plads og browserens tilladelser, og prøv igen.',
 		storageRollbackError:
@@ -454,6 +459,10 @@ export const da: TranslationDictionary = {
 			noConversationsToDelete: 'Ingen samtaler at slette'
 		},
 		info: {
+			chartsEnabled:
+				'Aktiverer formatinstruktioner, visning, forhåndsvisning og eksport af grafer. Svarpræferencer gemmes uafhængigt.',
+			diagramsEnabled:
+				'Aktiverer Mermaid-formatinstruktioner, visning, forhåndsvisning og eksport af diagrammer. Svarpræferencer gemmes uafhængigt.',
 			apiProvider: 'Vælg API-udbyderen.',
 			serverBaseUrl: 'Adressen på den server, du vil oprette forbindelse til.',
 			apiKey: 'API-nøgle, hvis serveren kræver det.',

@@ -9,6 +9,7 @@ export const hr: TranslationDictionary = {
 		exportError: 'Nije moguće izvesti formulu. Pokušajte ponovno.'
 	},
 	diagrams: {
+		disabled: 'Prikaz dijagrama isključen je u postavkama.',
 		title: 'Dijagram',
 		preview: 'Pregled dijagrama',
 		preparing: 'Priprema dijagrama…',
@@ -18,6 +19,7 @@ export const hr: TranslationDictionary = {
 		exportError: 'Nije moguće izvesti dijagram. Pokušajte ponovno.'
 	},
 	charts: {
+		disabled: 'Prikaz grafikona isključen je u postavkama.',
 		preview: 'Pregled grafikona',
 		title: 'Grafikon',
 		preparing: 'Priprema grafikona…',
@@ -184,6 +186,9 @@ export const hr: TranslationDictionary = {
 		enterNewConversationName: 'Unesite novi naziv'
 	},
 	settings: {
+		groupVisualizations: 'Mogućnosti vizualizacije',
+		fieldChartsEnabled: 'Omogući grafikone',
+		fieldDiagramsEnabled: 'Omogući dijagrame',
 		storageSaveError:
 			'Postavke nije moguće spremiti u pohranu preglednika. Vaše izmjene ostaju otvorene; provjerite raspoloživi prostor i dopuštenja preglednika pa pokušajte ponovno.',
 		storageRollbackError:
@@ -455,6 +460,10 @@ export const hr: TranslationDictionary = {
 			noConversationsToDelete: 'Nema razgovora za brisanje'
 		},
 		info: {
+			chartsEnabled:
+				'Omogućuje upute o formatu, prikaz, pregled i izvoz grafikona. Postavke odgovora spremaju se neovisno.',
+			diagramsEnabled:
+				'Omogućuje upute o formatu Mermaid, prikaz, pregled i izvoz dijagrama. Postavke odgovora spremaju se neovisno.',
 			apiProvider: 'Odaberite pružatelja API usluge.',
 			serverBaseUrl: 'Adresa poslužitelja s kojim se želite povezati.',
 			apiKey: 'API ključ, ako ga poslužitelj zahtijeva.',

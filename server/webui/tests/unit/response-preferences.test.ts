@@ -14,6 +14,78 @@ import type { ApiChatMessageData } from '$lib/types/api';
 const all = Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }) => [key, true]));
 
 describe('response preferences contract', () => {
+	it.each(
+		[false, true].flatMap((chartsEnabled) =>
+			[false, true].map((diagramsEnabled) => ({ chartsEnabled, diagramsEnabled }))
+		)
+	)('gates independent format instructions and encouragement: %j', (flags) => {
+		for (const preference of [false, true]) {
+			const settings = {
+				...flags,
+				responsePrefCharts: preference,
+				responsePrefDiagrams: preference
+			};
+			const history: ApiChatMessageData[] = [{ role: 'user', content: 'Question' }];
+			const request = withChatInstructions(history, settings);
+			const text = String(request.find((m) => m.role === 'system')?.content ?? '');
+			expect(text.includes(CHART_INSTRUCTIONS)).toBe(flags.chartsEnabled);
+			expect(text.includes(MERMAID_INSTRUCTIONS)).toBe(flags.diagramsEnabled);
+			for (const pref of RESPONSE_PREFERENCES.filter(({ name }) =>
+				['Charts', 'Diagrams'].includes(name)
+			))
+				expect(text.includes(pref.instruction)).toBe(
+					preference && (pref.name === 'Charts' ? flags.chartsEnabled : flags.diagramsEnabled)
+				);
+			expect(withChatInstructions(request, settings)).toEqual(request);
+			expect(
+				withChatInstructions(request, { chartsEnabled: false, diagramsEnabled: false })
+			).toEqual(history);
+		}
+	});
+	it.each([CHART_INSTRUCTIONS, MERMAID_INSTRUCTIONS, CHART_INSTRUCTIONS + '\n\nManual ending'])(
+		'preserves manual leading format text exactly',
+		(manual) => {
+			const history: ApiChatMessageData[] = [{ role: 'system', content: manual }];
+			const request = withChatInstructions(history, { responsePrefCharts: true });
+			expect(String(request[0].content).endsWith('\n\n' + manual)).toBe(true);
+			expect(
+				withChatInstructions(request, { chartsEnabled: false, diagramsEnabled: false })
+			).toEqual(history);
+		}
+	);
+	it('preserves a manually entered complete composer envelope through policy changes', () => {
+		const manual = `<llampart-chat-instructions>\n${CHART_INSTRUCTIONS}\n\nUser-owned text\n</llampart-chat-instructions>\n\nManual ending`;
+		const history: ApiChatMessageData[] = [
+			{ role: 'system', content: manual },
+			{ role: 'user', content: 'Question' }
+		];
+		const before = structuredClone(history);
+		for (const chartsEnabled of [false, true])
+			for (const diagramsEnabled of [false, true]) {
+				const policy = { chartsEnabled, diagramsEnabled };
+				const request = withChatInstructions(history, policy);
+				expect(String(request[0].content).endsWith(manual)).toBe(true);
+				expect(withChatInstructions(request, policy)).toBe(request);
+				expect(
+					withChatInstructions(request, { chartsEnabled: false, diagramsEnabled: false })
+				).toEqual(history);
+			}
+		expect(history).toEqual(before);
+	});
+	it('does not claim copied, serialized or edited composer messages as application-owned', () => {
+		const generated = withChatInstructions([{ role: 'user', content: 'Question' }], all);
+		const off = { chartsEnabled: false, diagramsEnabled: false };
+		for (const unowned of [
+			generated.map((message) => ({ ...message })),
+			JSON.parse(JSON.stringify(generated)) as ApiChatMessageData[]
+		])
+			expect(withChatInstructions(unowned, off)).toBe(unowned);
+		expect(JSON.stringify(generated[0])).toBe(
+			JSON.stringify({ role: 'system', content: generated[0].content })
+		);
+		generated[0].content += '\nUser edit';
+		expect(withChatInstructions(generated, off)).toBe(generated);
+	});
 	it('defaults preferences off and preserves existing settings on upgrade', () => {
 		const upgraded = parseSettingsConfig({ systemMessage: 'Manual', temperature: 0.4 });
 		for (const { key } of RESPONSE_PREFERENCES) {

@@ -9,6 +9,7 @@ export const hu: TranslationDictionary = {
 		exportError: 'Nem sikerült exportálni a képletet. Próbáld újra.'
 	},
 	diagrams: {
+		disabled: 'A diagramok megjelenítése ki van kapcsolva a beállításokban.',
 		title: 'Diagram',
 		preview: 'Diagram előnézete',
 		preparing: 'Diagram előkészítése…',
@@ -18,6 +19,7 @@ export const hu: TranslationDictionary = {
 		exportError: 'Nem sikerült exportálni a diagramot. Próbáld újra.'
 	},
 	charts: {
+		disabled: 'A grafikonok megjelenítése ki van kapcsolva a beállításokban.',
 		preview: 'Grafikon előnézete',
 		title: 'Grafikon',
 		preparing: 'Grafikon előkészítése…',
@@ -182,6 +184,9 @@ export const hu: TranslationDictionary = {
 		enterNewConversationName: 'Adj meg egy új nevet'
 	},
 	settings: {
+		groupVisualizations: 'Megjelenítési lehetőségek',
+		fieldChartsEnabled: 'Grafikonok engedélyezése',
+		fieldDiagramsEnabled: 'Diagramok engedélyezése',
 		storageSaveError:
 			'Nem sikerült menteni a beállításokat a böngésző tárhelyére. A módosításaid továbbra is szerkeszthetők; ellenőrizd a szabad helyet és a böngésző jogosultságait, majd próbáld újra.',
 		storageRollbackError:
@@ -458,6 +463,10 @@ export const hu: TranslationDictionary = {
 			noConversationsToDelete: 'Nincsenek törölhető beszélgetések'
 		},
 		info: {
+			chartsEnabled:
+				'Engedélyezi a grafikonok formátumutasításait, megjelenítését, előnézetét és exportálását. A válaszbeállítások ettől függetlenül mentődnek.',
+			diagramsEnabled:
+				'Engedélyezi a Mermaid-formátumutasításokat, valamint a diagramok megjelenítését, előnézetét és exportálását. A válaszbeállítások ettől függetlenül mentődnek.',
 			apiProvider: 'Válaszd ki az API-szolgáltatót.',
 			serverBaseUrl: 'Annak a szervernek a címe, amelyhez csatlakozni szeretnél.',
 			apiKey: 'API-kulcs, ha a szerver megköveteli.',

@@ -1,5 +1,5 @@
 import type { ApiChatMessageData } from '$lib/types/api';
-import { CHART_INSTRUCTIONS, withChartInstructions } from '$lib/markdown/chart-instructions';
+import { CHART_INSTRUCTIONS } from '$lib/markdown/chart-instructions';
 import { MERMAID_INSTRUCTIONS } from '$lib/markdown/mermaid-instructions';
 
 /** Stable order and English request contract; only label/help keys are translated. */
@@ -62,6 +62,19 @@ export const RESPONSE_PREFERENCES = [
 
 export type ResponsePreferenceKey = (typeof RESPONSE_PREFERENCES)[number]['key'];
 export type ResponsePreferences = Partial<Record<ResponsePreferenceKey, boolean>>;
+export type ChatInstructionSettings = ResponsePreferences & {
+	chartsEnabled?: boolean;
+	diagramsEnabled?: boolean;
+};
+
+/** Scalar, immutable operation policy. Never read the Settings draft. */
+export function captureChatInstructionSettings(settings: ChatInstructionSettings) {
+	return Object.freeze({
+		chartsEnabled: settings.chartsEnabled !== false,
+		diagramsEnabled: settings.diagramsEnabled !== false,
+		...Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }) => [key, settings[key] === true]))
+	});
+}
 
 const START = '<llampart-response-preferences>';
 const END = '</llampart-response-preferences>';
@@ -69,8 +82,13 @@ const PRIORITY =
 	'Apply these preferences to your own answers. Explicit user instructions, including the manual system message below, take precedence.';
 
 /** Also used verbatim by the read-only draft preview. No UI-language dependency. */
-export function buildResponsePreferenceInstructions(settings: ResponsePreferences): string {
-	const active = RESPONSE_PREFERENCES.filter(({ key }) => settings[key] === true);
+export function buildResponsePreferenceInstructions(settings: ChatInstructionSettings): string {
+	const active = RESPONSE_PREFERENCES.filter(
+		({ key }) =>
+			settings[key] === true &&
+			(key !== 'responsePrefCharts' || settings.chartsEnabled !== false) &&
+			(key !== 'responsePrefDiagrams' || settings.diagramsEnabled !== false)
+	);
 	if (!active.length) return '';
 	return [START, PRIORITY, ...active.map(({ instruction }) => instruction), END].join('\n');
 }
@@ -105,28 +123,39 @@ export function withResponsePreferences(
 	);
 }
 
+// Request-local ownership, never inferred from text or serialized to the provider.
+// Copies/imports/manual prompts (even byte-identical ones) are unowned. Only an
+// unchanged message object created here may have its generated portion replaced.
+const composedChatMessages = new WeakMap<ApiChatMessageData, { content: string; manual: string }>();
+
 export function withChatInstructions(
 	messages: ApiChatMessageData[],
-	settings: ResponsePreferences
+	settings: ChatInstructionSettings
 ): ApiChatMessageData[] {
-	const withCharts = withChartInstructions(messages);
-	const index = withCharts.findIndex(
+	const start = '<llampart-chat-instructions>\n';
+	const end = '\n</llampart-chat-instructions>';
+	const index = messages.findIndex(
 		(message) => message.role === 'system' && typeof message.content === 'string'
 	);
-	const original = withCharts[index].content as string;
-	const prefix = CHART_INSTRUCTIONS + '\n\n';
-	// The legacy chart helper also recognizes literal instructions anywhere in
-	// any system message. Only an anchored generated prefix may be sliced off;
-	// never truncate a manual prompt that merely quotes the chart contract.
-	const rest = original.startsWith(CHART_INSTRUCTIONS)
-		? original.slice(CHART_INSTRUCTIONS.length).replace(/^\n\n/, '')
-		: original;
-	const withDiagrams = rest.startsWith(MERMAID_INSTRUCTIONS)
-		? withCharts
-		: withCharts.map((message, i) =>
-				i === index
-					? { ...message, content: prefix + MERMAID_INSTRUCTIONS + (rest ? '\n\n' + rest : '') }
-					: message
-			);
-	return withResponsePreferences(withDiagrams, settings);
+	const original = index < 0 ? '' : (messages[index].content as string);
+	const owned = index < 0 ? undefined : composedChatMessages.get(messages[index]);
+	const manual = owned?.content === original ? owned.manual : original;
+	const instructions = [
+		settings.chartsEnabled !== false ? CHART_INSTRUCTIONS : '',
+		settings.diagramsEnabled !== false ? MERMAID_INSTRUCTIONS : '',
+		buildResponsePreferenceInstructions(settings)
+	]
+		.filter(Boolean)
+		.join('\n\n');
+	const content = [instructions ? start + instructions + end : '', manual]
+		.filter(Boolean)
+		.join('\n\n');
+	if (content === original) return messages;
+	if (!content) return messages.filter((_, i) => i !== index);
+	const composed: ApiChatMessageData =
+		index < 0 ? { role: 'system', content } : { ...messages[index], content };
+	composedChatMessages.set(composed, { content, manual });
+	return index < 0
+		? [composed, ...messages]
+		: messages.map((message, i) => (i === index ? composed : message));
 }

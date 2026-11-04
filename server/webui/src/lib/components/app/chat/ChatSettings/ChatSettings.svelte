@@ -453,6 +453,25 @@
 			fields: [],
 			groups: [
 				{
+					id: 'visualizations',
+					title: t('settings.groupVisualizations'),
+					layout: 'two-column',
+					fields: [
+						{
+							key: SETTINGS_KEYS.CHARTS_ENABLED,
+							order: 1,
+							label: t('settings.fieldChartsEnabled'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.DIAGRAMS_ENABLED,
+							order: 2,
+							label: t('settings.fieldDiagramsEnabled'),
+							type: SettingsFieldType.CHECKBOX
+						}
+					]
+				},
+				{
 					id: 'input',
 					title: t('settings.groupInput'),
 					layout: 'two-column',

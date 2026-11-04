@@ -9,6 +9,7 @@ export const fi: TranslationDictionary = {
 		exportError: 'Kaavan vienti ei onnistunut. Yritä uudelleen.'
 	},
 	diagrams: {
+		disabled: 'Kaavioiden näyttäminen on poistettu käytöstä asetuksissa.',
 		title: 'Kaavio',
 		preview: 'Esikatsele kaaviota',
 		preparing: 'Valmistellaan kaaviota…',
@@ -18,6 +19,7 @@ export const fi: TranslationDictionary = {
 		exportError: 'Kaavion vienti ei onnistunut. Yritä uudelleen.'
 	},
 	charts: {
+		disabled: 'Kuvaajien näyttäminen on poistettu käytöstä asetuksissa.',
 		preview: 'Esikatsele kuvaajaa',
 		title: 'Kuvaaja',
 		preparing: 'Valmistellaan kuvaajaa…',
@@ -182,6 +184,9 @@ export const fi: TranslationDictionary = {
 		enterNewConversationName: 'Anna uusi nimi'
 	},
 	settings: {
+		groupVisualizations: 'Visualisointitoiminnot',
+		fieldChartsEnabled: 'Ota kuvaajat käyttöön',
+		fieldDiagramsEnabled: 'Ota kaaviot käyttöön',
 		storageSaveError:
 			'Asetuksia ei voitu tallentaa selaimen tallennustilaan. Muutoksesi ovat edelleen avoinna. Tarkista vapaa tila ja selaimen käyttöoikeudet ja yritä uudelleen.',
 		storageRollbackError:
@@ -451,6 +456,10 @@ export const fi: TranslationDictionary = {
 			noConversationsToDelete: 'Ei poistettavia keskusteluja'
 		},
 		info: {
+			chartsEnabled:
+				'Ottaa käyttöön kuvaajien muotoiluohjeet, näyttämisen, esikatselun ja viennin. Vastausasetukset tallennetaan erikseen.',
+			diagramsEnabled:
+				'Ottaa käyttöön Mermaid-muotoiluohjeet sekä kaavioiden näyttämisen, esikatselun ja viennin. Vastausasetukset tallennetaan erikseen.',
 			apiProvider: 'Valitse API-palveluntarjoaja.',
 			serverBaseUrl: 'Sen palvelimen osoite, johon haluat muodostaa yhteyden.',
 			apiKey: 'API-avain, jos palvelin vaatii sen.',

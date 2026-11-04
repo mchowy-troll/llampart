@@ -20,6 +20,9 @@ import { SseByteParser } from '$lib/utils/sse-byte-parser';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { modelsStore } from '$lib/stores/models.svelte';
 import { ChatService } from '$lib/services/chat.service';
+import { CHART_INSTRUCTIONS } from '$lib/markdown/chart-instructions';
+import { MERMAID_INSTRUCTIONS } from '$lib/markdown/mermaid-instructions';
+import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
 import {
 	createConversationExportEnvelope,
 	parseConversationImport
@@ -518,6 +521,88 @@ describe.each([
 			}
 		};
 	};
+	it.each(
+		[false, true].flatMap((chartsEnabled) =>
+			[false, true].flatMap((diagramsEnabled) =>
+				[false, true].map((stream) => ({ chartsEnabled, diagramsEnabled, stream }))
+			)
+		)
+	)('freezes capabilities across HTTP/SSE and tool continuations: %j', async (flags) => {
+		const { options } = prepare();
+		settingsStore.updateMultipleConfig({
+			...flags,
+			responsePrefCharts: true,
+			responsePrefDiagrams: true
+		});
+		const context = options.providerRequestContext;
+		const operationModel = ChatService.captureOperationModel(context, 'exact', undefined, {
+			conversationId: 'capabilities'
+		});
+		const payloads: Record<string, unknown>[] = [];
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (_url, init) => {
+				payloads.push(JSON.parse(String(init?.body)));
+				const response =
+					protocol === 'responses'
+						? finalResponse('completed', [
+								{ type: 'message', content: [{ type: 'output_text', text: 'next' }] }
+							])
+						: { choices: [{ message: { content: 'next' } }] };
+				const body = !flags.stream
+					? JSON.stringify(response)
+					: protocol === 'responses'
+						? `event: response.completed\ndata: ${JSON.stringify({ type: 'response.completed', response })}\n\n`
+						: 'data: {"choices":[{"delta":{"content":"next"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n';
+				return new Response(body, {
+					headers: { 'Content-Type': flags.stream ? 'text/event-stream' : 'application/json' }
+				});
+			})
+		);
+		const history: ApiChatMessageData[] = [
+			{ role: 'system', content: 'Manual prompt' },
+			{ role: 'user', content: 'Question' }
+		];
+		const before = structuredClone(history);
+		const boundOptions = { ...options, stream: flags.stream, operationModel };
+		await ChatService.sendMessage(history, boundOptions, 'capabilities');
+		settingsStore.updateMultipleConfig({
+			chartsEnabled: !flags.chartsEnabled,
+			diagramsEnabled: !flags.diagramsEnabled,
+			responsePrefCharts: false,
+			responsePrefDiagrams: false
+		});
+		await ChatService.sendMessage(
+			[
+				...history,
+				{ role: 'assistant', content: '', tool_calls: [call] },
+				{ role: 'tool', content: 'Result', tool_call_id: call.id }
+			],
+			boundOptions,
+			'capabilities'
+		);
+		for (const payload of payloads) {
+			const text = JSON.stringify(payload);
+			expect(text.includes(JSON.stringify(CHART_INSTRUCTIONS).slice(1, -1))).toBe(
+				flags.chartsEnabled
+			);
+			expect(text.includes(JSON.stringify(MERMAID_INSTRUCTIONS).slice(1, -1))).toBe(
+				flags.diagramsEnabled
+			);
+			for (const pref of RESPONSE_PREFERENCES.filter(({ name }) =>
+				['Charts', 'Diagrams'].includes(name)
+			))
+				expect(text.includes(pref.instruction)).toBe(
+					pref.name === 'Charts' ? flags.chartsEnabled : flags.diagramsEnabled
+				);
+		}
+		expect(payloads).toHaveLength(2);
+		expect(history).toEqual(before);
+		if (providerId === 'llama-server') {
+			await ChatService.preEncode(history, context, 'exact', true, undefined, operationModel);
+			expect(payloads[2].messages).toEqual(payloads[0].messages);
+		}
+	});
 
 	// Rejection happens in shared history projection, before capability lookup or
 	// adapter serialization. Keep native preEncode and a Responses caller here;

@@ -9,6 +9,7 @@ export const lt: TranslationDictionary = {
 		exportError: 'Nepavyko eksportuoti formulės. Bandykite dar kartą.'
 	},
 	diagrams: {
+		disabled: 'Diagramų atvaizdavimas išjungtas nustatymuose.',
 		title: 'Diagrama',
 		preview: 'Peržiūrėti diagramą',
 		preparing: 'Ruošiama diagrama…',
@@ -18,6 +19,7 @@ export const lt: TranslationDictionary = {
 		exportError: 'Nepavyko eksportuoti diagramos. Bandykite dar kartą.'
 	},
 	charts: {
+		disabled: 'Grafikų atvaizdavimas išjungtas nustatymuose.',
 		preview: 'Peržiūrėti grafiką',
 		title: 'Grafikas',
 		preparing: 'Ruošiamas grafikas…',
@@ -183,6 +185,9 @@ export const lt: TranslationDictionary = {
 		enterNewConversationName: 'Įveskite naują pavadinimą'
 	},
 	settings: {
+		groupVisualizations: 'Vizualizavimo galimybės',
+		fieldChartsEnabled: 'Įjungti grafikus',
+		fieldDiagramsEnabled: 'Įjungti diagramas',
 		storageSaveError:
 			'Nepavyko išsaugoti nustatymų naršyklės saugykloje. Pakeitimai liko atvertame lange; patikrinkite laisvą vietą ir naršyklės leidimus, tada bandykite dar kartą.',
 		storageRollbackError:
@@ -451,6 +456,10 @@ export const lt: TranslationDictionary = {
 			noConversationsToDelete: 'Nėra trintinų pokalbių'
 		},
 		info: {
+			chartsEnabled:
+				'Įjungia grafikų formato instrukcijas, atvaizdavimą, peržiūrą ir eksportą. Atsakymų nuostatos išsaugomos atskirai.',
+			diagramsEnabled:
+				'Įjungia Mermaid formato instrukcijas, diagramų atvaizdavimą, peržiūrą ir eksportą. Atsakymų nuostatos išsaugomos atskirai.',
 			apiProvider: 'Pasirinkite API teikėją.',
 			serverBaseUrl: 'Serverio, prie kurio norite prisijungti, adresas.',
 			apiKey: 'API raktas, jei serveris jo reikalauja.',

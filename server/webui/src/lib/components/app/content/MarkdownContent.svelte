@@ -60,8 +60,7 @@
 	import { fadeInView } from '$lib/actions/fade-in-view.svelte';
 	import { t } from '$lib/i18n';
 	import { portalToBody } from '$lib/utils/portal-to-body';
-	import ChartBlock from './ChartBlock.svelte';
-	import DiagramBlock from './DiagramBlock.svelte';
+	import VisualizationFallback from './VisualizationFallback.svelte';
 	import { adjacentDiagramTitle } from '$lib/diagrams/diagram-title';
 	import {
 		MERMAID_LANGUAGE,
@@ -90,6 +89,7 @@
 		allowMathFrames?: boolean;
 		inheritTypography?: boolean;
 		allowCharts?: boolean;
+		allowDiagrams?: boolean;
 		isStreaming?: boolean;
 		chartLimit?: number;
 		diagramLimit?: number;
@@ -100,7 +100,7 @@
 		contentHash?: string;
 	} & (
 		| { kind: 'html'; html: string }
-		| { kind: 'chart'; chart: { result: ChartResult; source: string } }
+		| { kind: 'chart'; chart: { result?: ChartResult; source: string } }
 		| { kind: 'diagram'; source: string; allowed: boolean; title?: string }
 	);
 
@@ -112,10 +112,13 @@
 		allowMathFrames = false,
 		inheritTypography = false,
 		allowCharts = false,
+		allowDiagrams = false,
 		isStreaming = false,
 		chartLimit = MAX_MESSAGE_CHARTS,
 		diagramLimit = MAX_MESSAGE_DIAGRAMS
 	}: Props = $props();
+	let chartsActive = $derived(allowCharts && config().chartsEnabled);
+	let diagramsActive = $derived(allowDiagrams && config().diagramsEnabled);
 
 	let containerRef = $state<HTMLDivElement>();
 	const mathContext = getAllContexts();
@@ -376,14 +379,19 @@
 			{ position: (node as { position?: unknown }).position } as HastRootContent,
 			index
 		);
+		if (destroyed) return { kind: 'html', id, contentHash: hash, html: '' };
 		if (allowCharts && isChartNode(node) && isClosedChartNode(node, markdown)) {
 			const source = node.value;
+			if (!chartsActive) return { kind: 'chart', id, contentHash: hash, chart: { source } };
 			let result = chartCache.get(source);
 			if (preceding.filter((block) => block.kind === 'chart').length >= chartLimit)
 				result = { success: false };
 			if (!result) {
 				try {
 					const { parseChart } = await import('$lib/charts/chart-schema');
+					// A committed OFF may arrive while the validator chunk is in flight.
+					if (destroyed || !chartsActive)
+						return { kind: 'chart', id, contentHash: hash, chart: { source } };
 					result = parseChart(source);
 				} catch (error) {
 					// A missing validator chunk must affect only this visualization,
@@ -398,7 +406,7 @@
 			}
 			return { kind: 'chart', id, contentHash: hash, chart: { result, source } };
 		}
-		if (allowCharts && isMermaidNode(node) && isClosedMermaidNode(node, markdown)) {
+		if (allowDiagrams && isMermaidNode(node) && isClosedMermaidNode(node, markdown)) {
 			return {
 				kind: 'diagram',
 				title: adjacentDiagramTitle(previousNode),
@@ -756,15 +764,15 @@
 	 * @param markdown - The raw markdown string to process
 	 */
 	function normalizeMarkdown(markdown: string) {
-		// Mermaid is code even in contexts not permitted to render it.
+		// Fence protection is independent of renderer permission and master toggles.
 		return preprocessMermaidMarkdown(markdown, (source) =>
-			allowCharts ? preprocessChartMarkdown(source, preprocessLaTeX) : preprocessLaTeX(source)
+			preprocessChartMarkdown(source, preprocessLaTeX)
 		);
 	}
 
 	async function processMarkdown(markdown: string, revision: number) {
 		const current = () => !destroyed && revision === markdownRevision;
-		const renderPolicy = `${allowCharts}:${chartLimit}:${diagramLimit}:${disableMath}:${isStreaming}`;
+		const renderPolicy = `${allowCharts}:${allowDiagrams}:${chartsActive}:${diagramsActive}:${chartLimit}:${diagramLimit}:${disableMath}:${isStreaming}`;
 		if (renderPolicy !== previousRenderPolicy) {
 			previousContent = '';
 			previousRenderPolicy = renderPolicy;
@@ -792,7 +800,7 @@
 		// Check for incomplete code block at the end of content
 		const incompleteBlock =
 			detectIncompleteMermaidBlock(markdown) ??
-			(allowCharts ? detectIncompleteChartBlock(markdown) : null) ??
+			detectIncompleteChartBlock(markdown) ??
 			detectIncompleteCodeBlock(markdown);
 
 		if (incompleteBlock) {
@@ -806,7 +814,10 @@
 			unstableBlockHtml = '';
 			incompleteMathBlock = null;
 			incompleteCodeBlock = incompleteBlock;
-			if (allowCharts && [CHART_LANGUAGE, MERMAID_LANGUAGE].includes(incompleteBlock.language))
+			if (
+				(allowCharts && incompleteBlock.language === CHART_LANGUAGE) ||
+				(allowDiagrams && incompleteBlock.language === MERMAID_LANGUAGE)
+			)
 				streamingHighlightedHtml = '';
 			else await updateStreamingHighlightedHtml(incompleteBlock);
 
@@ -816,9 +827,7 @@
 		const pendingMathBlock =
 			disableMath || !isStreaming
 				? null
-				: detectIncompleteMathBlock(
-						withoutClosedMermaidFences(allowCharts ? withoutClosedChartFences(markdown) : markdown)
-					);
+				: detectIncompleteMathBlock(withoutClosedMermaidFences(withoutClosedChartFences(markdown)));
 
 		if (pendingMathBlock) {
 			const prefixMarkdown = markdown.slice(0, pendingMathBlock.openingIndex);
@@ -849,9 +858,8 @@
 		// Closed visualizations are stable immediately, before any following paragraph.
 		const stableCount =
 			isClosedMathNode(last, normalized) ||
-			(allowCharts &&
-				((isChartNode(last) && isClosedChartNode(last, normalized)) ||
-					(isMermaidNode(last) && isClosedMermaidNode(last, normalized))))
+			(allowCharts && isChartNode(last) && isClosedChartNode(last, normalized)) ||
+			(allowDiagrams && isMermaidNode(last) && isClosedMermaidNode(last, normalized))
 				? mdastChildren.length
 				: Math.max(mdastChildren.length - 1, 0);
 		const nextBlocks: MarkdownBlock[] = [];
@@ -1162,6 +1170,9 @@
 
 	$effect(() => {
 		void allowCharts;
+		void allowDiagrams;
+		void chartsActive;
+		void diagramsActive;
 		void chartLimit;
 		void diagramLimit;
 		void disableMath;
@@ -1223,9 +1234,55 @@
 	{#each renderedBlocks as block (block.id)}
 		<div class="markdown-block" data-block-id={block.id} use:fadeInView={{ skipIfVisible: true }}>
 			{#if block.kind === 'chart'}
-				<ChartBlock result={block.chart.result} source={block.chart.source} />
+				{#if !chartsActive}
+					<VisualizationFallback
+						source={block.chart.source}
+						title={t('charts.title')}
+						kind="chart"
+						disabled
+					/>
+				{:else if block.chart.result}
+					{#await import('./ChartBlock.svelte')}
+						<div class="llampart-inline-processing-status" role="status">
+							{t('charts.preparing')}
+						</div>
+					{:then module}
+						<module.default result={block.chart.result} source={block.chart.source} />
+					{:catch}
+						<VisualizationFallback
+							source={block.chart.source}
+							title={t('charts.title')}
+							kind="chart"
+						/>
+					{/await}
+				{/if}
 			{:else if block.kind === 'diagram'}
-				<DiagramBlock source={block.source} allowed={block.allowed} contextTitle={block.title} />
+				{#if !diagramsActive}
+					<VisualizationFallback
+						source={block.source}
+						title={t('diagrams.title')}
+						kind="diagram"
+						disabled
+					/>
+				{:else}
+					{#await import('./DiagramBlock.svelte')}
+						<div class="llampart-inline-processing-status" role="status">
+							{t('diagrams.preparing')}
+						</div>
+					{:then module}
+						<module.default
+							source={block.source}
+							allowed={block.allowed}
+							contextTitle={block.title}
+						/>
+					{:catch}
+						<VisualizationFallback
+							source={block.source}
+							title={t('diagrams.title')}
+							kind="diagram"
+						/>
+					{/await}
+				{/if}
 			{:else}
 				<!-- eslint-disable-next-line no-at-html-tags -->
 				{@html block.html}
@@ -1262,17 +1319,39 @@
 		</div>
 	{/if}
 
-	{#if incompleteCodeBlock && allowCharts && incompleteCodeBlock.language === MERMAID_LANGUAGE}
-		{#if isStreaming}
+	{#if incompleteCodeBlock && allowDiagrams && incompleteCodeBlock.language === MERMAID_LANGUAGE}
+		{#if !diagramsActive}
+			<VisualizationFallback
+				source={incompleteCodeBlock.code}
+				title={t('diagrams.title')}
+				kind="diagram"
+				disabled
+			/>
+		{:else if isStreaming}
 			<div class="llampart-inline-processing-status" role="status">{t('diagrams.preparing')}</div>
 		{:else}
-			<DiagramBlock source={incompleteCodeBlock.code} allowed={false} />
+			<VisualizationFallback
+				source={incompleteCodeBlock.code}
+				title={t('diagrams.title')}
+				kind="diagram"
+			/>
 		{/if}
 	{:else if incompleteCodeBlock && allowCharts && incompleteCodeBlock.language === CHART_LANGUAGE}
-		{#if isStreaming}
+		{#if !chartsActive}
+			<VisualizationFallback
+				source={incompleteCodeBlock.code}
+				title={t('charts.title')}
+				kind="chart"
+				disabled
+			/>
+		{:else if isStreaming}
 			<div class="llampart-inline-processing-status" role="status">{t('charts.preparing')}</div>
 		{:else}
-			<ChartBlock result={{ success: false }} source={incompleteCodeBlock.code} />
+			<VisualizationFallback
+				source={incompleteCodeBlock.code}
+				title={t('charts.title')}
+				kind="chart"
+			/>
 		{/if}
 	{:else if incompleteCodeBlock}
 		<div class="code-block-wrapper streaming-code-block relative">

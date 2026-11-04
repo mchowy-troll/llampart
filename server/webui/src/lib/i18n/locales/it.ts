@@ -9,6 +9,7 @@ export const it: TranslationDictionary = {
 		exportError: 'Impossibile esportare la formula. Riprova.'
 	},
 	diagrams: {
+		disabled: 'La visualizzazione dei diagrammi è disattivata nelle impostazioni.',
 		title: 'Diagramma',
 		preview: 'Anteprima del diagramma',
 		preparing: 'Preparazione del diagramma…',
@@ -18,6 +19,7 @@ export const it: TranslationDictionary = {
 		exportError: 'Impossibile esportare il diagramma. Riprova.'
 	},
 	charts: {
+		disabled: 'La visualizzazione dei grafici è disattivata nelle impostazioni.',
 		preview: 'Anteprima del grafico',
 		title: 'Grafico',
 		preparing: 'Preparazione del grafico…',
@@ -182,6 +184,9 @@ export const it: TranslationDictionary = {
 		enterNewConversationName: 'Inserisci un nuovo nome'
 	},
 	settings: {
+		groupVisualizations: 'Funzionalità di visualizzazione',
+		fieldChartsEnabled: 'Abilita grafici',
+		fieldDiagramsEnabled: 'Abilita diagrammi',
 		storageSaveError:
 			'Impossibile salvare le impostazioni nel browser. Le modifiche restano aperte; controlla lo spazio disponibile e le autorizzazioni del browser, poi riprova.',
 		storageRollbackError:
@@ -449,6 +454,10 @@ export const it: TranslationDictionary = {
 			noConversationsToDelete: 'Nessuna conversazione da eliminare'
 		},
 		info: {
+			chartsEnabled:
+				'Abilita le istruzioni di formato, la visualizzazione, l’anteprima e l’esportazione dei grafici. Le preferenze di risposta vengono salvate separatamente.',
+			diagramsEnabled:
+				'Abilita le istruzioni di formato Mermaid, la visualizzazione, l’anteprima e l’esportazione dei diagrammi. Le preferenze di risposta vengono salvate separatamente.',
 			apiProvider: 'Scegli il provider API.',
 			serverBaseUrl: 'Indirizzo del server a cui vuoi connetterti.',
 			apiKey: 'Chiave API, se richiesta dal server.',

@@ -9,6 +9,7 @@ export const ro: TranslationDictionary = {
 		exportError: 'Formula nu a putut fi exportată. Încearcă din nou.'
 	},
 	diagrams: {
+		disabled: 'Redarea diagramelor este dezactivată în setări.',
 		title: 'Diagramă',
 		preview: 'Previzualizează diagrama',
 		preparing: 'Se pregătește diagrama…',
@@ -18,6 +19,7 @@ export const ro: TranslationDictionary = {
 		exportError: 'Diagrama nu a putut fi exportată. Încearcă din nou.'
 	},
 	charts: {
+		disabled: 'Redarea graficelor este dezactivată în setări.',
 		preview: 'Previzualizează graficul',
 		title: 'Grafic',
 		preparing: 'Se pregătește graficul…',
@@ -181,6 +183,9 @@ export const ro: TranslationDictionary = {
 		enterNewConversationName: 'Introdu un nume nou'
 	},
 	settings: {
+		groupVisualizations: 'Funcționalități de vizualizare',
+		fieldChartsEnabled: 'Activează graficele',
+		fieldDiagramsEnabled: 'Activează diagramele',
 		storageSaveError:
 			'Setările nu au putut fi salvate în spațiul de stocare al browserului. Modificările rămân deschise; verifică spațiul disponibil și permisiunile browserului, apoi încearcă din nou.',
 		storageRollbackError:
@@ -450,6 +455,10 @@ export const ro: TranslationDictionary = {
 			noConversationsToDelete: 'Nu există conversații de șters'
 		},
 		info: {
+			chartsEnabled:
+				'Activează instrucțiunile de format, redarea, previzualizarea și exportul graficelor. Preferințele de răspuns sunt salvate independent.',
+			diagramsEnabled:
+				'Activează instrucțiunile de format Mermaid, redarea, previzualizarea și exportul diagramelor. Preferințele de răspuns sunt salvate independent.',
 			apiProvider: 'Alege furnizorul API.',
 			serverBaseUrl: 'Adresa serverului la care vrei să te conectezi.',
 			apiKey: 'Cheia API, dacă serverul o solicită.',

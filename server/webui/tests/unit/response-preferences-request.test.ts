@@ -6,9 +6,12 @@ import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
 import { CHART_INSTRUCTIONS as CHART_ONLY } from '$lib/markdown/chart-instructions';
 import { MERMAID_INSTRUCTIONS } from '$lib/markdown/mermaid-instructions';
 const CHART_INSTRUCTIONS = CHART_ONLY + '\n\n' + MERMAID_INSTRUCTIONS;
+const envelope = (text: string) =>
+	`<llampart-chat-instructions>\n${text}\n</llampart-chat-instructions>`;
 import {
 	RESPONSE_PREFERENCES,
-	buildResponsePreferenceInstructions
+	buildResponsePreferenceInstructions,
+	withChatInstructions
 } from '$lib/utils/response-preferences';
 import type { ApiChatMessageData } from '$lib/types/api';
 import { MessageType } from '$lib/enums';
@@ -52,14 +55,35 @@ describe('response preferences through ChatService requests', () => {
 		const preferences = buildResponsePreferenceInstructions(settingsStore.config);
 		expect(cachedSystem).toEqual(chatSystem);
 		expect(cachedSystem.content).toBe(
-			[CHART_INSTRUCTIONS, preferences, manual].filter(Boolean).join('\n\n')
+			[envelope([CHART_INSTRUCTIONS, preferences].join('\n\n')), manual].join('\n\n')
 		);
 		expect(bodies[1]).toMatchObject({ stream: false, n_predict: 0, model: 'test' });
 		expect(vi.mocked(fetch).mock.calls[1][1]?.signal).toBe(controller.signal);
-		// Reusing an already composed request must not duplicate either instruction block.
-		await ChatService.preEncode(bodies[0].messages, context, 'test', true);
+		// Only the in-memory composer's output has trusted application ownership.
+		await ChatService.preEncode(
+			withChatInstructions(history, settingsStore.config),
+			context,
+			'test',
+			true
+		);
 		expect(bodies[2].messages.find(({ role }) => role === 'system')).toEqual(chatSystem);
 		expect(history).toEqual(before);
+	});
+	it('preserves a serialized composer envelope re-entered as a manual system prompt', async () => {
+		const manual = JSON.parse(
+			JSON.stringify(withChatInstructions([{ role: 'system', content: 'Manual ending' }], all))
+		) as ApiChatMessageData[];
+		const before = structuredClone(manual);
+		settingsStore.updateMultipleConfig({
+			chartsEnabled: false,
+			diagramsEnabled: false,
+			...Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }) => [key, false]))
+		});
+		const context = ChatService.createProviderRequestContext();
+		await ChatService.sendMessage(manual, { stream: true, model: 'test' }, 'conversation');
+		await ChatService.preEncode(manual, context, 'test', true);
+		for (const body of bodies) expect(body.messages[0]).toEqual(manual[0]);
+		expect(manual).toEqual(before);
 	});
 
 	it.each([false, true])(
@@ -145,7 +169,8 @@ describe('response preferences through ChatService requests', () => {
 				'existing-conversation'
 			);
 			expect(bodies[0].messages[0].content).toBe(
-				CHART_INSTRUCTIONS + '\n\n' + buildResponsePreferenceInstructions(all) + '\n\nManual prompt'
+				envelope(CHART_INSTRUCTIONS + '\n\n' + buildResponsePreferenceInstructions(all)) +
+					'\n\nManual prompt'
 			);
 			expect(bodies[0].messages.slice(1)).toEqual(history.slice(1));
 			expect(history).toEqual(before);
@@ -178,7 +203,9 @@ describe('response preferences through ChatService requests', () => {
 				{ stream: true, model: 'test' },
 				'existing-conversation'
 			);
-			expect(bodies[2].messages[0].content).toBe(CHART_INSTRUCTIONS + '\n\nManual prompt');
+			expect(bodies[2].messages[0].content).toBe(
+				envelope(CHART_INSTRUCTIONS) + '\n\nManual prompt'
+			);
 			expect(history).toEqual(before);
 		}
 	);
@@ -196,7 +223,7 @@ describe('response preferences through ChatService requests', () => {
 			{ stream: true },
 			'conversation'
 		);
-		expect(bodies[0].messages[0].content).toBe(CHART_INSTRUCTIONS);
+		expect(bodies[0].messages[0].content).toBe(envelope(CHART_INSTRUCTIONS));
 		await ChatService.preEncode(
 			[{ role: 'user', content: 'Hi' }],
 			ChatService.createProviderRequestContext()

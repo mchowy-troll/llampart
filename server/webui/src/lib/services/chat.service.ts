@@ -1,5 +1,8 @@
 import { t } from '$lib/i18n';
-import { withChatInstructions } from '$lib/utils/response-preferences';
+import {
+	captureChatInstructionSettings,
+	withChatInstructions
+} from '$lib/utils/response-preferences';
 import { VllmLiveStatistics } from '$lib/utils/vllm-live-statistics';
 import { getApiProvider } from '$lib/services/providers';
 import type { ApiProviderAdapter } from '$lib/services/providers/provider.types';
@@ -79,6 +82,7 @@ export class ChatService {
 		void capabilities.catch(() => undefined);
 		void modelInfo.catch(() => undefined);
 		return Object.freeze({
+			chatInstructions: captureChatInstructionSettings(config()),
 			model,
 			requestContext: context,
 			capabilities,
@@ -219,14 +223,16 @@ export class ChatService {
 		normalizedMessages = projectToolHistory(normalizedMessages);
 		// config() is committed state, never the Settings draft/appearance overlay.
 		// Auxiliary requests (including title generation) have no conversationId.
-		if (conversationId)
-			normalizedMessages = withChatInstructions(normalizedMessages, { ...config() });
-
 		const operationModel =
 			options.operationModel ??
 			ChatService.captureOperationModel(requestContext, options.model, undefined, {
 				conversationId: conversationId ?? null
 			});
+		if (conversationId)
+			normalizedMessages = withChatInstructions(
+				normalizedMessages,
+				operationModel.chatInstructions ?? captureChatInstructionSettings(config())
+			);
 		if (operationModel.conversationId && operationModel.conversationId !== conversationId)
 			throw new Error('Request belongs to a different conversation');
 		effectiveOptions = {
@@ -522,9 +528,10 @@ export class ChatService {
 				return true;
 			});
 
-		const requestMessages = withChatInstructions(projectToolHistory(normalizedMessages), {
-			...config()
-		});
+		const requestMessages = withChatInstructions(
+			projectToolHistory(normalizedMessages),
+			operationModel?.chatInstructions ?? captureChatInstructionSettings(config())
+		);
 		const requestModel = operationModel ? operationModel.model : model;
 		const requestBody: Record<string, unknown> = {
 			messages: requestMessages.map((msg: ApiChatMessageData) => {

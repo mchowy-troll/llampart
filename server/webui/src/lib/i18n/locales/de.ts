@@ -9,6 +9,7 @@ export const de: TranslationDictionary = {
 		exportError: 'Die Formel konnte nicht exportiert werden. Bitte erneut versuchen.'
 	},
 	diagrams: {
+		disabled: 'Die Darstellung von Diagrammen ist in den Einstellungen deaktiviert.',
 		title: 'Diagramm',
 		preview: 'Diagrammvorschau',
 		preparing: 'Diagramm wird vorbereitet…',
@@ -18,14 +19,15 @@ export const de: TranslationDictionary = {
 		exportError: 'Diagramm konnte nicht exportiert werden. Bitte erneut versuchen.'
 	},
 	charts: {
-		preview: 'Diagrammvorschau',
-		title: 'Diagramm',
-		preparing: 'Diagramm wird vorbereitet…',
+		disabled: 'Die Darstellung von Datendiagrammen ist in den Einstellungen deaktiviert.',
+		preview: 'Datendiagrammvorschau',
+		title: 'Datendiagramm',
+		preparing: 'Datendiagramm wird vorbereitet…',
 		invalid:
-			'Das Schaubild konnte nicht angezeigt werden. Mögliche Ursachen sind ein ungültiges llampart-chart-Format oder eine Überschreitung der unterstützten Datenlimits.',
-		export: 'Diagramm exportieren als',
-		exportError: 'Das Diagramm konnte nicht exportiert werden. Bitte erneut versuchen.',
-		legend: 'Diagrammlegende — Reihen umschalten',
+			'Das Datendiagramm konnte nicht angezeigt werden. Mögliche Ursachen sind ein ungültiges llampart-chart-Format oder eine Überschreitung der unterstützten Datenlimits.',
+		export: 'Datendiagramm exportieren als',
+		exportError: 'Das Datendiagramm konnte nicht exportiert werden. Bitte erneut versuchen.',
+		legend: 'Datendiagrammlegende — Reihen umschalten',
 		value: 'Wert',
 		share: 'Anteil'
 	},
@@ -184,6 +186,9 @@ export const de: TranslationDictionary = {
 		enterNewConversationName: 'Neuen Namen eingeben'
 	},
 	settings: {
+		groupVisualizations: 'Visualisierungsfunktionen',
+		fieldChartsEnabled: 'Datendiagramme aktivieren',
+		fieldDiagramsEnabled: 'Diagramme aktivieren',
 		storageSaveError:
 			'Die Einstellungen konnten nicht im Browserspeicher gespeichert werden. Ihre Änderungen bleiben geöffnet; prüfen Sie freien Speicherplatz und Browserberechtigungen und versuchen Sie es erneut.',
 		storageRollbackError:
@@ -313,12 +318,12 @@ export const de: TranslationDictionary = {
 		responsePrefTables: 'Tabellen verwenden',
 		responsePrefTablesHelp:
 			'Tabellen für Vergleiche und strukturierte Daten, nicht für einfache Sätze oder Abläufe.',
-		responsePrefCharts: 'Diagramme verwenden',
+		responsePrefCharts: 'Datendiagramme verwenden',
 		responsePrefDiagrams: 'Mermaid-Diagramme verwenden',
 		responsePrefDiagramsHelp:
 			'Mermaid-Diagramme verwenden, wenn sie Prozesse, Architektur oder Beziehungen verdeutlichen. Keine Beziehungen erfinden.',
 		responsePrefChartsHelp:
-			'Native Diagramme für sinnvolle Vergleiche, Trends und Verteilungen. Keine erfundenen Daten.',
+			'Native Datendiagramme für sinnvolle Vergleiche, Trends und Verteilungen. Keine erfundenen Daten.',
 		responsePrefNoDecorations: 'Keine Emojis oder Verzierungen',
 		responsePrefNoDecorationsHelp:
 			'Keine dekorativen Symbole. Sprachzeichen, Mathematik, Code und Zitate bleiben erhalten.',
@@ -453,6 +458,10 @@ export const de: TranslationDictionary = {
 			noConversationsToDelete: 'Keine Unterhaltungen zum Löschen'
 		},
 		info: {
+			chartsEnabled:
+				'Aktiviert Formatanweisungen, Darstellung, Vorschau und Export von Datendiagrammen. Antwortpräferenzen werden unabhängig gespeichert.',
+			diagramsEnabled:
+				'Aktiviert Mermaid-Formatanweisungen, Darstellung, Vorschau und Export von Diagrammen. Antwortpräferenzen werden unabhängig gespeichert.',
 			apiProvider: 'Wähle den API-Anbieter.',
 			serverBaseUrl: 'Adresse des Servers, mit dem du dich verbinden möchtest.',
 			apiKey: 'API-Schlüssel, falls vom Server benötigt.',

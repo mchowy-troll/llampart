@@ -9,6 +9,7 @@ export const en: TranslationDictionary = {
 		exportError: 'Could not export the formula. Please try again.'
 	},
 	diagrams: {
+		disabled: 'Diagram rendering is disabled in Settings.',
 		title: 'Diagram',
 		preview: 'Preview diagram',
 		preparing: 'Preparing diagram…',
@@ -18,6 +19,7 @@ export const en: TranslationDictionary = {
 		exportError: 'Could not export the diagram. Please try again.'
 	},
 	charts: {
+		disabled: 'Chart rendering is disabled in Settings.',
 		preview: 'Preview chart',
 		title: 'Chart',
 		preparing: 'Preparing chart…',
@@ -349,6 +351,9 @@ export const en: TranslationDictionary = {
 		groupSidebar: 'Sidebar',
 		groupMessageDisplay: 'Message display',
 		groupInput: 'Message input',
+		groupVisualizations: 'Visualization capabilities',
+		fieldChartsEnabled: 'Enable charts',
+		fieldDiagramsEnabled: 'Enable diagrams',
 		groupAttachmentsFiles: 'Attachments and files',
 		groupConversationTitles: 'Conversation titles',
 		groupBasicGeneration: 'Basic generation',
@@ -446,6 +451,10 @@ export const en: TranslationDictionary = {
 			noConversationsToDelete: 'No conversations to delete'
 		},
 		info: {
+			chartsEnabled:
+				'Enable chart format instructions, rendering, previews and exports. Response preferences remain saved independently.',
+			diagramsEnabled:
+				'Enable Mermaid format instructions, rendering, previews and exports. Response preferences remain saved independently.',
 			apiProvider: 'Choose the API provider.',
 			serverBaseUrl: 'The address of the server you want to connect to.',
 			apiKey: 'API key, if required by the server.',

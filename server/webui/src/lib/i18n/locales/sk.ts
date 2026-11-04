@@ -9,6 +9,7 @@ export const sk: TranslationDictionary = {
 		exportError: 'Vzorec sa nepodarilo exportovať. Skúste to znova.'
 	},
 	diagrams: {
+		disabled: 'Vykresľovanie diagramov je v nastaveniach vypnuté.',
 		title: 'Diagram',
 		preview: 'Zobraziť náhľad diagramu',
 		preparing: 'Pripravuje sa diagram…',
@@ -18,6 +19,7 @@ export const sk: TranslationDictionary = {
 		exportError: 'Diagram sa nepodarilo exportovať. Skúste to znova.'
 	},
 	charts: {
+		disabled: 'Vykresľovanie grafov je v nastaveniach vypnuté.',
 		preview: 'Zobraziť náhľad grafu',
 		title: 'Graf',
 		preparing: 'Pripravuje sa graf…',
@@ -181,6 +183,9 @@ export const sk: TranslationDictionary = {
 		enterNewConversationName: 'Zadajte nový názov'
 	},
 	settings: {
+		groupVisualizations: 'Možnosti vizualizácií',
+		fieldChartsEnabled: 'Povoliť grafy',
+		fieldDiagramsEnabled: 'Povoliť diagramy',
 		storageSaveError:
 			'Nastavenia sa nepodarilo uložiť do úložiska prehliadača. Vaše zmeny zostávajú vo formulári. Skontrolujte voľné miesto a oprávnenia prehliadača a skúste to znova.',
 		storageRollbackError:
@@ -449,6 +454,10 @@ export const sk: TranslationDictionary = {
 			noConversationsToDelete: 'Nie sú k dispozícii žiadne konverzácie na odstránenie'
 		},
 		info: {
+			chartsEnabled:
+				'Povoľuje pokyny k formátu, vykresľovanie, náhľad a export grafov. Predvoľby odpovedí sa ukladajú nezávisle.',
+			diagramsEnabled:
+				'Povoľuje pokyny k formátu Mermaid, vykresľovanie, náhľad a export diagramov. Predvoľby odpovedí sa ukladajú nezávisle.',
 			apiProvider: 'Vyberte poskytovateľa API.',
 			serverBaseUrl: 'Adresa servera, ku ktorému sa chcete pripojiť.',
 			apiKey: 'Kľúč API, ak ho server vyžaduje.',

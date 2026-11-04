@@ -24,6 +24,8 @@ export const SETTINGS_KEYS = {
 	SYSTEM_MESSAGE: 'systemMessage',
 	RESPONSE_PREF_NO_HEADINGS: 'responsePrefNoHeadings',
 	RESPONSE_PREF_TABLES: 'responsePrefTables',
+	CHARTS_ENABLED: 'chartsEnabled',
+	DIAGRAMS_ENABLED: 'diagramsEnabled',
 	RESPONSE_PREF_CHARTS: 'responsePrefCharts',
 	RESPONSE_PREF_DIAGRAMS: 'responsePrefDiagrams',
 	RESPONSE_PREF_NO_DECORATIONS: 'responsePrefNoDecorations',

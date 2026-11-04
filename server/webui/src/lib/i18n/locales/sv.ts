@@ -9,6 +9,7 @@ export const sv: TranslationDictionary = {
 		exportError: 'Det gick inte att exportera formeln. Försök igen.'
 	},
 	diagrams: {
+		disabled: 'Visning av schematiska diagram är avstängd i inställningarna.',
 		title: 'Diagram',
 		preview: 'Förhandsgranska diagram',
 		preparing: 'Förbereder diagram…',
@@ -18,6 +19,7 @@ export const sv: TranslationDictionary = {
 		exportError: 'Det gick inte att exportera diagrammet. Försök igen.'
 	},
 	charts: {
+		disabled: 'Visning av datadiagram är avstängd i inställningarna.',
 		preview: 'Förhandsgranska diagram',
 		title: 'Diagram',
 		preparing: 'Förbereder diagram…',
@@ -183,6 +185,9 @@ export const sv: TranslationDictionary = {
 		enterNewConversationName: 'Ange ett nytt namn'
 	},
 	settings: {
+		groupVisualizations: 'Visualiseringsfunktioner',
+		fieldChartsEnabled: 'Aktivera datadiagram',
+		fieldDiagramsEnabled: 'Aktivera schematiska diagram',
 		storageSaveError:
 			'Det gick inte att spara inställningarna i webbläsarens lagring. Dina ändringar finns kvar i formuläret. Kontrollera tillgängligt utrymme och webbläsarens behörigheter och försök sedan igen.',
 		storageRollbackError:
@@ -456,6 +461,10 @@ export const sv: TranslationDictionary = {
 			noConversationsToDelete: 'Inga samtal att ta bort'
 		},
 		info: {
+			chartsEnabled:
+				'Aktiverar formatinstruktioner, visning, förhandsvisning och export av datadiagram. Svarspreferenser sparas oberoende.',
+			diagramsEnabled:
+				'Aktiverar Mermaid-formatinstruktioner, visning, förhandsvisning och export av schematiska diagram. Svarspreferenser sparas oberoende.',
 			apiProvider: 'Välj API-leverantör.',
 			serverBaseUrl: 'Adressen till servern du vill ansluta till.',
 			apiKey: 'API-nyckel, om servern kräver det.',

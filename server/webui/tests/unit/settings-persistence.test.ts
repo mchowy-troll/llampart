@@ -9,6 +9,7 @@ import { config, settingsStore, SettingsPersistenceError } from '$lib/stores/set
 import { serverStore } from '$lib/stores/server.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { HealthCheckStatus } from '$lib/enums';
+import { ParameterSyncService } from '$lib/services/parameter-sync.service';
 import { parseSettingsStorage } from '$lib/utils/settings-schema';
 import { importApplicationSettings } from '$lib/utils/settings-import-export';
 import type { MCPConnection } from '$lib/types';
@@ -56,6 +57,42 @@ afterEach(() => {
 
 // Compensation and reload below exercise a Map-backed storage, not browser atomicity.
 describe('Settings persistence boundary with mock storage', () => {
+	it.each([null, JSON.stringify({ responsePrefCharts: true, responsePrefDiagrams: true })])(
+		'keeps committed and Settings draft capabilities ON for fresh/legacy storage: %s',
+		(raw) => {
+			if (raw === null) storage.delete(CONFIG_LOCALSTORAGE_KEY);
+			else storage.set(CONFIG_LOCALSTORAGE_KEY, raw);
+			settingsStore.initialize();
+			expect(config()).toMatchObject({ chartsEnabled: true, diagramsEnabled: true });
+			const session = settingsStore.beginPreview();
+			const draft = { ...config() };
+			expect(draft).toMatchObject({ chartsEnabled: true, diagramsEnabled: true });
+			expect(settingsStore.getPreviewChanges(session, draft)).toEqual({});
+			expect(settingsStore.commitPreview(session, draft)).toEqual({ ok: true });
+			settingsStore.initialize();
+			expect(config()).toMatchObject({ chartsEnabled: true, diagramsEnabled: true });
+		}
+	);
+	it('capabilities apply only on Save, not draft or Cancel; preferences remain independent', () => {
+		settingsStore.updateMultipleConfig({ responsePrefCharts: true, responsePrefDiagrams: true });
+		const patch = { chartsEnabled: false, diagramsEnabled: false };
+		let session = settingsStore.beginPreview();
+		settingsStore.updatePreview(session, patch);
+		expect(config()).toMatchObject({ chartsEnabled: true, diagramsEnabled: true });
+		settingsStore.cancelPreview(session);
+		expect(config()).toMatchObject({ chartsEnabled: true, diagramsEnabled: true });
+		session = settingsStore.beginPreview();
+		expect(settingsStore.commitPreview(session, patch)).toEqual({ ok: true });
+		expect(config()).toMatchObject({
+			...patch,
+			responsePrefCharts: true,
+			responsePrefDiagrams: true
+		});
+		settingsStore.initialize();
+		expect(config()).toMatchObject(patch);
+		expect(ParameterSyncService.canSyncParameter('chartsEnabled')).toBe(false);
+		expect(ParameterSyncService.canSyncParameter('diagramsEnabled')).toBe(false);
+	});
 	it('restores absent keys rather than inventing saved values when the second write fails', () => {
 		storage.delete(CONFIG_LOCALSTORAGE_KEY);
 		storage.delete(USER_OVERRIDES_LOCALSTORAGE_KEY);

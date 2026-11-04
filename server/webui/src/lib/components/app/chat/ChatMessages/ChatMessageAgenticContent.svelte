@@ -211,6 +211,7 @@
 				class="llampart-assistant-markdown"
 				allowMathFrames
 				allowCharts
+				allowDiagrams
 				{isStreaming}
 				chartLimit={Math.max(
 					0,

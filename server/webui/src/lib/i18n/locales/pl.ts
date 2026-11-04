@@ -9,6 +9,7 @@ export const pl: TranslationDictionary = {
 		exportError: 'Nie udało się wyeksportować wzoru. Spróbuj ponownie.'
 	},
 	diagrams: {
+		disabled: 'Renderowanie diagramów jest wyłączone w ustawieniach.',
 		title: 'Diagram',
 		preview: 'Podgląd diagramu',
 		preparing: 'Przygotowywanie diagramu…',
@@ -18,6 +19,7 @@ export const pl: TranslationDictionary = {
 		exportError: 'Nie udało się wyeksportować diagramu. Spróbuj ponownie.'
 	},
 	charts: {
+		disabled: 'Renderowanie wykresów jest wyłączone w ustawieniach.',
 		preview: 'Podgląd wykresu',
 		title: 'Wykres',
 		preparing: 'Przygotowywanie wykresu…',
@@ -449,7 +451,14 @@ export const pl: TranslationDictionary = {
 				'Nie udało się zaimportować rozmów. Sprawdź format pliku.',
 			noConversationsToDelete: 'Brak rozmów do usunięcia'
 		},
+		groupVisualizations: 'Możliwości wizualizacji',
+		fieldChartsEnabled: 'Włącz wykresy',
+		fieldDiagramsEnabled: 'Włącz diagramy',
 		info: {
+			chartsEnabled:
+				'Włącza instrukcje formatu, renderowanie, podgląd i eksport wykresów. Preferencje odpowiedzi są zapisywane niezależnie.',
+			diagramsEnabled:
+				'Włącza instrukcje formatu Mermaid, renderowanie, podgląd i eksport diagramów. Preferencje odpowiedzi są zapisywane niezależnie.',
 			apiProvider: 'Wybierz dostawcę API.',
 			serverBaseUrl: 'Adres serwera, z którym chcesz się połączyć.',
 			apiKey: 'Klucz API, jeśli jest wymagany przez serwer.',

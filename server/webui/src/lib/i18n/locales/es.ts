@@ -9,6 +9,7 @@ export const es: TranslationDictionary = {
 		exportError: 'No se pudo exportar la fórmula. Inténtalo de nuevo.'
 	},
 	diagrams: {
+		disabled: 'La visualización de diagramas está desactivada en los ajustes.',
 		title: 'Diagrama',
 		preview: 'Vista previa del diagrama',
 		preparing: 'Preparando diagrama…',
@@ -18,6 +19,7 @@ export const es: TranslationDictionary = {
 		exportError: 'No se pudo exportar el diagrama. Inténtalo de nuevo.'
 	},
 	charts: {
+		disabled: 'La visualización de gráficos está desactivada en los ajustes.',
 		preview: 'Vista previa del gráfico',
 		title: 'Gráfico',
 		preparing: 'Preparando gráfico…',
@@ -183,6 +185,9 @@ export const es: TranslationDictionary = {
 		enterNewConversationName: 'Introduce un nuevo nombre'
 	},
 	settings: {
+		groupVisualizations: 'Funciones de visualización',
+		fieldChartsEnabled: 'Activar gráficos',
+		fieldDiagramsEnabled: 'Activar diagramas',
 		storageSaveError:
 			'No se pudieron guardar los ajustes en el almacenamiento del navegador. Los cambios siguen abiertos; compruebe el espacio disponible y los permisos del navegador e inténtelo de nuevo.',
 		storageRollbackError:
@@ -455,6 +460,10 @@ export const es: TranslationDictionary = {
 			noConversationsToDelete: 'No hay conversaciones para eliminar'
 		},
 		info: {
+			chartsEnabled:
+				'Activa las instrucciones de formato, la visualización, la vista previa y la exportación de gráficos. Las preferencias de respuesta se guardan de forma independiente.',
+			diagramsEnabled:
+				'Activa las instrucciones de formato Mermaid, la visualización, la vista previa y la exportación de diagramas. Las preferencias de respuesta se guardan de forma independiente.',
 			apiProvider: 'Elige el proveedor de API.',
 			serverBaseUrl: 'Dirección del servidor al que quieres conectarte.',
 			apiKey: 'Clave API, si el servidor la requiere.',

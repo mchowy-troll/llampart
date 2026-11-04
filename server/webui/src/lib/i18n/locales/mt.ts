@@ -9,6 +9,7 @@ export const mt: TranslationDictionary = {
 		exportError: 'Ma setgħetx tiġi esportata l-formula. Erġa’ pprova.'
 	},
 	diagrams: {
+		disabled: 'Il-wiri tad-dijagrammi huwa diżattivat fis-settings.',
 		title: 'Dijagramma',
 		preview: 'Ara previżjoni tad-dijagramma',
 		preparing: 'Qed titħejja d-dijagramma…',
@@ -18,6 +19,7 @@ export const mt: TranslationDictionary = {
 		exportError: 'Ma setgħetx tiġi esportata d-dijagramma. Erġa’ pprova.'
 	},
 	charts: {
+		disabled: 'Il-wiri tal-graffs huwa diżattivat fis-settings.',
 		preview: 'Ara previżjoni tal-graff',
 		title: 'Graff',
 		preparing: 'Qed jitħejja l-graff…',
@@ -183,6 +185,9 @@ export const mt: TranslationDictionary = {
 		enterNewConversationName: 'Daħħal isem ġdid'
 	},
 	settings: {
+		groupVisualizations: 'Kapaċitajiet ta’ viżwalizzazzjoni',
+		fieldChartsEnabled: 'Attiva l-graffs',
+		fieldDiagramsEnabled: 'Attiva d-dijagrammi',
 		storageSaveError:
 			'L-issettjar ma setax jiġi ssejvjat fil-ħażna tal-brawżer. Il-bidliet tiegħek għadhom miftuħa; iċċekkja l-ispazju disponibbli u l-permessi tal-brawżer, imbagħad erġa’ pprova.',
 		storageRollbackError:
@@ -454,6 +459,10 @@ export const mt: TranslationDictionary = {
 			noConversationsToDelete: 'M’hemm l-ebda konversazzjoni x’tħassar'
 		},
 		info: {
+			chartsEnabled:
+				'Jattiva l-istruzzjonijiet tal-format, il-wiri, il-previżjoni u l-esportazzjoni tal-graffs. Il-preferenzi tat-tweġibiet jiġu ssejvjati separatament.',
+			diagramsEnabled:
+				'Jattiva l-istruzzjonijiet tal-format Mermaid, il-wiri, il-previżjoni u l-esportazzjoni tad-dijagrammi. Il-preferenzi tat-tweġibiet jiġu ssejvjati separatament.',
 			apiProvider: 'Agħżel il-fornitur tal-API.',
 			serverBaseUrl: 'L-indirizz tas-server li trid tikkonnettja miegħu.',
 			apiKey: 'Ċavetta API, jekk is-server jeħtieġha.',

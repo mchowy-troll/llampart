@@ -9,6 +9,7 @@ export const ga: TranslationDictionary = {
 		exportError: 'Níorbh fhéidir an fhoirmle a easpórtáil. Bain triail eile as.'
 	},
 	diagrams: {
+		disabled: 'Tá rindreáil léaráidí díchumasaithe sna socruithe.',
 		title: 'Léaráid',
 		preview: 'Réamhamharc ar an léaráid',
 		preparing: 'An léaráid á hullmhú…',
@@ -18,6 +19,7 @@ export const ga: TranslationDictionary = {
 		exportError: 'Níorbh fhéidir an léaráid a easpórtáil. Bain triail eile as.'
 	},
 	charts: {
+		disabled: 'Tá rindreáil cairteacha díchumasaithe sna socruithe.',
 		preview: 'Réamhamharc ar an gcairt',
 		title: 'Cairt',
 		preparing: 'An chairt á hullmhú…',
@@ -184,6 +186,9 @@ export const ga: TranslationDictionary = {
 		enterNewConversationName: 'Cuir isteach ainm nua'
 	},
 	settings: {
+		groupVisualizations: 'Cumais léirshamhlaithe',
+		fieldChartsEnabled: 'Cumasaigh cairteacha',
+		fieldDiagramsEnabled: 'Cumasaigh léaráidí',
 		storageSaveError:
 			'Níorbh fhéidir na socruithe a shábháil i stóras an bhrabhsálaí. Tá d’athruithe fós ar oscailt; seiceáil an spás atá ar fáil agus ceadanna an bhrabhsálaí, ansin bain triail eile as.',
 		storageRollbackError:
@@ -455,6 +460,10 @@ export const ga: TranslationDictionary = {
 			noConversationsToDelete: 'Níl aon chomhráite le scriosadh'
 		},
 		info: {
+			chartsEnabled:
+				'Cumasaíonn sé treoracha formáide, rindreáil, réamhamharc agus easpórtáil cairteacha. Sábháiltear roghanna freagartha go neamhspleách.',
+			diagramsEnabled:
+				'Cumasaíonn sé treoracha formáide Mermaid, rindreáil, réamhamharc agus easpórtáil léaráidí. Sábháiltear roghanna freagartha go neamhspleách.',
 			apiProvider: 'Roghnaigh an soláthraí API.',
 			serverBaseUrl: 'Seoladh an fhreastalaí ar mian leat nascadh leis.',
 			apiKey: 'Eochair API, má éilíonn an freastalaí í.',
