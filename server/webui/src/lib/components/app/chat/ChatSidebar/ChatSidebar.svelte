@@ -460,7 +460,7 @@
 
 					<button
 						aria-label={t('common.close')}
-						class="absolute top-1/2 right-3 flex h-5 w-5 -translate-y-1/2 items-center justify-center text-[#333333] transition-colors hover:text-[#333333] focus-visible:outline-none"
+						class="llampart-sidebar-search-close absolute top-1/2 flex -translate-y-1/2 items-center justify-center text-[#333333] transition-colors hover:text-[#333333]"
 						onclick={handleSearchModeDeactivate}
 						type="button"
 					>
@@ -470,7 +470,7 @@
 			</div>
 		{:else}
 			<div
-				class="llampart-sidebar-header-actions llampart-sidebar-action-band flex h-[3.25rem] items-center justify-between gap-3"
+				class="llampart-sidebar-header-actions llampart-sidebar-action-band llampart-sidebar-primary-actions flex min-h-[3.25rem] flex-wrap items-center justify-between gap-3"
 			>
 				<Button
 					aria-label={t('sidebar.newChat')}

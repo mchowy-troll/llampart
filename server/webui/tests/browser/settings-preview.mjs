@@ -8,14 +8,16 @@
  * build with its API gateway pointing to an unavailable backend. That focused
  * branch uses no dev-only imports. LLAMPART_BROWSER=firefox selects Firefox;
  * LLAMPART_FIREFOX may point to an installed Playwright-compatible executable.
+ * --layout-only: production-compatible sidebar geometry and keyboard regression.
  */
 import assert from 'node:assert/strict';
-import { mkdir, readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 assert(process.env.LLAMPART_PLAYWRIGHT_MODULE, 'Set LLAMPART_PLAYWRIGHT_MODULE');
 // Focused post-release regression: Reset + reasoning + eye, no preview suite.
 const resetOnly = process.argv.includes('--reset-only');
 const offlineOnly = process.argv.includes('--offline-only');
+const layoutOnly = process.argv.includes('--layout-only');
 const engines = await import(process.env.LLAMPART_PLAYWRIGHT_MODULE);
 const firefox = process.env.LLAMPART_BROWSER === 'firefox';
 const browser = await engines[firefox ? 'firefox' : 'chromium'].launch({
@@ -32,7 +34,8 @@ const page = await browser.newPage({
 		width: Number(process.env.LLAMPART_TEST_WIDTH || 1920),
 		height: Number(process.env.LLAMPART_TEST_HEIGHT || 1080)
 	},
-	deviceScaleFactor: Number(process.env.LLAMPART_TEST_DPR || 1)
+	deviceScaleFactor: Number(process.env.LLAMPART_TEST_DPR || 1),
+	...(layoutOnly ? { screen: { width: 1920, height: 1080 } } : {})
 });
 await page.addLocatorHandler(page.locator('.llampart-about-dialog-content'), async (welcome) => {
 	await welcome.locator('#about-llampart-do-not-show-again').check();
@@ -80,6 +83,20 @@ const models = { object: 'list', data: [{ id: 'mock/model' }] };
 await page.route('**/*', async (route) => {
 	const url = new URL(route.request().url());
 	if (offlineOnly) return route.continue();
+	if (layoutOnly && url.pathname.includes('/__llampart/api/')) {
+		if (url.pathname.endsWith('/chat/completions'))
+			return route.fulfill({
+				contentType: 'text/event-stream',
+				body: 'data: {"choices":[{"delta":{"content":"MOCK sidebar conversation"}}]}\n\ndata: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n'
+			});
+		return route.fulfill({
+			json: url.pathname.endsWith('/models')
+				? models
+				: url.pathname.endsWith('/props')
+					? { build_info: 'MOCK', default_generation_settings: { params: {} } }
+					: []
+		});
+	}
 	if (resetOnly && url.hostname === 'mcp-smoke.invalid')
 		return route.fulfill({ status: 503, body: 'Isolated MCP smoke: no external backend' });
 	if (resetOnly && url.pathname.includes('/__llampart/api/')) {
@@ -120,10 +137,13 @@ await page.route('**/*', async (route) => {
 	return ['localhost', '127.0.0.1'].includes(url.hostname) ? route.continue() : route.abort();
 });
 await page.addInitScript(
-	({ key, config }) => {
+	({ key, config, layoutOnly }) => {
+		// The layout fixture does not test onboarding. Dismiss it before app startup,
+		// rather than racing its async locator handler against repeated reloads.
+		if (layoutOnly) localStorage.setItem('Llampart.aboutDismissedVersion', '2.1.0');
 		if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(config));
 	},
-	{ key: storageKey, config: initial }
+	{ key: storageKey, config: initial, layoutOnly }
 );
 if (offlineOnly) {
 	await page.addInitScript(() => {
@@ -208,6 +228,226 @@ async function screenshot(name) {
 		await page.screenshot({ path: `${artifacts}/${name}.png`, animations: 'disabled' });
 }
 
+// Neutral sidebar geometry: real app/Chromium and hit tests, MOCK provider only.
+async function sidebarRegression() {
+	await page.locator('textarea').first().fill('MOCK selection fixture');
+	await page.waitForFunction(
+		() => document.querySelector('.llampart-composer-send-button')?.disabled === false
+	);
+	await page.locator('textarea').first().press('Enter');
+	await page.locator('.llampart-assistant-markdown').first().waitFor();
+	const samples = [];
+	const configs = [];
+	for (const fontFamily of ['merriweather', 'google-sans', 'literata']) {
+		for (const interfaceLanguage of ['pl', 'en', 'el', 'bg'])
+			configs.push({
+				fontFamily,
+				interfaceLanguage,
+				uiScale: '100',
+				fontSize: '13',
+				compactSidebar: false
+			});
+		for (const compactSidebar of [false, true])
+			for (const uiScale of ['90', '100', '110'])
+				for (const fontSize of ['13', '20'])
+					configs.push({ fontFamily, interfaceLanguage: 'el', uiScale, fontSize, compactSidebar });
+	}
+	const unique = [...new Map(configs.map((config) => [JSON.stringify(config), config])).values()];
+	const cdp = firefox ? null : await page.context().newCDPSession(page);
+	for (const config of unique) {
+		await page.evaluate(
+			(config) =>
+				localStorage.setItem(
+					'LlamaCppWebui.config',
+					JSON.stringify({ ...JSON.parse(localStorage.getItem('LlamaCppWebui.config')), ...config })
+				),
+			config
+		);
+		await page.reload();
+		await page.locator('.llampart-sidebar-search-action').waitFor();
+		await page.evaluate(() => document.fonts.ready);
+		for (const width of [800, 1023, 1024, 1280]) {
+			// Keep the physical screen independent of the CSS viewport at the 2/3 grid boundary.
+			await page.setViewportSize({ width: width + 1, height: 1080 });
+			if (cdp)
+				await cdp.send('Emulation.setDeviceMetricsOverride', {
+					width,
+					height: 1080,
+					deviceScaleFactor: 1,
+					mobile: false,
+					screenWidth: 1920,
+					screenHeight: 1080
+				});
+			else await page.setViewportSize({ width, height: 1080 });
+			await page.waitForTimeout(100);
+			const geometry = await page
+				.locator('.llampart-sidebar-conversations-frame')
+				.evaluate((frame) => {
+					const bounds = frame.getBoundingClientRect();
+					const actions = [...frame.querySelectorAll('.llampart-sidebar-primary-action')].map(
+						(action) => {
+							const rect = action.getBoundingClientRect();
+							const label = action.querySelector('span');
+							const range = document.createRange();
+							range.selectNodeContents(label);
+							const icon = action.querySelector('svg').getBoundingClientRect();
+							const hits = [
+								[0.05, 0.5],
+								[0.5, 0.5],
+								[0.95, 0.5],
+								[0.5, 0.1],
+								[0.5, 0.9]
+							].map(([x, y]) =>
+								action.contains(
+									document.elementFromPoint(rect.x + rect.width * x, rect.y + rect.height * y)
+								)
+							);
+							return {
+								box: rect.toJSON(),
+								label: [...range.getClientRects()].map((rect) => rect.toJSON()),
+								icon: icon.toJSON(),
+								hits,
+								minHeight: getComputedStyle(action).minHeight
+							};
+						}
+					);
+					return {
+						viewport: innerWidth,
+						screen: screen.width,
+						frame: bounds.toJSON(),
+						actions,
+						grid: getComputedStyle(frame.querySelector('.llampart-conversation-grid-menu'))
+							.gridTemplateColumns,
+						overflow: getComputedStyle(frame).overflow
+					};
+				});
+			assert.equal(geometry.actions.length, 2);
+			assert.notEqual(geometry.overflow, 'hidden');
+			for (const action of geometry.actions) {
+				for (const rect of [action.box, action.icon, ...action.label]) {
+					assert(
+						rect.left >= geometry.frame.left + 2 && rect.right <= geometry.frame.right - 2,
+						JSON.stringify({ config, geometry })
+					);
+					assert(rect.top >= geometry.frame.top && rect.bottom <= geometry.frame.bottom);
+				}
+				assert(action.hits.every(Boolean), JSON.stringify({ config, geometry }));
+				assert(action.box.height >= parseFloat(action.minHeight) - 0.1);
+			}
+			const [a, b] = geometry.actions.map((action) => action.box);
+			assert(a.right <= b.left || a.bottom <= b.top, 'Action hitboxes must not overlap');
+			assert(geometry.actions[0].icon.right <= geometry.actions[0].label[0].left + 1);
+			assert(
+				geometry.actions[1].icon.left >=
+					Math.max(...geometry.actions[1].label.map((rect) => rect.right)) - 1
+			);
+			samples.push({ config, ...geometry });
+		}
+	}
+	const interactions = [];
+	for (const controlConfig of [
+		{ compactSidebar: false, uiScale: '100', fontSize: '13', fontFamily: 'merriweather' },
+		{ compactSidebar: true, uiScale: '110', fontSize: '20', fontFamily: 'literata' }
+	]) {
+		await page.evaluate(
+			(config) =>
+				localStorage.setItem(
+					'LlamaCppWebui.config',
+					JSON.stringify({ ...JSON.parse(localStorage.getItem('LlamaCppWebui.config')), ...config })
+				),
+			controlConfig
+		);
+		await page.reload();
+		await page.locator('.llampart-sidebar-search-action').waitFor();
+		for (const width of [800, 1024]) {
+			await page.setViewportSize({ width, height: 1080 });
+			if (cdp)
+				await cdp.send('Emulation.setDeviceMetricsOverride', {
+					width,
+					height: 1080,
+					deviceScaleFactor: 1,
+					mobile: false,
+					screenWidth: 1920,
+					screenHeight: 1080
+				});
+			await page.waitForTimeout(200);
+			const fresh = page.locator('.llampart-sidebar-new-chat-action');
+			const search = page.locator('.llampart-sidebar-search-action');
+			await fresh.focus();
+			await page.keyboard.press('Tab');
+			assert(
+				await search.evaluate((el) => el === document.activeElement && el.matches(':focus-visible'))
+			);
+			const focus = await search.evaluate((el) => ({
+				shadow: getComputedStyle(el).boxShadow,
+				outline: getComputedStyle(el).outline,
+				box: el.getBoundingClientRect().toJSON(),
+				frame: el.closest('.llampart-sidebar-conversations-frame').getBoundingClientRect().toJSON()
+			}));
+			assert(focus.outline.includes('solid 2px'), 'Visible keyboard focus must remain');
+			assert(
+				focus.box.left - 4 >= focus.frame.left && focus.box.right + 4 <= focus.frame.right,
+				'Focus ring stays in frame'
+			);
+			await search.press('Enter');
+			const input = page.locator('.llampart-sidebar-action-search-input');
+			assert(await input.evaluate((el) => document.activeElement === el));
+			await input.fill('MOCK');
+			await input.press('Escape');
+			await search.click();
+			await page.keyboard.press('Tab');
+			const close = page.locator('.llampart-sidebar-search-close');
+			assert(
+				await close.evaluate((el) => el === document.activeElement && el.matches(':focus-visible'))
+			);
+			const target = await close.evaluate((el) => {
+				const rect = el.getBoundingClientRect();
+				return {
+					box: rect.toJSON(),
+					hit: el.contains(
+						document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)
+					),
+					outline: getComputedStyle(el).outline
+				};
+			});
+			assert(target.box.width >= 24 && target.box.height >= 24 && target.hit);
+			assert(!target.outline.includes('none'));
+			await close.press('Enter');
+			await search.waitFor();
+			await page.locator('.llampart-sidebar-delete-button').click();
+			assert.equal(await page.locator('.llampart-sidebar-bulk-action').count(), 6);
+			await page.locator('.llampart-sidebar-bulk-action').first().click();
+			await page.locator('.llampart-sidebar-delete-button').click();
+			await fresh.focus();
+			await fresh.press('Enter');
+			await page.waitForFunction(() => !location.hash.includes('/chat/'));
+			await page.locator('[data-sidebar="trigger"]').first().click();
+			await page.waitForTimeout(500);
+			assert.equal(await search.isVisible(), false);
+			for (let i = 0; i < 20; i++) {
+				await page.keyboard.press('Tab');
+				assert(
+					await page.evaluate(
+						() => !document.activeElement?.closest('.llampart-sidebar-primary-action')
+					)
+				);
+			}
+			await page.locator('[data-sidebar="trigger"]').first().click();
+			await search.waitFor();
+			interactions.push({ controlConfig, width, focus, target });
+		}
+	}
+	assert.deepEqual(errors, []);
+	if (artifacts)
+		await writeFile(
+			`${artifacts}/sidebar.json`,
+			JSON.stringify({ samples, interactions }, null, 2)
+		);
+	console.log(
+		`REAL PASS: ${samples.length} sidebar geometry/label/icon/hit-test cases, keyboard/search/selection/collapse, close target >=24px; MOCK HTTP/SSE`
+	);
+}
+
 async function run() {
 	await page.goto(process.env.LLAMPART_TEST_URL || 'http://127.0.0.1:40133');
 	await page.waitForSelector('textarea');
@@ -216,6 +456,10 @@ async function run() {
 		(scale) => document.documentElement.dataset.llampartUiScale === scale,
 		initial.uiScale
 	);
+	if (layoutOnly) {
+		await sidebarRegression();
+		return;
+	}
 	if (offlineOnly) {
 		const requests = [];
 		page.on('request', (request) => requests.push(new URL(request.url()).pathname));

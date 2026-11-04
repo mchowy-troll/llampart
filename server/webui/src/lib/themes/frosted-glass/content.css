@@ -156,14 +156,47 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme.has-frosted-glass-opaqu
 	--llampart-code-background: #222831;
 }
 
-/* Rendered Markdown fences keep their content/layout, with readable dark-frame text. */
+/* Rendered fences already paint the code material. Embedded frames reveal that
+   same dark fill, without stacking translucent layers or introducing white islands.
+   Only quotes/tables opt in; other rendered content and ordinary glass stay unchanged. */
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.markdown-rendered-code-content
+	:is(blockquote, .table-block) {
+	--llampart-glass-white-100: transparent;
+	--llampart-glass-white-110: transparent;
+	--llampart-glass-filter-10-104: none;
+	--llampart-rendered-quote-hover: transparent;
+	--llampart-rendered-surface-foreground: var(--llampart-code-foreground);
+}
+
+/* Only fenced tables: reveal the code fill instead of stacking white cell layers.
+   Keep a restrained grid and row cue derived from the existing code ink. */
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-markdown-content
+	.markdown-rendered-code-content
+	.table-block {
+	--llampart-rendered-table-cell-background: transparent;
+	--llampart-rendered-table-grid: color-mix(
+		in srgb,
+		var(--llampart-code-foreground) 8%,
+		transparent
+	);
+	--llampart-rendered-table-row: color-mix(
+		in srgb,
+		var(--llampart-code-foreground) 2%,
+		transparent
+	);
+}
+
+/* Code ink must not unconditionally override descendants of embedded surfaces. */
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-markdown-content
 	.markdown-rendered-code-content,
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-markdown-content
 	.markdown-rendered-code-content
-	* {
+	*:not(blockquote, blockquote *, .table-block, .table-block *) {
 	color: var(--llampart-code-token, var(--llampart-code-foreground)) !important;
 	text-shadow: none !important;
 }
@@ -191,15 +224,18 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-markdown-content
 	.table-wrapper
 	td {
-	background-color: rgba(255, 255, 255, 0.05) !important;
-	border-color: rgba(255, 255, 255, 0.14) !important;
+	background-color: var(
+		--llampart-rendered-table-cell-background,
+		rgba(255, 255, 255, 0.05)
+	) !important;
+	border-color: var(--llampart-rendered-table-grid, rgba(255, 255, 255, 0.14)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-markdown-content
 	.table-wrapper
 	tr:nth-child(even) {
-	background: rgba(255, 255, 255, 0.035) !important;
+	background: var(--llampart-rendered-table-row, rgba(255, 255, 255, 0.035)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -209,7 +245,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-markdown-content
 	:is(.table-actions, .code-block-actions)
 	* {
-	color: #000000 !important;
+	color: var(--llampart-rendered-surface-foreground, #000000) !important;
 	font-weight: 400 !important;
 	font-variation-settings: 'wght' 400 !important;
 	text-shadow: none !important;
@@ -237,7 +273,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-markdown-cont
 		inset 0 1px 0 rgba(255, 255, 255, 0.1),
 		0 1px 2px rgba(0, 0, 0, 0.03),
 		0 3px 8px rgba(0, 0, 0, 0.025) !important;
-	color: #000000 !important;
+	color: var(--llampart-rendered-surface-foreground, #000000) !important;
 	text-shadow: 0 0 1px rgba(255, 255, 255, 0.18) !important;
 	backdrop-filter: var(--llampart-glass-filter-10-104, blur(10px) saturate(104%)) !important;
 	-webkit-backdrop-filter: var(
@@ -249,7 +285,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-markdown-cont
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-markdown-content
 	blockquote:hover {
-	background: rgba(255, 255, 255, 0.12) !important;
+	background: var(--llampart-rendered-quote-hover, rgba(255, 255, 255, 0.12)) !important;
 	transform: translateX(2px);
 }
 

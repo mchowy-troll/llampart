@@ -2,6 +2,9 @@
  * LLAMPART_PLAYWRIGHT_MODULE=/path/to/playwright-core/index.mjs \
  * LLAMPART_TEST_URL=http://127.0.0.1:40138 node tests/browser/markdown-tables.mjs
  * LLAMPART_TEST_PRODUCTION=1 skips only the dev-store streaming/live-accent probes.
+ * --materials-only: dark fenced surfaces and unchanged ordinary glass in either build.
+ * Optional LLAMPART_ORDINARY_BASELINE points to a pre-patch computed-style capture;
+ * explicit ordinary-material assertions also run without that comparison file.
  */
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -53,6 +56,411 @@ const wide =
 	Array.from({ length: 15 }, () => 'długi tekst '.repeat(25) + 'X'.repeat(180)).join(' | ') +
 	' |';
 const reports = [];
+
+// Focused task-5 contract: REAL DOM/CSS/raster/clipboard/CSV, MOCK HTTP/SSE.
+// --materials-only is production-compatible (no imports from the dev runtime).
+async function materialRegression() {
+	const context = await browser.newContext({
+		viewport: { width: 1280, height: 1000 },
+		acceptDownloads: true,
+		permissions: ['clipboard-read', 'clipboard-write']
+	});
+	const page = await context.newPage();
+	const errors = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	await page.addInitScript(() => {
+		localStorage.setItem('Llampart.aboutDismissedVersion', '2.1.0');
+		if (!localStorage.getItem('LlamaCppWebui.config'))
+			localStorage.setItem(
+				'LlamaCppWebui.config',
+				JSON.stringify({
+					apiProvider: 'llama-server',
+					llamaServerBaseUrl: 'http://mock.test',
+					interfaceLanguage: 'en',
+					theme: 'frosted-glass',
+					fontFamily: 'merriweather',
+					fontSize: '13',
+					alwaysShowSidebarOnDesktop: false,
+					autoShowSidebarOnNewChat: false,
+					titleGenerationUseLLM: false,
+					askForTitleConfirmation: false
+				})
+			);
+	});
+	const content =
+		'> Outer **quote**.\n>\n> > Nested quote.\n>\n> | A | B |\n> |---|---|\n> | Quote table | 1 |\n\n' +
+		'| A | B |\n|---|---|\n| Ordinary table | 2 |\n\n' +
+		'```markdown\n# Fence heading\n\n| A | B |\n|---|---|\n| Fenced table | 3 |\n| Second row | 19.5 |\n\n' +
+		' > Nested fence quote\n >\n > > Inner dark quote\n > >\n > > | A | B |\n > > |---|---|\n > > | Fenced quote table | 4 |\n > > | Second row | 28.5 |\n```\n\n' +
+		'```js\nconst sample = "dark control";\n```';
+	await page.route('**/__llampart/api/**', (route) => {
+		const path = new URL(route.request().url()).pathname;
+		return route.fulfill(
+			path.endsWith('/chat/completions')
+				? {
+						contentType: 'text/event-stream',
+						body: `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n`
+					}
+				: {
+						json: path.endsWith('/props')
+							? {
+									build_info: 'MOCK',
+									model_path: 'mock.gguf',
+									default_generation_settings: { params: {} }
+								}
+							: path.endsWith('/models')
+								? { object: 'list', data: [{ id: 'mock.gguf' }] }
+								: []
+					}
+		);
+	});
+	await page.goto(base);
+	await page.locator('textarea').first().fill('MOCK materials');
+	await page.waitForFunction(
+		() => document.querySelector('.llampart-composer-send-button')?.disabled === false
+	);
+	await page.locator('textarea').first().press('Enter');
+	const ordinaryBaseline = process.env.LLAMPART_ORDINARY_BASELINE
+		? JSON.parse(await readFile(process.env.LLAMPART_ORDINARY_BASELINE, 'utf8'))
+		: null;
+	const results = [];
+	for (const wallpaper of ['01', '03'])
+		for (const milk of [0, 50, 75, 100])
+			for (const opaque of [false, true]) {
+				await page.locator('.markdown-rendered-code-content td').first().waitFor();
+				await page.evaluate(
+					(config) =>
+						localStorage.setItem(
+							'LlamaCppWebui.config',
+							JSON.stringify({
+								...JSON.parse(localStorage.getItem('LlamaCppWebui.config')),
+								...config
+							})
+						),
+					{
+						frostedGlassWallpaper: `frosted-glass-${wallpaper}`,
+						frostedGlassMilkiness: milk,
+						frostedGlassOpaque: opaque
+					}
+				);
+				await page.reload();
+				const assistant = page.locator('.llampart-assistant-markdown').first();
+				await assistant.locator('.markdown-rendered-code-content td').first().waitFor();
+				await page.evaluate(() => document.fonts.ready);
+				await page
+					.locator('.llampart-chat-scroll-container')
+					.evaluate((el) => el.scrollTo({ top: 0, behavior: 'instant' }));
+				const glass = await page.evaluate(() => {
+					const probe = document.createElement('span');
+					document.body.append(probe);
+					const resolve = (token) => {
+						probe.style.backgroundColor = `var(${token})`;
+						return getComputedStyle(probe).backgroundColor;
+					};
+					const result = {
+						quote: resolve('--llampart-glass-white-100'),
+						table: resolve('--llampart-glass-white-110')
+					};
+					probe.remove();
+					return result;
+				});
+				const states = {};
+				for (const state of ['normal', 'hover']) {
+					if (state === 'normal') await page.mouse.move(1275, 995);
+					else {
+						await assistant
+							.locator('blockquote')
+							.first()
+							.hover({ position: { x: 10, y: 10 } });
+						await page.waitForFunction(() =>
+							document.querySelector('.llampart-assistant-markdown blockquote').matches(':hover')
+						);
+					}
+					await page.waitForTimeout(250);
+					states[state] = await assistant.evaluate((root) =>
+						[
+							...root.querySelectorAll(
+								'blockquote,blockquote p,.table-block,.table-wrapper,table,th,td,.table-cell-content'
+							)
+						]
+							.filter((el) => !el.closest('.markdown-rendered-code-content'))
+							.map((el) => ({
+								tag: el.tagName,
+								cls: el.className,
+								style: Object.fromEntries(
+									[
+										'backgroundColor',
+										'backgroundImage',
+										'borderTop',
+										'borderLeft',
+										'borderRadius',
+										'color',
+										'opacity',
+										'backdropFilter',
+										'textShadow',
+										'boxShadow',
+										'transform'
+									].map((key) => [key, getComputedStyle(el)[key]])
+								)
+							}))
+					);
+					// These are intentional current values, including the deferred production blur issue.
+					for (const entry of states[state]) {
+						assert.equal(entry.style.opacity, '1');
+						if (entry.tag === 'BLOCKQUOTE' || entry.cls === 'table-block')
+							assert.equal(
+								entry.style.backdropFilter,
+								opaque || process.env.LLAMPART_TEST_PRODUCTION
+									? 'none'
+									: 'blur(10px) saturate(1.04)'
+							);
+					}
+				}
+				for (const entry of states.normal) {
+					if (entry.tag === 'BLOCKQUOTE') {
+						assert.equal(entry.style.backgroundColor, glass.quote);
+						assert.equal(entry.style.color, 'rgb(0, 0, 0)');
+						assert.equal(entry.style.borderLeft, '4px solid rgba(255, 255, 255, 0.28)');
+					}
+					if (entry.cls === 'table-block') {
+						assert.equal(entry.style.backgroundColor, glass.table);
+						assert.equal(entry.style.borderTop, '1px solid rgba(255, 255, 255, 0.12)');
+					}
+				}
+				assert.equal(states.hover[0].style.backgroundColor, 'rgba(255, 255, 255, 0.12)');
+				if (ordinaryBaseline) {
+					const before = ordinaryBaseline.find(
+						(entry) =>
+							entry.wallpaper === wallpaper && entry.milk === milk && entry.opaque === opaque
+					);
+					assert(before, 'Every ordinary material case must have a pre-patch capture');
+					assert.deepEqual(
+						states,
+						before.states,
+						`Ordinary surfaces must not change: ${wallpaper}/${milk}/${opaque}`
+					);
+				}
+				const surfaces = [];
+				for (const surface of await assistant
+					.locator('.markdown-rendered-code-content :is(.table-block, blockquote)')
+					.all()) {
+					const kind = await surface.evaluate((el) =>
+						el.tagName === 'BLOCKQUOTE' ? 'quote' : 'table'
+					);
+					const cell = surface.locator(kind === 'quote' ? 'p' : 'td').first();
+					// The composer overlays the bottom of the scroll viewport. Center the
+					// actual sample, rather than measuring pixels through that overlay.
+					await cell.evaluate((el) => el.scrollIntoView({ block: 'center', behavior: 'instant' }));
+					await page.mouse.move(1275, 995);
+					await page.waitForTimeout(250);
+					const hit = await cell.evaluate((el) => {
+						const r = el.getBoundingClientRect();
+						const target = document.elementFromPoint(r.right - 6, r.bottom - 6);
+						return {
+							belongs: el.contains(target),
+							rect: r.toJSON(),
+							target: target?.outerHTML.slice(0, 500)
+						};
+					});
+					if (!hit.belongs) await page.screenshot({ path: `${artifacts}/hit-failure.png` });
+					assert(hit.belongs, JSON.stringify({ wallpaper, milk, opaque, kind, hit }));
+					const raster = await cell.screenshot({ animations: 'disabled' });
+					const measured = await cell.evaluate(async (el, png) => {
+						const canvas = document.createElement('canvas');
+						const image = new Image();
+						image.src = `data:image/png;base64,${png}`;
+						await image.decode();
+						canvas.width = image.width;
+						canvas.height = image.height;
+						const ctx = canvas.getContext('2d');
+						ctx.drawImage(image, 0, 0);
+						// Empty cell padding, away from glyphs, borders and rounded corners.
+						const background = [
+							...ctx.getImageData(image.width - 6, image.height - 6, 1, 1).data
+						].slice(0, 3);
+						const text = getComputedStyle(el.querySelector('.table-cell-content') || el).color;
+						ctx.clearRect(0, 0, 1, 1);
+						ctx.fillStyle = text;
+						ctx.fillRect(0, 0, 1, 1);
+						const foreground = [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3);
+						const luminance = (rgb) =>
+							rgb
+								.map((v) => v / 255)
+								.map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
+								.reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
+						const a = luminance(foreground),
+							b = luminance(background);
+						const block = getComputedStyle(el.closest('.table-block, blockquote'));
+						return {
+							text,
+							foreground,
+							background,
+							contrast: (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05),
+							material: block.background,
+							border: block.border,
+							blur: block.backdropFilter,
+							opacity: block.opacity
+						};
+					}, raster.toString('base64'));
+					if (measured.contrast < 4.5) {
+						await writeFile(`${artifacts}/contrast-failure.png`, raster);
+						await page.screenshot({ path: `${artifacts}/contrast-failure-page.png` });
+					}
+					assert(measured.contrast >= 4.5, JSON.stringify({ wallpaper, milk, opaque, measured }));
+					assert.equal(measured.opacity, '1');
+					assert.equal(
+						measured.blur,
+						'none',
+						'Embedded surfaces use the existing dark code material'
+					);
+					assert(
+						measured.material.startsWith('rgba(0, 0, 0, 0)'),
+						'Frame fill must reveal the code material without double painting'
+					);
+					assert(
+						measured.background.every((channel) => channel < 100),
+						'No light islands inside dark Markdown fences'
+					);
+					await surface.hover({ position: { x: 10, y: 10 } });
+					await page.waitForTimeout(250);
+					const hover = await surface.evaluate((el) => {
+						const style = getComputedStyle(el);
+						return {
+							background: style.backgroundColor,
+							color: style.color,
+							blur: style.backdropFilter,
+							opacity: style.opacity
+						};
+					});
+					assert.equal(hover.background, 'rgba(0, 0, 0, 0)');
+					assert.equal(hover.color, 'rgb(230, 237, 243)');
+					assert.equal(hover.blur, 'none');
+					assert.equal(hover.opacity, '1');
+					let cells;
+					if (kind === 'table') {
+						assert.equal(
+							await surface
+								.locator('th')
+								.first()
+								.evaluate((el) => getComputedStyle(el).color),
+							measured.text
+						);
+						cells = await surface.evaluate((block) => {
+							const probe = document.createElement('span');
+							probe.hidden = true;
+							block.append(probe);
+							const ink = (percent) => {
+								probe.style.color = `color-mix(in srgb, var(--llampart-code-foreground) ${percent}%, transparent)`;
+								return getComputedStyle(probe).color;
+							};
+							const expectedGrid = ink(8),
+								expectedRow = ink(2);
+							probe.remove();
+							return {
+								expectedGrid,
+								expectedRow,
+								rows: [...block.querySelectorAll('tbody tr')].map(
+									(el) => getComputedStyle(el).backgroundColor
+								),
+								nodes: [...block.querySelectorAll('table, th, td')].map((el) => {
+									const style = getComputedStyle(el);
+									return {
+										tag: el.tagName,
+										background: style.backgroundColor,
+										grid: style.borderTopColor,
+										color: style.color
+									};
+								})
+							};
+						});
+						for (const node of cells.nodes) {
+							assert.equal(
+								node.background,
+								'rgba(0, 0, 0, 0)',
+								'No extra white cell/table material inside code'
+							);
+							assert.equal(node.grid, cells.expectedGrid, 'Grid uses only 8% of existing code ink');
+							assert.equal(node.color, measured.text);
+						}
+						assert.equal(cells.rows.length, 2);
+						assert.equal(
+							cells.rows[1],
+							cells.expectedRow,
+							'Even-row cue remains subtle at 2% code ink'
+						);
+					}
+					surfaces.push({ kind, ...measured, hover, cells });
+				}
+				if (surfaces.filter((entry) => entry.kind === 'quote').length !== 2)
+					await writeFile(`${artifacts}/unexpected-markdown.html`, await assistant.innerHTML());
+				assert.equal(surfaces.filter((entry) => entry.kind === 'table').length, 2);
+				assert.equal(surfaces.filter((entry) => entry.kind === 'quote').length, 2);
+				assert.equal(
+					await assistant
+						.locator('.markdown-rendered-code-content h1')
+						.evaluate((el) => getComputedStyle(el).color),
+					'rgb(230, 237, 243)'
+				);
+				const js = assistant.locator('.code-block-wrapper').last();
+				assert.equal(
+					await js.evaluate((el) => getComputedStyle(el).backgroundColor),
+					opaque ? 'rgb(34, 40, 49)' : 'rgba(34, 40, 49, 0.9)'
+				);
+				assert.equal(await js.evaluate((el) => getComputedStyle(el).backdropFilter), 'none');
+				if (process.env.LLAMPART_TEST_PRODUCTION && milk === 75) {
+					await page.mouse.move(0, 0);
+					await page.setViewportSize({ width: 1280, height: 2200 });
+					await assistant.screenshot({
+						path: `${artifacts}/A-E-${wallpaper}-${opaque ? 'opaque' : 'glass'}.png`,
+						animations: 'disabled'
+					});
+					await page.setViewportSize({ width: 1280, height: 1000 });
+				}
+				results.push({ wallpaper, milk, opaque, states, surfaces });
+			}
+	const table = page.locator('.markdown-rendered-code-content .table-block').first();
+	await table.locator('.table-copy-button').click();
+	await page.waitForFunction(async () =>
+		(await navigator.clipboard.readText()).includes('Fenced table\t3')
+	);
+	const csv = table.locator('.table-csv-button');
+	await table.locator('.table-copy-button').focus();
+	await page.keyboard.press('Shift+Tab');
+	assert(await csv.evaluate((el) => el === document.activeElement && el.matches(':focus-visible')));
+	await page
+		.locator('[data-slot="tooltip-content"]')
+		.filter({ hasText: 'Download table as CSV' })
+		.waitFor();
+	const pending = page.waitForEvent('download');
+	await csv.press('Enter');
+	const file = await pending;
+	assert.equal(
+		await readFile(await file.path(), 'utf8'),
+		'\uFEFFA,B\r\nFenced table,3\r\nSecond row,19.5\r\n'
+	);
+	await table.locator('.table-preview-button').click();
+	await page.locator('.llampart-table-preview-dialog').waitFor();
+	await page.keyboard.press('Escape');
+	await page.locator('.llampart-table-preview-dialog').waitFor({ state: 'hidden' });
+	await page.locator('.llampart-markdown-rendered-code-preview-btn').click();
+	await page.locator('.markdown-rendered-preview-dialog-content').waitFor();
+	await page.keyboard.press('Escape');
+	assert.deepEqual(errors, []);
+	await writeFile(`${artifacts}/materials.json`, JSON.stringify(results, null, 2));
+	console.log(
+		'REAL PASS: 16 material configurations, 32 ordinary normal/hover states, 64 dark-surface raster samples >=4.5, clipboard/CSV/preview/focus/tooltip; MOCK HTTP/SSE'
+	);
+	await context.close();
+}
+
+if (process.argv.includes('--materials-only')) {
+	try {
+		await materialRegression();
+	} finally {
+		await browser.close();
+	}
+	process.exit(0);
+}
 
 try {
 	for (const fullHeight of [false, true]) {

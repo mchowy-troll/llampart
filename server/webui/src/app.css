@@ -758,8 +758,32 @@ html
 }
 
 /* llampart-sidebar-primary-actions-alignment-and-user-glow */
+.llampart-sidebar-action-band {
+	flex-shrink: 0;
+}
+
+.llampart-sidebar-primary-actions {
+	padding-block: 0.375rem;
+}
+
 .llampart-sidebar-primary-action {
+	min-width: 0;
+	max-width: 100%;
+	min-height: 2.5rem;
+	height: auto;
+	padding-block: 0.5rem;
+	white-space: normal;
 	line-height: 1;
+}
+
+.llampart-sidebar-primary-action-text {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.llampart-sidebar-primary-action:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
 }
 
 .llampart-sidebar-primary-action .llampart-sidebar-primary-action-text,
@@ -773,4 +797,20 @@ html
 
 .llampart-sidebar-search-action {
 	margin-top: 0;
+}
+
+/* Keep the search close target usable independently of desktop rem scaling. */
+.llampart-sidebar-action-search-input {
+	padding-right: calc(max(2rem, 24px) + 0.5rem);
+}
+
+.llampart-sidebar-search-close {
+	right: 0.25rem;
+	width: max(2rem, 24px);
+	height: max(2rem, 24px);
+}
+
+.llampart-sidebar-search-close:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 1px;
 }

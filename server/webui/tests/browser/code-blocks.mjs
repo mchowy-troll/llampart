@@ -258,11 +258,13 @@ try {
 			assistant.locator('.llampart-math-frame')
 		]) {
 			for (const format of ['PNG', 'SVG']) {
-				const pending = page.waitForEvent('download');
-				await frame
-					.getByRole('button', { name: new RegExp(` ${format}$`) })
-					.press(format === 'PNG' ? 'Space' : 'Enter');
-				const file = await pending;
+				const button = frame.getByRole('button', { name: new RegExp(` ${format}$`) });
+				console.log(`REAL export: ${await frame.getAttribute('class')} ${format}`);
+				await button.scrollIntoViewIfNeeded();
+				const [file] = await Promise.all([
+					page.waitForEvent('download'),
+					button.press(format === 'PNG' ? 'Space' : 'Enter')
+				]);
 				assert(file.suggestedFilename().endsWith(`.${format.toLowerCase()}`));
 				const path = `${artifacts}/${fullHeight}-${file.suggestedFilename()}`;
 				await file.saveAs(path);
