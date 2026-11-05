@@ -1,6 +1,27 @@
 import type { TranslationDictionary } from '../types';
 
 export const fi: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Datakaavion lähde ei ole kelvollista JSON-muotoa.',
+		required: 'Pakollinen kenttä ”{field}” puuttuu.',
+		unsupported: 'Tätä visualisointityyppiä ei tueta.',
+		missingColumn: 'Kenttä ”{field}” viittaa sarakkeeseen ”{column}”, joka puuttuu tiedoista.',
+		invalidField: 'Kentän ”{field}” tyyppi tai arvo on virheellinen.',
+		unknownColumn: 'Odottamattomia kenttiä tai ristiriitaisia tietosarakkeita{field}.',
+		collision: 'Kenttä ”{field}” käyttää toiselle sarakkeelle jo määritettyä avainta.',
+		duplicate: 'Kenttä ”{field}” yksilöi päällekkäisiä luokkia.',
+		sourceLimit: 'Lähde ylittää koko- tai rivimäärärajan.',
+		dataLimit: 'Liikaa tietoelementtejä (enintään {limit}).',
+		seriesLimit: 'Liikaa tietosarjoja (enintään {limit}).',
+		countLimit: 'Tässä vastauksessa on liikaa tämän tyyppisiä visualisointeja.',
+		policy: 'Tietoturvakäytäntö estää tämän visualisoinnin.',
+		syntax: 'Kaaviossa on virheellinen Mermaid-syntaksi.',
+		infrastructure: 'Visualisointimoduulia ei voitu ladata tai alustaa. Lataa sivu uudelleen.',
+		render:
+			'Renderöinti epäonnistui lähteen tarkistuksesta huolimatta. Yritä näyttää visualisointi uudelleen.',
+		svg: 'Luotu kaavio ei läpäissyt SVG-turvatarkistusta.',
+		incomplete: 'Visualisoinnin koodilohkoa ei suljettu.'
+	},
 	math: {
 		copySource: 'Kopioi LaTeX-lähdekoodi',
 		preview: 'Matematiikan esikatselu',

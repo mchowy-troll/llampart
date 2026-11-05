@@ -1,6 +1,27 @@
 import type { TranslationDictionary } from '$lib/i18n/types';
 
 export const pl: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Źródło wykresu nie jest poprawnym JSON-em.',
+		required: 'Brakuje wymaganego pola „{field}”.',
+		unsupported: 'Ten typ wizualizacji nie jest obsługiwany.',
+		missingColumn: 'Pole „{field}” wskazuje kolumnę „{column}”, której brakuje w danych.',
+		invalidField: 'Pole „{field}” ma nieprawidłowy typ lub wartość.',
+		unknownColumn: 'Nadmiarowe pola lub niespójne kolumny danych{field}.',
+		collision: 'Pole „{field}” używa klucza przypisanego już innej kolumnie.',
+		duplicate: 'Pole „{field}” wskazuje powtarzające się kategorie.',
+		sourceLimit: 'Źródło przekracza limit rozmiaru lub liczby linii.',
+		dataLimit: 'Za dużo elementów danych (maksymalnie: {limit}).',
+		seriesLimit: 'Za dużo serii danych (maksymalnie: {limit}).',
+		countLimit: 'Ta odpowiedź zawiera zbyt wiele wizualizacji tego rodzaju.',
+		policy: 'Wizualizacja została zablokowana przez politykę bezpieczeństwa.',
+		syntax: 'Diagram zawiera niepoprawną składnię Mermaid.',
+		infrastructure:
+			'Nie udało się załadować lub zainicjalizować modułu wizualizacji. Spróbuj odświeżyć stronę.',
+		render: 'Renderer zawiódł mimo walidacji źródła. Spróbuj ponownie wyświetlić wizualizację.',
+		svg: 'Wygenerowany diagram nie przeszedł weryfikacji bezpieczeństwa SVG.',
+		incomplete: 'Blok kodu wizualizacji nie został zamknięty.'
+	},
 	math: {
 		copySource: 'Kopiuj LaTeX źródłowy',
 		preview: 'Podgląd matematyki',

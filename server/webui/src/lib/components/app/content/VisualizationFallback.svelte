@@ -3,30 +3,44 @@
 	import DialogCodePreview from '$lib/components/app/dialogs/DialogCodePreview.svelte';
 	import { copyCodeToClipboard } from '$lib/utils/clipboard';
 	import { t } from '$lib/i18n';
+	import { diagnosticMessage, type VisualizationDiagnostic } from '$lib/visualizations/diagnostics';
 
 	let {
 		source,
 		title,
 		kind,
-		disabled = false
-	}: { source: string; title: string; kind: 'diagram' | 'chart'; disabled?: boolean } = $props();
+		disabled = false,
+		problem
+	}: {
+		source: string;
+		title: string;
+		kind: 'diagram' | 'chart';
+		disabled?: boolean;
+		problem?: VisualizationDiagnostic;
+	} = $props();
 	let open = $state(false);
 	let trigger = $state<HTMLButtonElement | null>(null);
 </script>
 
-<div class="llampart-visualization-frame llampart-visualization-fallback llampart-{kind}-fallback">
+<div
+	class="llampart-visualization-frame llampart-visualization-fallback llampart-{kind}-fallback"
+	data-problem-code={disabled ? undefined : problem?.code}
+	data-problem-category={disabled ? undefined : problem?.category}
+>
 	<div class="fallback-title">{title}</div>
 	<div role="status" class="fallback-message">
 		<p>
-			{t(
-				kind === 'diagram'
-					? disabled
-						? 'diagrams.disabled'
-						: 'diagrams.invalid'
-					: disabled
-						? 'charts.disabled'
-						: 'charts.invalid'
-			)}
+			{!disabled && problem
+				? diagnosticMessage(problem, t)
+				: t(
+						kind === 'diagram'
+							? disabled
+								? 'diagrams.disabled'
+								: 'diagrams.invalid'
+							: disabled
+								? 'charts.disabled'
+								: 'charts.invalid'
+					)}
 		</p>
 	</div>
 	<div class="fallback-actions">

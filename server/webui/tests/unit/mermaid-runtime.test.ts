@@ -78,9 +78,9 @@ describe('Mermaid async lifecycle', () => {
 		const source = 'mindmap\nroot((Firma))\n  A';
 		await renderDiagram(source, font, new AbortController().signal);
 		expect(mocks.parse).toHaveBeenCalledWith(source);
-		mocks.parse.mockRejectedValueOnce(new Error('Invalid original syntax'));
+		mocks.parse.mockRejectedValueOnce(new SyntaxError('Invalid original syntax'));
 		await expect(renderDiagram(source, font, new AbortController().signal)).rejects.toThrow(
-			'Invalid original syntax'
+			'diagram.syntax'
 		);
 		expect(mocks.render).toHaveBeenCalledOnce();
 	});
@@ -115,7 +115,7 @@ describe('Mermaid async lifecycle', () => {
 		cancelled.abort();
 		gate.resolve({ svg: '<svg>first</svg>' });
 		await first;
-		expect((await second).name).toBe('AbortError');
+		expect((await second).diagnostic.code).toBe('diagram.cancelled');
 		await third;
 		expect(mocks.initialize).toHaveBeenCalledTimes(2);
 		expect(mocks.initialize.mock.calls[1][0].fontSize).toBe(20);
@@ -132,7 +132,7 @@ describe('Mermaid async lifecycle', () => {
 		await vi.waitFor(() => expect(mocks.render).toHaveBeenCalledOnce());
 		controller.abort();
 		gate.resolve({ svg: '<svg>stale</svg>' });
-		expect((await result).name).toBe('AbortError');
+		expect((await result).diagnostic.code).toBe('diagram.cancelled');
 		expect(mocks.verified).not.toHaveBeenCalled();
 		expect(mocks.remove).toHaveBeenCalledOnce();
 	});
@@ -141,7 +141,7 @@ describe('Mermaid async lifecycle', () => {
 		const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
 		await expect(
 			renderDiagram('flowchart LR\n[broken', font, new AbortController().signal)
-		).rejects.toThrow('Parse error');
+		).rejects.toThrow('diagram.render');
 		await expect(renderDiagram('mindmap\n root', font, new AbortController().signal)).resolves.toBe(
 			'<svg/>'
 		);
@@ -152,5 +152,54 @@ describe('Mermaid async lifecycle', () => {
 		expect(() => renderDiagram('pie\nA: 1', font, new AbortController().signal)).toThrow();
 		expect(mocks.render).not.toHaveBeenCalled();
 		expect(mocks.append).not.toHaveBeenCalled();
+	});
+	it.each([
+		['initialize', 'diagram.module', 'infrastructure'],
+		['parse', 'diagram.syntax', 'source'],
+		['render', 'diagram.render', 'render'],
+		['verified', 'diagram.svg', 'render']
+	] as const)(
+		'classifies %s failures without exposing untrusted exceptions',
+		async (method, code, category) => {
+			const raw =
+				method === 'parse'
+					? new SyntaxError('SECRET <script> /home/private stack')
+					: new Error('SECRET <script> /home/private stack');
+			if (method === 'initialize' || method === 'verified')
+				mocks[method].mockImplementationOnce(() => {
+					throw raw;
+				});
+			else mocks[method].mockRejectedValueOnce(raw);
+			const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
+			await expect(
+				renderDiagram('flowchart LR\nA --> B', font, new AbortController().signal)
+			).rejects.toMatchObject({ message: code, diagnostic: { code, category } });
+		}
+	);
+	it('distinguishes pinned engine edge limit and lazy family import failures from syntax', async () => {
+		const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
+		mocks.parse.mockRejectedValueOnce(new Error('Edge limit exceeded. 600 edges found'));
+		await expect(
+			renderDiagram('flowchart LR\nA --> B', font, new AbortController().signal)
+		).rejects.toMatchObject({ diagnostic: { code: 'diagram.edgeLimit', category: 'limit' } });
+		mocks.parse.mockRejectedValueOnce(
+			new TypeError('Failed to fetch dynamically imported module: /private')
+		);
+		await expect(
+			renderDiagram('flowchart LR\nA --> B', font, new AbortController().signal)
+		).rejects.toMatchObject({ diagnostic: { code: 'diagram.module', category: 'infrastructure' } });
+		mocks.parse.mockRejectedValueOnce(new TypeError('Internal engine defect SECRET'));
+		await expect(
+			renderDiagram('flowchart LR\nA --> B', font, new AbortController().signal)
+		).rejects.toMatchObject({ message: 'diagram.render', diagnostic: { category: 'render' } });
+		// Parser excerpts can contain any source text, including an import-error phrase.
+		mocks.parse.mockRejectedValueOnce(
+			new SyntaxError(
+				'Parse error on line 2: Loading chunk Failed to fetch dynamically imported module'
+			)
+		);
+		await expect(
+			renderDiagram('flowchart LR\nA --> B', font, new AbortController().signal)
+		).rejects.toMatchObject({ diagnostic: { code: 'diagram.syntax', category: 'source' } });
 	});
 });

@@ -1,6 +1,29 @@
 import type { TranslationDictionary } from '../types';
 
 export const ga: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Ní JSON bailí é foinse na cairte.',
+		required: 'Tá an réimse riachtanach “{field}” ar iarraidh.',
+		unsupported: 'Ní thacaítear leis an gcineál seo léirshamhlaithe.',
+		missingColumn:
+			'Tagraíonn an réimse “{field}” don cholún “{column}”, atá ar iarraidh sna sonraí.',
+		invalidField: 'Tá cineál nó luach neamhbhailí sa réimse “{field}”.',
+		unknownColumn: 'Réimsí gan choinne nó colúin sonraí neamhréireacha{field}.',
+		collision: 'Úsáideann an réimse “{field}” eochair atá sannta do cholún eile cheana féin.',
+		duplicate: 'Aithníonn an réimse “{field}” catagóirí dúblacha.',
+		sourceLimit: 'Sáraíonn an fhoinse an teorainn méide nó línte.',
+		dataLimit: 'An iomarca eilimintí sonraí (uasmhéid: {limit}).',
+		seriesLimit: 'An iomarca sraitheanna sonraí (uasmhéid: {limit}).',
+		countLimit: 'Tá an iomarca léirshamhluithe den chineál seo sa fhreagra seo.',
+		policy: 'Cuireann an beartas slándála bac ar an léirshamhlú seo.',
+		syntax: 'Tá comhréir neamhbhailí Mermaid sa léaráid.',
+		infrastructure:
+			'Níorbh fhéidir an modúl léirshamhlaithe a lódáil ná a thúsú. Athlódáil an leathanach.',
+		render:
+			'Theip ar an rindreáil in ainneoin bhailíochtú na foinse. Bain triail as an taispeáint arís.',
+		svg: 'Níor éirigh leis an léaráid ghinte sa seiceáil slándála SVG.',
+		incomplete: 'Níor dúnadh bloc cód an léirshamhlaithe.'
+	},
 	math: {
 		copySource: 'Cóipeáil foinse LaTeX',
 		preview: 'Réamhamharc matamaitice',

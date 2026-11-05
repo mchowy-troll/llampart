@@ -1,3 +1,5 @@
+import { diagnostic, VisualizationError } from '$lib/visualizations/diagnostics';
+
 export const MAX_DIAGRAM_SOURCE = 48 * 1024;
 export const MAX_DIAGRAM_LINES = 1200;
 export const MAX_DIAGRAM_EDGES = 600;
@@ -10,25 +12,24 @@ export type DiagramType = (typeof DIAGRAM_TYPES)[number];
  */
 export function diagramType(source: string): DiagramType {
 	if (
-		!source.trim() ||
 		source.length > MAX_DIAGRAM_SOURCE ||
 		new TextEncoder().encode(source).byteLength > MAX_DIAGRAM_SOURCE ||
 		source.split('\n').length > MAX_DIAGRAM_LINES
 	)
-		throw new Error('Diagram source limit');
+		throw new VisualizationError(diagnostic('diagram.sourceLimit', { limit: MAX_DIAGRAM_SOURCE }));
 	const inspected = source.replace(/<<(?:choice|fork|join)>>/g, '');
 	if (
 		/%%\s*\{|^\s*---|<\/?[a-z!?]|(?:https?|ftp|file|data|javascript|vbscript):|\/\/[^\s]|(?:^|[;\r\n])\s*(?:click|classDef|linkStyle|style|links?)\s|(?:^|[;\r\n])\s*(?:rect|box)\s+(?:rgba?\s*\(|#[\da-f])|:::|::icon|\b(?:img|image|icon)\s*:/im.test(
 			inspected
 		)
 	)
-		throw new Error('Unsafe diagram source');
+		throw new VisualizationError(diagnostic('diagram.policy'));
 	// Mermaid supports numeric/named HTML entities. Prevent them concealing active markup/URLs.
 	if (/&(?:#|[a-z]+;)|#(?:\d+|[a-z]+);/i.test(source))
-		throw new Error('Encoded markup is not supported');
+		throw new VisualizationError(diagnostic('diagram.policy'));
 	const body = source.replace(/^\s*%%[^\n]*(?:\n|$)/gm, '').trimStart();
 	const token = /^(flowchart|graph|stateDiagram-v2|gantt|mindmap)(?=\s|$)/.exec(body)?.[1];
-	if (!token) throw new Error('Unsupported diagram type');
+	if (!token) throw new VisualizationError(diagnostic('diagram.unsupported'));
 	return token === 'graph' ? 'flowchart' : (token as DiagramType);
 }
 

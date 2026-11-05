@@ -1,6 +1,28 @@
 import type { TranslationDictionary } from '../types';
 
 export const csb: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Zdrój wëkresu nie je pòprôwnym JSON-em.',
+		required: 'Felëje wëmaganégò pòla „{field}”.',
+		unsupported: 'Nen ôrt wizualizacëji nie je wspieróny.',
+		missingColumn: 'Pòle „{field}” wskôzëje kòlumnã „{column}”, chtërny felëje w pòdôwkach.',
+		invalidField: 'Pòle „{field}” mô niepòprôwny ôrt abò wôrtnotã.',
+		unknownColumn: 'Nadmiarowé pòla abò niespójné kòlumnë pòdôwków{field}.',
+		collision: 'Pòle „{field}” brëkùje klucza przëpisónégò ju jinszi kòlumnie.',
+		duplicate: 'Pòle „{field}” wskôzëje pòwtôrzającé sã kategòrëje.',
+		sourceLimit: 'Zdrój przekrôczô limit miarë abò wielënë linijów.',
+		dataLimit: 'Za wiele elementów pòdôwków (nôwicy: {limit}).',
+		seriesLimit: 'Za wiele serijów pòdôwków (nôwicy: {limit}).',
+		countLimit: 'Na òdpòwiesc zamëkô za wiele wizualizacëji negò ôrtu.',
+		policy: 'Wizualizacëjô je zablokòwónô przez pòlitikã bezpiekù.',
+		syntax: 'Diagram zamëkô niepòprôwną składniã Mermaid.',
+		infrastructure:
+			'Nie dało sã wladowac abò zainicjalizowac mòdułu wizualizacëji. Òdswieżë stronã.',
+		render:
+			'Renderer nie zadzejôł mimo sprôwdzeniô zdroju. Spróbùjë znowa wëskrzënic wizualizacëjã.',
+		svg: 'Wëgenerowóny diagram nie przeszedł sprôwdzeniô bezpiekù SVG.',
+		incomplete: 'Blok kòdu wizualizacëji nie òstôł zamkłi.'
+	},
 	math: {
 		copySource: 'Kòpiérë zdrój LaTeX',
 		preview: 'Pòdzerk matematiczi',

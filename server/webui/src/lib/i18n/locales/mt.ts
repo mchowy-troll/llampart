@@ -1,6 +1,29 @@
 import type { TranslationDictionary } from '../types';
 
 export const mt: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Is-sors tal-graff mhuwiex JSON validu.',
+		required: 'Il-qasam meħtieġ “{field}” huwa nieqes.',
+		unsupported: 'Dan it-tip ta’ viżwalizzazzjoni mhuwiex appoġġjat.',
+		missingColumn:
+			'Il-qasam “{field}” jirreferi għall-kolonna “{column}”, li hija nieqsa mid-data.',
+		invalidField: 'Il-qasam “{field}” għandu tip jew valur mhux validu.',
+		unknownColumn: 'Oqsma mhux mistennija jew kolonni tad-data inkonsistenti{field}.',
+		collision: 'Il-qasam “{field}” juża ċavetta diġà assenjata lil kolonna oħra.',
+		duplicate: 'Il-qasam “{field}” jidentifika kategoriji duplikati.',
+		sourceLimit: 'Is-sors jaqbeż il-limitu tad-daqs jew tal-linji.',
+		dataLimit: 'Wisq elementi tad-data (massimu: {limit}).',
+		seriesLimit: 'Wisq serje ta’ data (massimu: {limit}).',
+		countLimit: 'Din it-tweġiba fiha wisq viżwalizzazzjonijiet ta’ dan it-tip.',
+		policy: 'Il-politika tas-sigurtà timblokka din il-viżwalizzazzjoni.',
+		syntax: 'Id-dijagramma fiha sintassi Mermaid mhux valida.',
+		infrastructure:
+			'Il-modulu tal-viżwalizzazzjoni ma setax jitgħabba jew jiġi inizjalizzat. Erġa’ tella’ l-paġna.',
+		render:
+			'Ir-rendering falla minkejja l-validazzjoni tas-sors. Erġa’ pprova uri l-viżwalizzazzjoni.',
+		svg: 'Id-dijagramma ġġenerata ma għaddietx mill-verifika tas-sigurtà SVG.',
+		incomplete: 'Il-blokka tal-kodiċi tal-viżwalizzazzjoni ma ngħalqitx.'
+	},
 	math: {
 		copySource: 'Ikkopja s-sors LaTeX',
 		preview: 'Previżjoni tal-matematika',

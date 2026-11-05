@@ -1,6 +1,27 @@
 import type { TranslationDictionary } from '../types';
 
 export const fr: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'La source du graphique ne contient pas de JSON valide.',
+		required: 'Le champ obligatoire « {field} » est absent.',
+		unsupported: 'Ce type de visualisation n’est pas pris en charge.',
+		missingColumn: 'Le champ « {field} » désigne la colonne « {column} », absente des données.',
+		invalidField: 'Le type ou la valeur du champ « {field} » est invalide.',
+		unknownColumn: 'Champs inattendus ou colonnes de données incohérentes{field}.',
+		collision: 'Le champ « {field} » utilise une clé déjà attribuée à une autre colonne.',
+		duplicate: 'Le champ « {field} » identifie des catégories en double.',
+		sourceLimit: 'La source dépasse la limite de taille ou de lignes.',
+		dataLimit: 'Trop d’éléments de données (maximum : {limit}).',
+		seriesLimit: 'Trop de séries de données (maximum : {limit}).',
+		countLimit: 'Cette réponse contient trop de visualisations de ce type.',
+		policy: 'La politique de sécurité bloque cette visualisation.',
+		syntax: 'Le diagramme contient une syntaxe Mermaid invalide.',
+		infrastructure:
+			'Le module de visualisation n’a pas pu être chargé ou initialisé. Rechargez la page.',
+		render: 'Le rendu a échoué malgré la validation de la source. Réessayez l’affichage.',
+		svg: 'Le diagramme généré a échoué à la vérification de sécurité SVG.',
+		incomplete: 'Le bloc de code de la visualisation n’a pas été fermé.'
+	},
 	math: {
 		copySource: 'Copier le code source LaTeX',
 		preview: 'Aperçu de la formule',

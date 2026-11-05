@@ -1,6 +1,26 @@
 import type { TranslationDictionary } from '../types';
 
 export const cs: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Zdroj grafu není platný JSON.',
+		required: 'Chybí povinné pole „{field}“.',
+		unsupported: 'Tento typ vizualizace není podporován.',
+		missingColumn: 'Pole „{field}“ odkazuje na sloupec „{column}“, který v datech chybí.',
+		invalidField: 'Pole „{field}“ má neplatný typ nebo hodnotu.',
+		unknownColumn: 'Neočekávaná pole nebo nekonzistentní datové sloupce{field}.',
+		collision: 'Pole „{field}“ používá klíč již přiřazený jinému sloupci.',
+		duplicate: 'Pole „{field}“ určuje duplicitní kategorie.',
+		sourceLimit: 'Zdroj překračuje limit velikosti nebo počtu řádků.',
+		dataLimit: 'Příliš mnoho datových prvků (nejvýše: {limit}).',
+		seriesLimit: 'Příliš mnoho datových řad (nejvýše: {limit}).',
+		countLimit: 'Tato odpověď obsahuje příliš mnoho vizualizací tohoto druhu.',
+		policy: 'Bezpečnostní zásady blokují tuto vizualizaci.',
+		syntax: 'Diagram obsahuje neplatnou syntaxi Mermaid.',
+		infrastructure: 'Modul vizualizace se nepodařilo načíst nebo inicializovat. Obnovte stránku.',
+		render: 'Vykreslení selhalo navzdory ověření zdroje. Zkuste vizualizaci zobrazit znovu.',
+		svg: 'Vygenerovaný diagram neprošel bezpečnostní kontrolou SVG.',
+		incomplete: 'Blok kódu vizualizace nebyl uzavřen.'
+	},
 	math: {
 		copySource: 'Kopírovat zdrojový kód LaTeX',
 		preview: 'Náhled vzorce',

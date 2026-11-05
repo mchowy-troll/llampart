@@ -1,6 +1,27 @@
 import type { TranslationDictionary } from '../types';
 
 export const ro: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Sursa graficului nu este JSON valid.',
+		required: 'Lipsește câmpul obligatoriu „{field}”.',
+		unsupported: 'Acest tip de vizualizare nu este acceptat.',
+		missingColumn: 'Câmpul „{field}” indică coloana „{column}”, care lipsește din date.',
+		invalidField: 'Câmpul „{field}” are un tip sau o valoare nevalidă.',
+		unknownColumn: 'Câmpuri neașteptate sau coloane de date inconsecvente{field}.',
+		collision: 'Câmpul „{field}” folosește o cheie deja atribuită altei coloane.',
+		duplicate: 'Câmpul „{field}” identifică categorii duplicate.',
+		sourceLimit: 'Sursa depășește limita de dimensiune sau de linii.',
+		dataLimit: 'Prea multe elemente de date (maximum: {limit}).',
+		seriesLimit: 'Prea multe serii de date (maximum: {limit}).',
+		countLimit: 'Acest răspuns conține prea multe vizualizări de acest fel.',
+		policy: 'Politica de securitate blochează această vizualizare.',
+		syntax: 'Diagrama conține sintaxă Mermaid nevalidă.',
+		infrastructure:
+			'Modulul de vizualizare nu a putut fi încărcat sau inițializat. Reîncărcați pagina.',
+		render: 'Randarea a eșuat în ciuda validării sursei. Încercați din nou afișarea vizualizării.',
+		svg: 'Diagrama generată nu a trecut verificarea de securitate SVG.',
+		incomplete: 'Blocul de cod al vizualizării nu a fost închis.'
+	},
 	math: {
 		copySource: 'Copiază sursa LaTeX',
 		preview: 'Previzualizare matematică',

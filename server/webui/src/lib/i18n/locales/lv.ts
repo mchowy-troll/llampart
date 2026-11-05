@@ -1,6 +1,27 @@
 import type { TranslationDictionary } from '../types';
 
 export const lv: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Datu diagrammas avots nav derīgs JSON.',
+		required: 'Trūkst obligātā lauka “{field}”.',
+		unsupported: 'Šis vizualizācijas veids netiek atbalstīts.',
+		missingColumn: 'Lauks “{field}” norāda uz kolonnu “{column}”, kuras datos trūkst.',
+		invalidField: 'Laukam “{field}” ir nederīgs tips vai vērtība.',
+		unknownColumn: 'Negaidīti lauki vai nesaskaņotas datu kolonnas{field}.',
+		collision: 'Lauks “{field}” izmanto citai kolonnai jau piešķirtu atslēgu.',
+		duplicate: 'Lauks “{field}” identificē kategoriju dublikātus.',
+		sourceLimit: 'Avots pārsniedz izmēra vai rindu skaita ierobežojumu.',
+		dataLimit: 'Pārāk daudz datu elementu (ne vairāk kā {limit}).',
+		seriesLimit: 'Pārāk daudz datu sēriju (ne vairāk kā {limit}).',
+		countLimit: 'Šajā atbildē ir pārāk daudz šāda veida vizualizāciju.',
+		policy: 'Drošības politika bloķē šo vizualizāciju.',
+		syntax: 'Diagrammā ir nederīga Mermaid sintakse.',
+		infrastructure: 'Neizdevās ielādēt vai inicializēt vizualizācijas moduli. Pārlādējiet lapu.',
+		render:
+			'Atveidošana neizdevās, lai gan avots tika pārbaudīts. Mēģiniet parādīt vizualizāciju vēlreiz.',
+		svg: 'Ģenerētā diagramma neizturēja SVG drošības pārbaudi.',
+		incomplete: 'Vizualizācijas koda bloks nav aizvērts.'
+	},
 	math: {
 		copySource: 'Kopēt LaTeX pirmkodu',
 		preview: 'Matemātiskās izteiksmes priekšskatījums',

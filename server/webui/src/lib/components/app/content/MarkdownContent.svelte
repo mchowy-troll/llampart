@@ -79,6 +79,7 @@
 		isClosedChartNode
 	} from '$lib/markdown/chart-blocks';
 	import type { ChartResult } from '$lib/charts/chart-schema';
+	import { diagnostic } from '$lib/visualizations/diagnostics';
 
 	interface Props {
 		attachments?: DatabaseMessageExtra[];
@@ -385,7 +386,7 @@
 			if (!chartsActive) return { kind: 'chart', id, contentHash: hash, chart: { source } };
 			let result = chartCache.get(source);
 			if (preceding.filter((block) => block.kind === 'chart').length >= chartLimit)
-				result = { success: false };
+				result = { success: false, diagnostic: diagnostic('chart.countLimit') };
 			if (!result) {
 				try {
 					const { parseChart } = await import('$lib/charts/chart-schema');
@@ -393,14 +394,11 @@
 					if (destroyed || !chartsActive)
 						return { kind: 'chart', id, contentHash: hash, chart: { source } };
 					result = parseChart(source);
-				} catch (error) {
+				} catch {
 					// A missing validator chunk must affect only this visualization,
 					// not replace the entire message with raw Markdown/source.
-					console.error(
-						'Chart validation module failed:',
-						error instanceof Error ? error.name : 'Unknown error'
-					);
-					result = { success: false };
+					console.error('Chart validation module failed: chart.module');
+					result = { success: false, diagnostic: diagnostic('chart.module') };
 				}
 				chartCache.set(source, result);
 			}
@@ -1253,6 +1251,7 @@
 							source={block.chart.source}
 							title={t('charts.title')}
 							kind="chart"
+							problem={diagnostic('chart.module')}
 						/>
 					{/await}
 				{/if}
@@ -1280,6 +1279,7 @@
 							source={block.source}
 							title={t('diagrams.title')}
 							kind="diagram"
+							problem={diagnostic('diagram.module')}
 						/>
 					{/await}
 				{/if}
@@ -1334,6 +1334,7 @@
 				source={incompleteCodeBlock.code}
 				title={t('diagrams.title')}
 				kind="diagram"
+				problem={diagnostic('diagram.incomplete')}
 			/>
 		{/if}
 	{:else if incompleteCodeBlock && allowCharts && incompleteCodeBlock.language === CHART_LANGUAGE}
@@ -1351,6 +1352,7 @@
 				source={incompleteCodeBlock.code}
 				title={t('charts.title')}
 				kind="chart"
+				problem={diagnostic('chart.incomplete')}
 			/>
 		{/if}
 	{:else if incompleteCodeBlock}

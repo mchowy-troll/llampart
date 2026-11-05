@@ -191,7 +191,7 @@ export default function(anchor, props) {
 				`Diagnostic: ${label}`
 			);
 			if (fault === 'chart-render')
-				assert(report.errors.some((message) => message.includes('lifecycle renderer sentinel')));
+				assert(report.errors.some((message) => message.includes('chart.render')));
 			else assert(report.network.some((request) => matcher(new URL(request.url))));
 			const fallback = assistant
 				.locator(chart ? '.llampart-chart-fallback' : '.llampart-diagram-fallback')

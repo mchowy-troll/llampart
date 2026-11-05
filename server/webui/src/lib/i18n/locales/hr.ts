@@ -1,6 +1,28 @@
 import type { TranslationDictionary } from '../types';
 
 export const hr: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Izvor grafikona nije valjan JSON.',
+		required: 'Nedostaje obavezno polje „{field}”.',
+		unsupported: 'Ova vrsta vizualizacije nije podržana.',
+		missingColumn: 'Polje „{field}” upućuje na stupac „{column}” koji nedostaje u podacima.',
+		invalidField: 'Polje „{field}” ima nevaljanu vrstu ili vrijednost.',
+		unknownColumn: 'Neočekivana polja ili nedosljedni stupci podataka{field}.',
+		collision: 'Polje „{field}” koristi ključ već dodijeljen drugom stupcu.',
+		duplicate: 'Polje „{field}” označava ponovljene kategorije.',
+		sourceLimit: 'Izvor prelazi ograničenje veličine ili broja redaka.',
+		dataLimit: 'Previše podatkovnih elemenata (najviše: {limit}).',
+		seriesLimit: 'Previše nizova podataka (najviše: {limit}).',
+		countLimit: 'Ovaj odgovor sadrži previše vizualizacija ove vrste.',
+		policy: 'Sigurnosna pravila blokiraju ovu vizualizaciju.',
+		syntax: 'Dijagram sadrži nevaljanu sintaksu Mermaid.',
+		infrastructure:
+			'Modul vizualizacije nije moguće učitati ili pokrenuti. Ponovno učitajte stranicu.',
+		render:
+			'Iscrtavanje nije uspjelo unatoč provjeri izvora. Pokušajte ponovno prikazati vizualizaciju.',
+		svg: 'Generirani dijagram nije prošao sigurnosnu provjeru SVG-a.',
+		incomplete: 'Blok koda vizualizacije nije zatvoren.'
+	},
 	math: {
 		copySource: 'Kopiraj izvorni LaTeX kod',
 		preview: 'Pregled matematičkog izraza',

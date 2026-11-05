@@ -1,6 +1,28 @@
 import type { TranslationDictionary } from '../types';
 
 export const en: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'The chart source is not valid JSON.',
+		required: 'Required field “{field}” is missing.',
+		unsupported: 'This visualization type is not supported.',
+		missingColumn: 'Field “{field}” refers to column “{column}”, which is missing from the data.',
+		invalidField: 'Field “{field}” has an invalid type or value.',
+		unknownColumn: 'Unexpected fields or inconsistent data columns{field}.',
+		collision: 'Field “{field}” uses a key already assigned to another column.',
+		duplicate: 'Field “{field}” identifies duplicate categories.',
+		sourceLimit: 'The source exceeds the size or line limit.',
+		dataLimit: 'Too many data elements (maximum: {limit}).',
+		seriesLimit: 'Too many data series (maximum: {limit}).',
+		countLimit: 'This response contains too many visualizations of this kind.',
+		policy: 'This visualization is blocked by the security policy.',
+		syntax: 'The diagram contains invalid Mermaid syntax.',
+		infrastructure:
+			'The visualization module could not be loaded or initialized. Try reloading the page.',
+		render:
+			'The renderer failed despite source validation. Try displaying the visualization again.',
+		svg: 'The generated diagram failed SVG safety verification.',
+		incomplete: 'The visualization code block was not closed.'
+	},
 	math: {
 		copySource: 'Copy LaTeX source',
 		preview: 'Math preview',

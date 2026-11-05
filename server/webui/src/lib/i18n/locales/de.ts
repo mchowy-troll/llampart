@@ -1,6 +1,28 @@
 import type { TranslationDictionary } from '../types';
 
 export const de: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Der Quelltext des Datendiagramms ist kein gültiges JSON.',
+		required: 'Das erforderliche Feld „{field}“ fehlt.',
+		unsupported: 'Dieser Visualisierungstyp wird nicht unterstützt.',
+		missingColumn: 'Das Feld „{field}“ verweist auf die Spalte „{column}“, die in den Daten fehlt.',
+		invalidField: 'Das Feld „{field}“ hat einen ungültigen Typ oder Wert.',
+		unknownColumn: 'Unerwartete Felder oder inkonsistente Datenspalten{field}.',
+		collision: 'Das Feld „{field}“ verwendet einen bereits vergebenen Spaltenschlüssel.',
+		duplicate: 'Das Feld „{field}“ kennzeichnet doppelte Kategorien.',
+		sourceLimit: 'Der Quelltext überschreitet die Größen- oder Zeilenbegrenzung.',
+		dataLimit: 'Zu viele Datenelemente (höchstens: {limit}).',
+		seriesLimit: 'Zu viele Datenreihen (höchstens: {limit}).',
+		countLimit: 'Diese Antwort enthält zu viele Visualisierungen dieser Art.',
+		policy: 'Die Sicherheitsrichtlinie blockiert diese Visualisierung.',
+		syntax: 'Das Diagramm enthält ungültige Mermaid-Syntax.',
+		infrastructure:
+			'Das Visualisierungsmodul konnte nicht geladen oder initialisiert werden. Laden Sie die Seite neu.',
+		render:
+			'Die Darstellung ist trotz Quelltextvalidierung fehlgeschlagen. Versuchen Sie es erneut.',
+		svg: 'Das erzeugte Diagramm hat die SVG-Sicherheitsprüfung nicht bestanden.',
+		incomplete: 'Der Codeblock der Visualisierung wurde nicht geschlossen.'
+	},
 	math: {
 		copySource: 'LaTeX-Quelltext kopieren',
 		preview: 'Formelvorschau',

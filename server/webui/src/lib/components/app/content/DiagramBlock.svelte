@@ -9,6 +9,12 @@
 	import { mountDiagram } from '$lib/diagrams/diagram-svg';
 	import { diagramTitle } from '$lib/diagrams/diagram-title';
 	import VisualizationFallback from './VisualizationFallback.svelte';
+	import {
+		diagnostic,
+		visualizationFailure,
+		VisualizationError,
+		type VisualizationDiagnostic
+	} from '$lib/visualizations/diagnostics';
 
 	let {
 		source,
@@ -18,7 +24,7 @@
 	let title = $derived(diagramTitle(source) || contextTitle || t('diagrams.title'));
 	let frame: HTMLDivElement;
 	let svg = $state('');
-	let invalid = $state(false);
+	let problem = $state<VisualizationDiagnostic | undefined>();
 	let open = $state(false);
 	let exporting = $state(false);
 	let exportError = $state(false);
@@ -64,34 +70,28 @@
 			const controller = new AbortController();
 			active = controller;
 			svg = '';
-			invalid = false;
+			problem = undefined;
 			exportError = false;
 			let stage: 'policy' | 'module' | 'render' = 'policy';
 			try {
-				if (!enabled) throw new Error('Diagram limit');
+				if (!enabled) throw new VisualizationError(diagnostic('diagram.countLimit'));
 				diagramType(input);
 				stage = 'module';
 				const { renderDiagram } = await import('$lib/diagrams/mermaid-runtime');
+				if (disposed || revision !== request || controller.signal.aborted) return;
 				stage = 'render';
 				const result = await renderDiagram(input, font, controller.signal, 'rounded', width);
 				if (!disposed && revision === request && !controller.signal.aborted) svg = result;
 			} catch (error) {
 				if (!disposed && revision === request && !controller.signal.aborted) {
-					// Parser errors can contain the original source. Log the stage and
-					// policy reason / parser line, not model/conversation content.
-					const message = error instanceof Error ? error.message : '';
-					const line = /^Parse error on line (\d+):/.exec(message)?.[1];
-					console.error(
-						`Mermaid ${stage} failed:`,
-						stage === 'policy'
-							? message
-							: line
-								? `Syntax error at line ${line}`
-								: error instanceof Error
-									? error.name
-									: 'Unknown error'
+					const failure = visualizationFailure(
+						error,
+						stage === 'module' ? 'diagram.module' : 'diagram.render'
 					);
-					invalid = true;
+					if (failure.code !== 'diagram.cancelled') {
+						console.error(`Mermaid ${stage} failed: ${failure.code}`);
+						problem = failure;
+					}
 				}
 			}
 		}
@@ -126,8 +126,8 @@
 />
 
 <div bind:this={frame} use:observeWidth class="diagram-typography">
-	{#if invalid}
-		<VisualizationFallback {source} {title} kind="diagram" />
+	{#if problem}
+		<VisualizationFallback {source} {title} kind="diagram" {problem} />
 	{:else if svg}
 		<figure class="llampart-visualization-frame llampart-diagram-frame" aria-label={title}>
 			<VisualizationHeader

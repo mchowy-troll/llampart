@@ -1,6 +1,28 @@
 import type { TranslationDictionary } from '../types';
 
 export const lt: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Grafiko šaltinis nėra tinkamas JSON.',
+		required: 'Trūksta privalomo lauko „{field}“.',
+		unsupported: 'Šis vizualizacijos tipas nepalaikomas.',
+		missingColumn: 'Laukas „{field}“ nurodo stulpelį „{column}“, kurio trūksta duomenyse.',
+		invalidField: 'Lauko „{field}“ tipas arba reikšmė netinkami.',
+		unknownColumn: 'Netikėti laukai arba nesuderinti duomenų stulpeliai{field}.',
+		collision: 'Laukas „{field}“ naudoja kitam stulpeliui jau priskirtą raktą.',
+		duplicate: 'Laukas „{field}“ nurodo pasikartojančias kategorijas.',
+		sourceLimit: 'Šaltinis viršija dydžio arba eilučių skaičiaus ribą.',
+		dataLimit: 'Per daug duomenų elementų (daugiausia: {limit}).',
+		seriesLimit: 'Per daug duomenų sekų (daugiausia: {limit}).',
+		countLimit: 'Šiame atsakyme per daug šio tipo vizualizacijų.',
+		policy: 'Saugumo politika blokuoja šią vizualizaciją.',
+		syntax: 'Diagramoje yra netinkama Mermaid sintaksė.',
+		infrastructure:
+			'Nepavyko įkelti arba inicijuoti vizualizacijos modulio. Įkelkite puslapį iš naujo.',
+		render:
+			'Atvaizdavimas nepavyko, nors šaltinis patikrintas. Bandykite vizualizaciją parodyti dar kartą.',
+		svg: 'Sugeneruota diagrama neatitiko SVG saugumo patikros.',
+		incomplete: 'Vizualizacijos kodo blokas neuždarytas.'
+	},
 	math: {
 		copySource: 'Kopijuoti LaTeX šaltinį',
 		preview: 'Matematinės išraiškos peržiūra',

@@ -1,6 +1,27 @@
 import type { TranslationDictionary } from '../types';
 
 export const et: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Andmegraafiku lähtekood ei ole kehtiv JSON.',
+		required: 'Kohustuslik väli „{field}” puudub.',
+		unsupported: 'Seda visualiseerimistüüpi ei toetata.',
+		missingColumn: 'Väli „{field}” viitab veerule „{column}”, mis andmetes puudub.',
+		invalidField: 'Välja „{field}” tüüp või väärtus on vigane.',
+		unknownColumn: 'Ootamatud väljad või vastuolulised andmeveerud{field}.',
+		collision: 'Väli „{field}” kasutab juba teisele veerule määratud võtit.',
+		duplicate: 'Väli „{field}” tähistab korduvaid kategooriaid.',
+		sourceLimit: 'Lähtekood ületab suuruse või ridade arvu piirangu.',
+		dataLimit: 'Liiga palju andmeelemente (kuni {limit}).',
+		seriesLimit: 'Liiga palju andmeseeriaid (kuni {limit}).',
+		countLimit: 'See vastus sisaldab liiga palju seda tüüpi visualiseeringuid.',
+		policy: 'Turvapoliitika blokeerib selle visualiseeringu.',
+		syntax: 'Diagramm sisaldab vigast Mermaid-süntaksit.',
+		infrastructure: 'Visualiseerimismoodulit ei saanud laadida või käivitada. Laadi leht uuesti.',
+		render:
+			'Renderdamine nurjus hoolimata lähtekoodi kontrollist. Proovi visualiseeringut uuesti kuvada.',
+		svg: 'Loodud diagramm ei läbinud SVG turvakontrolli.',
+		incomplete: 'Visualiseeringu koodiplokk ei ole suletud.'
+	},
 	math: {
 		copySource: 'Kopeeri LaTeX-i lähtekood',
 		preview: 'Valemi eelvaade',

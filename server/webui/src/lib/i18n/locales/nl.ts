@@ -1,6 +1,28 @@
 import type { TranslationDictionary } from '../types';
 
 export const nl: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'De bron van de grafiek is geen geldige JSON.',
+		required: 'Het verplichte veld ‘{field}’ ontbreekt.',
+		unsupported: 'Dit visualisatietype wordt niet ondersteund.',
+		missingColumn: 'Veld ‘{field}’ verwijst naar kolom ‘{column}’, die in de gegevens ontbreekt.',
+		invalidField: 'Veld ‘{field}’ heeft een ongeldig type of ongeldige waarde.',
+		unknownColumn: 'Onverwachte velden of inconsistente gegevenskolommen{field}.',
+		collision: 'Veld ‘{field}’ gebruikt een sleutel die al aan een andere kolom is toegewezen.',
+		duplicate: 'Veld ‘{field}’ identificeert dubbele categorieën.',
+		sourceLimit: 'De bron overschrijdt de limiet voor grootte of aantal regels.',
+		dataLimit: 'Te veel gegevenselementen (maximaal: {limit}).',
+		seriesLimit: 'Te veel gegevensreeksen (maximaal: {limit}).',
+		countLimit: 'Dit antwoord bevat te veel visualisaties van dit type.',
+		policy: 'Het beveiligingsbeleid blokkeert deze visualisatie.',
+		syntax: 'Het diagram bevat ongeldige Mermaid-syntaxis.',
+		infrastructure:
+			'De visualisatiemodule kon niet worden geladen of geïnitialiseerd. Laad de pagina opnieuw.',
+		render:
+			'De weergave is mislukt ondanks bronvalidatie. Probeer de visualisatie opnieuw weer te geven.',
+		svg: 'Het gegenereerde diagram heeft de SVG-veiligheidscontrole niet doorstaan.',
+		incomplete: 'Het codeblok van de visualisatie is niet afgesloten.'
+	},
 	math: {
 		copySource: 'LaTeX-bron kopiëren',
 		preview: 'Formulevoorbeeld',

@@ -1,6 +1,27 @@
 import type { TranslationDictionary } from '../types';
 
 export const da: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Datadiagrammets kilde er ikke gyldig JSON.',
+		required: 'Det påkrævede felt »{field}« mangler.',
+		unsupported: 'Denne visualiseringstype understøttes ikke.',
+		missingColumn: 'Feltet »{field}« henviser til kolonnen »{column}«, som mangler i dataene.',
+		invalidField: 'Feltet »{field}« har en ugyldig type eller værdi.',
+		unknownColumn: 'Uventede felter eller inkonsistente datakolonner{field}.',
+		collision: 'Feltet »{field}« bruger en nøgle, der allerede er tildelt en anden kolonne.',
+		duplicate: 'Feltet »{field}« identificerer dublerede kategorier.',
+		sourceLimit: 'Kilden overskrider størrelses- eller linjegrænsen.',
+		dataLimit: 'For mange dataelementer (højst: {limit}).',
+		seriesLimit: 'For mange dataserier (højst: {limit}).',
+		countLimit: 'Dette svar indeholder for mange visualiseringer af denne slags.',
+		policy: 'Sikkerhedspolitikken blokerer denne visualisering.',
+		syntax: 'Diagrammet indeholder ugyldig Mermaid-syntaks.',
+		infrastructure:
+			'Visualiseringsmodulet kunne ikke indlæses eller initialiseres. Genindlæs siden.',
+		render: 'Gengivelsen mislykkedes trods kildevalidering. Prøv at vise visualiseringen igen.',
+		svg: 'Det genererede diagram bestod ikke SVG-sikkerhedskontrollen.',
+		incomplete: 'Visualiseringens kodeblok blev ikke lukket.'
+	},
 	math: {
 		copySource: 'Kopiér LaTeX-kilde',
 		preview: 'Forhåndsvis matematik',

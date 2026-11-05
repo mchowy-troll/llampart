@@ -1,6 +1,26 @@
 import type { TranslationDictionary } from '../types';
 
 export const sv: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Datadiagrammets källa är inte giltig JSON.',
+		required: 'Det obligatoriska fältet ”{field}” saknas.',
+		unsupported: 'Den här visualiseringstypen stöds inte.',
+		missingColumn: 'Fältet ”{field}” hänvisar till kolumnen ”{column}” som saknas i data.',
+		invalidField: 'Fältet ”{field}” har en ogiltig typ eller ett ogiltigt värde.',
+		unknownColumn: 'Oväntade fält eller inkonsekventa datakolumner{field}.',
+		collision: 'Fältet ”{field}” använder en nyckel som redan tilldelats en annan kolumn.',
+		duplicate: 'Fältet ”{field}” identifierar dubblerade kategorier.',
+		sourceLimit: 'Källan överskrider storleks- eller radgränsen.',
+		dataLimit: 'För många dataelement (högst: {limit}).',
+		seriesLimit: 'För många dataserier (högst: {limit}).',
+		countLimit: 'Det här svaret innehåller för många visualiseringar av denna typ.',
+		policy: 'Säkerhetspolicyn blockerar den här visualiseringen.',
+		syntax: 'Diagrammet innehåller ogiltig Mermaid-syntax.',
+		infrastructure: 'Visualiseringsmodulen kunde inte läsas in eller initieras. Ladda om sidan.',
+		render: 'Renderingen misslyckades trots källvalidering. Försök visa visualiseringen igen.',
+		svg: 'Det genererade diagrammet klarade inte SVG-säkerhetskontrollen.',
+		incomplete: 'Visualiseringens kodblock stängdes inte.'
+	},
 	math: {
 		copySource: 'Kopiera LaTeX-källkod',
 		preview: 'Förhandsgranska matematik',

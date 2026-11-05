@@ -1,6 +1,28 @@
 import type { TranslationDictionary } from '../types';
 
 export const hu: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Az adatdiagram forrása nem érvényes JSON.',
+		required: 'Hiányzik a kötelező „{field}” mező.',
+		unsupported: 'Ez a megjelenítéstípus nem támogatott.',
+		missingColumn:
+			'A(z) „{field}” mező a(z) „{column}” oszlopra hivatkozik, amely hiányzik az adatokból.',
+		invalidField: 'A(z) „{field}” mező típusa vagy értéke érvénytelen.',
+		unknownColumn: 'Váratlan mezők vagy következetlen adatoszlopok{field}.',
+		collision: 'A(z) „{field}” mező egy másik oszlophoz már hozzárendelt kulcsot használ.',
+		duplicate: 'A(z) „{field}” mező ismétlődő kategóriákat azonosít.',
+		sourceLimit: 'A forrás túllépi a méret- vagy sorszámkorlátot.',
+		dataLimit: 'Túl sok adatelem (legfeljebb: {limit}).',
+		seriesLimit: 'Túl sok adatsor (legfeljebb: {limit}).',
+		countLimit: 'Ez a válasz túl sok ilyen típusú megjelenítést tartalmaz.',
+		policy: 'A biztonsági házirend letiltja ezt a megjelenítést.',
+		syntax: 'A diagram érvénytelen Mermaid-szintaxist tartalmaz.',
+		infrastructure:
+			'A megjelenítő modul nem tölthető be vagy nem inicializálható. Töltse újra az oldalt.',
+		render: 'A renderelés a forrás ellenőrzése ellenére meghiúsult. Próbálja újra megjeleníteni.',
+		svg: 'A létrehozott diagram nem felelt meg az SVG biztonsági ellenőrzésének.',
+		incomplete: 'A megjelenítés kódblokkja nincs lezárva.'
+	},
 	math: {
 		copySource: 'LaTeX-forrás másolása',
 		preview: 'Matematikai előnézet',

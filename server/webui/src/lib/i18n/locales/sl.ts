@@ -1,6 +1,28 @@
 import type { TranslationDictionary } from '../types';
 
 export const sl: TranslationDictionary = {
+	visualizationErrors: {
+		json: 'Izvorna koda grafa ni veljaven JSON.',
+		required: 'Manjka obvezno polje »{field}«.',
+		unsupported: 'Ta vrsta vizualizacije ni podprta.',
+		missingColumn: 'Polje »{field}« kaže na stolpec »{column}«, ki manjka v podatkih.',
+		invalidField: 'Polje »{field}« ima neveljavno vrsto ali vrednost.',
+		unknownColumn: 'Nepričakovana polja ali neskladni podatkovni stolpci{field}.',
+		collision: 'Polje »{field}« uporablja ključ, ki je že dodeljen drugemu stolpcu.',
+		duplicate: 'Polje »{field}« določa podvojene kategorije.',
+		sourceLimit: 'Izvorna koda presega omejitev velikosti ali števila vrstic.',
+		dataLimit: 'Preveč podatkovnih elementov (največ: {limit}).',
+		seriesLimit: 'Preveč podatkovnih nizov (največ: {limit}).',
+		countLimit: 'Ta odgovor vsebuje preveč vizualizacij te vrste.',
+		policy: 'Varnostna politika blokira to vizualizacijo.',
+		syntax: 'Diagram vsebuje neveljavno skladnjo Mermaid.',
+		infrastructure:
+			'Modula za vizualizacijo ni bilo mogoče naložiti ali inicializirati. Znova naložite stran.',
+		render:
+			'Izris ni uspel kljub preverjanju izvorne kode. Poskusite vizualizacijo prikazati znova.',
+		svg: 'Ustvarjeni diagram ni prestal varnostnega preverjanja SVG.',
+		incomplete: 'Blok kode vizualizacije ni bil zaprt.'
+	},
 	math: {
 		copySource: 'Kopiraj izvorno kodo LaTeX',
 		preview: 'Predogled matematičnega izraza',
