@@ -62,6 +62,7 @@
 	import { portalToBody } from '$lib/utils/portal-to-body';
 	import VisualizationFallback from './VisualizationFallback.svelte';
 	import { adjacentDiagramTitle } from '$lib/diagrams/diagram-title';
+	import { MAX_DIAGRAM_SOURCE } from '$lib/diagrams/mermaid-policy';
 	import {
 		MERMAID_LANGUAGE,
 		MAX_MESSAGE_DIAGRAMS,
@@ -73,17 +74,20 @@
 	import {
 		CHART_LANGUAGE,
 		MAX_MESSAGE_CHARTS,
+		MAX_CHART_SOURCE_BYTES,
 		preprocessChartMarkdown,
 		withoutClosedChartFences,
 		isChartNode,
 		isClosedChartNode
 	} from '$lib/markdown/chart-blocks';
 	import type { ChartResult } from '$lib/charts/chart-schema';
+	import type { MessageContentSource, VisualizationSource } from '$lib/types/visualization-source';
 	import { diagnostic } from '$lib/visualizations/diagnostics';
 
 	interface Props {
 		attachments?: DatabaseMessageExtra[];
 		content: string;
+		sourceContext?: MessageContentSource;
 		class?: string;
 		disableMath?: boolean;
 		/** Opt in only for the visible assistant answer, not other Markdown contexts. */
@@ -107,6 +111,7 @@
 
 	let {
 		content,
+		sourceContext,
 		attachments,
 		class: className = '',
 		disableMath = false,
@@ -176,6 +181,146 @@
 		const { createMarkdownProcessor } = await loadMarkdownRuntime();
 
 		return createMarkdownProcessor({ attachments, disableMath: !enableMath });
+	}
+
+	function renderPolicyKey() {
+		return `${allowCharts}:${allowDiagrams}:${chartsActive}:${diagramsActive}:${chartLimit}:${diagramLimit}:${disableMath}:${isStreaming}`;
+	}
+
+	/** Identify a live visualization, not an HTML/unstable block or a portalled preview. */
+	function mountedVisualization(element: HTMLElement) {
+		if (!containerRef?.isConnected || !element.isConnected) return null;
+		const wrapper = element.closest<HTMLElement>('.markdown-block');
+		if (
+			!wrapper ||
+			wrapper.parentElement !== containerRef ||
+			wrapper.classList.contains('markdown-block--unstable') ||
+			wrapper.classList.contains('markdown-block--fallback')
+		)
+			return null;
+		const matches = renderedBlocks.flatMap((block, index) =>
+			block.id === wrapper.dataset.blockId ? [{ block, index }] : []
+		);
+		if (matches.length !== 1) return null;
+		const { block, index } = matches[0];
+		if (block.kind === 'html') return null;
+		const selector =
+			block.kind === 'chart'
+				? '.llampart-chart-frame, .llampart-chart-fallback'
+				: '.llampart-diagram-frame, .llampart-diagram-fallback';
+		const frame = wrapper.querySelector<HTMLElement>(selector);
+		if (
+			!frame ||
+			frame.closest('.markdown-block') !== wrapper ||
+			(!frame.contains(element) && !element.contains(frame))
+		)
+			return null;
+		return { wrapper, frame, block, index };
+	}
+
+	/** Resolve a frozen original-content descriptor on demand; never writes to storage. */
+	export async function getVisualizationSource(
+		element: HTMLElement
+	): Promise<VisualizationSource | null> {
+		if (!browser || !(element instanceof HTMLElement) || destroyed) return null;
+		const owner = sourceContext;
+		if (
+			owner?.origin !== 'assistant-message-content' ||
+			owner.field !== 'content' ||
+			!owner.conversationId ||
+			!owner.messageId
+		)
+			return null;
+		const ownership: MessageContentSource = { ...owner };
+		const originalContent = content;
+		const revision = markdownRevision;
+		const policy = renderPolicyKey();
+		const container = containerRef;
+		const mounted = mountedVisualization(element);
+		if (!mounted) return null;
+		// Copy primitives: $state may deeply proxy blocks, so object identity is not evidence.
+		const { wrapper, frame, index } = mounted;
+		const { id, kind, contentHash } = mounted.block;
+		const source =
+			mounted.block.kind === 'chart' ? mounted.block.chart.source : mounted.block.source;
+		const sourceLimit = kind === 'chart' ? MAX_CHART_SOURCE_BYTES : MAX_DIAGRAM_SOURCE;
+		if (source.length > sourceLimit) return null;
+		if (new TextEncoder().encode(source).byteLength > sourceLimit) return null;
+		const current = () => {
+			if (
+				destroyed ||
+				isStreaming ||
+				isProcessing ||
+				pendingMarkdown !== null ||
+				markdownFallbackText ||
+				markdownRevision !== revision ||
+				containerRef !== container ||
+				content !== originalContent ||
+				previousContent !== originalContent ||
+				renderPolicyKey() !== policy ||
+				previousRenderPolicy !== policy ||
+				sourceContext?.origin !== ownership.origin ||
+				sourceContext.field !== ownership.field ||
+				sourceContext.conversationId !== ownership.conversationId ||
+				sourceContext.messageId !== ownership.messageId
+			)
+				return false;
+			const live = mountedVisualization(element);
+			return (
+				!!live &&
+				live.wrapper === wrapper &&
+				live.frame === frame &&
+				live.index === index &&
+				live.block.id === id &&
+				live.block.kind === kind &&
+				live.block.contentHash === contentHash &&
+				(live.block.kind === 'chart' ? live.block.chart.source : live.block.source) === source
+			);
+		};
+		if (!current()) return null;
+		try {
+			// Flush queued prop/effect/DOM updates before loading or parsing anything.
+			await tick();
+			if (!current()) return null;
+			const [runtime, locator] = await Promise.all([
+				loadMarkdownRuntime(),
+				import('$lib/markdown/visualization-source')
+			]);
+			if (!current()) return null;
+			const processor = await runtime.createMarkdownProcessor({
+				attachments,
+				disableMath: disableMath || !hasRenderableMath(originalContent)
+			});
+			if (!current()) return null;
+			const normalizedContent = normalizeMarkdown(originalContent);
+			const originalAst = processor.parse(originalContent) as MdastRoot;
+			const normalizedAst = processor.parse(normalizedContent) as MdastRoot;
+			const node = normalizedAst.children[index];
+			if (
+				!node ||
+				getHastNodeId(node as HastRootContent, index) !== id ||
+				getMdastNodeHash(node, index) !== contentHash ||
+				!(kind === 'chart' ? isChartNode(node) : isMermaidNode(node))
+			)
+				return null;
+			const result = locator.locateVisualizationSource({
+				originalContent,
+				normalizedContent,
+				originalAst,
+				normalizedAst,
+				sourceContext: ownership,
+				nodeIndex: index,
+				kind,
+				source
+			});
+			return current() &&
+				result &&
+				result.exactOriginalFence === originalContent.slice(result.rawStart, result.rawEnd)
+				? result
+				: null;
+		} catch {
+			return null;
+		}
 	}
 
 	/**
@@ -770,7 +915,7 @@
 
 	async function processMarkdown(markdown: string, revision: number) {
 		const current = () => !destroyed && revision === markdownRevision;
-		const renderPolicy = `${allowCharts}:${allowDiagrams}:${chartsActive}:${diagramsActive}:${chartLimit}:${diagramLimit}:${disableMath}:${isStreaming}`;
+		const renderPolicy = renderPolicyKey();
 		if (renderPolicy !== previousRenderPolicy) {
 			previousContent = '';
 			previousRenderPolicy = renderPolicy;

@@ -222,6 +222,7 @@
 							.reduce((count, section) => count + scanChartFences(section.content).count, 0)
 				)}
 				content={section.content}
+				sourceContext={section.sourceContext}
 				diagramLimit={Math.max(
 					0,
 					MAX_MESSAGE_DIAGRAMS -

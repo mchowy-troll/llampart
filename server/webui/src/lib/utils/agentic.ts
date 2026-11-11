@@ -1,4 +1,4 @@
-import { AgenticSectionType, MessageRole } from '$lib/enums';
+import { AgenticSectionType, MessageRole, MessageType } from '$lib/enums';
 import { ATTACHMENT_SAVED_REGEX, NEWLINE_SEPARATOR, TURN_LIMIT_MESSAGE } from '$lib/constants';
 import { toolExecutionDescription } from '$lib/utils/tool-lifecycle';
 import type { ApiChatCompletionToolCall } from '$lib/types/api';
@@ -8,6 +8,7 @@ import type {
 	DatabaseMessageExtraImageFile
 } from '$lib/types/database';
 import { AttachmentType } from '$lib/enums';
+import type { MessageContentSource } from '$lib/types/visualization-source';
 
 /**
  * Represents a parsed section of agentic content for display
@@ -15,6 +16,7 @@ import { AttachmentType } from '$lib/enums';
 export interface AgenticSection {
 	type: AgenticSectionType;
 	content: string;
+	sourceContext?: MessageContentSource;
 	toolName?: string;
 	toolArgs?: string;
 	toolResult?: string;
@@ -60,7 +62,19 @@ function deriveSingleTurnSections(
 	if (message.content?.trim()) {
 		sections.push({
 			type: AgenticSectionType.TEXT,
-			content: message.content
+			content: message.content,
+			sourceContext:
+				message.role === MessageRole.ASSISTANT &&
+				message.type === MessageType.TEXT &&
+				message.convId &&
+				message.id
+					? {
+							origin: 'assistant-message-content',
+							conversationId: message.convId,
+							messageId: message.id,
+							field: 'content'
+						}
+					: undefined
 		});
 	}
 
