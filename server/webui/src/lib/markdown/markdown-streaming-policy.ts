@@ -8,8 +8,34 @@
  */
 import { CODE_BLOCK_REGEXP } from '$lib/constants/latex-protection';
 import type { IncompleteCodeBlock } from '$lib/utils/code';
-import { scanChartFences } from './chart-blocks';
-import { scanMermaidFences } from './mermaid-blocks';
+import { CHART_LANGUAGE, scanChartFences } from './chart-blocks';
+import { MERMAID_LANGUAGE, scanMermaidFences } from './mermaid-blocks';
+
+export type IncompleteVisualizationOpening = { openingIndex: number };
+
+/** Only an unfinished info string at EOF can still grow into a visualization.
+ * Reuse fence bookkeeping so a closing fence or a line inside another block
+ * never becomes a new pending visualization. Completed languages use the
+ * existing detectors, and a newline/metadata ends prefix ambiguity immediately.
+ */
+export function detectIncompleteVisualizationOpening(
+	markdown: string,
+	{ chart = true, diagram = true } = {}
+): IncompleteVisualizationOpening | null {
+	const opening = /(?:^|\n) {0,3}(`{3,}|~{3,})([^\r\n]*)$/.exec(markdown);
+	if (!opening || opening.index + opening[0].length !== markdown.length) return null;
+	const info = opening[2].trimStart();
+	if (
+		info !== info.trimEnd() ||
+		![...(chart ? [CHART_LANGUAGE] : []), ...(diagram ? [MERMAID_LANGUAGE] : [])].some(
+			(language) => info !== language && language.startsWith(info)
+		)
+	)
+		return null;
+	const pending = scanChartFences(markdown, info).pending;
+	const openingIndex = opening.index + (opening[0].startsWith('\n') ? 1 : 0);
+	return pending?.openingIndex === openingIndex ? { openingIndex } : null;
+}
 
 export function detectIncompleteMermaidBlock(markdown: string): IncompleteCodeBlock | null {
 	return scanMermaidFences(markdown).pending;

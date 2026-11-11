@@ -32,6 +32,7 @@
 		detectIncompleteMathBlock,
 		detectIncompleteChartBlock,
 		detectIncompleteMermaidBlock,
+		detectIncompleteVisualizationOpening,
 		type IncompleteMathBlock
 	} from '$lib/markdown/markdown-streaming-policy';
 	import {
@@ -148,7 +149,9 @@
 	let unstableBlockHtml = $state('');
 	let markdownFallbackText = $state('');
 	let incompleteCodeBlock = $state<IncompleteCodeBlock | null>(null);
+	let incompleteVisualizationBlock = $state(false);
 	let incompleteMathBlock = $state<IncompleteMathBlock | null>(null);
+	let pendingVisualizationOpening = $state(false);
 	let streamingHighlightedHtml = $state('');
 	let streamingHighlightRequestId = 0;
 	let previewDialogOpen = $state(false);
@@ -951,20 +954,31 @@
 			markdownFallbackText = '';
 			incompleteCodeBlock = null;
 			incompleteMathBlock = null;
+			pendingVisualizationOpening = false;
 			streamingHighlightedHtml = '';
 			previousContent = '';
 			return;
 		}
 
 		// Check for incomplete code block at the end of content
-		const incompleteBlock =
-			detectIncompleteMermaidBlock(markdown) ??
-			detectIncompleteChartBlock(markdown) ??
-			detectIncompleteCodeBlock(markdown);
+		const pendingOpening = isStreaming
+			? detectIncompleteVisualizationOpening(markdown, {
+					chart: allowCharts,
+					diagram: allowDiagrams
+				})
+			: null;
+		const visualizationBlock =
+			detectIncompleteMermaidBlock(markdown) ?? detectIncompleteChartBlock(markdown);
+		// The legacy generic detector truncates info strings at punctuation. Its
+		// language hint alone is not evidence of an exact visualization language.
+		const incompleteBlock = visualizationBlock ?? detectIncompleteCodeBlock(markdown);
 
-		if (incompleteBlock) {
+		if (pendingOpening || incompleteBlock) {
 			// Process only the prefix (content before the incomplete code block).
-			const prefixMarkdown = markdown.slice(0, incompleteBlock.openingIndex);
+			const prefixMarkdown = markdown.slice(
+				0,
+				pendingOpening?.openingIndex ?? incompleteBlock!.openingIndex
+			);
 
 			const blocks = await renderStableMarkdownBlocks(prefixMarkdown);
 			if (!current()) return;
@@ -972,13 +986,16 @@
 			previousContent = prefixMarkdown;
 			unstableBlockHtml = '';
 			incompleteMathBlock = null;
-			incompleteCodeBlock = incompleteBlock;
+			pendingVisualizationOpening = !!pendingOpening;
+			incompleteCodeBlock = pendingOpening ? null : incompleteBlock;
+			incompleteVisualizationBlock = !!visualizationBlock;
 			if (
-				(allowCharts && incompleteBlock.language === CHART_LANGUAGE) ||
-				(allowDiagrams && incompleteBlock.language === MERMAID_LANGUAGE)
+				pendingOpening ||
+				(allowCharts && visualizationBlock?.language === CHART_LANGUAGE) ||
+				(allowDiagrams && visualizationBlock?.language === MERMAID_LANGUAGE)
 			)
 				streamingHighlightedHtml = '';
-			else await updateStreamingHighlightedHtml(incompleteBlock);
+			else if (incompleteBlock) await updateStreamingHighlightedHtml(incompleteBlock);
 
 			return;
 		}
@@ -997,6 +1014,7 @@
 			previousContent = prefixMarkdown;
 			unstableBlockHtml = '';
 			incompleteCodeBlock = null;
+			pendingVisualizationOpening = false;
 			incompleteMathBlock = pendingMathBlock;
 			streamingHighlightedHtml = '';
 
@@ -1005,6 +1023,7 @@
 
 		// No incomplete structured streaming block - use standard processing.
 		incompleteCodeBlock = null;
+		pendingVisualizationOpening = false;
 		incompleteMathBlock = null;
 		streamingHighlightedHtml = '';
 
@@ -1480,7 +1499,11 @@
 		</div>
 	{/if}
 
-	{#if incompleteCodeBlock && allowDiagrams && incompleteCodeBlock.language === MERMAID_LANGUAGE}
+	{#if pendingVisualizationOpening && isStreaming}
+		<div class="llampart-inline-processing-status" role="status">
+			{t('messages.processingEllipsis')}
+		</div>
+	{:else if incompleteVisualizationBlock && incompleteCodeBlock && allowDiagrams && incompleteCodeBlock.language === MERMAID_LANGUAGE}
 		{#if !diagramsActive}
 			<VisualizationFallback
 				source={incompleteCodeBlock.code}
@@ -1498,7 +1521,7 @@
 				problem={diagnostic('diagram.incomplete')}
 			/>
 		{/if}
-	{:else if incompleteCodeBlock && allowCharts && incompleteCodeBlock.language === CHART_LANGUAGE}
+	{:else if incompleteVisualizationBlock && incompleteCodeBlock && allowCharts && incompleteCodeBlock.language === CHART_LANGUAGE}
 		{#if !chartsActive}
 			<VisualizationFallback
 				source={incompleteCodeBlock.code}
