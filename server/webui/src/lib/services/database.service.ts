@@ -14,13 +14,17 @@ import type {
 	AgenticTerminalReason,
 	ToolCallExecution
 } from '$lib/types/agentic';
+import {
+	getPreparedVisualizationReplacement,
+	type PreparedVisualizationReplacement
+} from './visualization-replacement';
 
 class LlamacppDatabase extends Dexie {
 	conversations!: EntityTable<DatabaseConversation, string>;
 	messages!: EntityTable<DatabaseMessage, string>;
 
 	constructor() {
-		super('LlamacppWebui');
+		super('llampart-db');
 
 		this.version(1).stores({
 			conversations: 'id, lastModified, currNode, name',
@@ -30,7 +34,7 @@ class LlamacppDatabase extends Dexie {
 }
 
 const db = new LlamacppDatabase();
-import { MessageRole } from '$lib/enums/chat';
+import { MessageRole, MessageType } from '$lib/enums/chat';
 
 type ConversationImport = { conv: DatabaseConversation; messages: DatabaseMessage[] };
 
@@ -871,6 +875,53 @@ export class DatabaseService {
 			updates = { ...updates, modelInfo: messageModelInfoSnapshotSchema.parse(updates.modelInfo) };
 		}
 		await requireUpdated(await db.messages.update(id, updates), `Message ${id}`);
+	}
+
+	/** Content-only CAS. Writer-drain/finished-message gating belongs to the caller. */
+	static async replaceVisualizationBlock(
+		prepared: PreparedVisualizationReplacement,
+		{ isIdle }: { isIdle: () => boolean }
+	): Promise<void> {
+		const snapshot = getPreparedVisualizationReplacement(prepared);
+		// A nested transaction could resolve before its outer transaction commits.
+		if (Dexie.currentTransaction)
+			throw new Error('Visualization replacement requires a standalone transaction');
+		const requireIdle = () => {
+			if (isIdle() !== true) throw new Error('Conversation is not idle');
+		};
+		requireIdle();
+		await db.transaction('rw', [db.conversations, db.messages], async () => {
+			requireIdle();
+			const {
+				conversationId,
+				messageId,
+				originalContent,
+				rawStart,
+				rawEnd,
+				exactOriginalFence,
+				newContent
+			} = snapshot;
+			await requireConversation(conversationId);
+			const message = await requireOwnedMessage(conversationId, messageId);
+			if (
+				message.role !== MessageRole.ASSISTANT ||
+				message.type !== MessageType.TEXT ||
+				message.content !== originalContent
+			)
+				throw new Error('Visualization owner or original message content changed');
+			if (
+				!Number.isInteger(rawStart) ||
+				!Number.isInteger(rawEnd) ||
+				rawStart < 0 ||
+				rawEnd <= rawStart ||
+				rawEnd > message.content.length ||
+				message.content.slice(rawStart, rawEnd) !== exactOriginalFence
+			)
+				throw new Error('Original visualization range changed');
+			requireIdle();
+			const changed = await db.messages.update(messageId, { content: newContent });
+			if (changed !== 1) throw new Error('Visualization message was not updated');
+		});
 	}
 
 	/** Assistant identity and call registration are committed together, before permission/execution. */
