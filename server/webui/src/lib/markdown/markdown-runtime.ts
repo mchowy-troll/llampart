@@ -71,7 +71,7 @@ export async function createMarkdownProcessor({
 		}) // Add syntax highlighting
 		.use(rehypeRestoreTableHtml) // Restore limited HTML (e.g., <br>, <ul>) inside Markdown tables
 		.use(rehypeWrapTables) // Wrap tables in a scroll container without changing table markup
-		.use(rehypeEnhanceLinks) // Add target="_blank" to links
+		.use(rehypeEnhanceLinks) // Validate href and add safe target/rel attributes to links
 		.use(rehypeEnhanceCodeBlocks) // Wrap code blocks with header and actions
 		.use(rehypeResolveAttachmentImages, { attachments })
 		.use(rehypeRtlSupport) // Add bidirectional text support
