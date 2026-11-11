@@ -292,6 +292,8 @@ function parseLlamaServerChatCompletionResponse(data: unknown): ProviderChatComp
 		content: choice?.message?.content || '',
 		reasoningContent: choice?.message?.reasoning_content ?? undefined,
 		toolCalls: choice?.message?.tool_calls,
+		finishReason: choice?.finish_reason ?? undefined,
+		refusal: typeof choice?.message?.refusal === 'string' ? choice.message.refusal : undefined,
 		model: extractModelName(data)
 	};
 }

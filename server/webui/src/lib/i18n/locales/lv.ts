@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const lv: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Labot',
+		failed: 'Labojumu neizdevās piemērot. Sākotnējais kods nav mainīts.'
+	},
 	visualizationErrors: {
 		json: 'Datu diagrammas avots nav derīgs JSON.',
 		required: 'Trūkst obligātā lauka “{field}”.',

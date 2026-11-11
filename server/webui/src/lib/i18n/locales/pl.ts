@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '$lib/i18n/types';
 
 export const pl: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Napraw',
+		failed: 'Nie udało się zastosować naprawy. Oryginalny kod pozostał bez zmian.'
+	},
 	visualizationErrors: {
 		json: 'Źródło wykresu nie jest poprawnym JSON-em.',
 		required: 'Brakuje wymaganego pola „{field}”.',

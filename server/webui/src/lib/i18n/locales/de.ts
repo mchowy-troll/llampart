@@ -1,6 +1,11 @@
 import type { TranslationDictionary } from '../types';
 
 export const de: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Reparieren',
+		failed:
+			'Die Reparatur konnte nicht angewendet werden. Der ursprüngliche Code bleibt unverändert.'
+	},
 	visualizationErrors: {
 		json: 'Der Quelltext des Datendiagramms ist kein gültiges JSON.',
 		required: 'Das erforderliche Feld „{field}“ fehlt.',

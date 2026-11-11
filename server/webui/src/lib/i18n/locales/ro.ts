@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const ro: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Repară',
+		failed: 'Reparația nu a putut fi aplicată. Codul original este neschimbat.'
+	},
 	visualizationErrors: {
 		json: 'Sursa graficului nu este JSON valid.',
 		required: 'Lipsește câmpul obligatoriu „{field}”.',

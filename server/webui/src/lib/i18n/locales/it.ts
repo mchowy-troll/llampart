@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const it: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Ripara',
+		failed: 'Impossibile applicare la riparazione. Il codice originale è invariato.'
+	},
 	visualizationErrors: {
 		json: 'Il sorgente del grafico non è JSON valido.',
 		required: 'Manca il campo obbligatorio «{field}».',

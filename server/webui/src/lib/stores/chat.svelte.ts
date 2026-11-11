@@ -51,6 +51,12 @@ import type { ChatStreamCheckpoint } from '$lib/types/settings';
 import type { McpServerOverride } from '$lib/types/database';
 import type { OperationModel, ProviderRequestContext } from '$lib/types/provider';
 import { ErrorDialogType, MessageRole, MessageType } from '$lib/enums';
+import {
+	hasConversationWriters,
+	queuedGenerationReady,
+	withConversationWriter,
+	type ConversationWriterKind
+} from '$lib/services/conversation-writers';
 
 interface ConversationStateEntry {
 	lastAccessed: number;
@@ -195,6 +201,40 @@ class ChatStore {
 
 	isStreaming(): boolean {
 		return this.isStreamingActive;
+	}
+
+	/** Called only on demand by repair; never subscribed to by historical Markdown. */
+	isVisualizationRepairIdle(convId: string): boolean {
+		const processing = this.processingStates.get(convId);
+		// Writer scopes include Abort/Stop and pending persistence after UI cleanup.
+		// A retained, inactive AbortController alone is not evidence of active work.
+		return !(
+			hasConversationWriters(convId) ||
+			(processing && processing.status !== 'idle') ||
+			this.chatLoadingStates.has(convId) ||
+			this.chatStreamingStates.has(convId) ||
+			this.resumingStreams.has(convId) ||
+			this.conversationOperationLocks.has(convId) ||
+			this.conversationOperationLocks.has('__new_conversation__') ||
+			agenticStore.isRunning(convId) ||
+			ChatService.getResumableState(convId)
+		);
+	}
+
+	private withActiveConversationWriter<T>(
+		operation: () => Promise<T>,
+		kind: ConversationWriterKind = 'write'
+	): Promise<T> {
+		const conversationId = conversationsStore.activeConversation?.id;
+		return withConversationWriter(
+			conversationId,
+			() => {
+				if (conversationsStore.activeConversation?.id !== conversationId)
+					throw new Error('Conversation context changed before queued operation');
+				return operation();
+			},
+			kind
+		);
 	}
 
 	private getOrCreateAbortController(convId: string): AbortController {
@@ -424,6 +464,10 @@ class ChatStore {
 	}
 
 	async addSystemPrompt(): Promise<void> {
+		await this.withActiveConversationWriter(() => this.addSystemPromptImpl());
+	}
+
+	private async addSystemPromptImpl(): Promise<void> {
 		let activeConv = conversationsStore.activeConversation;
 		if (!activeConv) {
 			const convId = await conversationsStore.createConversation();
@@ -477,6 +521,16 @@ class ChatStore {
 
 	/** Edits one system prompt in place without changing an in-flight generation's history. */
 	async editSystemMessage(convId: string, messageId: string, newContent: string): Promise<void> {
+		await withConversationWriter(convId, () =>
+			this.editSystemMessageImpl(convId, messageId, newContent)
+		);
+	}
+
+	private async editSystemMessageImpl(
+		convId: string,
+		messageId: string,
+		newContent: string
+	): Promise<void> {
 		if (this.systemMessageSaveLocks.has(messageId)) {
 			throw new Error('System message save already in progress');
 		}
@@ -506,6 +560,14 @@ class ChatStore {
 	}
 
 	async removeSystemPromptPlaceholder(messageId: string): Promise<boolean> {
+		return (
+			(await this.withActiveConversationWriter(() =>
+				this.removeSystemPromptPlaceholderImpl(messageId)
+			)) ?? false
+		);
+	}
+
+	private async removeSystemPromptPlaceholderImpl(messageId: string): Promise<boolean> {
 		const activeConv = conversationsStore.activeConversation;
 		if (!activeConv) return false;
 		try {
@@ -553,6 +615,13 @@ class ChatStore {
 	}
 
 	async sendMessage(content: string, extras?: DatabaseMessageExtra[]): Promise<void> {
+		await this.withActiveConversationWriter(
+			() => this.sendMessageImpl(content, extras),
+			'generation'
+		);
+	}
+
+	private async sendMessageImpl(content: string, extras?: DatabaseMessageExtra[]): Promise<void> {
 		if (!content.trim() && (!extras || extras.length === 0)) return;
 		const activeConv = conversationsStore.activeConversation;
 		const operationKey = activeConv?.id ?? '__new_conversation__';
@@ -766,6 +835,7 @@ class ChatStore {
 		const apiOptions = requestBinding.apiOptions;
 		const abortController = new AbortController();
 		this.abortControllers.set(assistantMessage.convId, abortController);
+		queuedGenerationReady(assistantMessage.convId);
 
 		if (isRouterMode() && effectiveModel) {
 			try {
@@ -824,6 +894,7 @@ class ChatStore {
 		let resolvedModel: string | null = null;
 		let currentModelInfo = verifiedModelInfo ?? undefined;
 		let modelWrites = Promise.resolve();
+		let completionWrite = Promise.resolve();
 		const convId = assistantMessage.convId;
 		let titleAttempted = false;
 		const generateFirstTitle = async (content: string): Promise<void> => {
@@ -861,7 +932,9 @@ class ChatStore {
 				if (!id || completionIdRecorded) return;
 				completionIdRecorded = true;
 				updateActiveMessage(currentAssistantMessageId, { completionId: id });
-				DatabaseService.updateMessage(currentAssistantMessageId, { completionId: id }).catch(() => {
+				completionWrite = DatabaseService.updateMessage(currentAssistantMessageId, {
+					completionId: id
+				}).catch(() => {
 					completionIdRecorded = false;
 				});
 			};
@@ -1150,93 +1223,98 @@ class ChatStore {
 			}
 		};
 
-		const agenticConfig = agenticStore.getConfig(config(), perChatOverrides);
-		if (agenticConfig.enabled) {
-			const agenticResult = await agenticStore.runAgenticFlow({
-				conversationId: convId,
-				messages: allMessages,
-				options: {
+		try {
+			const agenticConfig = agenticStore.getConfig(config(), perChatOverrides);
+			if (agenticConfig.enabled) {
+				const agenticResult = await agenticStore.runAgenticFlow({
+					conversationId: convId,
+					messages: allMessages,
+					options: {
+						...apiOptions,
+						...(frozenModel ? { model: frozenModel } : {}),
+						assistantMessageId: assistantMessage.id,
+						operationId,
+						operationModel,
+						providerRequestContext
+					},
+					callbacks: streamCallbacks,
+					signal: abortController.signal,
+					perChatOverrides
+				});
+				if (agenticResult.handled) {
+					return;
+				}
+			}
+
+			// Non-agentic path: direct streaming into the single assistant message
+			await ChatService.sendMessage(
+				allMessages,
+				{
 					...apiOptions,
 					...(frozenModel ? { model: frozenModel } : {}),
 					assistantMessageId: assistantMessage.id,
-					operationId,
 					operationModel,
-					providerRequestContext
-				},
-				callbacks: streamCallbacks,
-				signal: abortController.signal,
-				perChatOverrides
-			});
-			if (agenticResult.handled) {
-				return;
-			}
-		}
-
-		// Non-agentic path: direct streaming into the single assistant message
-		await ChatService.sendMessage(
-			allMessages,
-			{
-				...apiOptions,
-				...(frozenModel ? { model: frozenModel } : {}),
-				assistantMessageId: assistantMessage.id,
-				operationModel,
-				providerRequestContext,
-				stream: true,
-				onChunk: streamCallbacks.onChunk,
-				onReasoningChunk: streamCallbacks.onReasoningChunk,
-				onModel: streamCallbacks.onModel,
-				onCompletionId: streamCallbacks.onCompletionId,
-				onTimings: streamCallbacks.onTimings,
-				onStreamCheckpoint: streamCallbacks.onStreamCheckpoint,
-				onComplete: async (
-					finalContent?: string,
-					reasoningContent?: string,
-					timings?: ChatMessageTimings,
-					toolCalls?: string
-				) => {
-					const persistedTimings = withContextTotal(timings);
-					const content = streamedContent || finalContent || '';
-					const reasoning = streamedReasoningContent || reasoningContent;
-					const updateData: Record<string, unknown> = {
-						content,
-						reasoningContent: reasoning || undefined,
-						toolCalls: toolCalls || '',
-						timings: persistedTimings
-					};
-					await modelWrites;
-					if (resolvedModel) updateData.model = resolvedModel;
-					if (currentModelInfo) updateData.modelInfo = currentModelInfo;
-					await DatabaseService.updateMessage(currentAssistantMessageId, updateData);
-					const uiUpdate: Partial<DatabaseMessage> = {
-						content,
-						reasoningContent: reasoning || undefined,
-						toolCalls: toolCalls || ''
-					};
-					if (persistedTimings) uiUpdate.timings = persistedTimings;
-					if (resolvedModel) uiUpdate.model = resolvedModel;
-					if (currentModelInfo) uiUpdate.modelInfo = currentModelInfo;
-					updateActiveMessage(currentAssistantMessageId, uiUpdate);
-					await updateConversationCurrentNode(currentAssistantMessageId);
-					cleanupStreamingState();
-					if (onComplete) await onComplete(content);
-					if (isRouterMode()) modelsStore.fetchRouterModels().catch(console.error);
-					await generateFirstTitle(content);
-					if (shouldPreEncode) {
-						void this.triggerPreEncode(
-							allMessages,
-							assistantMessage,
+					providerRequestContext,
+					stream: true,
+					onChunk: streamCallbacks.onChunk,
+					onReasoningChunk: streamCallbacks.onReasoningChunk,
+					onModel: streamCallbacks.onModel,
+					onCompletionId: streamCallbacks.onCompletionId,
+					onTimings: streamCallbacks.onTimings,
+					onStreamCheckpoint: streamCallbacks.onStreamCheckpoint,
+					onComplete: async (
+						finalContent?: string,
+						reasoningContent?: string,
+						timings?: ChatMessageTimings,
+						toolCalls?: string
+					) => {
+						const persistedTimings = withContextTotal(timings);
+						const content = streamedContent || finalContent || '';
+						const reasoning = streamedReasoningContent || reasoningContent;
+						const updateData: Record<string, unknown> = {
 							content,
-							operationModel,
-							excludeReasoningFromPreEncode,
-							providerRequestContext
-						);
-					}
+							reasoningContent: reasoning || undefined,
+							toolCalls: toolCalls || '',
+							timings: persistedTimings
+						};
+						await modelWrites;
+						if (resolvedModel) updateData.model = resolvedModel;
+						if (currentModelInfo) updateData.modelInfo = currentModelInfo;
+						await DatabaseService.updateMessage(currentAssistantMessageId, updateData);
+						const uiUpdate: Partial<DatabaseMessage> = {
+							content,
+							reasoningContent: reasoning || undefined,
+							toolCalls: toolCalls || ''
+						};
+						if (persistedTimings) uiUpdate.timings = persistedTimings;
+						if (resolvedModel) uiUpdate.model = resolvedModel;
+						if (currentModelInfo) uiUpdate.modelInfo = currentModelInfo;
+						updateActiveMessage(currentAssistantMessageId, uiUpdate);
+						await updateConversationCurrentNode(currentAssistantMessageId);
+						cleanupStreamingState();
+						if (onComplete) await onComplete(content);
+						if (isRouterMode()) modelsStore.fetchRouterModels().catch(console.error);
+						await generateFirstTitle(content);
+						if (shouldPreEncode) {
+							void this.triggerPreEncode(
+								allMessages,
+								assistantMessage,
+								content,
+								operationModel,
+								excludeReasoningFromPreEncode,
+								providerRequestContext
+							);
+						}
+					},
+					onError: streamCallbacks.onError
 				},
-				onError: streamCallbacks.onError
-			},
-			convId,
-			abortController.signal
-		);
+				convId,
+				abortController.signal
+			);
+		} finally {
+			// Abort/Stop can clear loading before queued metadata writes settle.
+			await Promise.all([modelWrites.catch(() => undefined), completionWrite]);
+		}
 	}
 
 	private async generateTitleWithLLM(
@@ -1303,6 +1381,10 @@ class ChatStore {
 		await this.stopGenerationForChat(activeConv.id);
 	}
 	async stopGenerationForChat(convId: string): Promise<void> {
+		await withConversationWriter(convId, () => this.stopGenerationForChatImpl(convId), 'stop');
+	}
+
+	private async stopGenerationForChatImpl(convId: string): Promise<void> {
 		const agenticRunning = agenticStore.isRunning(convId);
 		// Cancel synchronously, before persistence/transport awaits can admit another tool.
 		this.abortControllers.get(convId)?.abort();
@@ -1317,6 +1399,10 @@ class ChatStore {
 	}
 
 	async resumeStreamForChat(convId: string): Promise<void> {
+		await withConversationWriter(convId, () => this.resumeStreamForChatImpl(convId), 'generation');
+	}
+
+	private async resumeStreamForChatImpl(convId: string): Promise<void> {
 		if (this.resumingStreams.has(convId) || this.isChatLoadingInternal(convId)) return;
 		const state = ChatService.getResumableState(convId);
 		if (!state) return;
@@ -1350,6 +1436,7 @@ class ChatStore {
 			this.setActiveProcessingConversation(convId);
 		}
 		const abortController = this.getOrCreateAbortController(convId);
+		queuedGenerationReady(convId);
 		const resolvedContextTotal = this.getContextTotal(state.model);
 		const withContextTotal = (timings?: ChatMessageTimings): ChatMessageTimings | undefined =>
 			timings && resolvedContextTotal !== null
@@ -1508,6 +1595,13 @@ class ChatStore {
 	}
 
 	async updateMessage(messageId: string, newContent: string): Promise<void> {
+		await this.withActiveConversationWriter(
+			() => this.updateMessageImpl(messageId, newContent),
+			'generation'
+		);
+	}
+
+	private async updateMessageImpl(messageId: string, newContent: string): Promise<void> {
 		const activeConv = conversationsStore.activeConversation;
 		if (!activeConv) return;
 		const perChatOverrides = activeConv.mcpServerOverrides?.map((override: McpServerOverride) => ({
@@ -1520,7 +1614,10 @@ class ChatStore {
 			.slice(0, messageIndex)
 			.concat({ ...messageToUpdate, content: newContent, children: [] });
 		const generationModel = this.captureGenerationModel(undefined, conversationPath);
-		if (this.isChatLoadingInternal(activeConv.id)) await this.stopGenerationForChat(activeConv.id);
+		// This writer already owns generation startup; a nested queued Stop would
+		// otherwise wait for the controller this same operation has yet to create.
+		if (this.isChatLoadingInternal(activeConv.id))
+			await this.stopGenerationForChatImpl(activeConv.id);
 		try {
 			const allMessages = await conversationsStore.getConversationMessages(activeConv.id);
 			const rootMessage = allMessages.find((m) => m.type === 'root' && m.parent === null);
@@ -1562,6 +1659,13 @@ class ChatStore {
 	}
 
 	async regenerateMessage(messageId: string): Promise<void> {
+		await this.withActiveConversationWriter(
+			() => this.regenerateMessageImpl(messageId),
+			'generation'
+		);
+	}
+
+	private async regenerateMessageImpl(messageId: string): Promise<void> {
 		const activeConv = conversationsStore.activeConversation;
 		if (!activeConv || this.isChatLoadingInternal(activeConv.id)) return;
 		const perChatOverrides = activeConv.mcpServerOverrides?.map((override: McpServerOverride) => ({
@@ -1601,6 +1705,16 @@ class ChatStore {
 	}
 
 	async regenerateMessageWithBranching(messageId: string, modelOverride?: string): Promise<void> {
+		await this.withActiveConversationWriter(
+			() => this.regenerateMessageWithBranchingImpl(messageId, modelOverride),
+			'generation'
+		);
+	}
+
+	private async regenerateMessageWithBranchingImpl(
+		messageId: string,
+		modelOverride?: string
+	): Promise<void> {
 		const activeConv = conversationsStore.activeConversation;
 		if (!activeConv || this.isChatLoadingInternal(activeConv.id)) return;
 		const perChatOverrides = activeConv.mcpServerOverrides?.map((override: McpServerOverride) => ({
@@ -1711,6 +1825,10 @@ class ChatStore {
 	}
 
 	async deleteMessage(messageId: string): Promise<void> {
+		await this.withActiveConversationWriter(() => this.deleteMessageImpl(messageId));
+	}
+
+	private async deleteMessageImpl(messageId: string): Promise<void> {
 		const activeConv = conversationsStore.activeConversation;
 		if (!activeConv) return;
 		try {
@@ -1764,6 +1882,16 @@ class ChatStore {
 		newContent: string,
 		shouldBranch: boolean
 	): Promise<void> {
+		await this.withActiveConversationWriter(() =>
+			this.editAssistantMessageImpl(messageId, newContent, shouldBranch)
+		);
+	}
+
+	private async editAssistantMessageImpl(
+		messageId: string,
+		newContent: string,
+		shouldBranch: boolean
+	): Promise<void> {
 		const activeConv = conversationsStore.activeConversation;
 		if (!activeConv || this.isChatLoadingInternal(activeConv.id)) return;
 
@@ -1809,6 +1937,16 @@ class ChatStore {
 		newContent: string,
 		newExtras?: DatabaseMessageExtra[]
 	): Promise<void> {
+		await this.withActiveConversationWriter(() =>
+			this.editUserMessagePreserveResponsesImpl(messageId, newContent, newExtras)
+		);
+	}
+
+	private async editUserMessagePreserveResponsesImpl(
+		messageId: string,
+		newContent: string,
+		newExtras?: DatabaseMessageExtra[]
+	): Promise<void> {
 		const activeConv = conversationsStore.activeConversation;
 		if (!activeConv) return;
 
@@ -1848,6 +1986,17 @@ class ChatStore {
 	}
 
 	async editMessageWithBranching(
+		messageId: string,
+		newContent: string,
+		newExtras?: DatabaseMessageExtra[]
+	): Promise<void> {
+		await this.withActiveConversationWriter(
+			() => this.editMessageWithBranchingImpl(messageId, newContent, newExtras),
+			'generation'
+		);
+	}
+
+	private async editMessageWithBranchingImpl(
 		messageId: string,
 		newContent: string,
 		newExtras?: DatabaseMessageExtra[]

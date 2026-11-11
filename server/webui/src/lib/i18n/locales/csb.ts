@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const csb: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Naprawi',
+		failed: 'Nie dało sã zastôsowac naprawë. Òriginalny kòd òstôł bez zmianë.'
+	},
 	visualizationErrors: {
 		json: 'Zdrój wëkresu nie je pòprôwnym JSON-em.',
 		required: 'Felëje wëmaganégò pòla „{field}”.',

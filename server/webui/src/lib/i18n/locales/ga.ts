@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const ga: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Deisigh',
+		failed: 'Níorbh fhéidir an deisiúchán a chur i bhfeidhm. Níl aon athrú ar an mbunchód.'
+	},
 	visualizationErrors: {
 		json: 'Ní JSON bailí é foinse na cairte.',
 		required: 'Tá an réimse riachtanach “{field}” ar iarraidh.',

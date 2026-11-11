@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const lt: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Taisyti',
+		failed: 'Pataisos pritaikyti nepavyko. Pradinis kodas nepakeistas.'
+	},
 	visualizationErrors: {
 		json: 'Grafiko šaltinis nėra tinkamas JSON.',
 		required: 'Trūksta privalomo lauko „{field}“.',

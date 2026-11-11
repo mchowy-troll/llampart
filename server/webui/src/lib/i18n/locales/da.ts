@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const da: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Reparer',
+		failed: 'Reparationen kunne ikke anvendes. Den oprindelige kode er uændret.'
+	},
 	visualizationErrors: {
 		json: 'Datadiagrammets kilde er ikke gyldig JSON.',
 		required: 'Det påkrævede felt »{field}« mangler.',

@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const hr: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Popravi',
+		failed: 'Popravak se nije mogao primijeniti. Izvorni kod nije promijenjen.'
+	},
 	visualizationErrors: {
 		json: 'Izvor grafikona nije valjan JSON.',
 		required: 'Nedostaje obavezno polje „{field}”.',

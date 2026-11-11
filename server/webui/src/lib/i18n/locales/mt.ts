@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const mt: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Irranġa',
+		failed: 'It-tiswija ma setgħetx tiġi applikata. Il-kodiċi oriġinali ma nbidilx.'
+	},
 	visualizationErrors: {
 		json: 'Is-sors tal-graff mhuwiex JSON validu.',
 		required: 'Il-qasam meħtieġ “{field}” huwa nieqes.',

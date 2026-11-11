@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const fi: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Korjaa',
+		failed: 'Korjausta ei voitu ottaa käyttöön. Alkuperäinen koodi on ennallaan.'
+	},
 	visualizationErrors: {
 		json: 'Datakaavion lähde ei ole kelvollista JSON-muotoa.',
 		required: 'Pakollinen kenttä ”{field}” puuttuu.',

@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const sk: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Opraviť',
+		failed: 'Opravu sa nepodarilo použiť. Pôvodný kód zostal nezmenený.'
+	},
 	visualizationErrors: {
 		json: 'Zdroj grafu nie je platný JSON.',
 		required: 'Chýba povinné pole „{field}“.',

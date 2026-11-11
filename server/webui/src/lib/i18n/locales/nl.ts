@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const nl: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Repareren',
+		failed: 'De reparatie kon niet worden toegepast. De oorspronkelijke code is ongewijzigd.'
+	},
 	visualizationErrors: {
 		json: 'De bron van de grafiek is geen geldige JSON.',
 		required: 'Het verplichte veld ‘{field}’ ontbreekt.',

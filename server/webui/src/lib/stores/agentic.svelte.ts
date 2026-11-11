@@ -171,7 +171,7 @@ class AgenticStore {
 	}
 
 	isRunning(conversationId: string): boolean {
-		return this.getSession(conversationId).isRunning;
+		return this._sessions.get(conversationId)?.isRunning ?? false;
 	}
 
 	currentTurn(conversationId: string): number {

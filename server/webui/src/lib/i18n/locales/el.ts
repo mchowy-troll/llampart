@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const el: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Διόρθωση',
+		failed: 'Η διόρθωση δεν εφαρμόστηκε. Ο αρχικός κώδικας παραμένει αμετάβλητος.'
+	},
 	visualizationErrors: {
 		json: 'Ο πηγαίος κώδικας του γραφήματος δεν είναι έγκυρο JSON.',
 		required: 'Λείπει το υποχρεωτικό πεδίο «{field}».',

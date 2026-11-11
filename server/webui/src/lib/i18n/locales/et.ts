@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const et: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Paranda',
+		failed: 'Parandust ei saanud rakendada. Algne kood on muutmata.'
+	},
 	visualizationErrors: {
 		json: 'Andmegraafiku lähtekood ei ole kehtiv JSON.',
 		required: 'Kohustuslik väli „{field}” puudub.',

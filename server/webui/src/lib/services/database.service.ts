@@ -921,6 +921,9 @@ export class DatabaseService {
 			requireIdle();
 			const changed = await db.messages.update(messageId, { content: newContent });
 			if (changed !== 1) throw new Error('Visualization message was not updated');
+			// A writer may have queued while IndexedDB serviced the update. Throw
+			// inside this still-open transaction so the content write rolls back.
+			requireIdle();
 		});
 	}
 

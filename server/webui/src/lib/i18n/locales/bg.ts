@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const bg: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Поправи',
+		failed: 'Поправката не можа да бъде приложена. Оригиналният код е непроменен.'
+	},
 	visualizationErrors: {
 		json: 'Изходният код на графиката не е валиден JSON.',
 		required: 'Липсва задължителното поле „{field}“.',

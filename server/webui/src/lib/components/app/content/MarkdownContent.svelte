@@ -2,7 +2,7 @@
 	import type { Root as HastRoot, RootContent as HastRootContent } from 'hast';
 	import type { Root as MdastRoot } from 'mdast';
 	import { browser } from '$app/environment';
-	import { getAllContexts, onDestroy, tick } from 'svelte';
+	import { getAllContexts, onDestroy, setContext, tick } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Tooltip from '$lib/components/ui/tooltip';
@@ -83,6 +83,10 @@
 	import type { ChartResult } from '$lib/charts/chart-schema';
 	import type { MessageContentSource, VisualizationSource } from '$lib/types/visualization-source';
 	import { diagnostic } from '$lib/visualizations/diagnostics';
+	import {
+		VISUALIZATION_REPAIR_CONTEXT,
+		type VisualizationRepairContext
+	} from '$lib/visualizations/repair-context';
 
 	interface Props {
 		attachments?: DatabaseMessageExtra[];
@@ -125,6 +129,18 @@
 	}: Props = $props();
 	let chartsActive = $derived(allowCharts && config().chartsEnabled);
 	let diagramsActive = $derived(allowDiagrams && config().diagramsEnabled);
+	setContext<VisualizationRepairContext>(VISUALIZATION_REPAIR_CONTEXT, {
+		available: () => sourceContext?.origin === 'assistant-message-content' && !isStreaming,
+		owns: (source) =>
+			source.origin === 'assistant-message-content' &&
+			source.field === 'content' &&
+			sourceContext?.origin === source.origin &&
+			sourceContext.field === source.field &&
+			sourceContext.conversationId === source.conversationId &&
+			sourceContext.messageId === source.messageId &&
+			content === source.originalContent,
+		resolve: (element) => getVisualizationSource(element)
+	});
 
 	let containerRef = $state<HTMLDivElement>();
 	const mathContext = getAllContexts();

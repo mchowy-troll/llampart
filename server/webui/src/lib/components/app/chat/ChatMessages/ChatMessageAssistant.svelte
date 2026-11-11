@@ -154,8 +154,8 @@
 
 	let displayedModel = $derived(getMessageModelDisplayName(message));
 
-	let isCurrentlyLoading = $derived(isLoading());
-	let isStreaming = $derived(isChatStreaming());
+	let isCurrentlyLoading = $derived(isLastAssistantMessage && isLoading());
+	let isStreaming = $derived(isLastAssistantMessage && isChatStreaming());
 
 	let hasNoContent = $derived(!message?.content?.trim());
 	let isActivelyProcessing = $derived(isCurrentlyLoading || isStreaming);
@@ -270,7 +270,7 @@
 			<ChatMessageAgenticContent
 				{message}
 				{toolMessages}
-				isStreaming={isChatStreaming()}
+				{isStreaming}
 				{isLastAssistantMessage}
 				highlightTurns={highlightAgenticTurns}
 			>

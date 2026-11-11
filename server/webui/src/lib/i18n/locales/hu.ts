@@ -1,6 +1,10 @@
 import type { TranslationDictionary } from '../types';
 
 export const hu: TranslationDictionary = {
+	visualizationRepair: {
+		repair: 'Javítás',
+		failed: 'A javítás nem alkalmazható. Az eredeti kód változatlan.'
+	},
 	visualizationErrors: {
 		json: 'Az adatdiagram forrása nem érvényes JSON.',
 		required: 'Hiányzik a kötelező „{field}” mező.',
