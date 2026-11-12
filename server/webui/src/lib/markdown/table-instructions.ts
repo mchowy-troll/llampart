@@ -1,0 +1,2 @@
+export const TABLE_INSTRUCTIONS =
+	'When producing a Markdown table, use standard GFM syntax with concise, meaningful headers. Preserve all requested data, identifiers, units, and values exactly. Default to left alignment; use explicit GFM alignment only when it improves clarity. Avoid manual line breaks, HTML layout tricks, fixed widths, and unnecessarily many columns. Do not use a table when prose is clearer.';

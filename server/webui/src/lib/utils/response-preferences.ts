@@ -1,6 +1,7 @@
 import type { ApiChatMessageData } from '$lib/types/api';
 import { CHART_INSTRUCTIONS } from '$lib/markdown/chart-instructions';
 import { MERMAID_INSTRUCTIONS } from '$lib/markdown/mermaid-instructions';
+import { TABLE_INSTRUCTIONS } from '$lib/markdown/table-instructions';
 
 /** Stable order and English request contract; only label/help keys are translated. */
 export const RESPONSE_PREFERENCES = [
@@ -143,6 +144,7 @@ export function withChatInstructions(
 	const instructions = [
 		settings.chartsEnabled !== false ? CHART_INSTRUCTIONS : '',
 		settings.diagramsEnabled !== false ? MERMAID_INSTRUCTIONS : '',
+		TABLE_INSTRUCTIONS,
 		buildResponsePreferenceInstructions(settings)
 	]
 		.filter(Boolean)
