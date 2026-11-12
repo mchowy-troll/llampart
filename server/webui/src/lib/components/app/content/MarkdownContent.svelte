@@ -2089,10 +2089,6 @@
 		vertical-align: middle;
 	}
 
-	div :global(tr:nth-child(even)) {
-		background: color-mix(in oklch, var(--muted) 24%, transparent);
-	}
-
 	/* User message markdown should keep table borders visible on light primary backgrounds */
 	div.markdown-user-content :global(table),
 	div.markdown-user-content :global(th),
@@ -2258,7 +2254,7 @@
 		transition: border-color 0.2s ease;
 	}
 
-	div :global(tbody tr:hover) {
+	div :global(.table-wrapper tbody tr:hover > td) {
 		background: color-mix(in oklch, var(--muted) 48%, transparent);
 	}
 
@@ -2270,11 +2266,6 @@
 
 	.markdown-user-content :global(table:hover) {
 		box-shadow: none;
-	}
-
-	.markdown-user-content :global(th:hover),
-	.markdown-user-content :global(td:hover) {
-		background: inherit;
 	}
 
 	/* Enhanced blockquotes */
@@ -2444,13 +2435,31 @@
 		-webkit-overflow-scrolling: touch;
 	}
 
-	div :global(.table-wrapper table) {
+	/* Both views fill the wrapper's content box, excluding its padding. Native
+	   column minima may grow the table beyond it, inside the local scrollport. */
+	div :global(.table-wrapper table),
+	:global(.table-preview-body .table-preview-wrapper table) {
 		display: table;
-		width: max-content;
+		table-layout: auto;
+		width: 100%;
 		min-width: 100%;
 		max-width: none;
 		margin: 0;
+	}
+
+	div :global(.table-wrapper table) {
 		border: 1px solid color-mix(in oklch, var(--border) 68%, transparent);
+	}
+
+	/* The preview copies only table HTML, not this conversation ancestor. Scale
+	   once at the table; leave preview and inherited compact typography alone. */
+	.llampart-markdown-content:not(.markdown-inherit-typography) :global(.table-wrapper > table) {
+		font-size: 0.92em;
+	}
+
+	.llampart-markdown-content:not(.markdown-inherit-typography)
+		:global(.table-wrapper code:not(pre code)) {
+		font-size: calc(var(--llampart-text-unit, 1rem) * 0.875 * 0.92);
 	}
 
 	div :global(.table-wrapper::-webkit-scrollbar) {
@@ -2477,18 +2486,43 @@
 	}
 
 	div :global(.table-wrapper th),
-	div :global(.table-wrapper td) {
+	div :global(.table-wrapper td),
+	:global(.table-preview-body .table-preview-wrapper th),
+	:global(.table-preview-body .table-preview-wrapper td) {
+		white-space: normal;
+		word-break: normal;
+		overflow-wrap: normal;
+		text-align: left;
+	}
+
+	div :global(.table-wrapper .table-cell-content),
+	:global(.table-preview-body .table-preview-wrapper .table-cell-content) {
+		/* Reserve room for phrases, but cap short values at their natural width.
+		   fit-content keeps words intact and lets descriptions use offered space. */
+		display: inline-block;
+		vertical-align: top;
+		width: 24ch;
+		min-width: fit-content;
+		max-width: max-content;
 		white-space: normal;
 		word-break: normal;
 		overflow-wrap: normal;
 	}
 
-	div :global(.table-wrapper .table-cell-content) {
-		display: block;
-		max-width: 30rem;
-		white-space: normal;
+	div :global(.table-wrapper [align='right']),
+	:global(.table-preview-body .table-preview-wrapper [align='right']) {
+		text-align: right;
+	}
+
+	div :global(.table-wrapper [align='center']),
+	:global(.table-preview-body .table-preview-wrapper [align='center']) {
+		text-align: center;
+	}
+
+	div :global(.table-wrapper .table-cell-content a),
+	:global(.table-preview-wrapper .table-cell-content a) {
 		word-break: normal;
-		overflow-wrap: break-word;
+		overflow-wrap: normal;
 	}
 
 	div :global(blockquote .table-csv-button),
@@ -2515,11 +2549,6 @@
 	}
 
 	:global(.table-preview-body .table-preview-wrapper table) {
-		display: table;
-		width: max-content;
-		min-width: 100%;
-		max-width: none;
-		margin: 0;
 		border-collapse: collapse;
 		border-spacing: 0;
 		border: 1px solid color-mix(in oklch, var(--border) 68%, transparent);
@@ -2527,7 +2556,6 @@
 		background: var(--background);
 		color: var(--foreground);
 		box-shadow: none;
-		table-layout: auto;
 	}
 
 	:global(.table-preview-body .table-preview-wrapper th) {
@@ -2562,14 +2590,6 @@
 
 	:global(.table-preview-body .table-preview-wrapper tr:nth-child(even) td) {
 		background: color-mix(in oklch, var(--muted) 24%, transparent);
-	}
-
-	:global(.table-preview-body .table-preview-wrapper .table-cell-content) {
-		display: block;
-		max-width: 30rem;
-		white-space: normal;
-		word-break: normal;
-		overflow-wrap: break-word;
 	}
 
 	:global(.table-preview-body .table-preview-wrapper::-webkit-scrollbar) {
@@ -2611,7 +2631,10 @@
 
 		div :global(table) {
 			font-size: calc(var(--llampart-text-unit, 1rem) * 0.875);
-			min-width: max-content;
+		}
+
+		.llampart-markdown-content:not(.markdown-inherit-typography) :global(.table-wrapper > table) {
+			font-size: calc(var(--llampart-text-unit, 1rem) * 0.875 * 0.92);
 		}
 
 		div :global(th),

@@ -234,8 +234,13 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-markdown-content
 	.table-wrapper
-	tr:nth-child(even) {
-	background: var(--llampart-rendered-table-row, rgba(255, 255, 255, 0.035)) !important;
+	tbody
+	tr:hover
+	> td {
+	background-color: var(
+		--llampart-rendered-table-row,
+		color-mix(in oklch, var(--muted) 48%, transparent)
+	) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
