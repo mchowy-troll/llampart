@@ -3,6 +3,7 @@ import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
 import { parseSettingsConfig, validateSettingsPatch } from '$lib/utils/settings-schema';
 import { CHART_INSTRUCTIONS } from '$lib/markdown/chart-instructions';
 import { MERMAID_INSTRUCTIONS } from '$lib/markdown/mermaid-instructions';
+import { TABLE_INSTRUCTIONS } from '$lib/markdown/table-instructions';
 import {
 	RESPONSE_PREFERENCES,
 	buildResponsePreferenceInstructions,
@@ -39,7 +40,13 @@ describe('response preferences contract', () => {
 			expect(withChatInstructions(request, settings)).toEqual(request);
 			expect(
 				withChatInstructions(request, { chartsEnabled: false, diagramsEnabled: false })
-			).toEqual(history);
+			).toEqual([
+				{
+					role: 'system',
+					content: `<llampart-chat-instructions>\n${TABLE_INSTRUCTIONS}\n</llampart-chat-instructions>`
+				},
+				...history
+			]);
 		}
 	});
 	it.each([CHART_INSTRUCTIONS, MERMAID_INSTRUCTIONS, CHART_INSTRUCTIONS + '\n\nManual ending'])(
@@ -50,7 +57,13 @@ describe('response preferences contract', () => {
 			expect(String(request[0].content).endsWith('\n\n' + manual)).toBe(true);
 			expect(
 				withChatInstructions(request, { chartsEnabled: false, diagramsEnabled: false })
-			).toEqual(history);
+			).toEqual([
+				{
+					role: 'system',
+					content: `<llampart-chat-instructions>\n${TABLE_INSTRUCTIONS}\n</llampart-chat-instructions>\n\n${manual}`
+				}
+			]);
+			expect(history).toEqual([{ role: 'system', content: manual }]);
 		}
 	);
 	it('preserves a manually entered complete composer envelope through policy changes', () => {
@@ -68,7 +81,13 @@ describe('response preferences contract', () => {
 				expect(withChatInstructions(request, policy)).toBe(request);
 				expect(
 					withChatInstructions(request, { chartsEnabled: false, diagramsEnabled: false })
-				).toEqual(history);
+				).toEqual([
+					{
+						role: 'system',
+						content: `<llampart-chat-instructions>\n${TABLE_INSTRUCTIONS}\n</llampart-chat-instructions>\n\n${manual}`
+					},
+					...history.slice(1)
+				]);
 			}
 		expect(history).toEqual(before);
 	});
@@ -78,13 +97,44 @@ describe('response preferences contract', () => {
 		for (const unowned of [
 			generated.map((message) => ({ ...message })),
 			JSON.parse(JSON.stringify(generated)) as ApiChatMessageData[]
-		])
-			expect(withChatInstructions(unowned, off)).toBe(unowned);
+		]) {
+			const before = structuredClone(unowned);
+			const originalSystem = unowned[0];
+			unowned.forEach(Object.freeze);
+			Object.freeze(unowned);
+			const request = withChatInstructions(unowned, off);
+			expect(request).not.toBe(unowned);
+			expect(request).toEqual([
+				{
+					...originalSystem,
+					content: `<llampart-chat-instructions>\n${TABLE_INSTRUCTIONS}\n</llampart-chat-instructions>\n\n${originalSystem.content}`
+				},
+				...unowned.slice(1)
+			]);
+			expect(unowned[0]).toBe(originalSystem);
+			expect(unowned).toEqual(before);
+			expect(request[1]).toBe(unowned[1]);
+		}
 		expect(JSON.stringify(generated[0])).toBe(
 			JSON.stringify({ role: 'system', content: generated[0].content })
 		);
 		generated[0].content += '\nUser edit';
-		expect(withChatInstructions(generated, off)).toBe(generated);
+		const before = structuredClone(generated);
+		const originalSystem = generated[0];
+		generated.forEach(Object.freeze);
+		Object.freeze(generated);
+		const request = withChatInstructions(generated, off);
+		expect(request).not.toBe(generated);
+		expect(request).toEqual([
+			{
+				...originalSystem,
+				content: `<llampart-chat-instructions>\n${TABLE_INSTRUCTIONS}\n</llampart-chat-instructions>\n\n${originalSystem.content}`
+			},
+			...generated.slice(1)
+		]);
+		expect(generated[0]).toBe(originalSystem);
+		expect(generated).toEqual(before);
+		expect(request[1]).toBe(generated[1]);
 	});
 	it('defaults preferences off and preserves existing settings on upgrade', () => {
 		const upgraded = parseSettingsConfig({ systemMessage: 'Manual', temperature: 0.4 });
@@ -140,6 +190,7 @@ describe('response preferences contract', () => {
 		for (const instruction of [
 			CHART_INSTRUCTIONS,
 			MERMAID_INSTRUCTIONS,
+			TABLE_INSTRUCTIONS,
 			...RESPONSE_PREFERENCES.map((pref) => pref.instruction)
 		])
 			expect(text.split(instruction)).toHaveLength(2);
@@ -150,7 +201,7 @@ describe('response preferences contract', () => {
 		expect(withChatInstructions(result, changed)).toEqual(withChatInstructions(history, changed));
 		const disabled = withChatInstructions(result, {});
 		expect(disabled).toEqual(withChatInstructions(history, {}));
-		for (const instruction of [CHART_INSTRUCTIONS, MERMAID_INSTRUCTIONS])
+		for (const instruction of [CHART_INSTRUCTIONS, MERMAID_INSTRUCTIONS, TABLE_INSTRUCTIONS])
 			expect(String(disabled[0].content).split(instruction)).toHaveLength(2);
 		expect(history).toEqual(before);
 	});

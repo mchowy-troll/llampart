@@ -5,7 +5,8 @@ import { settingsStore } from '$lib/stores/settings.svelte';
 import { SETTING_CONFIG_DEFAULT } from '$lib/constants/settings-config';
 import { CHART_INSTRUCTIONS as CHART_ONLY } from '$lib/markdown/chart-instructions';
 import { MERMAID_INSTRUCTIONS } from '$lib/markdown/mermaid-instructions';
-const CHART_INSTRUCTIONS = CHART_ONLY + '\n\n' + MERMAID_INSTRUCTIONS;
+import { TABLE_INSTRUCTIONS } from '$lib/markdown/table-instructions';
+const CHART_INSTRUCTIONS = CHART_ONLY + '\n\n' + MERMAID_INSTRUCTIONS + '\n\n' + TABLE_INSTRUCTIONS;
 const envelope = (text: string) =>
 	`<llampart-chat-instructions>\n${text}\n</llampart-chat-instructions>`;
 import {
@@ -82,7 +83,11 @@ describe('response preferences through ChatService requests', () => {
 		const context = ChatService.createProviderRequestContext();
 		await ChatService.sendMessage(manual, { stream: true, model: 'test' }, 'conversation');
 		await ChatService.preEncode(manual, context, 'test', true);
-		for (const body of bodies) expect(body.messages[0]).toEqual(manual[0]);
+		for (const body of bodies)
+			expect(body.messages[0]).toEqual({
+				...manual[0],
+				content: envelope(TABLE_INSTRUCTIONS) + '\n\n' + manual[0].content
+			});
 		expect(manual).toEqual(before);
 	});
 
