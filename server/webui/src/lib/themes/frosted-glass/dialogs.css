@@ -614,7 +614,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	td {
 	background: color-mix(
 		in srgb,
-		var(--llampart-frosted-glass-accent) 8.4%,
+		var(--llampart-frosted-glass-accent) 3.5%,
 		var(--llampart-frosted-preview-surface-background, var(--background))
 	) !important;
 }

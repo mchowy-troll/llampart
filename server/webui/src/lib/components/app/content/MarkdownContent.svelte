@@ -2168,10 +2168,6 @@
 
 	div :global(.code-language) {
 		color: var(--color-foreground);
-		font-weight: 500;
-		font-family:
-			ui-monospace, SFMono-Regular, 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
-			'Liberation Mono', Menlo, monospace;
 		text-transform: uppercase;
 		font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
 		letter-spacing: 0.05em;

@@ -1,5 +1,11 @@
 html[data-theme='frosted-glass'].has-frosted-glass-theme {
 	--llampart-frosted-glass-accent: #899492;
+	--llampart-sidebar-selection-accent: var(--llampart-frosted-glass-accent);
+	--llampart-sidebar-selection-background: color-mix(
+		in srgb,
+		var(--llampart-sidebar-selection-accent) 8%,
+		var(--llampart-glass-white-140, rgba(255, 255, 255, 0.14))
+	);
 	--llampart-theme-wallpaper: none;
 	--llampart-input-backdrop-filter: blur(0.5rem);
 	--llampart-frosted-surface-border: rgba(255, 255, 255, 0.19);

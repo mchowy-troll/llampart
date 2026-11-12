@@ -69,7 +69,7 @@ export const SETTING_CONFIG_DEFAULT = {
 	renderReasoningContentAsMarkdown: true,
 	alwaysShowSidebarOnDesktop: false,
 	autoShowSidebarOnNewChat: true,
-	compactSidebar: false,
+	compactSidebar: true,
 	sendOnEnter: true,
 	autoMicOnEmpty: false,
 	fullHeightCodeBlocks: false,

@@ -120,6 +120,7 @@
 		: ''} {selectionMode && selectionChecked ? 'conversation-item-selected' : ''}"
 	data-conversation-selection-id={conversation.id}
 	data-active={isActive ? 'true' : undefined}
+	data-selection-mode={selectionMode ? 'true' : undefined}
 	role="button"
 	tabindex="0"
 	aria-pressed={selectionMode ? selectionChecked : undefined}
@@ -277,10 +278,9 @@
 
 	.conversation-item-selected {
 		border-color: var(--llampart-sidebar-selection-accent) !important;
-		background: color-mix(
-			in oklch,
-			var(--llampart-sidebar-selection-accent) 10%,
-			var(--background)
+		background: var(
+			--llampart-sidebar-selection-background,
+			color-mix(in oklch, var(--llampart-sidebar-selection-accent) 10%, var(--background))
 		) !important;
 	}
 

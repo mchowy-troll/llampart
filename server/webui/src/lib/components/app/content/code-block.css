@@ -12,6 +12,18 @@
 	-webkit-backdrop-filter: none;
 }
 
+/* Headers are UI, not code. Live typography tokens also update existing messages. */
+.llampart-markdown-content .code-block-header {
+	font-family: var(--llampart-font-family, ui-sans-serif), system-ui, sans-serif;
+	font-style: var(--llampart-font-style, normal);
+	font-weight: var(--llampart-font-weight, 400);
+}
+
+.llampart-markdown-content .code-block-header :is(.code-language, .download-code-btn) {
+	font-family: inherit;
+	font-weight: var(--llampart-font-medium, 500);
+}
+
 /* Beat compact/reasoning typography and message text resets, only inside code. */
 html .llampart-markdown-content code,
 html .llampart-markdown-content code *,
