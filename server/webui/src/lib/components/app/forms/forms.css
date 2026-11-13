@@ -140,9 +140,11 @@
 }
 .llampart-interactive-form
 	input:is([type='checkbox'], [type='radio'])[aria-invalid='true']:not(:focus-visible) {
+	--llampart-radio-ring: var(--destructive);
 	border-color: var(--destructive);
 }
 .llampart-interactive-form fieldset[aria-invalid='true'] input:not(:focus-visible) {
+	--llampart-radio-ring: var(--destructive);
 	border-color: var(--destructive);
 }
 .llampart-interactive-form .llampart-form-slider {
