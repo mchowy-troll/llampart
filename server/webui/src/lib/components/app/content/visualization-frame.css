@@ -2,6 +2,7 @@
  * owns the material in content.css; these are shared structure/fallback styles. */
 .llampart-visualization-frame {
 	--llampart-visualization-body-space: 1rem;
+	--llampart-chart-plot-height: 20rem;
 	min-width: 0;
 	max-width: 100%;
 	margin: 1.5rem 0;
@@ -13,6 +14,52 @@
 	font: inherit;
 	font-synthesis: none;
 	text-shadow: none;
+}
+.visualization-loading-body {
+	display: grid;
+	place-items: center;
+	margin: var(--llampart-visualization-body-space);
+	font-size: var(--llampart-visualization-label-size);
+	color: var(--muted-foreground);
+}
+.visualization-loading-body--diagram {
+	/* A modest, width-adaptive reservation, not a guessed final SVG height.
+	 * Compact or very wide diagrams must not inherit chart-sized space. */
+	aspect-ratio: 12;
+	min-height: 3rem;
+	max-height: 6rem;
+}
+.visualization-loading-body--chart {
+	height: var(--llampart-chart-plot-height);
+}
+/* Match ChartFrame's description/legend wrapping as well as its plot height.
+ * Invisible text reserves geometry only; the localized status is announced once. */
+.visualization-loading-description {
+	visibility: hidden;
+	padding: 0.75rem 1rem 0;
+	font-size: var(--llampart-visualization-label-size);
+}
+.visualization-loading-legend {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.35rem 1rem;
+	padding: 0 1rem 1rem;
+	visibility: hidden;
+}
+.visualization-loading-legend > span {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	max-width: 100%;
+	font-size: var(--llampart-visualization-label-size);
+	overflow-wrap: anywhere;
+	padding: 0.2rem;
+}
+.visualization-loading-legend i {
+	width: 0.7rem;
+	height: 0.7rem;
+	flex-shrink: 0;
 }
 .visualization-header {
 	display: flex;

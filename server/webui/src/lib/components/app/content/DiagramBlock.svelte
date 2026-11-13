@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { fade } from 'svelte/transition';
+	import { prefersReducedMotion } from 'svelte/motion';
+	import VisualizationLoading from './VisualizationLoading.svelte';
 	import VisualizationHeader from './VisualizationHeader.svelte';
 	import VisualizationPreview from './VisualizationPreview.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
@@ -19,8 +22,9 @@
 	let {
 		source,
 		allowed = true,
+		historical = false,
 		contextTitle
-	}: { source: string; allowed?: boolean; contextTitle?: string } = $props();
+	}: { source: string; allowed?: boolean; historical?: boolean; contextTitle?: string } = $props();
 	let title = $derived(diagramTitle(source) || contextTitle || t('diagrams.title'));
 	let frame: HTMLDivElement;
 	let svg = $state('');
@@ -128,19 +132,28 @@
 <div bind:this={frame} use:observeWidth class="diagram-typography">
 	{#if problem}
 		<VisualizationFallback {source} {title} kind="diagram" {problem} />
-	{:else if svg}
+	{:else if svg || (historical && allowed)}
 		<figure class="llampart-visualization-frame llampart-diagram-frame" aria-label={title}>
 			<VisualizationHeader
 				{title}
 				kind="diagram"
 				formats={['png', 'svg']}
 				{exporting}
+				unavailable={!svg}
 				exportLabel={t('diagrams.export')}
 				previewLabel={t('diagrams.preview')}
 				onexport={(format) => download(format as 'png' | 'svg')}
 				onpreview={() => (open = true)}
 			/>
-			<div class="diagram-surface" use:mountDiagram={{ svg, label: title }}></div>
+			{#if svg}
+				<div
+					class="diagram-surface"
+					use:mountDiagram={{ svg, label: title }}
+					in:fade={{ duration: historical && !prefersReducedMotion.current ? 150 : 0 }}
+				></div>
+			{:else}
+				<VisualizationLoading kind="diagram" />
+			{/if}
 			{#if exportError}<div class="diagram-error" role="alert">
 					{t('diagrams.exportError')}
 				</div>{/if}

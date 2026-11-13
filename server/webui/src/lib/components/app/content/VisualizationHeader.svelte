@@ -10,6 +10,7 @@
 		kind,
 		formats,
 		exporting,
+		unavailable = false,
 		exportLabel,
 		previewLabel,
 		onexport,
@@ -21,6 +22,7 @@
 		kind: 'chart' | 'diagram' | 'math';
 		formats: readonly string[];
 		exporting: boolean;
+		unavailable?: boolean;
 		exportLabel: string;
 		previewLabel: string;
 		onexport: (format: string) => void;
@@ -42,7 +44,7 @@
 							class="format-export-action"
 							variant="text-action"
 							size="sm"
-							disabled={exporting}
+							disabled={exporting || unavailable}
 							aria-label={`${exportLabel} ${format.toUpperCase()}`}
 							onclick={() => onexport(format)}>{format.toUpperCase()}</Button
 						>
@@ -60,6 +62,7 @@
 						bind:this={previewTrigger}
 						class="visualization-preview-action"
 						type="button"
+						disabled={unavailable}
 						aria-label={previewLabel}
 						onclick={onpreview}><Eye size={14} /></button
 					>

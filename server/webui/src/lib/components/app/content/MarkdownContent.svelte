@@ -59,6 +59,10 @@
 	import type { DatabaseMessageExtra } from '$lib/types/database';
 	import { config } from '$lib/stores/settings.svelte';
 	import { fadeInView } from '$lib/actions/fade-in-view.svelte';
+	import { getMessagePresentation } from '$lib/contexts/message-presentation.context';
+	// Keep the small frame owners available immediately; their engines stay lazy.
+	import ChartBlock from './ChartBlock.svelte';
+	import DiagramBlock from './DiagramBlock.svelte';
 	import { t } from '$lib/i18n';
 	import { portalToBody } from '$lib/utils/portal-to-body';
 	import VisualizationFallback from './VisualizationFallback.svelte';
@@ -129,6 +133,8 @@
 		diagramLimit = MAX_MESSAGE_DIAGRAMS
 	}: Props = $props();
 	let chartsActive = $derived(allowCharts && config().chartsEnabled);
+	const messagePresentation = getMessagePresentation();
+	let historical = $derived(Boolean(messagePresentation?.historical) && !isStreaming);
 	let diagramsActive = $derived(allowDiagrams && config().diagramsEnabled);
 	setContext<VisualizationRepairContext>(VISUALIZATION_REPAIR_CONTEXT, {
 		available: () => sourceContext?.origin === 'assistant-message-content' && !isStreaming,
@@ -1410,7 +1416,11 @@
 		: ''}{config()[SETTINGS_KEYS.FULL_HEIGHT_CODE_BLOCKS] ? ' full-height-code-blocks' : ''}"
 >
 	{#each renderedBlocks as block (block.id)}
-		<div class="markdown-block" data-block-id={block.id} use:fadeInView={{ skipIfVisible: true }}>
+		<div
+			class="markdown-block"
+			data-block-id={block.id}
+			use:fadeInView={{ skipIfVisible: true, disabled: historical }}
+		>
 			{#if block.kind === 'chart'}
 				{#if !chartsActive}
 					<VisualizationFallback
@@ -1420,20 +1430,7 @@
 						disabled
 					/>
 				{:else if block.chart.result}
-					{#await import('./ChartBlock.svelte')}
-						<div class="llampart-inline-processing-status" role="status">
-							{t('charts.preparing')}
-						</div>
-					{:then module}
-						<module.default result={block.chart.result} source={block.chart.source} />
-					{:catch}
-						<VisualizationFallback
-							source={block.chart.source}
-							title={t('charts.title')}
-							kind="chart"
-							problem={diagnostic('chart.module')}
-						/>
-					{/await}
+					<ChartBlock result={block.chart.result} source={block.chart.source} {historical} />
 				{/if}
 			{:else if block.kind === 'diagram'}
 				{#if !diagramsActive}
@@ -1444,24 +1441,12 @@
 						disabled
 					/>
 				{:else}
-					{#await import('./DiagramBlock.svelte')}
-						<div class="llampart-inline-processing-status" role="status">
-							{t('diagrams.preparing')}
-						</div>
-					{:then module}
-						<module.default
-							source={block.source}
-							allowed={block.allowed}
-							contextTitle={block.title}
-						/>
-					{:catch}
-						<VisualizationFallback
-							source={block.source}
-							title={t('diagrams.title')}
-							kind="diagram"
-							problem={diagnostic('diagram.module')}
-						/>
-					{/await}
+					<DiagramBlock
+						source={block.source}
+						allowed={block.allowed}
+						contextTitle={block.title}
+						{historical}
+					/>
 				{/if}
 			{:else}
 				<!-- eslint-disable-next-line no-at-html-tags -->

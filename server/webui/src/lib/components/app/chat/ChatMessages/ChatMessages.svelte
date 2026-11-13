@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
+	import { untrack } from 'svelte';
 	import { fadeInView } from '$lib/actions/fade-in-view.svelte';
 	import ChatMessage from '$lib/components/app/chat/ChatMessages/ChatMessage.svelte';
 	import { setChatActionsContext } from '$lib/contexts';
@@ -27,6 +28,24 @@
 	let { class: className, messages = [], onUserAction }: Props = $props();
 
 	let activeTheme = $derived(getThemeDefinition(config().theme));
+	let conversationId = $derived(activeConversation()?.id);
+	// loadConversation publishes identity and restored messages together. Snapshot
+	// once per conversation, never traverse history in response to SSE tokens.
+	let historicalIds = $derived.by(() => {
+		const restoredConversationId = conversationId;
+		return untrack(() => {
+			const streamingId = restoredConversationId
+				? chatStore.chatStreamingStates.get(restoredConversationId)?.messageId
+				: undefined;
+			return new Set(
+				messages
+					.filter(
+						(message) => message.convId === restoredConversationId && message.id !== streamingId
+					)
+					.map((message) => message.id)
+			);
+		});
+	});
 
 	let allConversationMessages = $state<DatabaseMessage[]>([]);
 	const currentConfig = config();
@@ -222,10 +241,15 @@
 	style="height: auto;"
 >
 	{#each displayMessages as { message, toolMessages, isLastAssistantMessage, siblingInfo } (message.id)}
-		<div use:fadeInView={{ disabled: !activeTheme.motion.messageEntry }}>
+		<div
+			use:fadeInView={{
+				disabled: historicalIds.has(message.id) || !activeTheme.motion.messageEntry
+			}}
+		>
 			<ChatMessage
 				class="llampart-chat-message-width mx-auto w-full"
 				{message}
+				historical={historicalIds.has(message.id)}
 				{toolMessages}
 				{isLastAssistantMessage}
 				{siblingInfo}

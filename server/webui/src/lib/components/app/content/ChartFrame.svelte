@@ -29,14 +29,20 @@
 	import { applyChartPalette } from '$lib/themes/frosted-glass/chart-surface';
 	import { curveMonotoneX, curveLinear } from 'd3-shape';
 	import { prefersReducedMotion } from 'svelte/motion';
+	import { fade } from 'svelte/transition';
 	import { VISUALIZATION_LABEL_SIZE } from '$lib/utils/visualization-typography';
 
 	let {
 		spec,
+		reveal = false,
+		embedded = false,
 		previewMode = false,
 		initialHidden = []
 	}: {
 		spec: ChartSpec;
+		reveal?: boolean;
+		/** Historical loading already owns the outer frame; keep its DOM/material in place. */
+		embedded?: boolean;
 		previewMode?: boolean;
 		initialHidden?: string[];
 	} = $props();
@@ -360,7 +366,8 @@
 	</ChartTooltip.Root>
 {/snippet}
 
-<figure
+<svelte:element
+	this={embedded ? 'div' : 'figure'}
 	bind:this={frame}
 	use:applyChartPalette={(styles) => {
 		paletteStyle = styles;
@@ -369,7 +376,9 @@
 	style:--llampart-visualization-label-size={VISUALIZATION_LABEL_SIZE}
 	class={previewMode
 		? 'llampart-chart-renderer chart-live-preview'
-		: 'llampart-visualization-frame llampart-chart-frame llampart-chart-renderer'}
+		: embedded
+			? 'llampart-chart-renderer'
+			: 'llampart-visualization-frame llampart-chart-frame llampart-chart-renderer'}
 	class:chart-exporting={exporting}
 	aria-label={spec.title || t('charts.title')}
 >
@@ -383,8 +392,18 @@
 			onexport={(format) => download(format as 'png' | 'svg' | 'csv')}
 			onpreview={() => (previewOpen = true)}
 		/>{/if}
-	{#if spec.description}<div class="chart-description">{spec.description}</div>{/if}
-	<div bind:this={plot} use:observePlot class="chart-plot">
+	{#if spec.description}<div
+			class="chart-description"
+			in:fade={{ duration: reveal && !prefersReducedMotion.current ? 150 : 0 }}
+		>
+			{spec.description}
+		</div>{/if}
+	<div
+		bind:this={plot}
+		use:observePlot
+		class="chart-plot"
+		in:fade={{ duration: reveal && !prefersReducedMotion.current ? 150 : 0 }}
+	>
 		{#if 'series' in spec}
 			{#if spec.type === 'bar'}
 				<BarChart
@@ -493,7 +512,11 @@
 			</DonutChart>
 		{/if}
 	</div>
-	<div class="chart-legend" aria-label={t('charts.legend')}>
+	<div
+		class="chart-legend"
+		aria-label={t('charts.legend')}
+		in:fade={{ duration: reveal && !prefersReducedMotion.current ? 150 : 0 }}
+	>
 		{#each entries as entry (entry.key)}
 			<button
 				type="button"
@@ -505,7 +528,7 @@
 		{/each}
 	</div>
 	{#if exportError}<div class="chart-export-error" role="alert">{t('charts.exportError')}</div>{/if}
-</figure>
+</svelte:element>
 
 {#if !previewMode}
 	<VisualizationPreview
@@ -534,7 +557,7 @@
 		font-size: var(--llampart-visualization-label-size);
 	}
 	.chart-plot {
-		height: 20rem;
+		height: var(--llampart-chart-plot-height, 20rem);
 		min-width: 0;
 		margin: var(--llampart-visualization-body-space);
 		font-size: var(--llampart-visualization-label-size);

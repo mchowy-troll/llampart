@@ -13,10 +13,12 @@
 	import ChatMessageMcpPrompt from '$lib/components/app/chat/ChatMessages/ChatMessageMcpPrompt.svelte';
 	import { parseFilesToMessageExtras } from '$lib/utils/browser-only';
 	import type { DatabaseMessageExtraMcpPrompt } from '$lib/types';
+	import { setMessagePresentation } from '$lib/contexts/message-presentation.context';
 
 	interface Props {
 		class?: string;
 		message: DatabaseMessage;
+		historical?: boolean;
 		toolMessages?: DatabaseMessage[];
 		isLastAssistantMessage?: boolean;
 		siblingInfo?: ChatMessageSiblingInfo | null;
@@ -25,12 +27,18 @@
 	let {
 		class: className = '',
 		message,
+		historical = false,
 		toolMessages = [],
 		isLastAssistantMessage = false,
 		siblingInfo = null
 	}: Props = $props();
 
 	const chatActions = getChatActionsContext();
+	setMessagePresentation({
+		get historical() {
+			return historical;
+		}
+	});
 
 	let deletionInfo = $state<{
 		totalCount: number;
