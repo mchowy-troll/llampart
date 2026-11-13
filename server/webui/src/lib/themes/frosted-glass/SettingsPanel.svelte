@@ -2,6 +2,7 @@
 	import { t } from '$lib/i18n';
 	import { FROSTED_GLASS_SETTINGS_KEYS } from './config';
 	import WallpaperSettings from './WallpaperSettings.svelte';
+	import Range from '$lib/components/ui/range/range.svelte';
 
 	interface Props {
 		config: SettingsConfigType;
@@ -35,10 +36,9 @@
 				>{config.frostedGlassMilkiness}%</output
 			>
 		</div>
-		<input
+		<Range
 			id="frostedGlassMilkiness"
-			type="range"
-			class="col-start-1 row-start-2 h-8 w-full cursor-pointer accent-foreground disabled:cursor-not-allowed disabled:opacity-40"
+			class="col-start-1 row-start-2"
 			min="0"
 			max="100"
 			step="1"

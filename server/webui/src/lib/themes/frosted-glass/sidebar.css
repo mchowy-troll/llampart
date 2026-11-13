@@ -194,18 +194,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-timestamp
 	text-shadow: 0 1px 0 rgb(255 255 255 / 0.22);
 }
 
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-select-checkbox:not(:checked) {
-	border-color: rgb(60 60 60 / 0.48);
-	background-color: rgb(255 255 255 / 0.12);
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-select-checkbox:not(:checked):is(:hover, :focus-visible) {
-	border-color: rgb(60 60 60 / 0.62);
-	background-color: rgb(255 255 255 / 0.24);
-}
-
 html[data-theme='frosted-glass'].has-frosted-glass-theme [data-sidebar='trigger'] {
 	border-color: transparent;
 	background: transparent;

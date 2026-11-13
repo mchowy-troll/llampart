@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('da');
 export const da: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Reparer',
 		failed: 'Reparationen kunne ikke anvendes. Den oprindelige kode er uændret.'
@@ -211,6 +214,8 @@ export const da: TranslationDictionary = {
 		enterNewConversationName: 'Indtast et nyt navn'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Visualiseringsfunktioner',
 		fieldChartsEnabled: 'Aktivér grafer',
 		fieldDiagramsEnabled: 'Aktivér diagrammer',
@@ -350,6 +355,9 @@ export const da: TranslationDictionary = {
 			'Medtag Mermaid-diagrammer, når de tydeliggør processer, arkitektur eller sammenhænge. Opfind aldrig sammenhænge.',
 		responsePrefChartsHelp:
 			'Brug indbyggede grafer til meningsfulde sammenligninger, tendenser og fordelinger. Opfind aldrig data.',
+		responsePrefForms: 'Brug intelligente formularer',
+		responsePrefFormsHelp:
+			'Når formularer er aktiveret i chatindstillingerne, skal modellen opfordres til at foreslå dem, når de gør det lettere at indsamle flere svar eller valg.',
 		responsePrefNoDecorations: 'Ingen emoji eller udsmykning',
 		responsePrefNoDecorationsHelp:
 			'Ingen dekorative symboler. Bevar sproglige tegn, matematik, kode og citater.',
@@ -484,6 +492,7 @@ export const da: TranslationDictionary = {
 			noConversationsToDelete: 'Ingen samtaler at slette'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Aktiverer formatinstruktioner, visning, forhåndsvisning og eksport af grafer. Svarpræferencer gemmes uafhængigt.',
 			diagramsEnabled:

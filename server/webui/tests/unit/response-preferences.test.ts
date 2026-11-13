@@ -146,13 +146,23 @@ describe('response preferences contract', () => {
 	});
 
 	it.each(RESPONSE_PREFERENCES)('enables only $key', ({ key, instruction }) => {
-		const settings = parseSettingsConfig({ [key]: true });
+		const settings = parseSettingsConfig({
+			[key]: true,
+			interactiveFormsEnabled: key === 'responsePrefForms'
+		});
 		expect(
 			RESPONSE_PREFERENCES.filter((pref) => settings[pref.key]).map((pref) => pref.key)
 		).toEqual([key]);
 		const text = buildResponsePreferenceInstructions(settings);
 		for (const pref of RESPONSE_PREFERENCES)
 			expect(text.includes(pref.instruction)).toBe(pref.instruction === instruction);
+		if (key === 'responsePrefForms') {
+			const disabled = { ...settings, interactiveFormsEnabled: false };
+			expect(buildResponsePreferenceInstructions(disabled)).toBe('');
+			expect(withChatInstructions([], disabled)).toEqual(
+				withChatInstructions([], { interactiveFormsEnabled: false })
+			);
+		}
 	});
 
 	it('rejects non-boolean preferences and safely loads invalid saved values', () => {
@@ -177,6 +187,7 @@ describe('response preferences contract', () => {
 	});
 
 	it('composes request-only instructions once, replaces preferences and preserves manual history', () => {
+		const settings = { ...all, interactiveFormsEnabled: true };
 		const history: ApiChatMessageData[] = [
 			{ role: 'system', content: 'Manual system prompt' },
 			{ role: 'user', content: 'Saved question' },
@@ -185,7 +196,7 @@ describe('response preferences contract', () => {
 		const before = structuredClone(history);
 		history.forEach(Object.freeze);
 		Object.freeze(history);
-		const result = withChatInstructions(history, all);
+		const result = withChatInstructions(history, settings);
 		const text = String(result[0].content);
 		for (const instruction of [
 			CHART_INSTRUCTIONS,
@@ -196,7 +207,7 @@ describe('response preferences contract', () => {
 			expect(text.split(instruction)).toHaveLength(2);
 		expect(text.endsWith('\n\n' + history[0].content)).toBe(true);
 		expect(result.slice(1)).toEqual(history.slice(1));
-		expect(withChatInstructions(result, all)).toEqual(result);
+		expect(withChatInstructions(result, settings)).toEqual(result);
 		const changed = { responsePrefDiagrams: true };
 		expect(withChatInstructions(result, changed)).toEqual(withChatInstructions(history, changed));
 		const disabled = withChatInstructions(result, {});

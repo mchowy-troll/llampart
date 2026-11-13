@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('sl');
 export const sl: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Popravi',
 		failed: 'Popravka ni bilo mogoče uveljaviti. Izvirna koda je nespremenjena.'
@@ -212,6 +215,8 @@ export const sl: TranslationDictionary = {
 		enterNewConversationName: 'Vnesite novo ime'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Zmožnosti vizualizacije',
 		fieldChartsEnabled: 'Omogoči grafikone',
 		fieldDiagramsEnabled: 'Omogoči diagrame',
@@ -352,6 +357,9 @@ export const sl: TranslationDictionary = {
 			'Vključite diagrame Mermaid, kadar pojasnjujejo procese, arhitekturo ali povezave. Povezav si nikoli ne izmišljajte.',
 		responsePrefChartsHelp:
 			'Vgrajene grafikone uporabljajte za smiselne primerjave, trende in porazdelitve. Podatkov si nikoli ne izmišljajte.',
+		responsePrefForms: 'Uporabi pametne obrazce',
+		responsePrefFormsHelp:
+			'Ko so obrazci omogočeni v nastavitvah klepeta, spodbujaj model, naj jih ponudi, kadar olajšajo zbiranje več odgovorov ali izbir.',
 		responsePrefNoDecorations: 'Brez emodžijev ali okraskov',
 		responsePrefNoDecorationsHelp:
 			'Brez okrasnih simbolov. Ohranite jezikovne znake, matematične zapise, kodo in navedke.',
@@ -486,6 +494,7 @@ export const sl: TranslationDictionary = {
 			noConversationsToDelete: 'Ni pogovorov za brisanje'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Omogoči navodila za obliko, izris, predogled in izvoz grafikonov. Nastavitve odgovorov se shranjujejo neodvisno.',
 			diagramsEnabled:

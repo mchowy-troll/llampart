@@ -5,6 +5,13 @@ import { planConversationDeletion } from '$lib/utils/conversation-selection';
 import { validateConversationImportRecords } from '$lib/utils/conversation-import-export';
 import { validateConversationGraph } from '$lib/utils/conversation-graph';
 import { messageModelInfoSnapshotSchema } from '$lib/utils/message-model-info';
+import {
+	validateInteractiveForm,
+	parseFormValues,
+	validateFormValues,
+	formAnswerText
+} from '$lib/services/interactive-forms';
+import type { FormValues, InteractiveForm } from '$lib/types/interactive-forms';
 import { LEGACY_MIGRATION_DONE_KEY, type LegacyMessagePlanner } from '$lib/types/legacy-migration';
 import type { DatabaseMessageExtra, McpServerOverride } from '$lib/types/database';
 import { AttachmentType } from '$lib/enums/attachment';
@@ -40,6 +47,21 @@ type ConversationImport = { conv: DatabaseConversation; messages: DatabaseMessag
 
 function nextLastModified(conversation: DatabaseConversation): number {
 	return Math.max(Date.now(), conversation.lastModified + 1);
+}
+
+/** Run inside the graph mutation's transaction. Removing/editing a submitted user
+ * message releases its forms, never their saved answers or unrelated branches. */
+async function releaseFormResults(convId: string, changedIds: Set<string>): Promise<void> {
+	if (!changedIds.size) return;
+	const messages = await db.messages.where('convId').equals(convId).toArray();
+	for (const message of messages) {
+		const form = message.interactiveForm;
+		if (!form?.result || changedIds.has(message.id) || !changedIds.has(form.result.messageId))
+			continue;
+		await db.messages.update(message.id, {
+			interactiveForm: { ...form, result: undefined, status: 'draft', revision: form.revision + 1 }
+		});
+	}
 }
 
 function sameConfirmedToolResult(
@@ -442,7 +464,13 @@ export class DatabaseService {
 	): Promise<void> {
 		await db.transaction('rw', [db.conversations, db.messages], async () => {
 			const conversation = await requireConversation(convId);
-			await requireOwnedMessage(convId, messageId);
+			const message = await requireOwnedMessage(convId, messageId);
+			if (
+				message.role === MessageRole.USER &&
+				updates.content !== undefined &&
+				updates.content !== message.content
+			)
+				await releaseFormResults(convId, new Set([messageId]));
 			await requireUpdated(await db.messages.update(messageId, updates), `Message ${messageId}`);
 			await requireUpdated(
 				await db.conversations.update(convId, {
@@ -468,6 +496,10 @@ export class DatabaseService {
 			const allMessages = await db.messages.where('convId').equals(convId).toArray();
 			const deletedIds = findDescendantMessages(allMessages, messageId);
 			const deletedIdSet = new Set(deletedIds);
+			await releaseFormResults(
+				convId,
+				new Set([...deletedIds, ...(content !== target.content ? [messageId] : [])])
+			);
 			for (const candidate of allMessages) {
 				if (candidate.id === messageId || deletedIdSet.has(candidate.id)) continue;
 				const nextChildren = candidate.children.filter((id: string) => !deletedIdSet.has(id));
@@ -507,6 +539,7 @@ export class DatabaseService {
 				throw new Error(`Invalid parent for message ${messageId}`);
 			const allMessages = await db.messages.where('convId').equals(convId).toArray();
 			const deletedIds = [messageId, ...findDescendantMessages(allMessages, messageId)];
+			await releaseFormResults(convId, new Set(deletedIds));
 			await requireUpdated(
 				await db.messages.update(parent.id, {
 					children: parent.children.filter((id: string) => id !== messageId)
@@ -630,6 +663,7 @@ export class DatabaseService {
 			}
 
 			// Delete the message
+			await releaseFormResults(message.convId, new Set([messageId]));
 			await db.messages.delete(messageId);
 		});
 	}
@@ -651,6 +685,7 @@ export class DatabaseService {
 				message.role !== MessageRole.ASSISTANT ||
 				message.type !== 'text' ||
 				message.content ||
+				message.interactiveForm ||
 				message.reasoningContent ||
 				message.thinking ||
 				message.toolCalls ||
@@ -730,6 +765,7 @@ export class DatabaseService {
 			}
 
 			// Delete all messages in the branch
+			await releaseFormResults(conversationId, new Set(allToDelete));
 			await db.messages.bulkDelete(allToDelete);
 			await requireUpdated(
 				await db.conversations.update(conversationId, {
@@ -868,6 +904,14 @@ export class DatabaseService {
 		id: string,
 		updates: Partial<Omit<DatabaseMessage, 'id'>>
 	): Promise<void> {
+		if (updates.interactiveForm) {
+			const message = await db.messages.get(id);
+			if (!message) throw new Error('Missing form owner');
+			updates = {
+				...updates,
+				interactiveForm: validateInteractiveForm(updates.interactiveForm, message)
+			};
+		}
 		if (updates.modelInfo) {
 			const message = await db.messages.get(id);
 			if (message?.role !== 'assistant')
@@ -875,6 +919,113 @@ export class DatabaseService {
 			updates = { ...updates, modelInfo: messageModelInfoSnapshotSchema.parse(updates.modelInfo) };
 		}
 		await requireUpdated(await db.messages.update(id, updates), `Message ${id}`);
+	}
+
+	/** Field-only CAS: never write a stale message snapshot over streaming/graph data. */
+	static async saveInteractiveFormValues(
+		convId: string,
+		messageId: string,
+		formId: string,
+		values: FormValues,
+		revision: number
+	): Promise<InteractiveForm> {
+		return db.transaction('rw', [db.conversations, db.messages], async () => {
+			await requireConversation(convId);
+			const message = await requireOwnedMessage(convId, messageId);
+			const form = validateInteractiveForm(message.interactiveForm, message);
+			if (
+				form.id !== formId ||
+				form.sourceContent !== message.content ||
+				form.revision !== revision ||
+				form.status !== 'draft' ||
+				form.result
+			)
+				throw new Error('Form changed or is locked');
+			const next = { ...form, values: parseFormValues(form.spec, values), revision: revision + 1 };
+			await db.messages.update(messageId, { interactiveForm: next });
+			return next;
+		});
+	}
+
+	/** Reserve the existing send pipeline's user message and result together. Retries
+	 * reuse its ID; neither a second tab nor a double click can create a duplicate.
+	 */
+	static async prepareInteractiveFormSubmission(
+		convId: string,
+		messageId: string,
+		formId: string
+	): Promise<{ owner: DatabaseMessage; user: DatabaseMessage }> {
+		return db.transaction('rw', [db.conversations, db.messages], async () => {
+			const conversation = await requireConversation(convId);
+			const owner = await requireOwnedMessage(convId, messageId);
+			const form = validateInteractiveForm(owner.interactiveForm, owner);
+			if (form.id !== formId || owner.content !== form.sourceContent || form.status !== 'draft')
+				throw new Error('Form changed or already submitted');
+			const path = filterByLeafNodeId(
+				await db.messages.where('convId').equals(convId).toArray(),
+				conversation.currNode ?? '',
+				true
+			);
+			if (!path.some((m) => m.id === messageId))
+				throw new Error('Form is not on the selected branch');
+			if (form.result) {
+				const user = await requireOwnedMessage(convId, form.result.messageId);
+				if (
+					user.role !== 'user' ||
+					user.content !== form.result.content ||
+					!path.some((m) => m.id === user.id)
+				)
+					throw new Error('Saved submission changed or is on a different branch');
+				return { owner, user };
+			}
+			const checked = validateFormValues(form.spec, form.values);
+			if (!checked.valid) throw new Error('Invalid form answers');
+			const user = await this.createMessageBranch(
+				{
+					convId,
+					role: MessageRole.USER,
+					type: MessageType.TEXT,
+					content: formAnswerText(form.spec, checked.values),
+					timestamp: Date.now(),
+					children: [],
+					toolCalls: ''
+				},
+				conversation.currNode
+			);
+			const next: InteractiveForm = {
+				...form,
+				revision: form.revision + 1,
+				result: { values: checked.values, content: user.content, messageId: user.id }
+			};
+			await db.messages.update(messageId, { interactiveForm: next });
+			return { owner: { ...owner, interactiveForm: next }, user };
+		});
+	}
+
+	static async completeInteractiveFormSubmission(
+		convId: string,
+		messageId: string,
+		formId: string,
+		userMessageId: string
+	): Promise<DatabaseMessage> {
+		return db.transaction('rw', [db.conversations, db.messages], async () => {
+			await requireConversation(convId);
+			const owner = await requireOwnedMessage(convId, messageId);
+			const form = validateInteractiveForm(owner.interactiveForm, owner);
+			const user = await requireOwnedMessage(convId, userMessageId);
+			if (
+				form.id !== formId ||
+				form.sourceContent !== owner.content ||
+				!form.result ||
+				form.result.messageId !== user.id ||
+				form.result.content !== user.content ||
+				user.role !== 'user'
+			)
+				throw new Error('Submission identity changed');
+			const next: InteractiveForm = { ...form, status: 'submitted', revision: form.revision + 1 };
+			await db.messages.update(messageId, { interactiveForm: next });
+			return { ...owner, interactiveForm: next };
+		});
 	}
 
 	/** Content-only CAS. Writer-drain/finished-message gating belongs to the caller. */
@@ -1310,6 +1461,24 @@ export class DatabaseService {
 
 				return {
 					...msg,
+					...(msg.interactiveForm
+						? {
+								interactiveForm: (() => {
+									const form = validateInteractiveForm(msg.interactiveForm, msg);
+									const resultId = form.result ? idMap.get(form.result.messageId) : undefined;
+									return {
+										...form,
+										id: uuid(),
+										messageId: newId,
+										conversationId: newConvId,
+										revision: 0,
+										status: resultId ? form.status : ('draft' as const),
+										result:
+											resultId && form.result ? { ...form.result, messageId: resultId } : undefined
+									};
+								})()
+							}
+						: {}),
 					agentic: msg.agentic
 						? {
 								...msg.agentic,

@@ -1,6 +1,27 @@
 import type { TranslationDictionary } from '$lib/i18n/types';
+import { formControlLocale } from '../form-translations';
 
 export const pl: TranslationDictionary = {
+	interactiveForms: {
+		...formControlLocale('pl'),
+		value: 'Podaj poprawną wartość w dozwolonym zakresie.',
+		privacy:
+			'Formularz wygenerowany przez AI. Sprawdź pytania; nie podawaj sekretów. Dopiero Twoje kliknięcie wysyła odpowiedzi.',
+		submitted: 'Odpowiedzi zostały złożone.',
+		pending: 'Odpowiedzi zapisano do wysłania. Ponowienie użyje tej samej wiadomości.',
+		retry: 'Ponów wysłanie odpowiedzi',
+		invalid:
+			'Formularz jest niedostępny lub edytowano jego treść. Zapisane dane nie zostały usunięte.',
+		failed:
+			'Nie udało się zapisać lub wysłać odpowiedzi. Wpisane dane zachowano; spróbuj ponownie.',
+		errors: 'Popraw zaznaczone pola. Twoje odpowiedzi zostały zachowane.',
+		required: 'To pole jest wymagane.',
+		email: 'Podaj poprawny adres e-mail.',
+		option: 'Wybierz dostępną odpowiedź.',
+		step: 'Wybierz poprawny krok suwaka.',
+		limit: 'Osiągnięto limit rozmiaru odpowiedzi. Skróć wpisane dane.',
+		choose: 'Wybierz…'
+	},
 	visualizationRepair: {
 		repair: 'Napraw',
 		failed: 'Nie udało się zastosować naprawy. Oryginalny kod pozostał bez zmian.'
@@ -343,6 +364,9 @@ export const pl: TranslationDictionary = {
 			'Dodawaj diagramy Mermaid, gdy pomagają wyjaśnić procesy, architekturę lub relacje. Nie wymyślaj zależności.',
 		responsePrefChartsHelp:
 			'Natywne wykresy dla sensownych porównań, trendów i rozkładów. Bez zmyślonych danych.',
+		responsePrefForms: 'Użyj inteligentnych formularzy',
+		responsePrefFormsHelp:
+			'Gdy formularze są włączone w zakładce Chat, zachęcaj model do proponowania ich wtedy, gdy ułatwiają zebranie kilku odpowiedzi lub wyborów.',
 		responsePrefNoDecorations: 'Bez emoji i ozdobników',
 		responsePrefNoDecorationsHelp:
 			'Bez dekoracyjnych symboli. Zachowaj znaki językowe, matematykę, kod i cytaty.',
@@ -477,9 +501,13 @@ export const pl: TranslationDictionary = {
 			noConversationsToDelete: 'Brak rozmów do usunięcia'
 		},
 		groupVisualizations: 'Możliwości wizualizacji',
+		groupInteractiveForms: 'Interaktywne formularze',
+		fieldInteractiveFormsEnabled: 'Interaktywne formularze AI',
 		fieldChartsEnabled: 'Włącz wykresy',
 		fieldDiagramsEnabled: 'Włącz diagramy',
 		info: {
+			interactiveFormsEnabled:
+				'Pozwala modelowi proponować przydatne formularze. Dodaje krótką instrukcję możliwości; tylko rzeczywista propozycja wymaga dodatkowego żądania z pełnym katalogiem. Wyłączenie zachowuje zapisane formularze jako tekst tylko do odczytu.',
 			chartsEnabled:
 				'Włącza instrukcje formatu, renderowanie, podgląd i eksport wykresów. Preferencje odpowiedzi są zapisywane niezależnie.',
 			diagramsEnabled:

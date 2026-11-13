@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('hu');
 export const hu: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Javítás',
 		failed: 'A javítás nem alkalmazható. Az eredeti kód változatlan.'
@@ -210,6 +213,8 @@ export const hu: TranslationDictionary = {
 		enterNewConversationName: 'Adj meg egy új nevet'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Megjelenítési lehetőségek',
 		fieldChartsEnabled: 'Grafikonok engedélyezése',
 		fieldDiagramsEnabled: 'Diagramok engedélyezése',
@@ -352,6 +357,9 @@ export const hu: TranslationDictionary = {
 			'Használjon Mermaid-diagramokat, ha azok érthetőbbé teszik a folyamatokat, a felépítést vagy az összefüggéseket. Soha ne találjon ki kapcsolatokat.',
 		responsePrefChartsHelp:
 			'A beépített grafikonokat érdemi összehasonlításokhoz, trendekhez és eloszlásokhoz használja. Soha ne találjon ki adatokat.',
+		responsePrefForms: 'Intelligens űrlapok használata',
+		responsePrefFormsHelp:
+			'Ha az űrlapok engedélyezve vannak a csevegés beállításaiban, ösztönözd a modellt arra, hogy felajánlja őket, amikor megkönnyítik több válasz vagy választás összegyűjtését.',
 		responsePrefNoDecorations: 'Emojik és díszítőelemek nélkül',
 		responsePrefNoDecorationsHelp:
 			'Ne használjon díszítő szimbólumokat. A nyelvi karakterek, a matematikai jelölések, a kód és az idézetek maradjanak változatlanok.',
@@ -489,6 +497,7 @@ export const hu: TranslationDictionary = {
 			noConversationsToDelete: 'Nincsenek törölhető beszélgetések'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Engedélyezi a grafikonok formátumutasításait, megjelenítését, előnézetét és exportálását. A válaszbeállítások ettől függetlenül mentődnek.',
 			diagramsEnabled:

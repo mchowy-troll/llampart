@@ -80,7 +80,10 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.code-block-wrapper.llampart-chart-fallback,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-markdown-content .table-block,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-visualization-frame {
-	background: var(--llampart-glass-white-110, rgba(255, 255, 255, 0.11)) !important;
+	background: var(
+		--llampart-visualization-surface,
+		var(--llampart-glass-white-110, rgba(255, 255, 255, 0.11))
+	) !important;
 	border: 1px solid rgba(255, 255, 255, 0.12) !important;
 	box-shadow:
 		inset 0 1px 0 rgba(255, 255, 255, 0.1),

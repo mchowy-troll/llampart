@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import type { ExportedConversation } from '$lib/types/database';
 import { messageModelInfoSnapshotSchema } from '$lib/utils/message-model-info';
+import { interactiveFormSchema } from '$lib/forms/form-schema';
+import { validateInteractiveForm } from '$lib/services/interactive-forms';
 
 export const CONVERSATION_EXPORT_TYPE = 'llampart-conversations';
 export const CONVERSATION_EXPORT_FORMAT_VERSION = 2;
@@ -18,6 +20,13 @@ export interface ConversationExportEnvelopeV2 extends Omit<
 	'formatVersion'
 > {
 	formatVersion: 2;
+}
+
+export interface ConversationExportEnvelopeV3 extends Omit<
+	ConversationExportEnvelopeV1,
+	'formatVersion'
+> {
+	formatVersion: 3;
 }
 
 const nonEmptyString = z.string().trim().min(1);
@@ -183,6 +192,9 @@ const agenticSchema = z
 	})
 	.strict();
 const messageV2Schema = strictMessageSchema.extend({ agentic: agenticSchema.optional() });
+const messageV3Schema = messageV2Schema.extend({
+	interactiveForm: interactiveFormSchema.optional()
+});
 const legacyMessageSchema = z
 	.object({ ...messageShape, toolCalls: z.string().optional().default('') })
 	.passthrough();
@@ -208,6 +220,11 @@ const envelopeV2Schema = envelopeSchema.extend({
 	formatVersion: z.literal(2),
 	conversations: z.array(conversationV2Schema)
 });
+const conversationV3Schema = conversationV2Schema.extend({ messages: z.array(messageV3Schema) });
+const envelopeV3Schema = envelopeSchema.extend({
+	formatVersion: z.literal(3),
+	conversations: z.array(conversationV3Schema)
+});
 
 function formatImportError(error: z.ZodError): Error {
 	const issue = error.issues[0];
@@ -221,11 +238,52 @@ function parseWithSchema<T>(schema: z.ZodType<T>, value: unknown): T {
 	return result.data;
 }
 
+function validateRawForms(value: unknown): void {
+	// Inspect original form keys before any record parser can omit __proto__.
+	if (Array.isArray(value))
+		for (const item of value) {
+			if (Array.isArray(item?.messages))
+				for (const message of item.messages) {
+					if (message?.interactiveForm !== undefined)
+						validateInteractiveForm(message.interactiveForm, message);
+				}
+		}
+}
+
 /** Runtime-validates records passed directly to the strict database import preflight. */
 export function validateConversationImportRecords(value: unknown): ExportedConversation[] {
-	const records = parseWithSchema(z.array(conversationV2Schema), value) as ExportedConversation[];
+	validateRawForms(value);
+	const records = parseWithSchema(z.array(conversationV3Schema), value) as ExportedConversation[];
+	const formIds = new Set<string>();
 	for (const { messages } of records) {
+		const byId = new Map(messages.map((message) => [message.id, message]));
+		const resultIds = new Set<string>();
 		for (const message of messages) {
+			if (message.interactiveForm) {
+				message.interactiveForm = validateInteractiveForm(message.interactiveForm, message);
+				if (formIds.has(message.interactiveForm.id)) throw new Error('Duplicate form identity');
+				formIds.add(message.interactiveForm.id);
+				const result = message.interactiveForm.result;
+				if (result) {
+					const user = byId.get(result.messageId);
+					if (
+						!user ||
+						user.role !== 'user' ||
+						user.content !== result.content ||
+						user.convId !== message.convId ||
+						resultIds.has(user.id)
+					)
+						throw new Error('Invalid form result identity');
+					resultIds.add(user.id);
+					let node: DatabaseMessage | undefined = user;
+					const visited = new Set<string>();
+					while (node && node.id !== message.id && !visited.has(node.id)) {
+						visited.add(node.id);
+						node = node.parent ? byId.get(node.parent) : undefined;
+					}
+					if (node?.id !== message.id) throw new Error('Form result belongs to a different branch');
+				}
+			}
 			if (message.modelInfo && message.role !== 'assistant')
 				throw new Error('Model information must belong to an assistant');
 			if (!message.agentic) continue;
@@ -370,10 +428,12 @@ function parseLegacyConversations(value: unknown): ExportedConversation[] {
 export function createConversationExportEnvelope(
 	conversations: ExportedConversation[],
 	appVersion: string
-): ConversationExportEnvelopeV2 {
-	const envelope: ConversationExportEnvelopeV2 = {
+): ConversationExportEnvelopeV2 | ConversationExportEnvelopeV3 {
+	const envelope: ConversationExportEnvelopeV2 | ConversationExportEnvelopeV3 = {
 		type: CONVERSATION_EXPORT_TYPE,
-		formatVersion: CONVERSATION_EXPORT_FORMAT_VERSION,
+		formatVersion: conversations.some((item) => item.messages.some((m) => m.interactiveForm))
+			? 3
+			: CONVERSATION_EXPORT_FORMAT_VERSION,
 		appVersion,
 		exportedAt: new Date().toISOString(),
 		conversations: conversations.map((item) => ({
@@ -397,18 +457,33 @@ export function createConversationExportEnvelope(
 
 /** V2 preserves lifecycle; V1/V0 imports never infer missing execution state. */
 export function parseConversationImport(value: unknown): ExportedConversation[] {
+	validateRawForms(
+		typeof value === 'object' && value !== null && 'conversations' in value
+			? value.conversations
+			: Array.isArray(value)
+				? value
+				: [value]
+	);
 	if (typeof value === 'object' && value !== null && 'type' in value) {
-		const envelope = value as Partial<ConversationExportEnvelopeV1 | ConversationExportEnvelopeV2>;
+		const envelope = value as Partial<
+			ConversationExportEnvelopeV1 | ConversationExportEnvelopeV2 | ConversationExportEnvelopeV3
+		>;
 		if (envelope.type !== CONVERSATION_EXPORT_TYPE) {
 			throw new Error('Invalid conversation export type');
 		}
-		if (envelope.formatVersion !== 1 && envelope.formatVersion !== 2) {
+		if (
+			envelope.formatVersion !== 1 &&
+			envelope.formatVersion !== 2 &&
+			envelope.formatVersion !== 3
+		) {
 			throw new Error(`Unsupported conversation export version: ${String(envelope.formatVersion)}`);
 		}
 		const parsed =
 			envelope.formatVersion === 1
 				? parseWithSchema(envelopeSchema, value)
-				: parseWithSchema(envelopeV2Schema, value);
+				: envelope.formatVersion === 2
+					? parseWithSchema(envelopeV2Schema, value)
+					: parseWithSchema(envelopeV3Schema, value);
 		return validateConversationImportRecords(parsed.conversations);
 	}
 

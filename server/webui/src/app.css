@@ -9,6 +9,7 @@
 
 @import 'tw-animate-css';
 @import './lib/themes/index.css';
+@import './lib/styles/controls.css';
 
 /* Text sizes only: root rem, spacing, control dimensions and SVG geometry stay unchanged. */
 @theme inline {

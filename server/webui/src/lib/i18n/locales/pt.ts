@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('pt');
 export const pt: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Reparar',
 		failed: 'Não foi possível aplicar a reparação. O código original não foi alterado.'
@@ -211,6 +214,8 @@ export const pt: TranslationDictionary = {
 		enterNewConversationName: 'Introduza um novo nome'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Funcionalidades de visualização',
 		fieldChartsEnabled: 'Ativar gráficos',
 		fieldDiagramsEnabled: 'Ativar diagramas',
@@ -351,6 +356,9 @@ export const pt: TranslationDictionary = {
 			'Incluir diagramas Mermaid quando ajudarem a esclarecer processos, arquitetura ou relações. Nunca inventar relações.',
 		responsePrefChartsHelp:
 			'Usar gráficos nativos para comparações, tendências e distribuições relevantes. Nunca inventar dados.',
+		responsePrefForms: 'Usar formulários inteligentes',
+		responsePrefFormsHelp:
+			'Quando os formulários estiverem ativados nas definições do chat, incentive o modelo a propô-los quando facilitarem a recolha de várias respostas ou escolhas.',
 		responsePrefNoDecorations: 'Sem emojis nem elementos decorativos',
 		responsePrefNoDecorationsHelp:
 			'Não usar símbolos decorativos. Preservar caracteres do idioma, matemática, código e citações.',
@@ -488,6 +496,7 @@ export const pt: TranslationDictionary = {
 			noConversationsToDelete: 'Nenhuma conversa para eliminar'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Ativa as instruções de formato, a apresentação, a pré-visualização e a exportação de gráficos. As preferências de resposta são guardadas de forma independente.',
 			diagramsEnabled:

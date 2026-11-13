@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('de');
 export const de: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Reparieren',
 		failed:
@@ -213,6 +216,8 @@ export const de: TranslationDictionary = {
 		enterNewConversationName: 'Neuen Namen eingeben'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Visualisierungsfunktionen',
 		fieldChartsEnabled: 'Datendiagramme aktivieren',
 		fieldDiagramsEnabled: 'Diagramme aktivieren',
@@ -351,6 +356,9 @@ export const de: TranslationDictionary = {
 			'Mermaid-Diagramme verwenden, wenn sie Prozesse, Architektur oder Beziehungen verdeutlichen. Keine Beziehungen erfinden.',
 		responsePrefChartsHelp:
 			'Native Datendiagramme für sinnvolle Vergleiche, Trends und Verteilungen. Keine erfundenen Daten.',
+		responsePrefForms: 'Intelligente Formulare verwenden',
+		responsePrefFormsHelp:
+			'Wenn Formulare in den Chat-Einstellungen aktiviert sind, ermutige das Modell, sie vorzuschlagen, wenn sie das Erfassen mehrerer Antworten oder Auswahlentscheidungen erleichtern.',
 		responsePrefNoDecorations: 'Keine Emojis oder Verzierungen',
 		responsePrefNoDecorationsHelp:
 			'Keine dekorativen Symbole. Sprachzeichen, Mathematik, Code und Zitate bleiben erhalten.',
@@ -485,6 +493,7 @@ export const de: TranslationDictionary = {
 			noConversationsToDelete: 'Keine Unterhaltungen zum Löschen'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Aktiviert Formatanweisungen, Darstellung, Vorschau und Export von Datendiagrammen. Antwortpräferenzen werden unabhängig gespeichert.',
 			diagramsEnabled:

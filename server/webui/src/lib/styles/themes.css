@@ -84,6 +84,18 @@
 	--llampart-sidebar-conversations-frame-border-color: #cecece;
 	--llampart-sidebar-header-separator-background: rgba(0, 0, 0, 0.11);
 	--llampart-sidebar-selection-accent: #3c3c3c;
+	/* Shared controls consume the existing interface accent, not an OS accent. */
+	--llampart-control-accent: var(--llampart-sidebar-selection-accent);
+	--llampart-control-border: var(--input);
+	--llampart-control-border-hover: var(--ring);
+	--llampart-control-background: var(--background);
+	--llampart-control-popup-background: var(--popover);
+	--llampart-control-selected-foreground: var(--primary-foreground);
+	--llampart-form-surface: var(--code-background);
+	--llampart-selection-border: var(--muted-foreground);
+	--llampart-selection-border-hover: var(--muted-foreground);
+	--llampart-selection-background: transparent;
+	--llampart-selection-hover: color-mix(in oklch, var(--foreground) 10%, transparent);
 	--llampart-sidebar-action-foreground: #1a1a1a;
 	--llampart-sidebar-action-hover-foreground: #2b2b2b;
 	--llampart-sidebar-conversation-control-foreground: #686868;

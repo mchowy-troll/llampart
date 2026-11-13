@@ -157,7 +157,7 @@
 	let isCurrentlyLoading = $derived(isLastAssistantMessage && isLoading());
 	let isStreaming = $derived(isLastAssistantMessage && isChatStreaming());
 
-	let hasNoContent = $derived(!message?.content?.trim());
+	let hasNoContent = $derived(!message.interactiveForm && !message?.content?.trim());
 	let isActivelyProcessing = $derived(isCurrentlyLoading || isStreaming);
 
 	let showProcessingInfoTop = $derived(

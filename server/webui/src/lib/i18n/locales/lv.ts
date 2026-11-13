@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('lv');
 export const lv: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Labot',
 		failed: 'Labojumu neizdevās piemērot. Sākotnējais kods nav mainīts.'
@@ -210,6 +213,8 @@ export const lv: TranslationDictionary = {
 		enterNewConversationName: 'Ievadiet jaunu nosaukumu'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Vizualizācijas iespējas',
 		fieldChartsEnabled: 'Iespējot grafikus',
 		fieldDiagramsEnabled: 'Iespējot diagrammas',
@@ -348,6 +353,9 @@ export const lv: TranslationDictionary = {
 			'Iekļaut Mermaid diagrammas, ja tās palīdz izprast procesus, arhitektūru vai saistības. Nekad neizdomāt saistības.',
 		responsePrefChartsHelp:
 			'Izmantot iebūvētos grafikus jēgpilniem salīdzinājumiem, tendencēm un sadalījumiem. Nekad neizdomāt datus.',
+		responsePrefForms: 'Izmantot viedās veidlapas',
+		responsePrefFormsHelp:
+			'Ja tērzēšanas iestatījumos ir iespējotas veidlapas, mudiniet modeli tās piedāvāt, kad tās atvieglo vairāku atbilžu vai izvēļu apkopošanu.',
 		responsePrefNoDecorations: 'Bez emocijzīmēm un rotājumiem',
 		responsePrefNoDecorationsHelp:
 			'Neizmantot dekoratīvus simbolus. Saglabāt valodas rakstzīmes, matemātiskās izteiksmes, kodu un citātus.',
@@ -480,6 +488,7 @@ export const lv: TranslationDictionary = {
 			noConversationsToDelete: 'Nav sarunu, ko dzēst'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Iespējo grafiku formāta norādījumus, attēlošanu, priekšskatījumu un eksportu. Atbilžu preferences tiek saglabātas neatkarīgi.',
 			diagramsEnabled:

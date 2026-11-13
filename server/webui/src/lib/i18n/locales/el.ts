@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('el');
 export const el: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Διόρθωση',
 		failed: 'Η διόρθωση δεν εφαρμόστηκε. Ο αρχικός κώδικας παραμένει αμετάβλητος.'
@@ -213,6 +216,8 @@ export const el: TranslationDictionary = {
 		enterNewConversationName: 'Εισαγάγετε νέο όνομα'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Δυνατότητες οπτικοποίησης',
 		fieldChartsEnabled: 'Ενεργοποίηση γραφημάτων',
 		fieldDiagramsEnabled: 'Ενεργοποίηση διαγραμμάτων',
@@ -353,6 +358,9 @@ export const el: TranslationDictionary = {
 			'Διαγράμματα Mermaid όταν αποσαφηνίζουν διαδικασίες, αρχιτεκτονική ή σχέσεις. Χωρίς επινοημένες σχέσεις.',
 		responsePrefChartsHelp:
 			'Ενσωματωμένα γραφήματα για ουσιαστικές συγκρίσεις, τάσεις και κατανομές. Χωρίς επινοημένα δεδομένα.',
+		responsePrefForms: 'Χρήση έξυπνων φορμών',
+		responsePrefFormsHelp:
+			'Όταν οι φόρμες είναι ενεργοποιημένες στις ρυθμίσεις συνομιλίας, ενθαρρύνετε το μοντέλο να τις προτείνει όταν διευκολύνουν τη συλλογή πολλών απαντήσεων ή επιλογών.',
 		responsePrefNoDecorations: 'Χωρίς emoji ή διακοσμητικά στοιχεία',
 		responsePrefNoDecorationsHelp:
 			'Χωρίς διακοσμητικά σύμβολα. Διατήρηση των χαρακτήρων της γλώσσας, των μαθηματικών, του κώδικα και των παραθεμάτων.',
@@ -486,6 +494,7 @@ export const el: TranslationDictionary = {
 			noConversationsToDelete: 'Δεν υπάρχουν συνομιλίες για διαγραφή'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Ενεργοποιεί τις οδηγίες μορφής, την απόδοση, την προεπισκόπηση και την εξαγωγή γραφημάτων. Οι προτιμήσεις απάντησης αποθηκεύονται ανεξάρτητα.',
 			diagramsEnabled:

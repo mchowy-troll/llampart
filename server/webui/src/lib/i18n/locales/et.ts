@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('et');
 export const et: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Paranda',
 		failed: 'Parandust ei saanud rakendada. Algne kood on muutmata.'
@@ -210,6 +213,8 @@ export const et: TranslationDictionary = {
 		enterNewConversationName: 'Sisesta uus nimi'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Visualiseerimisvõimalused',
 		fieldChartsEnabled: 'Luba graafikud',
 		fieldDiagramsEnabled: 'Luba diagrammid',
@@ -349,6 +354,9 @@ export const et: TranslationDictionary = {
 			'Lisa Mermaid-diagramme, kui need aitavad selgitada protsesse, arhitektuuri või seoseid. Ära kunagi mõtle seoseid välja.',
 		responsePrefChartsHelp:
 			'Kasuta sisseehitatud graafikuid sisukate võrdluste, trendide ja jaotuste jaoks. Ära kunagi mõtle andmeid välja.',
+		responsePrefForms: 'Kasuta nutikaid vorme',
+		responsePrefFormsHelp:
+			'Kui vormid on vestluse seadetes lubatud, julgusta mudelit neid pakkuma, kui need hõlbustavad mitme vastuse või valiku kogumist.',
 		responsePrefNoDecorations: 'Ilma emotikonide ja kaunistusteta',
 		responsePrefNoDecorationsHelp:
 			'Ära kasuta kaunistavaid sümboleid. Säilita keelele omased tähemärgid, matemaatika, kood ja tsitaadid.',
@@ -479,6 +487,7 @@ export const et: TranslationDictionary = {
 			noConversationsToDelete: 'Kustutatavaid vestlusi pole'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Lubab graafikute vormingujuhised, kuvamise, eelvaate ja ekspordi. Vastuseelistused salvestatakse eraldi.',
 			diagramsEnabled:

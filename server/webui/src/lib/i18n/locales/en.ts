@@ -1,6 +1,25 @@
 import type { TranslationDictionary } from '../types';
+import { formControlLocale } from '../form-translations';
 
 export const en: TranslationDictionary = {
+	interactiveForms: {
+		...formControlLocale('en'),
+		value: 'Enter a valid value within the allowed bounds.',
+		privacy:
+			'AI-generated form. Check the questions; do not enter secrets. Only your click sends answers.',
+		submitted: 'Answers submitted.',
+		pending: 'Answers saved for sending. Retry reuses the same message.',
+		retry: 'Retry sending answers',
+		invalid: 'This form is unavailable or its source was edited. Saved data have not been removed.',
+		failed: 'Could not save or send answers. Your entries are retained; try again.',
+		errors: 'Check the highlighted fields. Your entries are retained.',
+		required: 'This field is required.',
+		email: 'Enter a valid email address.',
+		option: 'Choose an available option.',
+		step: 'Choose a valid slider step.',
+		limit: 'Answer size limit reached. Shorten your entries.',
+		choose: 'Choose…'
+	},
 	visualizationRepair: {
 		repair: 'Repair',
 		failed: 'Repair could not be applied. The original code is unchanged.'
@@ -344,6 +363,9 @@ export const en: TranslationDictionary = {
 			'Include Mermaid diagrams when they clarify processes, architecture or relationships. Never invent relationships.',
 		responsePrefChartsHelp:
 			'Native charts for meaningful comparisons, trends, and distributions. Never invent data.',
+		responsePrefForms: 'Use intelligent forms',
+		responsePrefFormsHelp:
+			'When forms are enabled in Chat settings, encourage the model to offer them when they make collecting several answers or choices easier.',
 		responsePrefNoDecorations: 'No emoji or decorations',
 		responsePrefNoDecorationsHelp:
 			'No decorative symbols. Preserve language characters, mathematics, code, and quotations.',
@@ -378,6 +400,8 @@ export const en: TranslationDictionary = {
 		groupMessageDisplay: 'Message display',
 		groupInput: 'Message input',
 		groupVisualizations: 'Visualization capabilities',
+		groupInteractiveForms: 'Interactive forms',
+		fieldInteractiveFormsEnabled: 'Interactive AI forms',
 		fieldChartsEnabled: 'Enable charts',
 		fieldDiagramsEnabled: 'Enable diagrams',
 		groupAttachmentsFiles: 'Attachments and files',
@@ -477,6 +501,8 @@ export const en: TranslationDictionary = {
 			noConversationsToDelete: 'No conversations to delete'
 		},
 		info: {
+			interactiveFormsEnabled:
+				'Let the model propose forms when useful. Adds a short capability instruction; only actual proposals use an extra request and the full catalog. Off keeps saved forms as read-only text.',
 			chartsEnabled:
 				'Enable chart format instructions, rendering, previews and exports. Response preferences remain saved independently.',
 			diagramsEnabled:

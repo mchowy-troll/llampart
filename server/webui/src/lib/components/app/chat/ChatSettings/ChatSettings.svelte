@@ -181,12 +181,16 @@
 						{
 							id: 'formatting',
 							title: t('settings.responsePreferencesFormatting'),
-							keys: RESPONSE_PREFERENCES.slice(0, 5).map(({ key }) => key)
+							keys: RESPONSE_PREFERENCES.filter(({ group }) => group === 'formatting').map(
+								({ key }) => key
+							)
 						},
 						{
 							id: 'style',
 							title: t('settings.responsePreferencesStyle'),
-							keys: RESPONSE_PREFERENCES.slice(5).map(({ key }) => key)
+							keys: RESPONSE_PREFERENCES.filter(({ group }) => group === 'style').map(
+								({ key }) => key
+							)
 						}
 					],
 					fields: [
@@ -219,36 +223,43 @@
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
-							key: SETTINGS_KEYS.RESPONSE_PREF_NO_DECORATIONS,
+							key: SETTINGS_KEYS.RESPONSE_PREF_FORMS,
 							order: 5,
+							label: t('settings.responsePrefForms'),
+							help: t('settings.responsePrefFormsHelp'),
+							type: SettingsFieldType.CHECKBOX
+						},
+						{
+							key: SETTINGS_KEYS.RESPONSE_PREF_NO_DECORATIONS,
+							order: 6,
 							label: t('settings.responsePrefNoDecorations'),
 							help: t('settings.responsePrefNoDecorationsHelp'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.RESPONSE_PREF_CONCISE,
-							order: 6,
+							order: 7,
 							label: t('settings.responsePrefConcise'),
 							help: t('settings.responsePrefConciseHelp'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.RESPONSE_PREF_EXAMPLES,
-							order: 7,
+							order: 8,
 							label: t('settings.responsePrefExamples'),
 							help: t('settings.responsePrefExamplesHelp'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.RESPONSE_PREF_STEPS,
-							order: 8,
+							order: 9,
 							label: t('settings.responsePrefSteps'),
 							help: t('settings.responsePrefStepsHelp'),
 							type: SettingsFieldType.CHECKBOX
 						},
 						{
 							key: SETTINGS_KEYS.RESPONSE_PREF_USER_LANGUAGE,
-							order: 9,
+							order: 10,
 							label: t('settings.responsePrefUserLanguage'),
 							help: t('settings.responsePrefUserLanguageHelp'),
 							type: SettingsFieldType.CHECKBOX
@@ -467,6 +478,19 @@
 							key: SETTINGS_KEYS.DIAGRAMS_ENABLED,
 							order: 2,
 							label: t('settings.fieldDiagramsEnabled'),
+							type: SettingsFieldType.CHECKBOX
+						}
+					]
+				},
+				{
+					id: 'interactive-forms',
+					title: t('settings.groupInteractiveForms'),
+					layout: 'two-column',
+					fields: [
+						{
+							key: SETTINGS_KEYS.INTERACTIVE_FORMS_ENABLED,
+							order: 1,
+							label: t('settings.fieldInteractiveFormsEnabled'),
 							type: SettingsFieldType.CHECKBOX
 						}
 					]

@@ -29,6 +29,9 @@ import { runLegacyMigration } from '$lib/utils/legacy-migration';
 import { generateConversationTitle } from '$lib/utils/text';
 import type { ConversationExportEnvelope, McpServerOverride } from '$lib/types/database';
 import { MessageRole } from '$lib/enums';
+import type { FormValues } from '$lib/types/interactive-forms';
+import { parseFormValues, validateInteractiveForm } from '$lib/services/interactive-forms';
+import { withConversationWriter } from '$lib/services/conversation-writers';
 import {
 	ISO_DATE_TIME_SEPARATOR,
 	ISO_DATE_TIME_SEPARATOR_REPLACEMENT,
@@ -73,6 +76,124 @@ export interface BulkConversationDeleteResult {
 }
 
 class ConversationsStore {
+	private formWrites = new Map<
+		string,
+		{
+			revision: number;
+			tail: Promise<void>;
+			values: FormValues;
+			sourceContent: string;
+			failed: boolean;
+			conversationId: string;
+		}
+	>();
+	private warnUnsavedForms = (event: BeforeUnloadEvent) => {
+		if (!this.formWrites.size) return;
+		event.preventDefault();
+		event.returnValue = '';
+	};
+
+	hasUnsavedInteractiveForm(formId: string): boolean {
+		return this.formWrites.get(formId)?.failed === true;
+	}
+
+	private discardFormDrafts(
+		conversationIds: Set<string>,
+		survivingFormIds = new Set<string>()
+	): void {
+		for (const [id, pending] of this.formWrites) {
+			if (conversationIds.has(pending.conversationId) && !survivingFormIds.has(id))
+				this.formWrites.delete(id);
+		}
+		if (browser && !this.formWrites.size)
+			window.removeEventListener('beforeunload', this.warnUnsavedForms);
+	}
+
+	/** A failed durable write must survive route/branch unmounts in this session.
+	 * Never project it onto a changed source or a submitted/locked record. */
+	private restoreFormDrafts(messages: DatabaseMessage[]): DatabaseMessage[] {
+		for (const message of messages) {
+			const form = message.interactiveForm;
+			const pending = form && this.formWrites.get(form.id);
+			if (
+				form &&
+				pending &&
+				form.sourceContent === pending.sourceContent &&
+				form.sourceContent === message.content &&
+				form.status === 'draft' &&
+				!form.result
+			)
+				form.values = pending.values;
+		}
+		return messages;
+	}
+
+	/** Optimistic values belong to the existing message store. Only user edits queue writes. */
+	saveInteractiveFormValues(
+		messageId: string,
+		formId: string,
+		candidate: FormValues
+	): Promise<void> {
+		const message = this.activeMessages.find((m) => m.id === messageId);
+		if (!message || config().interactiveFormsEnabled !== true)
+			return Promise.reject(new Error('Form unavailable'));
+		const form = validateInteractiveForm(message.interactiveForm, message);
+		if (form.id !== formId || form.status !== 'draft' || form.result)
+			return Promise.reject(new Error('Form locked'));
+		const values = parseFormValues(form.spec, candidate);
+		message.interactiveForm!.values = values;
+		let queue = this.formWrites.get(formId);
+		if (!queue) {
+			queue = {
+				revision: form.revision,
+				tail: Promise.resolve(),
+				values,
+				sourceContent: form.sourceContent,
+				failed: false,
+				conversationId: message.convId
+			};
+			this.formWrites.set(formId, queue);
+			if (browser) window.addEventListener('beforeunload', this.warnUnsavedForms);
+		}
+		const state = queue;
+		state.values = values;
+		const write = state.tail
+			.catch(() => undefined)
+			.then(() =>
+				withConversationWriter(message.convId, async () => {
+					const saved = await DatabaseService.saveInteractiveFormValues(
+						message.convId,
+						message.id,
+						formId,
+						values,
+						state.revision
+					);
+					state.revision = saved.revision;
+					state.failed = false;
+					const current = this.activeMessages.find((m) => m.id === messageId)?.interactiveForm;
+					if (current?.id === formId) current.revision = saved.revision;
+				})
+			);
+		state.tail = write;
+		void write
+			.then(
+				() => {
+					if (state.tail === write) this.formWrites.delete(formId);
+					if (browser && !this.formWrites.size)
+						window.removeEventListener('beforeunload', this.warnUnsavedForms);
+				},
+				() => {
+					state.failed = true;
+				}
+			)
+			.catch(() => undefined);
+		return write;
+	}
+
+	async flushInteractiveForm(formId: string): Promise<void> {
+		await this.formWrites.get(formId)?.tail;
+	}
+
 	private loadGeneration = 0;
 	private nameUpdateVersions = new Map<string, number>();
 	/**
@@ -319,6 +440,14 @@ class ConversationsStore {
 			}
 
 			const allMessages = await DatabaseService.getConversationMessages(convId);
+			this.discardFormDrafts(
+				new Set([convId]),
+				new Set(
+					allMessages.flatMap((message) =>
+						message.interactiveForm ? [message.interactiveForm.id] : []
+					)
+				)
+			);
 			const visibleMessages = conversation.currNode
 				? (filterByLeafNodeId(allMessages, conversation.currNode, false) as DatabaseMessage[])
 				: allMessages;
@@ -326,7 +455,7 @@ class ConversationsStore {
 			if (generation !== this.loadGeneration) return false;
 			this.pendingMcpServerOverrides = [];
 			this.activeConversation = conversation;
-			this.activeMessages = visibleMessages;
+			this.activeMessages = this.restoreFormDrafts(visibleMessages);
 
 			return true;
 		} catch (error) {
@@ -368,6 +497,7 @@ class ConversationsStore {
 					}
 				}
 				this.conversations = this.conversations.filter((c) => !idsToRemove.has(c.id));
+				this.discardFormDrafts(idsToRemove);
 
 				if (this.activeConversation && idsToRemove.has(this.activeConversation.id)) {
 					this.clearActiveConversation();
@@ -376,6 +506,7 @@ class ConversationsStore {
 			} else {
 				// Reparent direct children to deleted conv's parent (or promote to top-level)
 				const deletedConv = this.conversations.find((c) => c.id === convId);
+				this.discardFormDrafts(new Set([convId]));
 				const newParent = deletedConv?.forkedFromConversationId;
 				this.conversations = this.conversations
 					.filter((c) => c.id !== convId)
@@ -403,6 +534,7 @@ class ConversationsStore {
 	async deleteConversations(convIds: string[]): Promise<BulkConversationDeleteResult> {
 		try {
 			const result = await DatabaseService.deleteConversations(convIds);
+			this.discardFormDrafts(new Set(result.deletedIds));
 			const activeConversationWasDeleted = Boolean(
 				this.activeConversation && result.deletedIds.includes(this.activeConversation.id)
 			);
@@ -475,6 +607,14 @@ class ConversationsStore {
 		const generation = this.loadGeneration;
 
 		const allMessages = await DatabaseService.getConversationMessages(convId);
+		this.discardFormDrafts(
+			new Set([convId]),
+			new Set(
+				allMessages.flatMap((message) =>
+					message.interactiveForm ? [message.interactiveForm.id] : []
+				)
+			)
+		);
 		if (generation !== this.loadGeneration || this.activeConversation?.id !== convId) return;
 
 		if (allMessages.length === 0) {
@@ -488,7 +628,7 @@ class ConversationsStore {
 
 		const currentPath = filterByLeafNodeId(allMessages, leafNodeId, false) as DatabaseMessage[];
 
-		this.activeMessages = currentPath;
+		this.activeMessages = this.restoreFormDrafts(currentPath);
 	}
 
 	/**

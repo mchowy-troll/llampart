@@ -12,8 +12,17 @@
  */
 
 import { SvelteMap } from 'svelte/reactivity';
+import { t } from '$lib/i18n';
 import { DatabaseService } from '$lib/services/database.service';
 import { ChatService } from '$lib/services/chat.service';
+import {
+	FORM_PROPOSAL,
+	formVisibleText,
+	readFormProposal,
+	formFallbackText
+} from '$lib/forms/form-protocol';
+import { formDefaults } from '$lib/services/interactive-forms';
+import type { InteractiveForm } from '$lib/types/interactive-forms';
 import { getApiProvider } from '$lib/services/providers';
 import { conversationsStore } from '$lib/stores/conversations.svelte';
 import { config } from '$lib/stores/settings.svelte';
@@ -621,9 +630,41 @@ class ChatStore {
 		);
 	}
 
-	private async sendMessageImpl(content: string, extras?: DatabaseMessageExtra[]): Promise<void> {
-		if (!content.trim() && (!extras || extras.length === 0)) return;
+	/** Same controlled send owner as the composer; no renderer-owned network or tools. */
+	async submitInteractiveForm(messageId: string, formId: string): Promise<void> {
+		if (config().interactiveFormsEnabled !== true) throw new Error('Forms disabled');
+		const conversationId = conversationsStore.activeConversation?.id;
+		if (!conversationId || !globalThis.navigator?.locks)
+			throw new Error('Safe form submission is unavailable');
+		await navigator.locks.request(
+			`llampart-form:${conversationId}:${formId}`,
+			{ ifAvailable: true },
+			async (lock) => {
+				if (!lock || conversationsStore.activeConversation?.id !== conversationId)
+					throw new Error('Form submission is already in progress or the conversation changed');
+				await conversationsStore.flushInteractiveForm(formId);
+				await this.withActiveConversationWriter(
+					() => this.sendMessageImpl('', undefined, { messageId, formId }),
+					'generation'
+				);
+			}
+		);
+	}
+
+	private async sendMessageImpl(
+		content: string,
+		extras?: DatabaseMessageExtra[],
+		formSubmission?: { messageId: string; formId: string }
+	): Promise<void> {
+		if (!formSubmission && !content.trim() && (!extras || extras.length === 0)) return;
 		const activeConv = conversationsStore.activeConversation;
+		if (
+			formSubmission &&
+			(!activeConv ||
+				config().interactiveFormsEnabled !== true ||
+				this.isChatLoadingInternal(activeConv.id))
+		)
+			throw new Error('Conversation unavailable or busy');
 		const operationKey = activeConv?.id ?? '__new_conversation__';
 		if (this.conversationOperationLocks.has('__new_conversation__')) return;
 		if (this.conversationOperationLocks.has(operationKey)) return;
@@ -637,7 +678,7 @@ class ChatStore {
 			this.cancelPreEncode();
 
 			// Consume MCP resource attachments - converts them to extras and clears the live store
-			const resourceExtras = mcpStore.consumeResourceAttachmentsAsExtras();
+			const resourceExtras = formSubmission ? [] : mcpStore.consumeResourceAttachmentsAsExtras();
 			const allExtras = resourceExtras.length > 0 ? [...(extras || []), ...resourceExtras] : extras;
 
 			let isNewConversation = false;
@@ -689,14 +730,36 @@ class ChatStore {
 						parentIdForUserMessage = systemMessage.id;
 					} else parentIdForUserMessage = rootId;
 				}
-				const userMessage = await this.addMessage(
-					MessageRole.USER,
-					content,
-					MessageType.TEXT,
-					parentIdForUserMessage ?? '-1',
-					allExtras,
-					currentConv.id
-				);
+				const preparedForm = formSubmission
+					? await DatabaseService.prepareInteractiveFormSubmission(
+							currentConv.id,
+							formSubmission.messageId,
+							formSubmission.formId
+						)
+					: undefined;
+				if (preparedForm) {
+					content = preparedForm.user.content;
+					if (conversationsStore.activeConversation?.id === currentConv.id) {
+						const index = conversationsStore.findMessageIndex(preparedForm.owner.id);
+						if (index !== -1)
+							conversationsStore.updateMessageAtIndex(index, {
+								interactiveForm: preparedForm.owner.interactiveForm
+							});
+						// The transaction advanced currNode to the reserved user message.
+						// Reload that pointer too, so the first Submit shows its user result.
+						await conversationsStore.loadConversation(currentConv.id);
+					}
+				}
+				const userMessage =
+					preparedForm?.user ??
+					(await this.addMessage(
+						MessageRole.USER,
+						content,
+						MessageType.TEXT,
+						parentIdForUserMessage ?? '-1',
+						allExtras,
+						currentConv.id
+					));
 				if (
 					isNewConversation &&
 					content &&
@@ -719,7 +782,23 @@ class ChatStore {
 				await this.streamChatCompletion(
 					filterByLeafNodeId(history, userMessage.id, false) as DatabaseMessage[],
 					assistantMessage,
-					undefined,
+					formSubmission
+						? async () => {
+								const saved = await DatabaseService.completeInteractiveFormSubmission(
+									currentConv.id,
+									formSubmission.messageId,
+									formSubmission.formId,
+									userMessage.id
+								);
+								if (conversationsStore.activeConversation?.id === currentConv.id) {
+									const index = conversationsStore.findMessageIndex(saved.id);
+									if (index !== -1)
+										conversationsStore.updateMessageAtIndex(index, {
+											interactiveForm: saved.interactiveForm
+										});
+								}
+							}
+						: undefined,
 					undefined,
 					generationModel,
 					config().titleGenerationUseLLM && isNewConversation
@@ -727,6 +806,13 @@ class ChatStore {
 						: undefined,
 					perChatOverrides
 				);
+				if (formSubmission) {
+					const owner = (await conversationsStore.getConversationMessages(currentConv.id)).find(
+						(m) => m.id === formSubmission.messageId
+					);
+					if (owner?.interactiveForm?.status !== 'submitted')
+						throw new Error('Answers not sent; retry the saved submission');
+				}
 			} catch (error) {
 				if (isAbortError(error)) {
 					this.setChatLoading(currentConv.id, false);
@@ -746,6 +832,7 @@ class ChatStore {
 					message: this.getErrorMessage(error),
 					contextInfo
 				});
+				if (formSubmission) throw error;
 			}
 		} finally {
 			this.conversationOperationLocks.delete(operationKey);
@@ -891,11 +978,50 @@ class ChatStore {
 		};
 		let streamedContent = '';
 		let streamedReasoningContent = '';
+		let formDecisionCompleted = false;
+		let formDecisionRefused = false;
 		let resolvedModel: string | null = null;
 		let currentModelInfo = verifiedModelInfo ?? undefined;
 		let modelWrites = Promise.resolve();
 		let completionWrite = Promise.resolve();
 		const convId = assistantMessage.convId;
+		const completeForm = async (
+			raw: string,
+			messageId: string
+		): Promise<{ content: string; interactiveForm?: InteractiveForm }> => {
+			const proposal = readFormProposal(raw);
+			const content =
+				(proposal ? formFallbackText(proposal) : formVisibleText(raw, true)) ||
+				(raw ? t('interactiveForms.invalid') : '');
+			if (content.length > 12000) return { content };
+			if (
+				!formDecisionCompleted ||
+				!raw.startsWith(FORM_PROPOSAL) ||
+				abortController.signal.aborted
+			)
+				return { content };
+			const spec = await ChatService.generateInteractiveForm(
+				raw,
+				operationModel,
+				abortController.signal
+			);
+			if (!spec || abortController.signal.aborted || config().interactiveFormsEnabled !== true)
+				return { content };
+			const introduction = proposal?.structured ? proposal.intro : content;
+			return {
+				content: introduction,
+				interactiveForm: {
+					id: uuid(),
+					messageId,
+					conversationId: convId,
+					sourceContent: introduction,
+					spec,
+					values: formDefaults(spec),
+					revision: 0,
+					status: 'draft'
+				}
+			};
+		};
 		let titleAttempted = false;
 		const generateFirstTitle = async (content: string): Promise<void> => {
 			if (
@@ -1130,6 +1256,8 @@ class ChatStore {
 				return result;
 			},
 			createAssistantMessage: async () => {
+				formDecisionCompleted = false;
+				formDecisionRefused = false;
 				await modelWrites;
 				// Reset streaming state for new message
 				streamedContent = '';
@@ -1163,6 +1291,14 @@ class ChatStore {
 				if (flowFinalized) return;
 				flowFinalized = true;
 				const terminal = await DatabaseService.finishAgenticTurn(identity, reason);
+				if (reason === 'completed' && !terminal.toolCalls) {
+					const formUpdate = await completeForm(terminal.content, terminal.id);
+					if (formUpdate.content !== terminal.content || formUpdate.interactiveForm) {
+						await DatabaseService.updateMessage(terminal.id, formUpdate);
+						updateActiveMessage(terminal.id, formUpdate);
+						Object.assign(terminal, formUpdate);
+					}
+				}
 				updateActiveMessage(terminal.id, { agentic: terminal.agentic });
 				const persistedTimings = withContextTotal(timings);
 				if (persistedTimings) {
@@ -1172,7 +1308,8 @@ class ChatStore {
 
 				cleanupStreamingState();
 
-				if (reason === 'completed' && onComplete) await onComplete(streamedContent);
+				if (reason === 'completed' && !abortController.signal.aborted && onComplete)
+					await onComplete(streamedContent);
 				if (isRouterMode()) modelsStore.fetchRouterModels().catch(console.error);
 				if (reason === 'completed') await generateFirstTitle(terminal.content);
 				// Pre-encode conversation in KV cache for providers that expose llama-server slots.
@@ -1235,6 +1372,15 @@ class ChatStore {
 						assistantMessageId: assistantMessage.id,
 						operationId,
 						operationModel,
+						onProviderResult: (
+							event: import('$lib/types/provider').ProviderChatCompletionStreamEvent
+						) => {
+							if (event.refusal || event.toolCalls?.length) formDecisionRefused = true;
+							if (event.finishReason)
+								formDecisionCompleted =
+									['stop', 'end_turn', 'completed'].includes(event.finishReason) &&
+									!formDecisionRefused;
+						},
 						providerRequestContext
 					},
 					callbacks: streamCallbacks,
@@ -1256,6 +1402,13 @@ class ChatStore {
 					operationModel,
 					providerRequestContext,
 					stream: true,
+					onProviderResult: (event) => {
+						if (event.refusal || event.toolCalls?.length) formDecisionRefused = true;
+						if (event.finishReason)
+							formDecisionCompleted =
+								['stop', 'end_turn', 'completed'].includes(event.finishReason) &&
+								!formDecisionRefused;
+					},
 					onChunk: streamCallbacks.onChunk,
 					onReasoningChunk: streamCallbacks.onReasoningChunk,
 					onModel: streamCallbacks.onModel,
@@ -1269,9 +1422,16 @@ class ChatStore {
 						toolCalls?: string
 					) => {
 						const persistedTimings = withContextTotal(timings);
-						const content = streamedContent || finalContent || '';
+						const formUpdate = await completeForm(
+							streamedContent || finalContent || '',
+							currentAssistantMessageId
+						);
+						const content = formUpdate.content;
 						const reasoning = streamedReasoningContent || reasoningContent;
 						const updateData: Record<string, unknown> = {
+							...(formUpdate.interactiveForm
+								? { interactiveForm: formUpdate.interactiveForm }
+								: {}),
 							content,
 							reasoningContent: reasoning || undefined,
 							toolCalls: toolCalls || '',
@@ -1282,6 +1442,9 @@ class ChatStore {
 						if (currentModelInfo) updateData.modelInfo = currentModelInfo;
 						await DatabaseService.updateMessage(currentAssistantMessageId, updateData);
 						const uiUpdate: Partial<DatabaseMessage> = {
+							...(formUpdate.interactiveForm
+								? { interactiveForm: formUpdate.interactiveForm }
+								: {}),
 							content,
 							reasoningContent: reasoning || undefined,
 							toolCalls: toolCalls || ''
@@ -1292,7 +1455,7 @@ class ChatStore {
 						updateActiveMessage(currentAssistantMessageId, uiUpdate);
 						await updateConversationCurrentNode(currentAssistantMessageId);
 						cleanupStreamingState();
-						if (onComplete) await onComplete(content);
+						if (!abortController.signal.aborted && onComplete) await onComplete(content);
 						if (isRouterMode()) modelsStore.fetchRouterModels().catch(console.error);
 						await generateFirstTitle(content);
 						if (shouldPreEncode) {
@@ -1629,7 +1792,7 @@ class ChatStore {
 				messageToUpdate.extra
 			);
 			if (conversationsStore.activeConversation?.id === activeConv.id) {
-				conversationsStore.activeMessages = conversationPath;
+				await conversationsStore.loadConversation(activeConv.id);
 			}
 			if (isFirstUserMessage && newContent.trim())
 				await conversationsStore
@@ -1683,7 +1846,7 @@ class ChatStore {
 				messageId
 			);
 			if (conversationsStore.activeConversation?.id === activeConv.id)
-				conversationsStore.activeMessages = conversationPath;
+				await conversationsStore.loadConversation(activeConv.id);
 			await conversationsStore.refreshConversationTimestamp(activeConv.id);
 			this.setChatLoading(activeConv.id, true);
 			this.clearChatStreaming(activeConv.id);

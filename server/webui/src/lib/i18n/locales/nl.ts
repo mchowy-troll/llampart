@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('nl');
 export const nl: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Repareren',
 		failed: 'De reparatie kon niet worden toegepast. De oorspronkelijke code is ongewijzigd.'
@@ -212,6 +215,8 @@ export const nl: TranslationDictionary = {
 		enterNewConversationName: 'Voer een nieuwe naam in'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Visualisatiefuncties',
 		fieldChartsEnabled: 'Grafieken inschakelen',
 		fieldDiagramsEnabled: 'Diagrammen inschakelen',
@@ -353,6 +358,9 @@ export const nl: TranslationDictionary = {
 			'Voeg Mermaid-diagrammen toe als ze processen, architectuur of verbanden verduidelijken. Verzin nooit verbanden.',
 		responsePrefChartsHelp:
 			'Gebruik ingebouwde grafieken voor zinvolle vergelijkingen, trends en verdelingen. Verzin nooit gegevens.',
+		responsePrefForms: 'Intelligente formulieren gebruiken',
+		responsePrefFormsHelp:
+			'Als formulieren zijn ingeschakeld in de chatinstellingen, moedig het model dan aan ze aan te bieden wanneer ze het verzamelen van meerdere antwoorden of keuzes vergemakkelijken.',
 		responsePrefNoDecorations: 'Geen emoji of versieringen',
 		responsePrefNoDecorationsHelp:
 			'Gebruik geen decoratieve symbolen. Laat taaltekens, wiskunde, code en citaten intact.',
@@ -489,6 +497,7 @@ export const nl: TranslationDictionary = {
 			noConversationsToDelete: 'Geen gesprekken om te verwijderen'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Schakelt formaatinstructies, weergave, voorbeelden en export van grafieken in. Antwoordvoorkeuren worden onafhankelijk opgeslagen.',
 			diagramsEnabled:

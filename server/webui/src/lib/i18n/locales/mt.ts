@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('mt');
 export const mt: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Irranġa',
 		failed: 'It-tiswija ma setgħetx tiġi applikata. Il-kodiċi oriġinali ma nbidilx.'
@@ -212,6 +215,8 @@ export const mt: TranslationDictionary = {
 		enterNewConversationName: 'Daħħal isem ġdid'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Kapaċitajiet ta’ viżwalizzazzjoni',
 		fieldChartsEnabled: 'Attiva l-graffs',
 		fieldDiagramsEnabled: 'Attiva d-dijagrammi',
@@ -352,6 +357,9 @@ export const mt: TranslationDictionary = {
 			'Inkludi dijagrammi Mermaid meta jiċċaraw proċessi, arkitettura jew relazzjonijiet. Qatt tivvinta relazzjonijiet.',
 		responsePrefChartsHelp:
 			'Uża l-graffs integrati għal paraguni, xejriet u distribuzzjonijiet sinifikanti. Qatt tivvinta data.',
+		responsePrefForms: 'Uża formoli intelliġenti',
+		responsePrefFormsHelp:
+			'Meta l-formoli jkunu attivati fis-settings taċ-chat, ħeġġeġ lill-mudell joffrihom meta jagħmluha eħfef li jinġabru diversi tweġibiet jew għażliet.',
 		responsePrefNoDecorations: 'Ebda emoji jew tiżjin',
 		responsePrefNoDecorationsHelp:
 			'Tużax simboli dekorattivi. Żomm il-karattri tal-lingwa, il-matematika, il-kodiċi u l-kwotazzjonijiet kif inhuma.',
@@ -486,6 +494,7 @@ export const mt: TranslationDictionary = {
 			noConversationsToDelete: 'M’hemm l-ebda konversazzjoni x’tħassar'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Jattiva l-istruzzjonijiet tal-format, il-wiri, il-previżjoni u l-esportazzjoni tal-graffs. Il-preferenzi tat-tweġibiet jiġu ssejvjati separatament.',
 			diagramsEnabled:

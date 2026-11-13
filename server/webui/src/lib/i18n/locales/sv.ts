@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('sv');
 export const sv: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Reparera',
 		failed: 'Reparationen kunde inte tillämpas. Den ursprungliga koden är oförändrad.'
@@ -209,6 +212,8 @@ export const sv: TranslationDictionary = {
 		enterNewConversationName: 'Ange ett nytt namn'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Visualiseringsfunktioner',
 		fieldChartsEnabled: 'Aktivera datadiagram',
 		fieldDiagramsEnabled: 'Aktivera schematiska diagram',
@@ -349,6 +354,9 @@ export const sv: TranslationDictionary = {
 			'Ta med Mermaid-diagram när de förtydligar processer, arkitektur eller samband. Hitta aldrig på samband.',
 		responsePrefChartsHelp:
 			'Använd inbyggda diagram för meningsfulla jämförelser, trender och fördelningar. Hitta aldrig på data.',
+		responsePrefForms: 'Använd intelligenta formulär',
+		responsePrefFormsHelp:
+			'När formulär är aktiverade i chattinställningarna, uppmuntra modellen att erbjuda dem när de gör det enklare att samla in flera svar eller val.',
 		responsePrefNoDecorations: 'Inga emojier eller dekorationer',
 		responsePrefNoDecorationsHelp:
 			'Använd inga dekorativa symboler. Bevara språkliga tecken, matematik, kod och citat.',
@@ -485,6 +493,7 @@ export const sv: TranslationDictionary = {
 			noConversationsToDelete: 'Inga samtal att ta bort'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Aktiverar formatinstruktioner, visning, förhandsvisning och export av datadiagram. Svarspreferenser sparas oberoende.',
 			diagramsEnabled:

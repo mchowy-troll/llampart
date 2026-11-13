@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('sk');
 export const sk: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Opraviť',
 		failed: 'Opravu sa nepodarilo použiť. Pôvodný kód zostal nezmenený.'
@@ -208,6 +211,8 @@ export const sk: TranslationDictionary = {
 		enterNewConversationName: 'Zadajte nový názov'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Možnosti vizualizácií',
 		fieldChartsEnabled: 'Povoliť grafy',
 		fieldDiagramsEnabled: 'Povoliť diagramy',
@@ -347,6 +352,9 @@ export const sk: TranslationDictionary = {
 			'Pridávať diagramy Mermaid, keď objasňujú procesy, architektúru alebo vzťahy. Nikdy si nevymýšľať vzťahy.',
 		responsePrefChartsHelp:
 			'Používať vstavané grafy na zmysluplné porovnania, trendy a rozdelenia. Nikdy si nevymýšľať údaje.',
+		responsePrefForms: 'Používať inteligentné formuláre',
+		responsePrefFormsHelp:
+			'Keď sú formuláre zapnuté v nastaveniach chatu, povzbudzujte model, aby ich ponúkal, keď uľahčia získanie viacerých odpovedí alebo volieb.',
 		responsePrefNoDecorations: 'Bez emoji a ozdôb',
 		responsePrefNoDecorationsHelp:
 			'Nepoužívať ozdobné symboly. Zachovať znaky jazyka, matematiku, kód a citácie.',
@@ -479,6 +487,7 @@ export const sk: TranslationDictionary = {
 			noConversationsToDelete: 'Nie sú k dispozícii žiadne konverzácie na odstránenie'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Povoľuje pokyny k formátu, vykresľovanie, náhľad a export grafov. Predvoľby odpovedí sa ukladajú nezávisle.',
 			diagramsEnabled:

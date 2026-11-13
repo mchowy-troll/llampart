@@ -25,6 +25,36 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	z-index: var(--layer-popover, 1000000);
 }
 
+/* Opt-in form overlays share one glass material, not generic menu effects. */
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	:is([data-slot='popover-content'], [data-slot='select-content']).llampart-control-popup {
+	border-color: var(--border) !important;
+	background: var(--llampart-control-popup-background) !important;
+	box-shadow: none !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-control-popup
+	[data-slot='select-item'] {
+	background: transparent !important;
+	color: inherit !important;
+	text-shadow: none !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-control-popup
+	[data-slot='select-item']:is([data-highlighted], [data-selected]) {
+	background: color-mix(in srgb, var(--llampart-control-accent) 20%, transparent) !important;
+}
+
+html[data-theme='frosted-glass'].has-frosted-glass-theme
+	.llampart-control-popup
+	.llampart-calendar-day[data-selected] {
+	color: var(--llampart-control-selected-foreground) !important;
+}
+
 /* llampart-frosted-glass-settings-select-content-light-only */
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	[data-slot='select-content'].llampart-settings-select-content {

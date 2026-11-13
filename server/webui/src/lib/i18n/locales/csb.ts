@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('csb');
 export const csb: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Naprawi',
 		failed: 'Nie dało sã zastôsowac naprawë. Òriginalny kòd òstôł bez zmianë.'
@@ -210,6 +213,8 @@ export const csb: TranslationDictionary = {
 		enterNewConversationName: 'Wpiszë nowé miono'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Mòżlëwòtë wizualizacji',
 		fieldChartsEnabled: 'Włączë wëkresë',
 		fieldDiagramsEnabled: 'Włączë diagramë',
@@ -348,6 +353,9 @@ export const csb: TranslationDictionary = {
 			'Dodôwôj diagramë Mermaid, czej pòmagają wëklarowac procesë, architekturã abò związczi. Nigdë nie wëmiszlôj związków.',
 		responsePrefChartsHelp:
 			'Wbùdowóné wëkresë dlô znaczącëch przërównaniów, trendów ë rozkładów. Nigdë nie wëmiszlôj pòdôwków.',
+		responsePrefForms: 'Ùżëwôj inteligentnëch fòrmùlarzów',
+		responsePrefFormsHelp:
+			'Czej fòrmùlarze są włączoné w nastawach czatu, zachãcôj mòdel do jich proponowaniô, czej ùłatwiają zebranié czile òdpòwiesców abò wëbiérków.',
 		responsePrefNoDecorations: 'Bez emoji ë òzdobów',
 		responsePrefNoDecorationsHelp:
 			'Bez òzdobnëch symbòlów. Zatrzëmôj jãzëkòwé céchë, matematikã, kòd ë cëtatë.',
@@ -476,6 +484,7 @@ export const csb: TranslationDictionary = {
 			noConversationsToDelete: 'Felënk rozmòwów do ùsëniãcô'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Włączô instrukcje fòrmatù, renderowanié, pòdzerk ë ekspòrt wëkresów. Preferencje òdpòwiesców są zapiśiwóné òsóbno.',
 			diagramsEnabled:

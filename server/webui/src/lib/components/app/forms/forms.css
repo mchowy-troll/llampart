@@ -1,0 +1,256 @@
+/* Opt-in form structure only. Shared visualization-frame.css and the active
+ * theme own the frame's geometry/material; typography/accent remain live tokens. */
+.llampart-interactive-form {
+	--llampart-form-accent: var(--llampart-control-accent);
+	--llampart-visualization-surface: var(--llampart-form-surface);
+	background: var(--llampart-form-surface);
+	container: llampart-form / inline-size;
+	display: grid;
+	gap: 1.5rem;
+	padding: var(--llampart-visualization-body-space, 1rem);
+	font-family: var(--llampart-font-family), ui-sans-serif, system-ui, sans-serif;
+	font-size: var(--llampart-text-unit, 1rem);
+	font-weight: var(--llampart-font-weight, 400);
+	font-style: var(--llampart-font-style, normal);
+	line-height: 1.5;
+}
+.llampart-interactive-form :where(p, h3, h4, fieldset, legend) {
+	margin: 0;
+	min-width: 0;
+}
+.llampart-form-grid {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 1.5rem;
+	min-width: 0;
+	align-items: start;
+}
+.llampart-form-field {
+	/* Shared label/control/feedback tracks align mixed types and wrapped labels.
+	 * Each visual row gets its own tracks; DOM and keyboard order stay unchanged. */
+	display: grid;
+	grid-row: span 3;
+	grid-template-rows: subgrid;
+	align-self: stretch;
+	gap: 0.5rem;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+.llampart-form-field label {
+	font: inherit;
+}
+.llampart-form-field-label {
+	grid-row: 1;
+	min-height: 1lh;
+}
+.llampart-form-field-control {
+	grid-row: 2;
+	align-self: start;
+	min-width: 0;
+}
+.llampart-form-field-meta {
+	grid-row: 3;
+	display: grid;
+	align-content: start;
+	gap: 0.25rem;
+}
+.llampart-form-field fieldset {
+	border: 0;
+	padding: 0;
+}
+.llampart-form-choices {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem 1.25rem;
+	padding-block: 0.25rem;
+}
+.llampart-form-boolean {
+	padding-block: 0.25rem;
+}
+.llampart-form-group,
+.llampart-form-heading,
+.llampart-form-description,
+.llampart-form-submit-row,
+.llampart-form-grid > [data-full-width='true'],
+.llampart-form-grid > .llampart-form-grid {
+	grid-column: 1 / -1;
+	min-width: 0;
+}
+.llampart-form-group {
+	border-color: transparent;
+	display: grid;
+	gap: 1.25rem;
+	background: var(--llampart-form-surface);
+	background: rgb(from var(--llampart-form-surface) r g b / calc(alpha * 1.25));
+}
+.llampart-form-heading,
+.llampart-form-group-title {
+	font-size: 1.08em;
+	font-style: inherit;
+	overflow-wrap: anywhere;
+}
+.llampart-form-heading {
+	font-weight: var(--llampart-font-semibold, 600);
+}
+.llampart-form-group-title {
+	font-weight: var(--llampart-font-semibold, 600);
+}
+.llampart-form-description {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.llampart-form-help,
+.llampart-form-error {
+	display: block;
+	font-size: 0.92em;
+	line-height: 1.5;
+	color: var(--muted-foreground);
+	overflow-wrap: anywhere;
+}
+.llampart-form-error {
+	color: var(--destructive);
+}
+.llampart-form-error:empty,
+.llampart-interactive-form > [role='status']:empty {
+	display: none;
+}
+.llampart-interactive-form .llampart-form-control {
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	min-height: 2.5em;
+	height: auto;
+	padding: 0.625rem 0.75rem;
+	color: inherit;
+	font: inherit;
+	white-space: normal;
+	box-shadow: none;
+}
+.llampart-interactive-form textarea.llampart-form-control {
+	resize: vertical;
+}
+.llampart-interactive-form :disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+.llampart-interactive-form .llampart-selection-control {
+	flex: 0 0 auto;
+	width: 1.125em;
+	height: 1.125em;
+}
+.llampart-interactive-form
+	input:is([type='checkbox'], [type='radio'])[aria-invalid='true']:not(:focus-visible) {
+	border-color: var(--destructive);
+}
+.llampart-interactive-form fieldset[aria-invalid='true'] input:not(:focus-visible) {
+	border-color: var(--destructive);
+}
+.llampart-interactive-form .llampart-form-slider {
+	--llampart-range-thumb: color-mix(in srgb, var(--llampart-control-accent) 55%, var(--foreground));
+	/* The field's accepted line box stays put; shared Range owns track/thumb. */
+	height: 1.5em;
+	padding: 1px;
+}
+.llampart-form-submit-row {
+	display: flex;
+	justify-content: flex-end;
+	padding-top: 0.75rem;
+}
+.llampart-interactive-form .llampart-form-submit {
+	width: fit-content;
+	max-width: 100%;
+	height: auto;
+	padding: 0.5rem 1rem;
+	font: inherit;
+	line-height: 1.25;
+	white-space: normal;
+	color: inherit;
+	box-shadow: none;
+	transition-property: background-color;
+	border: 1px solid transparent;
+	background: color-mix(
+		in srgb,
+		var(--llampart-form-accent) 18%,
+		var(--llampart-control-background)
+	);
+}
+.llampart-interactive-form .llampart-form-submit:hover:not(:disabled) {
+	background: color-mix(
+		in srgb,
+		var(--llampart-form-accent) 30%,
+		var(--llampart-control-background)
+	);
+}
+/* Controls own their states in controls.css; only the form's action lives here. */
+.llampart-interactive-form .llampart-form-submit:is(:focus, :focus-visible) {
+	outline: none;
+	box-shadow: none;
+}
+.llampart-interactive-form .llampart-form-submit:focus-visible {
+	background: color-mix(
+		in srgb,
+		var(--llampart-form-accent) 44%,
+		var(--llampart-control-background)
+	);
+}
+.llampart-form-number {
+	position: relative;
+}
+.llampart-interactive-form .llampart-form-number input {
+	appearance: textfield;
+	border: 0;
+	background: transparent;
+	padding-right: 2.25em;
+}
+.llampart-form-number input::-webkit-inner-spin-button,
+.llampart-form-number input::-webkit-outer-spin-button {
+	appearance: none;
+	margin: 0;
+}
+.llampart-form-number-stepper {
+	position: absolute;
+	inset-block: 1px;
+	right: 1px;
+	width: 1.75em;
+	display: grid;
+	grid-template-rows: 1fr 1fr;
+}
+.llampart-form-number-stepper button {
+	display: grid;
+	place-items: center;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: color-mix(in srgb, var(--llampart-control-accent) 55%, var(--foreground));
+	cursor: pointer;
+}
+.llampart-form-number-stepper button:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--llampart-control-accent) 18%, transparent);
+}
+.llampart-form-number-stepper button:active:not(:disabled) {
+	background: color-mix(in srgb, var(--llampart-control-accent) 30%, transparent);
+}
+@media (forced-colors: active) {
+	.llampart-interactive-form :is(input, textarea, button):focus-visible {
+		border-color: Highlight;
+	}
+}
+.llampart-form-select-content {
+	max-width: min(90vw, 32rem);
+}
+.llampart-form-select-content [data-slot='select-item'] {
+	font: inherit;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+@container llampart-form (min-width: 32em) {
+	.llampart-form-grid:not([data-columns='1']) {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+@container llampart-form (min-width: 52em) {
+	.llampart-form-grid[data-columns='3'] {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}

@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('fi');
 export const fi: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Korjaa',
 		failed: 'Korjausta ei voitu ottaa käyttöön. Alkuperäinen koodi on ennallaan.'
@@ -209,6 +212,8 @@ export const fi: TranslationDictionary = {
 		enterNewConversationName: 'Anna uusi nimi'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Visualisointitoiminnot',
 		fieldChartsEnabled: 'Ota kuvaajat käyttöön',
 		fieldDiagramsEnabled: 'Ota kaaviot käyttöön',
@@ -349,6 +354,9 @@ export const fi: TranslationDictionary = {
 			'Lisää Mermaid-kaavioita, kun ne selventävät prosesseja, arkkitehtuuria tai yhteyksiä. Älä koskaan keksi yhteyksiä.',
 		responsePrefChartsHelp:
 			'Käytä sovelluksen omia kuvaajia merkityksellisiin vertailuihin, trendeihin ja jakaumiin. Älä koskaan keksi tietoja.',
+		responsePrefForms: 'Käytä älykkäitä lomakkeita',
+		responsePrefFormsHelp:
+			'Kun lomakkeet on otettu käyttöön keskustelun asetuksissa, kannusta mallia tarjoamaan niitä, kun ne helpottavat useiden vastausten tai valintojen keräämistä.',
 		responsePrefNoDecorations: 'Ei emojeita tai koristeita',
 		responsePrefNoDecorationsHelp:
 			'Älä käytä koristeellisia symboleja. Säilytä kielten kirjoitusmerkit, matematiikka, koodi ja lainaukset.',
@@ -481,6 +489,7 @@ export const fi: TranslationDictionary = {
 			noConversationsToDelete: 'Ei poistettavia keskusteluja'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Ottaa käyttöön kuvaajien muotoiluohjeet, näyttämisen, esikatselun ja viennin. Vastausasetukset tallennetaan erikseen.',
 			diagramsEnabled:

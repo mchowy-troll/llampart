@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('lt');
 export const lt: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Taisyti',
 		failed: 'Pataisos pritaikyti nepavyko. Pradinis kodas nepakeistas.'
@@ -211,6 +214,8 @@ export const lt: TranslationDictionary = {
 		enterNewConversationName: 'Įveskite naują pavadinimą'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Vizualizavimo galimybės',
 		fieldChartsEnabled: 'Įjungti grafikus',
 		fieldDiagramsEnabled: 'Įjungti diagramas',
@@ -350,6 +355,9 @@ export const lt: TranslationDictionary = {
 			'Įtraukti Mermaid diagramas, kai jos padeda paaiškinti procesus, architektūrą ar ryšius. Niekada neišgalvoti ryšių.',
 		responsePrefChartsHelp:
 			'Naudoti programos grafikus prasmingiems palyginimams, tendencijoms ir pasiskirstymams. Niekada neišgalvoti duomenų.',
+		responsePrefForms: 'Naudoti išmaniąsias formas',
+		responsePrefFormsHelp:
+			'Kai formos įjungtos pokalbio nustatymuose, skatinkite modelį jas siūlyti, jei jos palengvina kelių atsakymų ar pasirinkimų surinkimą.',
 		responsePrefNoDecorations: 'Be jaustukų ir puošybos',
 		responsePrefNoDecorationsHelp:
 			'Nenaudoti dekoratyvinių simbolių. Išsaugoti kalbos rašmenis, matematinius ženklus, kodą ir citatas.',
@@ -482,6 +490,7 @@ export const lt: TranslationDictionary = {
 			noConversationsToDelete: 'Nėra trintinų pokalbių'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Įjungia grafikų formato instrukcijas, atvaizdavimą, peržiūrą ir eksportą. Atsakymų nuostatos išsaugomos atskirai.',
 			diagramsEnabled:

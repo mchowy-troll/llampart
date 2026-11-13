@@ -167,7 +167,8 @@ across the WebUI, so review unrelated working changes before using it.
 - [Chat](docs/flows/chat-flow.md), [models](docs/flows/models-flow.md),
   [server/connection](docs/flows/server-flow.md), [MCP](docs/flows/mcp-flow.md)
 - [Charts](docs/charts.md), [Mermaid diagrams](docs/diagrams.md),
-  [response preferences](docs/response-preferences.md)
+  [response preferences](docs/response-preferences.md),
+  [interactive AI forms](docs/interactive-forms.md)
 
 If API calls fail, check the backend separately, saved provider/address/key and model
 discovery, then the browser's gateway response. Do not assume every backend supports

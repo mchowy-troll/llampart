@@ -1,6 +1,21 @@
 html[data-theme='frosted-glass'].has-frosted-glass-theme {
 	--llampart-frosted-glass-accent: #899492;
 	--llampart-sidebar-selection-accent: var(--llampart-frosted-glass-accent);
+	--llampart-control-border: color-mix(in srgb, var(--muted-foreground) 75%, transparent);
+	--llampart-control-border-hover: color-mix(in srgb, var(--muted-foreground) 85%, transparent);
+	--llampart-control-background: var(--llampart-glass-white-120, rgb(255 255 255 / 0.12));
+	/* Retain glass tint/translucency without losing text contrast at low milkiness. */
+	--llampart-control-popup-background: color-mix(
+		in srgb,
+		var(--llampart-glass-white-880, rgb(255 255 255 / 0.88)) 25%,
+		var(--background)
+	);
+	--llampart-control-selected-foreground: var(--foreground);
+	--llampart-selection-border: rgb(60 60 60 / 0.48);
+	--llampart-selection-border-hover: rgb(60 60 60 / 0.62);
+	--llampart-selection-background: rgb(255 255 255 / 0.12);
+	--llampart-selection-hover: rgb(255 255 255 / 0.24);
+	--llampart-form-surface: var(--llampart-glass-white-110, rgb(255 255 255 / 0.11));
 	--llampart-sidebar-selection-background: color-mix(
 		in srgb,
 		var(--llampart-sidebar-selection-accent) 8%,

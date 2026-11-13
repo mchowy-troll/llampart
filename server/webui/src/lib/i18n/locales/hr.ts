@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('hr');
 export const hr: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Popravi',
 		failed: 'Popravak se nije mogao primijeniti. Izvorni kod nije promijenjen.'
@@ -212,6 +215,8 @@ export const hr: TranslationDictionary = {
 		enterNewConversationName: 'Unesite novi naziv'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Mogućnosti vizualizacije',
 		fieldChartsEnabled: 'Omogući grafikone',
 		fieldDiagramsEnabled: 'Omogući dijagrame',
@@ -352,6 +357,9 @@ export const hr: TranslationDictionary = {
 			'Uključite Mermaid dijagrame kada pojašnjavaju procese, arhitekturu ili odnose. Nikada ne izmišljajte odnose.',
 		responsePrefChartsHelp:
 			'Ugrađeni grafikoni za smislene usporedbe, trendove i raspodjele. Nikada ne izmišljajte podatke.',
+		responsePrefForms: 'Koristi inteligentne obrasce',
+		responsePrefFormsHelp:
+			'Kad su obrasci omogućeni u postavkama chata, potakni model da ih ponudi kada olakšavaju prikupljanje više odgovora ili odabira.',
 		responsePrefNoDecorations: 'Bez emotikona i ukrasa',
 		responsePrefNoDecorationsHelp:
 			'Bez ukrasnih simbola. Sačuvajte slova, matematičke izraze, kod i navode.',
@@ -486,6 +494,7 @@ export const hr: TranslationDictionary = {
 			noConversationsToDelete: 'Nema razgovora za brisanje'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Omogućuje upute o formatu, prikaz, pregled i izvoz grafikona. Postavke odgovora spremaju se neovisno.',
 			diagramsEnabled:

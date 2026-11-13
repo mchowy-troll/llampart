@@ -277,6 +277,7 @@ function parseLlamaServerChatCompletionStreamData(
 		content: choice?.delta.content ?? undefined,
 		reasoningContent: choice?.delta.reasoning_content ?? undefined,
 		toolCalls: choice?.delta?.tool_calls,
+		...(choice?.finish_reason ? { finishReason: choice.finish_reason } : {}),
 		model: extractModelName(parsed),
 		completionId: parsed.id,
 		timings: parsed.timings,

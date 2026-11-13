@@ -922,42 +922,6 @@
 	}
 	/* /llampart-sidebar-viewport-grid-columns */
 
-	:global(.llampart-sidebar-select-checkbox) {
-		appearance: none;
-		display: inline-grid;
-		place-content: center;
-		border: 1px solid var(--muted-foreground);
-		border-radius: 0.25rem;
-		background-color: transparent;
-		background-position: center;
-		background-repeat: no-repeat;
-		background-size: 0.75rem 0.75rem;
-		transition:
-			background-color 150ms ease-out,
-			border-color 150ms ease-out,
-			box-shadow 150ms ease-out;
-	}
-
-	:global(.llampart-sidebar-select-checkbox:hover) {
-		border-color: var(--muted-foreground);
-		background-color: color-mix(in oklch, var(--foreground) 10%, transparent);
-	}
-
-	:global(.llampart-sidebar-select-checkbox:focus-visible) {
-		outline: none;
-		box-shadow: 0 0 0 2px color-mix(in oklch, var(--sidebar-ring) 32%, transparent);
-		border-color: var(--muted-foreground);
-		background-color: color-mix(in oklch, var(--foreground) 10%, transparent);
-	}
-
-	:global(.llampart-sidebar-select-checkbox:checked),
-	:global(.llampart-sidebar-select-checkbox:checked:hover),
-	:global(.llampart-sidebar-select-checkbox:checked:focus-visible) {
-		border-color: var(--llampart-sidebar-selection-accent);
-		background-color: var(--llampart-sidebar-selection-accent);
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-	}
-
 	:global(.llampart-sidebar-conversations-frame) {
 		border-width: 1px;
 		border-style: solid;

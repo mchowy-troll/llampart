@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('ga');
 export const ga: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Deisigh',
 		failed: 'Níorbh fhéidir an deisiúchán a chur i bhfeidhm. Níl aon athrú ar an mbunchód.'
@@ -213,6 +216,8 @@ export const ga: TranslationDictionary = {
 		enterNewConversationName: 'Cuir isteach ainm nua'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Cumais léirshamhlaithe',
 		fieldChartsEnabled: 'Cumasaigh cairteacha',
 		fieldDiagramsEnabled: 'Cumasaigh léaráidí',
@@ -354,6 +359,9 @@ export const ga: TranslationDictionary = {
 			'Cuir léaráidí Mermaid san áireamh nuair a dhéanann siad próisis, ailtireacht nó gaolta níos soiléire. Ná cum gaolta riamh.',
 		responsePrefChartsHelp:
 			'Úsáid cairteacha ionsuite le haghaidh comparáidí fiúntacha, treochtaí agus dáiltí. Ná cum sonraí riamh.',
+		responsePrefForms: 'Úsáid foirmeacha cliste',
+		responsePrefFormsHelp:
+			'Nuair atá foirmeacha cumasaithe i socruithe an chomhrá, spreag an tsamhail chun iad a mholadh nuair a éascaíonn siad roinnt freagraí nó roghanna a bhailiú.',
 		responsePrefNoDecorations: 'Gan emoji ná maisiúcháin',
 		responsePrefNoDecorationsHelp:
 			'Ná húsáid siombailí maisiúla. Coinnigh carachtair teanga, matamaitic, cód agus athfhriotail mar atá.',
@@ -487,6 +495,7 @@ export const ga: TranslationDictionary = {
 			noConversationsToDelete: 'Níl aon chomhráite le scriosadh'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Cumasaíonn sé treoracha formáide, rindreáil, réamhamharc agus easpórtáil cairteacha. Sábháiltear roghanna freagartha go neamhspleách.',
 			diagramsEnabled:

@@ -2,6 +2,8 @@
 	import ChatMessageStatistics from '$lib/components/app/chat/ChatMessages/ChatMessageStatistics.svelte';
 	import CollapsibleContentBlock from '$lib/components/app/content/CollapsibleContentBlock.svelte';
 	import MarkdownContent from '$lib/components/app/content/MarkdownContent.svelte';
+	import InteractiveFormBlock from '$lib/components/app/forms/InteractiveFormBlock.svelte';
+	import { formVisibleText } from '$lib/forms/form-protocol';
 	import { MAX_MESSAGE_CHARTS, scanChartFences } from '$lib/markdown/chart-blocks';
 	import { MAX_MESSAGE_DIAGRAMS, scanMermaidFences } from '$lib/markdown/mermaid-blocks';
 	import SyntaxHighlightedCode from '$lib/components/app/content/SyntaxHighlightedCode.svelte';
@@ -73,7 +75,18 @@
 		agenticResolvePermission(message.convId, decision);
 	}
 
-	const sections = $derived(deriveAgenticSections(message, toolMessages, [], isStreaming));
+	const visibleContent = $derived(
+		formVisibleText(message.content, !isStreaming) ||
+			(!isStreaming && message.content ? t('interactiveForms.invalid') : '')
+	);
+	const sections = $derived(
+		deriveAgenticSections(
+			visibleContent === message.content ? message : { ...message, content: visibleContent },
+			toolMessages,
+			[],
+			isStreaming
+		)
+	);
 
 	// Parse tool results with images
 	const sectionsParsed = $derived(
@@ -436,6 +449,10 @@
 		{#each sectionsParsed as section, index (index)}
 			{@render renderSection(section, index)}
 		{/each}
+	{/if}
+
+	{#if message.interactiveForm}
+		<InteractiveFormBlock {message} />
 	{/if}
 
 	{#if pendingPermission && !permissionDismissed}

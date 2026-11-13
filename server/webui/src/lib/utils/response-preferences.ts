@@ -2,60 +2,77 @@ import type { ApiChatMessageData } from '$lib/types/api';
 import { CHART_INSTRUCTIONS } from '$lib/markdown/chart-instructions';
 import { MERMAID_INSTRUCTIONS } from '$lib/markdown/mermaid-instructions';
 import { TABLE_INSTRUCTIONS } from '$lib/markdown/table-instructions';
+import { FORM_CAPABILITY_INSTRUCTIONS } from '$lib/forms/form-protocol';
 
 /** Stable order and English request contract; only label/help keys are translated. */
 export const RESPONSE_PREFERENCES = [
 	{
 		key: 'responsePrefNoHeadings',
 		name: 'NoHeadings',
+		group: 'formatting',
 		instruction:
 			'Never use Markdown headings (#, ##, etc.) in your answers. Use bold text for section titles instead. Preserve code, quotations, and text the user asks to reproduce literally.'
 	},
 	{
 		key: 'responsePrefTables',
 		name: 'Tables',
+		group: 'formatting',
 		instruction:
 			'You MUST present comparisons, structured facts, and tabular data as Markdown tables instead of prose or bullet lists whenever a table can represent them clearly. A chart does not replace the table. Do not force tables for single sentences, procedures, or non-tabular content.'
 	},
 	{
 		key: 'responsePrefCharts',
 		name: 'Charts',
+		group: 'formatting',
 		instruction:
 			'When numeric data support a meaningful comparison, trend, or distribution, you MUST include a valid fenced llampart-chart JSON block whenever a compliant chart can be produced. You MUST follow the llampart chart format instructions, including the required JSON schema, supported chart types, accurate data, and all technical limits. Check JSON syntax, schema compliance, data accuracy, and limits before responding. Simplify the visualization when necessary without inventing or distorting data. Do not chart a single number or insufficient data. If a compliant chart cannot be created, use a Markdown table or clear text instead. Never output an invalid llampart-chart block.'
 	},
 	{
 		key: 'responsePrefDiagrams',
 		name: 'Diagrams',
+		group: 'formatting',
 		instruction:
 			'When a process, workflow, state transition, hierarchy, or project schedule would be clearer visually, you MUST include a valid fenced mermaid diagram whenever a compliant diagram can be produced. You MUST follow the llampart diagram format instructions, including supported diagram families, valid Mermaid syntax, safety restrictions, and all technical size and complexity limits. Use only flowchart, stateDiagram-v2, mindmap, or gantt. Check Mermaid syntax, safety, and limits before responding. Simplify overly complex diagrams without inventing steps or relationships. If a compliant diagram cannot be created, use a clear Markdown or text explanation instead. Never output invalid Mermaid code.'
 	},
 	{
+		key: 'responsePrefForms',
+		name: 'Forms',
+		group: 'formatting',
+		instruction:
+			'When collecting several independent answers, structured details, or choices would be easier through an interactive form, prefer offering llampart-form using the existing form proposal protocol. Let the user complete and submit the form explicitly. Use normal text for simple questions, explanations, code, and situations where a form adds no value. Do not duplicate form questions as Markdown or output a raw component specification in the initial response.'
+	},
+	{
 		key: 'responsePrefNoDecorations',
 		name: 'NoDecorations',
+		group: 'formatting',
 		instruction:
 			'Never use emojis, emoticons, pictograms, or decorative Unicode symbols. Preserve necessary language characters, mathematical notation, and punctuation. Preserve necessary characters in code, data, examples, and quotations.'
 	},
 	{
 		key: 'responsePrefConcise',
 		name: 'Concise',
+		group: 'style',
 		instruction:
 			'Be concise and direct. Omit filler, redundant introductions, unnecessary conclusions, and repetition. Keep all essential information.'
 	},
 	{
 		key: 'responsePrefExamples',
 		name: 'Examples',
+		group: 'style',
 		instruction:
 			'When explaining a complex topic, include a concrete, practical example. Do not add irrelevant or artificial examples.'
 	},
 	{
 		key: 'responsePrefSteps',
 		name: 'Steps',
+		group: 'style',
 		instruction:
 			'For procedures and how-to tasks, you MUST provide numbered steps in execution order.'
 	},
 	{
 		key: 'responsePrefUserLanguage',
 		name: 'UserLanguage',
+		group: 'style',
 		instruction:
 			"Always answer in the language of the user's latest message unless the user explicitly requests another language."
 	}
@@ -66,6 +83,7 @@ export type ResponsePreferences = Partial<Record<ResponsePreferenceKey, boolean>
 export type ChatInstructionSettings = ResponsePreferences & {
 	chartsEnabled?: boolean;
 	diagramsEnabled?: boolean;
+	interactiveFormsEnabled?: boolean;
 };
 
 /** Scalar, immutable operation policy. Never read the Settings draft. */
@@ -73,6 +91,7 @@ export function captureChatInstructionSettings(settings: ChatInstructionSettings
 	return Object.freeze({
 		chartsEnabled: settings.chartsEnabled !== false,
 		diagramsEnabled: settings.diagramsEnabled !== false,
+		interactiveFormsEnabled: settings.interactiveFormsEnabled === true,
 		...Object.fromEntries(RESPONSE_PREFERENCES.map(({ key }) => [key, settings[key] === true]))
 	});
 }
@@ -88,7 +107,8 @@ export function buildResponsePreferenceInstructions(settings: ChatInstructionSet
 		({ key }) =>
 			settings[key] === true &&
 			(key !== 'responsePrefCharts' || settings.chartsEnabled !== false) &&
-			(key !== 'responsePrefDiagrams' || settings.diagramsEnabled !== false)
+			(key !== 'responsePrefDiagrams' || settings.diagramsEnabled !== false) &&
+			(key !== 'responsePrefForms' || settings.interactiveFormsEnabled === true)
 	);
 	if (!active.length) return '';
 	return [START, PRIORITY, ...active.map(({ instruction }) => instruction), END].join('\n');
@@ -145,6 +165,7 @@ export function withChatInstructions(
 		settings.chartsEnabled !== false ? CHART_INSTRUCTIONS : '',
 		settings.diagramsEnabled !== false ? MERMAID_INSTRUCTIONS : '',
 		TABLE_INSTRUCTIONS,
+		settings.interactiveFormsEnabled === true ? FORM_CAPABILITY_INSTRUCTIONS : '',
 		buildResponsePreferenceInstructions(settings)
 	]
 		.filter(Boolean)

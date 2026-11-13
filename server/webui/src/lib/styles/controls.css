@@ -1,0 +1,195 @@
+/* Opt-in primitives: shared ownership, never generic input/button overrides. */
+.llampart-control {
+	border: 1px solid var(--llampart-control-border);
+	border-radius: var(--radius-md);
+	background: var(--llampart-control-background);
+	color: inherit;
+	font: inherit;
+	box-shadow: none;
+	outline: none;
+	accent-color: var(--llampart-control-accent);
+}
+.llampart-control:where(:hover:not(:disabled):not([data-disabled])) {
+	border-color: var(--llampart-control-border-hover);
+}
+.llampart-control[aria-invalid='true'] {
+	border-color: var(--destructive);
+}
+.llampart-control:is(:focus, :focus-within, [data-state='open']) {
+	border-color: var(--llampart-control-accent);
+	outline: none;
+	box-shadow: none;
+}
+.llampart-selection-control {
+	appearance: none;
+	display: inline-grid;
+	place-content: center;
+	margin: 0;
+	border: 1px solid var(--llampart-selection-border);
+	border-radius: 0.25rem;
+	background: var(--llampart-selection-background) center / 0.75rem 0.75rem no-repeat;
+	outline: none;
+	box-shadow: none;
+	accent-color: var(--llampart-control-accent);
+}
+.llampart-selection-control:where(:hover:not(:disabled)) {
+	border-color: var(--llampart-selection-border-hover);
+	background-color: var(--llampart-selection-hover);
+}
+.llampart-selection-control:focus-visible {
+	border-color: var(--llampart-control-accent);
+	background-color: color-mix(
+		in srgb,
+		var(--llampart-control-accent) 14%,
+		var(--llampart-selection-background)
+	);
+}
+.llampart-selection-control:checked:not([type='radio']) {
+	border-color: var(--llampart-control-accent);
+	background-color: var(--llampart-control-accent);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.llampart-selection-control[type='radio'] {
+	--llampart-radio-dot: var(--llampart-control-accent);
+	border-radius: 50%;
+}
+.llampart-selection-control[type='radio']:checked {
+	border-color: var(--llampart-selection-border);
+	background-color: var(--llampart-selection-background);
+	/* Share the circle's snapped paint box instead of independently snapping a pseudo-element. */
+	background-image: radial-gradient(
+		circle at center,
+		var(--llampart-radio-dot) 4px,
+		transparent 5px
+	);
+	background-size: 100% 100%;
+	background-origin: border-box;
+}
+.llampart-selection-control:checked:focus-visible:not([type='radio']) {
+	background-color: color-mix(in srgb, var(--llampart-control-accent) 80%, var(--foreground));
+}
+.llampart-selection-control[type='radio']:checked:focus-visible {
+	border-color: var(--llampart-control-accent);
+}
+.llampart-selection-control:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+/* Geometry extracted from Settings' milkiness range: a 16px circular thumb
+ * centered on an 8px capsule track. Both callers share this single owner. */
+.llampart-range {
+	--llampart-range-neutral: var(--secondary);
+	--llampart-range-neutral-border: color-mix(
+		in srgb,
+		var(--muted-foreground) 50%,
+		var(--secondary)
+	);
+	appearance: none;
+	width: 100%;
+	min-width: 0;
+	height: 2rem;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	font: inherit;
+	accent-color: var(--llampart-range-accent, var(--foreground));
+	cursor: pointer;
+	outline: none;
+	box-shadow: none;
+}
+.llampart-range::-webkit-slider-runnable-track {
+	box-sizing: border-box;
+	height: 8px;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	background:
+		linear-gradient(
+				to right,
+				var(--llampart-range-accent) 0 var(--llampart-range-progress),
+				var(--llampart-range-neutral) var(--llampart-range-progress) 100%
+			)
+			padding-box,
+		linear-gradient(
+				to right,
+				var(--llampart-range-accent) 0 var(--llampart-range-progress),
+				var(--llampart-range-neutral-border) var(--llampart-range-progress) 100%
+			)
+			border-box;
+}
+.llampart-range::-webkit-slider-thumb {
+	appearance: none;
+	box-sizing: border-box;
+	width: 16px;
+	height: 16px;
+	margin-top: -5px;
+	border: 0;
+	border-radius: 50%;
+	background: var(--llampart-range-thumb, var(--foreground));
+}
+.llampart-range::-moz-range-track {
+	box-sizing: border-box;
+	height: 8px;
+	border: 1px solid var(--llampart-range-neutral-border);
+	border-radius: 4px;
+	background: var(--llampart-range-neutral);
+}
+.llampart-range::-moz-range-progress {
+	height: 8px;
+	border-radius: 4px;
+	background: var(--llampart-range-accent);
+}
+.llampart-range::-moz-range-thumb {
+	box-sizing: border-box;
+	width: 16px;
+	height: 16px;
+	border: 0;
+	border-radius: 50%;
+	background: var(--llampart-range-thumb, var(--foreground));
+}
+.llampart-range:focus-visible::-webkit-slider-thumb {
+	outline: 1px solid var(--llampart-range-accent, var(--foreground));
+	outline-offset: 2px;
+}
+.llampart-range:focus-visible::-moz-range-thumb {
+	outline: 1px solid var(--llampart-range-accent, var(--foreground));
+	outline-offset: 2px;
+}
+.llampart-range:disabled {
+	cursor: not-allowed;
+	opacity: 0.4;
+}
+.llampart-control-popup {
+	font-family: var(--llampart-font-family), ui-sans-serif, system-ui, sans-serif;
+	font-size: var(--llampart-text-unit, 1rem);
+	font-weight: var(--llampart-font-weight, 400);
+	font-style: var(--llampart-font-style, normal);
+	line-height: 1.5;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-md);
+	background: var(--llampart-control-popup-background);
+	color: var(--foreground);
+	box-shadow: none;
+	text-shadow: none;
+}
+.llampart-control-popup [data-slot='select-item'] {
+	font: inherit;
+	border-radius: var(--radius-sm);
+}
+.llampart-control-popup [data-slot='select-item']:is([data-highlighted], [data-selected]) {
+	background: color-mix(in srgb, var(--llampart-control-accent) 20%, transparent);
+	color: inherit;
+}
+@media (forced-colors: active) {
+	.llampart-control:focus-within,
+	.llampart-selection-control:is(:focus-visible, :checked) {
+		border-color: Highlight;
+	}
+	.llampart-selection-control:checked {
+		forced-color-adjust: none;
+		background-color: Highlight;
+	}
+	.llampart-selection-control[type='radio']:checked {
+		--llampart-radio-dot: HighlightText;
+	}
+}

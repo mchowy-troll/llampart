@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('ro');
 export const ro: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Repară',
 		failed: 'Reparația nu a putut fi aplicată. Codul original este neschimbat.'
@@ -208,6 +211,8 @@ export const ro: TranslationDictionary = {
 		enterNewConversationName: 'Introdu un nume nou'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Funcționalități de vizualizare',
 		fieldChartsEnabled: 'Activează graficele',
 		fieldDiagramsEnabled: 'Activează diagramele',
@@ -349,6 +354,9 @@ export const ro: TranslationDictionary = {
 			'Include diagrame Mermaid când clarifică procese, arhitecturi sau relații. Nu inventa niciodată relații.',
 		responsePrefChartsHelp:
 			'Grafice native pentru comparații relevante, tendințe și distribuții. Nu inventa niciodată date.',
+		responsePrefForms: 'Folosește formulare inteligente',
+		responsePrefFormsHelp:
+			'Când formularele sunt activate în setările chatului, încurajează modelul să le propună atunci când facilitează colectarea mai multor răspunsuri sau opțiuni.',
 		responsePrefNoDecorations: 'Fără emoji sau ornamente',
 		responsePrefNoDecorationsHelp:
 			'Fără simboluri decorative. Păstrează caracterele limbii, notația matematică, codul și citatele.',
@@ -480,6 +488,7 @@ export const ro: TranslationDictionary = {
 			noConversationsToDelete: 'Nu există conversații de șters'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Activează instrucțiunile de format, redarea, previzualizarea și exportul graficelor. Preferințele de răspuns sunt salvate independent.',
 			diagramsEnabled:

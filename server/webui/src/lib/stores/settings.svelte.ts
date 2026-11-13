@@ -86,6 +86,8 @@ export type SettingsPreviewCommitResult =
 	| (Extract<ThemePreviewCommitResult, { ok: false }> & { reason: 'resource' });
 
 class SettingsStore {
+	/** Request invalidation only; not another persisted setting or per-token effect. */
+	interactiveFormsEpoch = 0;
 	/**
 	 *
 	 *
@@ -468,6 +470,8 @@ class SettingsStore {
 			[CONFIG_LOCALSTORAGE_KEY]: serializeSettingsStorage(config),
 			[USER_OVERRIDES_LOCALSTORAGE_KEY]: JSON.stringify(keys)
 		});
+		if (this.config.interactiveFormsEnabled !== config.interactiveFormsEnabled)
+			this.interactiveFormsEpoch++;
 		if (publishInPlace) Object.assign(this.config, config);
 		else this.config = config;
 		for (const key of this.userOverrides) if (!keys.includes(key)) this.userOverrides.delete(key);

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Pencil, Download, GitBranch, Clock, Calendar, Pin } from '@lucide/svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import SelectionControl from '$lib/components/ui/selection-control/selection-control.svelte';
 	import { FORK_TREE_DEPTH_PADDING } from '$lib/constants';
 	import { conversationsStore } from '$lib/stores/conversations.svelte';
 	import { settingsStore } from '$lib/stores/settings.svelte';
@@ -212,10 +213,10 @@
 			{#if selectionMode}
 				<Tooltip.Root>
 					<Tooltip.Trigger class="flex h-6 w-6 items-center justify-center">
-						<input
+						<SelectionControl
 							aria-label={selectionAriaLabel ??
 								t('sidebar.selectConversation').replace('{name}', conversation.name)}
-							class="llampart-sidebar-select-checkbox size-4 shrink-0 cursor-pointer transition-colors"
+							class="llampart-sidebar-select-checkbox"
 							checked={selectionChecked}
 							type="checkbox"
 							onclick={handleSelectionClick}
@@ -270,10 +271,6 @@
 	.conversation-item:is(:hover, :focus-visible) .conversation-timestamp-badge,
 	.conversation-item:is(:hover, :focus-visible) .conversation-parent-link {
 		color: var(--llampart-sidebar-conversation-control-foreground);
-	}
-
-	.conversation-item:is(:hover, :focus-visible) .llampart-sidebar-select-checkbox:not(:checked) {
-		border-color: var(--llampart-sidebar-conversation-control-foreground);
 	}
 
 	.conversation-item-selected {

@@ -22,7 +22,7 @@ import type { ApiChatMessageContentPart, ApiChatCompletionToolCall } from '$lib/
 import type { DatabaseMessageExtraMcpPrompt, DatabaseMessageExtraMcpResource } from '$lib/types';
 import { modelsStore } from '$lib/stores/models.svelte';
 import { serverStore } from '$lib/stores/server.svelte';
-import { config } from '$lib/stores/settings.svelte';
+import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { API_STREAM } from '$lib/constants/api-endpoints';
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';
 import { fetchProviderEndpoint } from '$lib/services/providers/provider-transport';
@@ -42,6 +42,9 @@ import type { ChatStreamResumeSeed, SettingsChatServiceOptions } from '$lib/type
 import { getReconnectDelay, sleepWithAbort } from '$lib/utils/retry';
 import { LlamaServerBackendError } from '$lib/services/providers/llama-server-response';
 import type { MessageModelInfoSnapshot } from '$lib/types/message-model-info';
+import { FORM_PROPOSAL, formVisibleText, readFormProposal } from '$lib/forms/form-protocol';
+import { formBytes, validateFormSpec } from '$lib/services/interactive-forms';
+import type { InteractiveFormSpec } from '$lib/types/interactive-forms';
 
 interface FrozenStreamRequest {
 	provider: ApiProviderAdapter;
@@ -61,6 +64,99 @@ class StreamCheckpointError extends Error {
 }
 
 export class ChatService {
+	/** Auxiliary, tool-free request only after the model's explicit format decision.
+	 * Uses the existing provider/permissions/terminal-event transport, not a second client.
+	 */
+	static async generateInteractiveForm(
+		content: string,
+		operation: OperationModel,
+		signal: AbortSignal
+	): Promise<InteractiveFormSpec | undefined> {
+		if (
+			operation.chatInstructions?.interactiveFormsEnabled !== true ||
+			operation.interactiveFormsEpoch !== settingsStore.interactiveFormsEpoch ||
+			config().interactiveFormsEnabled !== true ||
+			!content.startsWith(FORM_PROPOSAL)
+		)
+			return;
+		const questions = readFormProposal(content)?.questions.trim();
+		if (!questions || questions.length > 12000 || signal.aborted) return;
+		const controller = new AbortController();
+		const abort = () => controller.abort();
+		signal.addEventListener('abort', abort, { once: true });
+		const timeout = setTimeout(abort, 90000);
+		let raw = '';
+		let complete = false;
+		let finishReason = '';
+		try {
+			const { buildFormCatalogInstructions, formCatalog } = await import('$lib/forms/form-catalog');
+			if (
+				signal.aborted ||
+				config().interactiveFormsEnabled !== true ||
+				operation.interactiveFormsEpoch !== settingsStore.interactiveFormsEpoch
+			)
+				return;
+			await ChatService.sendMessage(
+				[
+					{ role: 'system', content: buildFormCatalogInstructions() },
+					{ role: 'user', content: questions }
+				],
+				{
+					operationModel: Object.freeze({ ...operation, conversationId: null }),
+					stream: true,
+					temperature: 0,
+					max_tokens: 4000,
+					// Native llama-server supports these request-local options. Other
+					// adapters keep plain text JSON; no tool/structured-output assumption.
+					...(operation.requestContext.providerId === API_PROVIDER_IDS.LLAMA_SERVER
+						? {
+								custom: {
+									response_format: { type: 'json_object' },
+									chat_template_kwargs: { enable_thinking: false }
+								}
+							}
+						: {}),
+					onChunk: (chunk) => {
+						raw += chunk;
+						if (
+							formBytes(raw) > 32768 ||
+							config().interactiveFormsEnabled !== true ||
+							operation.interactiveFormsEpoch !== settingsStore.interactiveFormsEpoch
+						)
+							controller.abort();
+					},
+					onProviderResult: (event) => {
+						if (event.finishReason) finishReason = event.finishReason;
+						if (event.toolCalls?.length || event.refusal) controller.abort();
+					},
+					onComplete: () => {
+						complete = true;
+					}
+				},
+				undefined,
+				controller.signal
+			);
+			if (
+				!complete ||
+				controller.signal.aborted ||
+				signal.aborted ||
+				config().interactiveFormsEnabled !== true ||
+				operation.interactiveFormsEpoch !== settingsStore.interactiveFormsEpoch ||
+				!['stop', 'end_turn', 'completed'].includes(finishReason)
+			)
+				return;
+			const spec = validateFormSpec(raw);
+			return formCatalog.validate(spec).success ? spec : undefined;
+		} catch (error) {
+			if (!isAbortError(error))
+				console.warn('[ChatService] Form unavailable; retaining text fallback');
+			return;
+		} finally {
+			clearTimeout(timeout);
+			signal.removeEventListener('abort', abort);
+		}
+	}
+
 	private static frozenStreamRequests = new Map<string, FrozenStreamRequest>();
 	private static sourceGeneration = 0;
 	private static readonly optionalStreamEndpointStatuses = new Set([404, 405, 501]);
@@ -82,6 +178,7 @@ export class ChatService {
 		void capabilities.catch(() => undefined);
 		void modelInfo.catch(() => undefined);
 		return Object.freeze({
+			interactiveFormsEpoch: settingsStore.interactiveFormsEpoch,
 			chatInstructions: captureChatInstructionSettings(config()),
 			model,
 			requestContext: context,
@@ -1333,6 +1430,10 @@ export class ChatService {
 	static convertDbMessageToApiChatMessageData(
 		message: DatabaseMessage & { extra?: DatabaseMessageExtra[] }
 	): ApiChatMessageData {
+		const visibleContent =
+			message.role === MessageRole.ASSISTANT
+				? formVisibleText(message.content, true)
+				: message.content;
 		// Parse tool calls for assistant messages
 		let toolCalls: ApiChatCompletionToolCall[] | undefined;
 		if (message.toolCalls) {
@@ -1348,7 +1449,7 @@ export class ChatService {
 				agentic: message.agentic,
 				providerContinuation: message.providerContinuation,
 				role: message.role as MessageRole,
-				content: message.content,
+				content: visibleContent,
 				...(message.role === MessageRole.TOOL && message.toolCallId
 					? { tool_call_id: message.toolCallId }
 					: {})
@@ -1376,7 +1477,7 @@ export class ChatService {
 		if (message.role === MessageRole.TOOL && imageFiles.length) {
 			contentParts.push(...toolResultContentParts(message.content, imageFiles));
 		} else {
-			if (message.content) contentParts.push({ type: ContentPartType.TEXT, text: message.content });
+			if (visibleContent) contentParts.push({ type: ContentPartType.TEXT, text: visibleContent });
 			for (const image of imageFiles)
 				contentParts.push({ type: ContentPartType.IMAGE_URL, image_url: { url: image.base64Url } });
 		}

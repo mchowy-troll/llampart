@@ -1,6 +1,9 @@
 import type { TranslationDictionary } from '../types';
 
+import { formLocale } from '../form-translations';
+const forms = formLocale('bg');
 export const bg: TranslationDictionary = {
+	interactiveForms: forms.strings,
 	visualizationRepair: {
 		repair: 'Поправи',
 		failed: 'Поправката не можа да бъде приложена. Оригиналният код е непроменен.'
@@ -209,6 +212,8 @@ export const bg: TranslationDictionary = {
 		enterNewConversationName: 'Въведете ново име'
 	},
 	settings: {
+		groupInteractiveForms: forms.group,
+		fieldInteractiveFormsEnabled: forms.label,
 		groupVisualizations: 'Възможности за визуализация',
 		fieldChartsEnabled: 'Включване на графики',
 		fieldDiagramsEnabled: 'Включване на диаграми',
@@ -353,6 +358,9 @@ export const bg: TranslationDictionary = {
 			'Включване на диаграми Mermaid, когато поясняват процеси, архитектура или връзки. Никога да не се измислят връзки.',
 		responsePrefChartsHelp:
 			'Вградени графики за смислени сравнения, тенденции и разпределения. Никога да не се измислят данни.',
+		responsePrefForms: 'Използване на интелигентни формуляри',
+		responsePrefFormsHelp:
+			'Когато формулярите са включени в настройките на чата, насърчавайте модела да ги предлага, ако улесняват събирането на няколко отговора или избора.',
 		responsePrefNoDecorations: 'Без емоджита и украса',
 		responsePrefNoDecorationsHelp:
 			'Без декоративни символи. Запазване на езиковите знаци, математическите изрази, кода и цитатите.',
@@ -485,6 +493,7 @@ export const bg: TranslationDictionary = {
 			noConversationsToDelete: 'Няма разговори за изтриване'
 		},
 		info: {
+			interactiveFormsEnabled: forms.help,
 			chartsEnabled:
 				'Включва инструкциите за формата, изобразяването, прегледа и експорта на графики. Предпочитанията за отговорите се запазват независимо.',
 			diagramsEnabled:

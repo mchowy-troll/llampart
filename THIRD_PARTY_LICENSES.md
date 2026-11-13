@@ -84,6 +84,16 @@ file inventory and versioned upstream sources are preserved in
 
 ## npm dependencies
 
+### json-render interactive forms
+
+The optional native Svelte form renderer uses `@json-render/core` and
+`@json-render/svelte`, both pinned to **0.22.0**, Copyright 2025 Vercel Inc.,
+licensed under Apache-2.0. Upstream: <https://github.com/vercel-labs/json-render>.
+No upstream source was modified. The distribution notice is in
+`server/webui/static/licenses/json-render.txt`; the complete Apache-2.0 license
+text is distributed in the existing `server/webui/static/licenses/mermaid.txt`
+license collection. Preserve both files when redistributing the Web UI.
+
 The Web UI uses npm packages listed in:
 
 ```text

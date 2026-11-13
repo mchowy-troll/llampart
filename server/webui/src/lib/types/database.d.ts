@@ -92,6 +92,7 @@ export type DatabaseMessageExtra =
 	| DatabaseMessageExtraLegacyContext;
 
 export interface DatabaseMessage {
+	interactiveForm?: import('./interactive-forms').InteractiveForm;
 	agentic?: AgenticTurnState;
 	providerContinuation?: import('./provider').ProviderContinuation;
 	id: string;
@@ -129,7 +130,7 @@ export type ExportedConversations = ExportedConversation | ExportedConversation[
 
 export interface ConversationExportEnvelope {
 	type: 'llampart-conversations';
-	formatVersion: 1 | 2;
+	formatVersion: 1 | 2 | 3;
 	appVersion: string;
 	exportedAt: string;
 	conversations: ExportedConversation[];
