@@ -1,9 +1,10 @@
 import type { TranslationDictionary } from '../types';
-import { formControlLocale } from '../form-translations';
+import { formControlLocale, formProposalLocale } from '../form-translations';
 
 export const en: TranslationDictionary = {
 	interactiveForms: {
 		...formControlLocale('en'),
+		...formProposalLocale('en'),
 		value: 'Enter a valid value within the allowed bounds.',
 		privacy:
 			'AI-generated form. Check the questions; do not enter secrets. Only your click sends answers.',

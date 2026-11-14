@@ -1,5 +1,68 @@
 import type { InterfaceLanguage } from './types';
 
+const formProposalTranslations = {
+	en: 'I could not prepare the form. Please describe the information you would like to provide.',
+	pl: 'Nie udało mi się przygotować formularza. Opisz proszę informacje, które chcesz przekazać.',
+	de: 'Ich konnte das Formular nicht erstellen. Bitte beschreiben Sie, welche Informationen Sie angeben möchten.',
+	fr: 'Je n’ai pas pu préparer le formulaire. Décrivez les informations que vous souhaitez fournir.',
+	it: 'Non sono riuscito a preparare il modulo. Descrivi le informazioni che desideri fornire.',
+	es: 'No pude preparar el formulario. Describe la información que deseas proporcionar.',
+	bg: 'Не успях да подготвя формуляра. Опишете информацията, която искате да предоставите.',
+	hr: 'Nisam uspio pripremiti obrazac. Opišite informacije koje želite dati.',
+	cs: 'Formulář se mi nepodařilo připravit. Popište prosím informace, které chcete poskytnout.',
+	da: 'Jeg kunne ikke klargøre formularen. Beskriv de oplysninger, du gerne vil give.',
+	et: 'Mul ei õnnestunud vormi koostada. Palun kirjelda teavet, mida soovid esitada.',
+	fi: 'En pystynyt valmistelemaan lomaketta. Kuvaile tiedot, jotka haluat antaa.',
+	el: 'Δεν μπόρεσα να ετοιμάσω τη φόρμα. Περιγράψτε τις πληροφορίες που θέλετε να δώσετε.',
+	ga: 'Níorbh fhéidir liom an fhoirm a ullmhú. Déan cur síos ar an eolas is mian leat a thabhairt.',
+	csb: 'Nie ùdało mi sã przërëchtowac fòrmùlarza. Òpiszë proszã infòrmacëje, jaczé chcesz przekazac.',
+	lt: 'Nepavyko paruošti formos. Aprašykite informaciją, kurią norėtumėte pateikti.',
+	lv: 'Neizdevās sagatavot veidlapu. Lūdzu, aprakstiet informāciju, ko vēlaties sniegt.',
+	mt: 'Ma stajtx inħejji l-formola. Iddeskrivi l-informazzjoni li tixtieq tipprovdi.',
+	nl: 'Ik kon het formulier niet voorbereiden. Beschrijf welke informatie je wilt geven.',
+	pt: 'Não consegui preparar o formulário. Descreva as informações que deseja fornecer.',
+	ro: 'Nu am reușit să pregătesc formularul. Descrieți informațiile pe care doriți să le oferiți.',
+	sk: 'Formulár sa mi nepodarilo pripraviť. Opíšte informácie, ktoré chcete poskytnúť.',
+	sl: 'Obrazca mi ni uspelo pripraviti. Opišite informacije, ki jih želite posredovati.',
+	sv: 'Jag kunde inte förbereda formuläret. Beskriv vilka uppgifter du vill lämna.',
+	hu: 'Nem sikerült elkészítenem az űrlapot. Írja le a megadni kívánt információkat.'
+} satisfies Record<InterfaceLanguage, string>;
+
+export function formProposalLocale(language: InterfaceLanguage) {
+	return {
+		proposalFailed: formProposalTranslations[language],
+		preparing: formPreparingTranslations[language]
+	};
+}
+
+const formPreparingTranslations = {
+	en: 'Preparing form…',
+	pl: 'Przygotowywanie formularza…',
+	de: 'Formular wird vorbereitet…',
+	fr: 'Préparation du formulaire…',
+	it: 'Preparazione del modulo…',
+	es: 'Preparando el formulario…',
+	bg: 'Подготвяне на формуляра…',
+	hr: 'Priprema obrasca…',
+	cs: 'Příprava formuláře…',
+	da: 'Klargør formular…',
+	et: 'Vormi ettevalmistamine…',
+	fi: 'Valmistellaan lomaketta…',
+	el: 'Προετοιμασία φόρμας…',
+	ga: 'An fhoirm á hullmhú…',
+	csb: 'Przërëchtowanié fòrmùlarza…',
+	lt: 'Ruošiama forma…',
+	lv: 'Veidlapas sagatavošana…',
+	mt: 'Qed titħejja l-formola…',
+	nl: 'Formulier voorbereiden…',
+	pt: 'A preparar o formulário…',
+	ro: 'Se pregătește formularul…',
+	sk: 'Príprava formulára…',
+	sl: 'Priprava obrazca…',
+	sv: 'Förbereder formulär…',
+	hu: 'Űrlap előkészítése…'
+} satisfies Record<InterfaceLanguage, string>;
+
 /** Date components and icon actions extend the existing form dictionaries. */
 const formControlTranslations = {
 	en: ['DD', 'MM', 'YYYY', 'Open calendar', 'Previous month', 'Next month'],
@@ -516,6 +579,7 @@ export function formLocale(language: keyof typeof formTranslations) {
 		help,
 		strings: {
 			...formControlLocale(language),
+			...formProposalLocale(language),
 			value: errors,
 			privacy,
 			submitted,

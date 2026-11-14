@@ -902,8 +902,10 @@ export class DatabaseService {
 	 */
 	static async updateMessage(
 		id: string,
-		updates: Partial<Omit<DatabaseMessage, 'id'>>
+		updates: Partial<Omit<DatabaseMessage, 'id'>>,
+		isCurrent: () => boolean = () => true
 	): Promise<void> {
+		if (!isCurrent()) return;
 		if (updates.interactiveForm) {
 			const message = await db.messages.get(id);
 			if (!message) throw new Error('Missing form owner');
@@ -918,6 +920,9 @@ export class DatabaseService {
 				throw new Error('Model information must belong to an assistant');
 			updates = { ...updates, modelInfo: messageModelInfoSnapshotSchema.parse(updates.modelInfo) };
 		}
+		// Form completion can be abandoned while owner/model validation awaits IDB.
+		// Check again at the existing atomic message-write boundary, not in a new writer.
+		if (!isCurrent()) return;
 		await requireUpdated(await db.messages.update(id, updates), `Message ${id}`);
 	}
 

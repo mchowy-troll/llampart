@@ -4,13 +4,19 @@
 	import MarkdownContent from '$lib/components/app/content/MarkdownContent.svelte';
 	import InteractiveFormBlock from '$lib/components/app/forms/InteractiveFormBlock.svelte';
 	import { formVisibleText } from '$lib/forms/form-protocol';
+	import { chatStore } from '$lib/stores/chat.svelte';
 	import { MAX_MESSAGE_CHARTS, scanChartFences } from '$lib/markdown/chart-blocks';
 	import { MAX_MESSAGE_DIAGRAMS, scanMermaidFences } from '$lib/markdown/mermaid-blocks';
 	import SyntaxHighlightedCode from '$lib/components/app/content/SyntaxHighlightedCode.svelte';
 	import ChatMessageActionCardPermissionRequest from '$lib/components/app/chat/ChatMessages/ChatMessageActions/ChatMessageActionCard/ChatMessageActionCardPermissionRequest.svelte';
 	import { config } from '$lib/stores/settings.svelte';
 	import { Wrench, Loader2, Brain } from '@lucide/svelte';
-	import { AgenticSectionType, FileTypeText, ToolPermissionDecision } from '$lib/enums';
+	import {
+		AgenticSectionType,
+		FileTypeText,
+		MessageRole,
+		ToolPermissionDecision
+	} from '$lib/enums';
 	import { formatJsonPretty } from '$lib/utils';
 	import {
 		deriveAgenticSections,
@@ -56,6 +62,10 @@
 	);
 
 	let permissionDismissed = $state(false);
+	const preparingForm = $derived(
+		chatStore.isPreparingForm(message.convId, message.id) ||
+			chatStore.isPreparingForm(message.convId, toolMessages.at(-1)?.id ?? '')
+	);
 
 	const pendingPermission = $derived(
 		isStreaming && isLastAssistantMessage ? agenticPendingPermissionRequest(message.convId) : null
@@ -75,14 +85,39 @@
 		agenticResolvePermission(message.convId, decision);
 	}
 
-	const visibleContent = $derived(
-		formVisibleText(message.content, !isStreaming) ||
-			(!isStreaming && message.content ? t('interactiveForms.invalid') : '')
+	const formMessage = $derived(
+		toolMessages.findLast(
+			(candidate) =>
+				candidate.role === MessageRole.ASSISTANT &&
+				candidate.convId === message.convId &&
+				candidate.interactiveForm
+		) ?? (message.interactiveForm ? message : null)
+	);
+
+	function formDisplayMessage(candidate: DatabaseMessage, streaming: boolean): DatabaseMessage {
+		const content =
+			formVisibleText(candidate.content, !streaming) ||
+			(!streaming && candidate.content
+				? t(
+						candidate.interactiveForm
+							? 'interactiveForms.invalid'
+							: 'interactiveForms.proposalFailed'
+					)
+				: '');
+		return content === candidate.content ? candidate : { ...candidate, content };
+	}
+
+	const visibleToolMessages = $derived(
+		toolMessages.map((candidate, index) =>
+			candidate.role === MessageRole.ASSISTANT
+				? formDisplayMessage(candidate, isStreaming && index === toolMessages.length - 1)
+				: candidate
+		)
 	);
 	const sections = $derived(
 		deriveAgenticSections(
-			visibleContent === message.content ? message : { ...message, content: visibleContent },
-			toolMessages,
+			formDisplayMessage(message, isStreaming),
+			visibleToolMessages,
 			[],
 			isStreaming
 		)
@@ -451,8 +486,14 @@
 		{/each}
 	{/if}
 
-	{#if message.interactiveForm}
-		<InteractiveFormBlock {message} />
+	{#if preparingForm}
+		<div class="llampart-inline-processing-status" role="status">
+			{t('interactiveForms.preparing')}
+		</div>
+	{/if}
+
+	{#if formMessage}
+		<InteractiveFormBlock message={formMessage} />
 	{/if}
 
 	{#if pendingPermission && !permissionDismissed}

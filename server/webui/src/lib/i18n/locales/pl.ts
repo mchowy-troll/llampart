@@ -1,9 +1,10 @@
 import type { TranslationDictionary } from '$lib/i18n/types';
-import { formControlLocale } from '../form-translations';
+import { formControlLocale, formProposalLocale } from '../form-translations';
 
 export const pl: TranslationDictionary = {
 	interactiveForms: {
 		...formControlLocale('pl'),
+		...formProposalLocale('pl'),
 		value: 'Podaj poprawną wartość w dozwolonym zakresie.',
 		privacy:
 			'Formularz wygenerowany przez AI. Sprawdź pytania; nie podawaj sekretów. Dopiero Twoje kliknięcie wysyła odpowiedzi.',

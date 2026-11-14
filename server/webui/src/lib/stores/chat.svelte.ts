@@ -16,16 +16,16 @@ import { t } from '$lib/i18n';
 import { DatabaseService } from '$lib/services/database.service';
 import { ChatService } from '$lib/services/chat.service';
 import {
-	FORM_PROPOSAL,
+	hasFormProposal,
+	recoverFormProposal,
 	formVisibleText,
-	readFormProposal,
 	formFallbackText
 } from '$lib/forms/form-protocol';
 import { formDefaults } from '$lib/services/interactive-forms';
 import type { InteractiveForm } from '$lib/types/interactive-forms';
 import { getApiProvider } from '$lib/services/providers';
 import { conversationsStore } from '$lib/stores/conversations.svelte';
-import { config } from '$lib/stores/settings.svelte';
+import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { agenticStore } from '$lib/stores/agentic.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { contextSize, isRouterMode } from '$lib/stores/server.svelte';
@@ -104,6 +104,19 @@ class ChatStore {
 	private abortControllers = new SvelteMap<string, AbortController>();
 	private preEncodeAbortController: AbortController | null = null;
 	private processingStates = new SvelteMap<string, ApiProcessingState | null>();
+	private formPreparations = new SvelteMap<
+		string,
+		{
+			operationId: string;
+			messageId: string;
+			isCurrent: () => boolean;
+		}
+	>();
+
+	isPreparingForm(conversationId: string, messageId: string): boolean {
+		const preparation = this.formPreparations.get(conversationId);
+		return preparation?.messageId === messageId && preparation.isCurrent();
+	}
 	private conversationStateTimestamps = new SvelteMap<string, ConversationStateEntry>();
 	private resumingStreams = new Set<string>();
 	private conversationOperationLocks = new Set<string>();
@@ -168,6 +181,9 @@ class ChatStore {
 	}
 
 	clearUIState(): void {
+		if (this.activeConversationId) {
+			this.formPreparations.delete(this.activeConversationId);
+		}
 		this.isLoading = false;
 		this.currentResponse = '';
 		this.isReasoning = false;
@@ -192,6 +208,7 @@ class ChatStore {
 	}
 
 	clearProcessingState(conversationId: string): void {
+		this.formPreparations.delete(conversationId);
 		this.processingStates.delete(conversationId);
 		if (conversationId === this.activeConversationId) this.activeProcessingState = null;
 	}
@@ -985,40 +1002,106 @@ class ChatStore {
 		let modelWrites = Promise.resolve();
 		let completionWrite = Promise.resolve();
 		const convId = assistantMessage.convId;
+		// Selection/branch restoration replaces this array. Returning to the same
+		// conversation later must not revive an abandoned auxiliary form request.
+		const formMessages = conversationsStore.activeMessages;
+		let formNode = conversationsStore.activeConversation?.currNode;
+		let pendingFormNode: string | undefined;
+		const isFormPreparationCurrent = () =>
+			!abortController.signal.aborted &&
+			this.abortControllers.get(convId) === abortController &&
+			ChatService.isProviderRequestContextCurrent(providerRequestContext) &&
+			operationModel.chatInstructions?.interactiveFormsEnabled === true &&
+			config().interactiveFormsEnabled === true &&
+			operationModel.interactiveFormsEpoch === settingsStore.interactiveFormsEpoch &&
+			conversationsStore.activeConversation?.id === convId &&
+			(conversationsStore.activeConversation.currNode === formNode ||
+				conversationsStore.activeConversation.currNode === pendingFormNode) &&
+			conversationsStore.activeMessages === formMessages;
+		const clearFormPreparation = () => {
+			if (this.formPreparations.get(convId)?.operationId === operationId) {
+				this.formPreparations.delete(convId);
+			}
+		};
+		abortController.signal.addEventListener('abort', clearFormPreparation, { once: true });
+		const recognizeForm = () => {
+			if (
+				hasFormProposal(streamedContent) &&
+				!this.formPreparations.has(convId) &&
+				isFormPreparationCurrent()
+			) {
+				this.formPreparations.set(convId, {
+					operationId,
+					messageId: currentAssistantMessageId,
+					isCurrent: isFormPreparationCurrent
+				});
+			}
+		};
 		const completeForm = async (
 			raw: string,
 			messageId: string
-		): Promise<{ content: string; interactiveForm?: InteractiveForm }> => {
-			const proposal = readFormProposal(raw);
-			const content =
-				(proposal ? formFallbackText(proposal) : formVisibleText(raw, true)) ||
-				(raw ? t('interactiveForms.invalid') : '');
-			if (content.length > 12000) return { content };
-			if (
-				!formDecisionCompleted ||
-				!raw.startsWith(FORM_PROPOSAL) ||
-				abortController.signal.aborted
-			)
-				return { content };
+		): Promise<
+			| {
+					update: { content: string; interactiveForm?: InteractiveForm };
+					isCurrent: () => boolean;
+			  }
+			| undefined
+		> => {
+			const text = () =>
+				formVisibleText(raw, true) || (raw ? t('interactiveForms.proposalFailed') : '');
+			if (!hasFormProposal(raw)) return { update: { content: text() }, isCurrent: () => true };
+			const selectedNode = conversationsStore.activeConversation?.currNode;
+			const isCurrent = () =>
+				!abortController.signal.aborted &&
+				this.abortControllers.get(convId) === abortController &&
+				ChatService.isProviderRequestContextCurrent(providerRequestContext) &&
+				config().interactiveFormsEnabled === true &&
+				operationModel.interactiveFormsEpoch === settingsStore.interactiveFormsEpoch &&
+				conversationsStore.activeConversation?.id === convId &&
+				conversationsStore.activeConversation.currNode === selectedNode &&
+				conversationsStore.activeMessages === formMessages &&
+				formMessages.some((m) => m.id === messageId && m.convId === convId && m.content === raw);
+			if (!isCurrent()) return;
+			// The main request has ended. Keep its context, but do not present its
+			// last generation speed as activity in the independent specification request.
+			const processing = this.getProcessingState(convId);
+			if (processing)
+				this.setProcessingState(convId, {
+					...processing,
+					status: 'idle',
+					hasNextToken: false,
+					tokensPerSecond: undefined,
+					promptProgress: undefined
+				});
+			if (!formDecisionCompleted) return { update: { content: text() }, isCurrent };
+			const proposal = recoverFormProposal(raw);
+			if (!proposal)
+				return { update: { content: t('interactiveForms.proposalFailed') }, isCurrent };
+			const content = formFallbackText(proposal);
+			if (content.length > 12000) return { update: { content }, isCurrent };
 			const spec = await ChatService.generateInteractiveForm(
-				raw,
+				proposal,
 				operationModel,
-				abortController.signal
+				abortController.signal,
+				isCurrent
 			);
-			if (!spec || abortController.signal.aborted || config().interactiveFormsEnabled !== true)
-				return { content };
+			if (!isCurrent()) return;
+			if (!spec) return { update: { content }, isCurrent };
 			const introduction = proposal?.structured ? proposal.intro : content;
 			return {
-				content: introduction,
-				interactiveForm: {
-					id: uuid(),
-					messageId,
-					conversationId: convId,
-					sourceContent: introduction,
-					spec,
-					values: formDefaults(spec),
-					revision: 0,
-					status: 'draft'
+				isCurrent,
+				update: {
+					content: introduction,
+					interactiveForm: {
+						id: uuid(),
+						messageId,
+						conversationId: convId,
+						sourceContent: introduction,
+						spec,
+						values: formDefaults(spec),
+						revision: 0,
+						status: 'draft'
+					}
 				}
 			};
 		};
@@ -1048,7 +1131,16 @@ class ChatStore {
 			if (index !== -1) conversationsStore.updateMessageAtIndex(index, update);
 		};
 		const updateConversationCurrentNode = async (messageId: string): Promise<void> => {
-			await conversationsStore.updateConversationCurrentNode(convId, messageId);
+			// Only a still-current operation may advance its expected branch. Accept
+			// both endpoints while IDB awaits and the owned UI pointer is published.
+			const advancesFormBranch = isFormPreparationCurrent();
+			if (advancesFormBranch) pendingFormNode = messageId;
+			try {
+				await conversationsStore.updateConversationCurrentNode(convId, messageId);
+				if (advancesFormBranch) formNode = messageId;
+			} finally {
+				pendingFormNode = undefined;
+			}
 		};
 
 		const recordCompletionId = (() => {
@@ -1111,6 +1203,7 @@ class ChatStore {
 		};
 
 		const cleanupStreamingState = () => {
+			clearFormPreparation();
 			if (this.abortControllers.get(convId) !== abortController) return;
 			if (conversationsStore.activeConversation?.id === convId) this.setStreamingActive(false);
 			this.setChatReasoning(convId, false);
@@ -1135,6 +1228,7 @@ class ChatStore {
 			},
 			onChunk: (chunk: string) => {
 				streamedContent += chunk;
+				recognizeForm();
 				updateStreamingUI();
 				this.setChatReasoning(convId, false);
 			},
@@ -1152,6 +1246,7 @@ class ChatStore {
 			onStreamCheckpoint: async (checkpoint: ChatStreamCheckpoint) => {
 				await modelWrites;
 				streamedContent = checkpoint.content;
+				recognizeForm();
 				streamedReasoningContent = checkpoint.reasoningContent;
 				const persistedTimings = withContextTotal(checkpoint.timings);
 				const toolCalls =
@@ -1178,6 +1273,12 @@ class ChatStore {
 				updateActiveMessage(assistantMessage.id, { timings: persistedTimings });
 			},
 			onTimings: (timings?: ChatMessageTimings, promptProgress?: ChatMessagePromptProgress) => {
+				if (
+					abortController.signal.aborted ||
+					this.abortControllers.get(convId) !== abortController ||
+					(hasFormProposal(streamedContent) && !isFormPreparationCurrent())
+				)
+					return;
 				const tokensPerSecond =
 					timings?.predicted_ms && timings?.predicted_n
 						? (timings.predicted_n / timings.predicted_ms) * 1000
@@ -1292,9 +1393,18 @@ class ChatStore {
 				flowFinalized = true;
 				const terminal = await DatabaseService.finishAgenticTurn(identity, reason);
 				if (reason === 'completed' && !terminal.toolCalls) {
-					const formUpdate = await completeForm(terminal.content, terminal.id);
+					const completedForm = await completeForm(terminal.content, terminal.id);
+					if (!completedForm?.isCurrent()) {
+						cleanupStreamingState();
+						return;
+					}
+					const formUpdate = completedForm.update;
 					if (formUpdate.content !== terminal.content || formUpdate.interactiveForm) {
-						await DatabaseService.updateMessage(terminal.id, formUpdate);
+						await DatabaseService.updateMessage(terminal.id, formUpdate, completedForm.isCurrent);
+						if (!completedForm.isCurrent()) {
+							cleanupStreamingState();
+							return;
+						}
 						updateActiveMessage(terminal.id, formUpdate);
 						Object.assign(terminal, formUpdate);
 					}
@@ -1422,10 +1532,15 @@ class ChatStore {
 						toolCalls?: string
 					) => {
 						const persistedTimings = withContextTotal(timings);
-						const formUpdate = await completeForm(
+						const completedForm = await completeForm(
 							streamedContent || finalContent || '',
 							currentAssistantMessageId
 						);
+						if (!completedForm?.isCurrent()) {
+							cleanupStreamingState();
+							return;
+						}
+						const formUpdate = completedForm.update;
 						const content = formUpdate.content;
 						const reasoning = streamedReasoningContent || reasoningContent;
 						const updateData: Record<string, unknown> = {
@@ -1438,9 +1553,21 @@ class ChatStore {
 							timings: persistedTimings
 						};
 						await modelWrites;
+						if (!completedForm.isCurrent()) {
+							cleanupStreamingState();
+							return;
+						}
 						if (resolvedModel) updateData.model = resolvedModel;
 						if (currentModelInfo) updateData.modelInfo = currentModelInfo;
-						await DatabaseService.updateMessage(currentAssistantMessageId, updateData);
+						await DatabaseService.updateMessage(
+							currentAssistantMessageId,
+							updateData,
+							completedForm.isCurrent
+						);
+						if (!completedForm.isCurrent()) {
+							cleanupStreamingState();
+							return;
+						}
 						const uiUpdate: Partial<DatabaseMessage> = {
 							...(formUpdate.interactiveForm
 								? { interactiveForm: formUpdate.interactiveForm }
@@ -1475,6 +1602,8 @@ class ChatStore {
 				abortController.signal
 			);
 		} finally {
+			clearFormPreparation();
+			abortController.signal.removeEventListener('abort', clearFormPreparation);
 			// Abort/Stop can clear loading before queued metadata writes settle.
 			await Promise.all([modelWrites.catch(() => undefined), completionWrite]);
 		}

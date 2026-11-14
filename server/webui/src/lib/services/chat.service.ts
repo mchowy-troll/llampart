@@ -42,7 +42,7 @@ import type { ChatStreamResumeSeed, SettingsChatServiceOptions } from '$lib/type
 import { getReconnectDelay, sleepWithAbort } from '$lib/utils/retry';
 import { LlamaServerBackendError } from '$lib/services/providers/llama-server-response';
 import type { MessageModelInfoSnapshot } from '$lib/types/message-model-info';
-import { FORM_PROPOSAL, formVisibleText, readFormProposal } from '$lib/forms/form-protocol';
+import { formVisibleText, type FormProposal } from '$lib/forms/form-protocol';
 import { formBytes, validateFormSpec } from '$lib/services/interactive-forms';
 import type { InteractiveFormSpec } from '$lib/types/interactive-forms';
 
@@ -64,22 +64,33 @@ class StreamCheckpointError extends Error {
 }
 
 export class ChatService {
+	private static isFormOperationCurrent(
+		operation: OperationModel,
+		signal: AbortSignal,
+		isCurrent: () => boolean
+	): boolean {
+		return (
+			!signal.aborted &&
+			operation.chatInstructions?.interactiveFormsEnabled === true &&
+			operation.interactiveFormsEpoch === settingsStore.interactiveFormsEpoch &&
+			config().interactiveFormsEnabled === true &&
+			ChatService.isProviderRequestContextCurrent(operation.requestContext) &&
+			isCurrent()
+		);
+	}
+
 	/** Auxiliary, tool-free request only after the model's explicit format decision.
 	 * Uses the existing provider/permissions/terminal-event transport, not a second client.
 	 */
 	static async generateInteractiveForm(
-		content: string,
+		proposal: FormProposal,
 		operation: OperationModel,
-		signal: AbortSignal
+		signal: AbortSignal,
+		isCurrent: () => boolean
 	): Promise<InteractiveFormSpec | undefined> {
-		if (
-			operation.chatInstructions?.interactiveFormsEnabled !== true ||
-			operation.interactiveFormsEpoch !== settingsStore.interactiveFormsEpoch ||
-			config().interactiveFormsEnabled !== true ||
-			!content.startsWith(FORM_PROPOSAL)
-		)
-			return;
-		const questions = readFormProposal(content)?.questions.trim();
+		const current = () => ChatService.isFormOperationCurrent(operation, signal, isCurrent);
+		if (!current()) return;
+		const questions = proposal.questions.trim();
 		if (!questions || questions.length > 12000 || signal.aborted) return;
 		const controller = new AbortController();
 		const abort = () => controller.abort();
@@ -90,12 +101,7 @@ export class ChatService {
 		let finishReason = '';
 		try {
 			const { buildFormCatalogInstructions, formCatalog } = await import('$lib/forms/form-catalog');
-			if (
-				signal.aborted ||
-				config().interactiveFormsEnabled !== true ||
-				operation.interactiveFormsEpoch !== settingsStore.interactiveFormsEpoch
-			)
-				return;
+			if (!current()) return;
 			await ChatService.sendMessage(
 				[
 					{ role: 'system', content: buildFormCatalogInstructions() },
@@ -118,16 +124,11 @@ export class ChatService {
 						: {}),
 					onChunk: (chunk) => {
 						raw += chunk;
-						if (
-							formBytes(raw) > 32768 ||
-							config().interactiveFormsEnabled !== true ||
-							operation.interactiveFormsEpoch !== settingsStore.interactiveFormsEpoch
-						)
-							controller.abort();
+						if (formBytes(raw) > 32768 || !current()) controller.abort();
 					},
 					onProviderResult: (event) => {
 						if (event.finishReason) finishReason = event.finishReason;
-						if (event.toolCalls?.length || event.refusal) controller.abort();
+						if (!current() || event.toolCalls?.length || event.refusal) controller.abort();
 					},
 					onComplete: () => {
 						complete = true;
@@ -139,9 +140,7 @@ export class ChatService {
 			if (
 				!complete ||
 				controller.signal.aborted ||
-				signal.aborted ||
-				config().interactiveFormsEnabled !== true ||
-				operation.interactiveFormsEpoch !== settingsStore.interactiveFormsEpoch ||
+				!current() ||
 				!['stop', 'end_turn', 'completed'].includes(finishReason)
 			)
 				return;
@@ -1432,7 +1431,14 @@ export class ChatService {
 	): ApiChatMessageData {
 		const visibleContent =
 			message.role === MessageRole.ASSISTANT
-				? formVisibleText(message.content, true)
+				? formVisibleText(message.content, true) ||
+					(message.content
+						? t(
+								message.interactiveForm
+									? 'interactiveForms.invalid'
+									: 'interactiveForms.proposalFailed'
+							)
+						: '')
 				: message.content;
 		// Parse tool calls for assistant messages
 		let toolCalls: ApiChatCompletionToolCall[] | undefined;

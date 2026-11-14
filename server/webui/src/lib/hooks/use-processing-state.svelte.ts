@@ -146,7 +146,9 @@ export function useProcessingState(): UseProcessingStateReturn {
 
 		const contextPercent = Math.round((stateToUse.contextUsed / stateToUse.contextTotal) * 100);
 		const tokensPerSecond =
-			stateToUse.tokensPerSecond && stateToUse.tokensPerSecond > 0
+			stateToUse.status === 'generating' &&
+			stateToUse.tokensPerSecond &&
+			stateToUse.tokensPerSecond > 0
 				? stateToUse.tokensPerSecond
 				: null;
 
@@ -335,7 +337,7 @@ export function useProcessingState(): UseProcessingStateReturn {
 	 * Returns live generation statistics for display (token generation phase)
 	 */
 	function getLiveGenerationStats(): LiveGenerationStats | null {
-		if (!processingState) return null;
+		if (!processingState || processingState.status !== 'generating') return null;
 
 		const { tokensDecoded, tokensPerSecond } = processingState;
 
