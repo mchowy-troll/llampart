@@ -23,6 +23,7 @@ import {
 	formFallbackText
 } from '$lib/forms/form-protocol';
 import { formDefaults } from '$lib/services/interactive-forms';
+import { FORM_LIMITS, formBytes } from '$lib/forms/form-limits';
 import type { InteractiveForm } from '$lib/types/interactive-forms';
 import { getApiProvider } from '$lib/services/providers';
 import { conversationsStore } from '$lib/stores/conversations.svelte';
@@ -1079,7 +1080,7 @@ class ChatStore {
 			if (!proposal)
 				return { update: { content: t('interactiveForms.proposalFailed') }, isCurrent };
 			const content = formFallbackText(proposal);
-			if (content.length > 12000) return { update: { content }, isCurrent };
+			if (formBytes(content) > FORM_LIMITS.sourceBytes) return { update: { content }, isCurrent };
 			const spec = await liveInferenceStore.withRequest(
 				convId,
 				abortController.signal,

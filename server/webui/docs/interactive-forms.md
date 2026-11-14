@@ -6,9 +6,18 @@ answer still uses one model request. A form proposal uses one additional,
 tool-free request to describe the controls. This increases latency and token use.
 
 Review the questions before answering. Do not enter passwords, API keys or other
-secrets. Changing a field saves a local draft; only an explicit **Submit** click
+secrets. Changing a field saves a local draft; only an explicit **Send** click
 sends a normal user message containing the labelled answers. The usual chat
 permissions still apply to subsequent assistant responses.
+
+The button always uses the application's localized `common.send` caption (for
+example **Wyślij** in Polish), ignoring the required legacy model label. There
+are no form-level submission status notices; field-level validation remains.
+Once a durable result owns its user message, that duplicate bubble is omitted
+from chat presentation, including during generation and retry. The original
+message remains in storage, exports and model context. Hiding requires the
+matching usable form to be mounted on the selected branch; otherwise the answer
+message remains accessible.
 
 The proposal declares optional introductory context separately from the questions.
 After successful form generation only that introduction accompanies the controls;
@@ -59,8 +68,14 @@ Editing or deleting its user-result message releases the form back to a draft.
 
 Allowed controls: text, email, number, date, textarea, checkbox, checkbox group, radio group, select and slider;
 plus containers, group, heading, description and one submit button. Limits:
-32 KiB specification, 64 nodes, tree depth 6, 32 children per node, 8 KiB answers,
-12 options per choice. Model-provided HTML, CSS, JavaScript, imports, expressions,
+96 KiB UTF-8 specification, 128 nodes, tree depth 6, 64 children per node,
+32 KiB serialized values and 24 options per choice. Shared boundaries are owned
+by `forms/form-limits.ts`. First-phase proposals allow 20,000 question characters
+within a 64 KiB UTF-8 envelope; source text is bounded to 64 KiB. Rendered answer
+text allows 130 KiB, covering expanded choice labels as well as values. Whole
+records allow 704 KiB, accounting for JSON escaping of source text, the spec,
+both value copies and the serialized answer, with a finite safety margin.
+Model-provided HTML, CSS, JavaScript, imports, expressions,
 bindings, arbitrary events and tool actions are not part of the schema. All text
 is rendered as text, not HTML. Validation is repeated for local history too.
 
@@ -133,18 +148,18 @@ validation tooltip. Correcting the value closes the tooltip; Submit still owns
 inline errors and focus on the first error. Disabled fields have no preview.
 Tooltip appearance is exactly the same as the response's Download Markdown action.
 Calendar icon actions use that same Tooltip component and localized labels, not
-native `title` attributes. Form status notices retain i18n keys until rendering so
-language changes update interface text without modifying model-authored questions.
+native `title` attributes. The submit caption and field errors react to language
+changes without modifying model-authored questions.
 
 `Checkbox` is a boolean (for example accepting terms). `CheckboxGroup` explicitly
-represents multiple independent choices, with 2–12 unique options. It stores an
+represents multiple independent choices, with 2–24 unique options. It stores an
 array of selected option values in declaration order, with no duplicates or
 unknown values. An optional group allows `[]`; a required group needs at least
 one selection, not every checkbox checked. Results, reload, history projection,
 fork and import/export preserve this array; the sent text lists selected labels.
 Older boolean questions are not guessed or reconstructed from their wording.
 
-Form generation has a 90-second timeout and a 4000-token output limit. Native
+Form generation has a 210-second timeout and a 12,000-token output limit. Native
 llama-server requests use JSON-object output and disable template thinking for
 this auxiliary request only; other adapters receive plain JSON instructions.
 No automatic repair or retry request is made when a description is invalid.

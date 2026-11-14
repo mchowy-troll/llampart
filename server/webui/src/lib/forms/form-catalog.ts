@@ -2,6 +2,7 @@ import { defineCatalog } from '@json-render/core';
 import { schema } from '@json-render/svelte/schema';
 import { z } from 'zod';
 import { formPropSchemas } from './form-schema';
+import { FORM_LIMITS } from './form-limits';
 
 export const formCatalog = defineCatalog(schema, {
 	components: Object.fromEntries(
@@ -22,13 +23,14 @@ export function buildFormCatalogInstructions(): string {
 	return [
 		'Return ONE complete JSON object, no Markdown. Convert the supplied questions into a declarative form, never executable code. Use the language of the questions.',
 		'Shape: {"root":"root","elements":{"root":{"type":"Container","props":{"columns":1},"children":["field","submit"]}}}. Every child must exist; leaves have children:[].',
-		'IDs: [a-z][a-z0-9_]{0,39}; no constructor/prototype/__proto__. One Container root, exactly one SubmitButton, at least one field. Tree only; <=64 nodes, depth<=6, children<=32; JSON<=32768 UTF-8 bytes.',
+		`IDs: [a-z][a-z0-9_]{0,39}; no constructor/prototype/__proto__. One Container root, exactly one SubmitButton, at least one field. Tree only; <=${FORM_LIMITS.nodes} nodes, depth<=${FORM_LIMITS.depth}, children<=${FORM_LIMITS.children}; JSON<=${FORM_LIMITS.specBytes} UTF-8 bytes.`,
 		'Only SubmitButton has on:{"press":{"action":"submit"}}. No other actions, events, params, state, repeat, visible, bindings, expressions, HTML, CSS, JS, URLs, imports, tools, defaults, automatic submission or requests for secrets. Do not request sensitive personal data unless necessary for the stated task.',
 		...Object.entries(formPropSchemas).map(
 			([name, props]) =>
 				`${name}: ${JSON.stringify(z.toJSONSchema(props, { unrepresentable: 'any' }))}`
 		),
 		'Slider max>min; step<=max-min. Unique field IDs and option values. All fields include required:boolean and help:string (empty allowed).',
+		'SubmitButton.props.label is required legacy specification data only. The UI ignores it and always displays the application-localized Send caption.',
 		'Always include help as a string, but prefer help:"" when the label is sufficient. Do not paraphrase the label or add generic instructions to enter an answer. Keep brief help only when it clarifies format or units, permitted ranges or constraints, multiple-value entry conventions, or ambiguity that could affect the answer. For example, "Favorite color" needs no "Enter your favorite color" help; "Weekly hobby hours" needs no "Enter the number of hours" help. For "Three main hobbies", "Separate the three hobbies with commas" is useful guidance.',
 		'Checkbox is ONE boolean only (for example accepting terms). For select-all-that-apply questions use CheckboxGroup with a separate option for EVERY choice; it returns an array of selected option values, empty [] allowed unless required=true (then at least one). Never collapse multiple choices into one boolean. Use RadioGroup for a single-choice question; Select is also single choice when a dropdown fits better. Use concise labels; keep any useful help brief. Put SubmitButton last, directly in the root Container, after all sections.',
 		'Make the form the main answer, not a second copy of its questions. Description is only useful extra context, never filler, a repeated question list or technical field-type instructions. Use Number for quantities (min/max within +/-1e12, positive step); Date for calendar dates with YYYY-MM-DD bounds. Do not invent a date or numeric value.',

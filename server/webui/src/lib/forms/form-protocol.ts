@@ -1,13 +1,16 @@
 import { z } from 'zod';
+import { FORM_LIMITS, formBytes } from './form-limits';
 
 /** Only an anchored, reserved first line is a format decision; never scan Markdown. */
 export const FORM_PROPOSAL = '[[llampart-form]]\n';
 const CRLF_PROPOSAL = '[[llampart-form]]\r\n';
-const FORM_PROPOSAL_LIMIT = 32768;
-export const FORM_CAPABILITY_INSTRUCTIONS = `Interactive forms are available. Decide yourself, without requiring a special user command: use a form only when collecting several independent answers or choices helps. Prefer normal text for simple questions, code, math and explanations. To propose a form, the EXACT FIRST LINE must be ${JSON.stringify(FORM_PROPOSAL.trim())}, with no introductory prose, whitespace or Markdown before it. After that line return exactly ONE JSON object, no code fence or trailing prose: {"intro":"","questions":"Your questions as one string, with topics separated by \\n."}. intro is an optional string (empty allowed, <=1000 characters), only natural context, never a question list or field-type instructions. questions MUST be ONE non-empty STRING of natural-language questions grouped by topic (<=10000 characters); NEVER an object, array, null or component specification. Put all questions, topic labels and choices inside that one string, preserving their order. This FIRST-PHASE JSON is only a proposal: do NOT output the SECOND-PHASE component tree, root, elements, controls or technical field types. The application creates those separately. Do not duplicate the questions as prose above or below the JSON. Do not call tools. Otherwise answer normally without a marker. Never ask for secrets.`;
+export const FORM_CAPABILITY_INSTRUCTIONS = `Interactive forms are available. Decide yourself, without requiring a special user command: use a form only when collecting several independent answers or choices helps. Prefer normal text for simple questions, code, math and explanations. To propose a form, the EXACT FIRST LINE must be ${JSON.stringify(FORM_PROPOSAL.trim())}, with no introductory prose, whitespace or Markdown before it. After that line return exactly ONE JSON object, no code fence or trailing prose: {"intro":"","questions":"Your questions as one string, with topics separated by \\n."}. intro is an optional string (empty allowed, <=1000 characters), only natural context, never a question list or field-type instructions. questions MUST be ONE non-empty STRING of natural-language questions grouped by topic (<=${FORM_LIMITS.questionCharacters} characters); NEVER an object, array, null or component specification. The complete proposal including its marker must fit within ${FORM_LIMITS.proposalBytes} UTF-8 bytes. Put all questions, topic labels and choices inside that one string, preserving their order. This FIRST-PHASE JSON is only a proposal: do NOT output the SECOND-PHASE component tree, root, elements, controls or technical field types. The application creates those separately. Do not duplicate the questions as prose above or below the JSON. Do not call tools. Otherwise answer normally without a marker. Never ask for secrets.`;
 
 const proposalSchema = z
-	.object({ intro: z.string().max(1000).default(''), questions: z.string().min(1).max(10000) })
+	.object({
+		intro: z.string().max(1000).default(''),
+		questions: z.string().min(1).max(FORM_LIMITS.questionCharacters)
+	})
 	.strict();
 
 export type FormProposal = z.infer<typeof proposalSchema> & { structured: boolean };
@@ -44,7 +47,7 @@ function structuredBody(body: string): boolean {
 
 /** Strict JSON-only boundary; the original schema remains authoritative. */
 function readFormProposalJson(body: string): FormProposal | null {
-	if (body.length > FORM_PROPOSAL_LIMIT) return null;
+	if (formBytes(body) > FORM_LIMITS.proposalBytes) return null;
 	try {
 		return { ...proposalSchema.parse(JSON.parse(body)), structured: true };
 	} catch {
@@ -54,7 +57,8 @@ function readFormProposalJson(body: string): FormProposal | null {
 
 /** Parse only at a terminal boundary, never on each streamed token. */
 export function readFormProposal(content: string): FormProposal | null {
-	if (!content.startsWith(FORM_PROPOSAL) || content.length > FORM_PROPOSAL_LIMIT) return null;
+	if (!content.startsWith(FORM_PROPOSAL) || formBytes(content) > FORM_LIMITS.proposalBytes)
+		return null;
 	const body = content.slice(FORM_PROPOSAL.length).trim();
 	if (!body) return null;
 	// Earlier unstructured prose has no declared slots authorizing its removal.
@@ -68,7 +72,7 @@ export function readFormProposal(content: string): FormProposal | null {
 export function recoverFormProposal(content: string): FormProposal | null {
 	const strict = readFormProposal(content);
 	if (strict) return strict;
-	if (!hasFormProposal(content) || content.length > FORM_PROPOSAL_LIMIT) return null;
+	if (!hasFormProposal(content) || formBytes(content) > FORM_LIMITS.proposalBytes) return null;
 	try {
 		// Exactly one explicit wrapper, not a search through arbitrary JSON.
 		let value = unwrapProposal(JSON.parse(unwrappedProposalBody(content)));
@@ -78,8 +82,10 @@ export function recoverFormProposal(content: string): FormProposal | null {
 			const questions = candidate.questions;
 			if (
 				!questions.length ||
-				questions.length > 64 ||
-				!questions.every((q) => typeof q === 'string' && q.trim() && q.length <= 10000)
+				questions.length > FORM_LIMITS.recoveredQuestions ||
+				!questions.every(
+					(q) => typeof q === 'string' && q.trim() && q.length <= FORM_LIMITS.questionCharacters
+				)
 			)
 				return null;
 			value = { ...candidate, questions: questions.join('\n\n') };

@@ -1,22 +1,19 @@
 import { z } from 'zod';
 import {
-	FORM_LIMITS,
 	forbiddenFormKeys,
 	formPropSchemas,
 	formDateSchema,
 	formSpecSchema,
 	interactiveFormSchema
 } from '$lib/forms/form-schema';
+import { FORM_LIMITS, formBytes } from '$lib/forms/form-limits';
+export { formBytes } from '$lib/forms/form-limits';
 import type {
 	FormFieldProps,
 	FormValues,
 	InteractiveForm,
 	InteractiveFormSpec
 } from '$lib/types/interactive-forms';
-
-export function formBytes(value: unknown): number {
-	return new TextEncoder().encode(typeof value === 'string' ? value : JSON.stringify(value)).length;
-}
 
 function inspect(value: unknown, limit: number): void {
 	if (formBytes(value) > limit) throw new Error('Form size limit exceeded');
@@ -76,6 +73,8 @@ export function validateFormSpec(value: unknown): InteractiveFormSpec {
 	for (const node of Object.values(spec.elements))
 		node.children = node.children.filter((child) => child !== submitId);
 	spec.elements[spec.root].children.push(submitId);
+	if (spec.elements[spec.root].children.length > FORM_LIMITS.children)
+		throw new Error('Form children limit exceeded');
 	return spec;
 }
 
@@ -176,7 +175,7 @@ export function validateFormValues(spec: InteractiveFormSpec, candidate: unknown
 }
 
 export function formAnswerText(spec: InteractiveFormSpec, values: FormValues): string {
-	return formFields(spec)
+	const content = formFields(spec)
 		.map((n, i) => {
 			const p = n.props as unknown as FormFieldProps;
 			const value = values[p.field];
@@ -189,6 +188,8 @@ export function formAnswerText(spec: InteractiveFormSpec, values: FormValues): s
 			return `${i + 1}. ${p.label}\n${answer || '—'}`;
 		})
 		.join('\n\n');
+	if (formBytes(content) > FORM_LIMITS.answerBytes) throw new Error('Form answer limit exceeded');
+	return content;
 }
 
 /** Revalidate local history too. No trust is conferred by IndexedDB. */
@@ -196,7 +197,7 @@ export function validateInteractiveForm(
 	value: unknown,
 	owner: { id: string; convId: string; role: string }
 ): InteractiveForm {
-	inspect(value, 131072);
+	inspect(value, FORM_LIMITS.recordBytes);
 	const form = interactiveFormSchema.parse(value);
 	if (
 		owner.role !== 'assistant' ||

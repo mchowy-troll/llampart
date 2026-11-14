@@ -8,14 +8,8 @@ export const pl: TranslationDictionary = {
 		value: 'Podaj poprawną wartość w dozwolonym zakresie.',
 		privacy:
 			'Formularz wygenerowany przez AI. Sprawdź pytania; nie podawaj sekretów. Dopiero Twoje kliknięcie wysyła odpowiedzi.',
-		submitted: 'Odpowiedzi zostały złożone.',
-		pending: 'Odpowiedzi zapisano do wysłania. Ponowienie użyje tej samej wiadomości.',
-		retry: 'Ponów wysłanie odpowiedzi',
 		invalid:
 			'Formularz jest niedostępny lub edytowano jego treść. Zapisane dane nie zostały usunięte.',
-		failed:
-			'Nie udało się zapisać lub wysłać odpowiedzi. Wpisane dane zachowano; spróbuj ponownie.',
-		errors: 'Popraw zaznaczone pola. Twoje odpowiedzi zostały zachowane.',
 		required: 'To pole jest wymagane.',
 		email: 'Podaj poprawny adres e-mail.',
 		option: 'Wybierz dostępną odpowiedź.',

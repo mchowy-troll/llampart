@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { untrack } from 'svelte';
+	import { SvelteMap } from 'svelte/reactivity';
+	import { setFormPresentation } from '$lib/contexts/message-presentation.context';
+	import { hiddenFormResultIds } from '$lib/utils/form-result-presentation';
 	import { fadeInView } from '$lib/actions/fade-in-view.svelte';
 	import ChatMessage from '$lib/components/app/chat/ChatMessages/ChatMessage.svelte';
 	import { setChatActionsContext } from '$lib/contexts';
@@ -48,6 +51,15 @@
 	});
 
 	let allConversationMessages = $state<DatabaseMessage[]>([]);
+	const renderedForms = new SvelteMap<string, string>();
+	setFormPresentation({
+		register(messageId, formId) {
+			renderedForms.set(messageId, formId);
+			return () => {
+				if (renderedForms.get(messageId) === formId) renderedForms.delete(messageId);
+			};
+		}
+	});
 	const currentConfig = config();
 
 	function getMessageResponseLabels() {
@@ -232,7 +244,10 @@
 			}
 		}
 
-		return result;
+		// Keep result users as grouping barriers, then filter entries BEFORE wrappers.
+		// Otherwise hiding one could merge separate agentic sessions/assistant replies.
+		const hiddenResults = hiddenFormResultIds(filteredMessages, renderedForms);
+		return result.filter((entry) => !hiddenResults.has(entry.message.id));
 	});
 </script>
 

@@ -83,7 +83,6 @@ class ConversationsStore {
 			tail: Promise<void>;
 			values: FormValues;
 			sourceContent: string;
-			failed: boolean;
 			conversationId: string;
 		}
 	>();
@@ -92,10 +91,6 @@ class ConversationsStore {
 		event.preventDefault();
 		event.returnValue = '';
 	};
-
-	hasUnsavedInteractiveForm(formId: string): boolean {
-		return this.formWrites.get(formId)?.failed === true;
-	}
 
 	private discardFormDrafts(
 		conversationIds: Set<string>,
@@ -149,7 +144,6 @@ class ConversationsStore {
 				tail: Promise.resolve(),
 				values,
 				sourceContent: form.sourceContent,
-				failed: false,
 				conversationId: message.convId
 			};
 			this.formWrites.set(formId, queue);
@@ -169,7 +163,6 @@ class ConversationsStore {
 						state.revision
 					);
 					state.revision = saved.revision;
-					state.failed = false;
 					const current = this.activeMessages.find((m) => m.id === messageId)?.interactiveForm;
 					if (current?.id === formId) current.revision = saved.revision;
 				})
@@ -182,9 +175,7 @@ class ConversationsStore {
 					if (browser && !this.formWrites.size)
 						window.removeEventListener('beforeunload', this.warnUnsavedForms);
 				},
-				() => {
-					state.failed = true;
-				}
+				() => undefined
 			)
 			.catch(() => undefined);
 		return write;

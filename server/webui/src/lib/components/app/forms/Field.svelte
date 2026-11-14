@@ -4,6 +4,7 @@
 	import { FORM_HOST, type FormHost } from '$lib/forms/form-host';
 	import type { FormFieldProps, FormValues } from '$lib/types/interactive-forms';
 	import { formBytes } from '$lib/services/interactive-forms';
+	import { FORM_LIMITS } from '$lib/forms/form-limits';
 	import { t, getInterfaceLanguage } from '$lib/i18n';
 	import { config } from '$lib/stores/settings.svelte';
 	import SelectionControl from '$lib/components/ui/selection-control/selection-control.svelte';
@@ -43,7 +44,7 @@
 			...(formState.getSnapshot().values as Record<string, unknown>),
 			[p.field]: next
 		};
-		if (formBytes(values) > 8192) {
+		if (formBytes(values) > FORM_LIMITS.valuesBytes) {
 			formState.set(`/errors/${p.field}`, 'limit');
 			return false;
 		}

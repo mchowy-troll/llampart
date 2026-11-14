@@ -8,12 +8,7 @@ export const en: TranslationDictionary = {
 		value: 'Enter a valid value within the allowed bounds.',
 		privacy:
 			'AI-generated form. Check the questions; do not enter secrets. Only your click sends answers.',
-		submitted: 'Answers submitted.',
-		pending: 'Answers saved for sending. Retry reuses the same message.',
-		retry: 'Retry sending answers',
 		invalid: 'This form is unavailable or its source was edited. Saved data have not been removed.',
-		failed: 'Could not save or send answers. Your entries are retained; try again.',
-		errors: 'Check the highlighted fields. Your entries are retained.',
 		required: 'This field is required.',
 		email: 'Enter a valid email address.',
 		option: 'Choose an available option.',

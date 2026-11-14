@@ -44,6 +44,7 @@ import { LlamaServerBackendError } from '$lib/services/providers/llama-server-re
 import type { MessageModelInfoSnapshot } from '$lib/types/message-model-info';
 import { formVisibleText, type FormProposal } from '$lib/forms/form-protocol';
 import { formBytes, validateFormSpec } from '$lib/services/interactive-forms';
+import { FORM_LIMITS } from '$lib/forms/form-limits';
 import type { InteractiveFormSpec } from '$lib/types/interactive-forms';
 
 interface FrozenStreamRequest {
@@ -92,11 +93,11 @@ export class ChatService {
 		const current = () => ChatService.isFormOperationCurrent(operation, signal, isCurrent);
 		if (!current()) return;
 		const questions = proposal.questions.trim();
-		if (!questions || questions.length > 12000 || signal.aborted) return;
+		if (!questions || questions.length > FORM_LIMITS.questionCharacters || signal.aborted) return;
 		const controller = new AbortController();
 		const abort = () => controller.abort();
 		signal.addEventListener('abort', abort, { once: true });
-		const timeout = setTimeout(abort, 90000);
+		const timeout = setTimeout(abort, FORM_LIMITS.timeoutMs);
 		let raw = '';
 		let complete = false;
 		let finishReason = '';
@@ -112,7 +113,7 @@ export class ChatService {
 					operationModel: Object.freeze({ ...operation, conversationId: null }),
 					stream: true,
 					temperature: 0,
-					max_tokens: 4000,
+					max_tokens: FORM_LIMITS.completionTokens,
 					// Native llama-server supports these request-local options. Other
 					// adapters keep plain text JSON; no tool/structured-output assumption.
 					...(operation.requestContext.providerId === API_PROVIDER_IDS.LLAMA_SERVER
@@ -126,7 +127,7 @@ export class ChatService {
 						: {}),
 					onChunk: (chunk) => {
 						raw += chunk;
-						if (formBytes(raw) > 32768 || !current()) controller.abort();
+						if (formBytes(raw) > FORM_LIMITS.specBytes || !current()) controller.abort();
 					},
 					onProviderResult: (event) => {
 						inference?.onProviderResult?.(event);

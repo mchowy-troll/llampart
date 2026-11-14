@@ -1,6 +1,6 @@
 import { z } from 'zod';
+import { FORM_LIMITS, formBytes } from './form-limits';
 
-export const FORM_LIMITS = { specBytes: 32768, nodes: 64, depth: 6, valuesBytes: 8192 } as const;
 export const forbiddenFormKeys = new Set(['__proto__', 'prototype', 'constructor']);
 const id = z
 	.string()
@@ -30,7 +30,7 @@ const option = z.object({ value: z.string().min(1).max(60), label }).strict();
 const options = z
 	.array(option)
 	.min(2)
-	.max(12)
+	.max(FORM_LIMITS.choices)
 	.refine((a) => new Set(a.map((o) => o.value)).size === a.length);
 export const formPropSchemas = {
 	Container: z.object({ columns }).strict(),
@@ -77,7 +77,7 @@ export const formSpecSchema = z
 				.object({
 					type: z.enum(Object.keys(formPropSchemas) as [FormComponentName, ...FormComponentName[]]),
 					props: z.record(z.string(), z.unknown()),
-					children: z.array(id).max(32),
+					children: z.array(id).max(FORM_LIMITS.children),
 					on: z
 						.object({ press: z.object({ action: z.literal('submit') }).strict() })
 						.strict()
@@ -93,7 +93,7 @@ const values = z.record(
 		z.string().max(2000),
 		z.number().finite(),
 		z.boolean(),
-		z.array(z.string().min(1).max(60)).max(12)
+		z.array(z.string().min(1).max(60)).max(FORM_LIMITS.choices)
 	])
 );
 export const interactiveFormSchema = z
@@ -101,13 +101,17 @@ export const interactiveFormSchema = z
 		id: z.string().min(1).max(100),
 		messageId: z.string().min(1).max(100),
 		conversationId: z.string().min(1).max(100),
-		sourceContent: z.string().max(12000),
+		sourceContent: z.string().refine((s) => formBytes(s) <= FORM_LIMITS.sourceBytes),
 		spec: formSpecSchema,
 		values,
 		revision: z.number().int().nonnegative(),
 		status: z.enum(['draft', 'submitted']),
 		result: z
-			.object({ values, content: z.string().max(24576), messageId: z.string().min(1).max(100) })
+			.object({
+				values,
+				content: z.string().refine((s) => formBytes(s) <= FORM_LIMITS.answerBytes),
+				messageId: z.string().min(1).max(100)
+			})
 			.strict()
 			.optional()
 	})

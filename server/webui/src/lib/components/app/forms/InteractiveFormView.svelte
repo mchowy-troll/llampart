@@ -20,8 +20,6 @@
 	let previewValues = $state.raw(store.getSnapshot().values as FormValues);
 	const validationErrors = $derived(validateFormValues(record.spec, previewValues).errors);
 	let lastValues = JSON.stringify(store.getSnapshot().values);
-	// svelte-ignore state_referenced_locally
-	let notice = $state(conversationsStore.hasUnsavedInteractiveForm(record.id) ? 'failed' : '');
 	let busy = $state(false);
 	let container = $state<HTMLElement>();
 	$effect(() => {
@@ -43,7 +41,7 @@
 		void conversationsStore
 			.saveInteractiveFormValues(record.messageId, record.id, structuredClone(values))
 			.catch(() => {
-				notice = 'failed';
+				// The store retains the write and before-unload protection for safe retry.
 			});
 	});
 	onDestroy(unsubscribe);
@@ -65,9 +63,6 @@
 		},
 		get submittable() {
 			return host.enabled && !busy && record.status === 'draft';
-		},
-		get retry() {
-			return record.status === 'draft' && !!record.result;
 		},
 		get submitting() {
 			return busy;
@@ -95,7 +90,6 @@
 				const checked = validateFormValues(record.spec, store.getSnapshot().values);
 				store.set('/errors', checked.errors);
 				if (!checked.valid) {
-					notice = 'errors';
 					focusError = true;
 					return;
 				}
@@ -107,9 +101,8 @@
 						checked.values
 					);
 				await chatStore.submitInteractiveForm(record.messageId, record.id);
-				notice = '';
 			} catch {
-				notice = 'failed';
+				// Keep durable/pending ownership intact; the same action can safely retry.
 			} finally {
 				busy = false;
 				if (focusError) {
@@ -139,7 +132,4 @@
 			<Renderer spec={record.spec} {registry} />
 		</ActionProvider>
 	</StateProvider>
-	{#if record.status === 'submitted'}<p role="status">{t('interactiveForms.submitted')}</p>
-	{:else if record.result}<p role="status">{t('interactiveForms.pending')}</p>{/if}
-	<p role="status" class="llampart-form-help">{notice ? t(`interactiveForms.${notice}`) : ''}</p>
 </form>

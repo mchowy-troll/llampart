@@ -5,6 +5,7 @@
 	import { config } from '$lib/stores/settings.svelte';
 	import { formAnswerText, validateInteractiveForm } from '$lib/services/interactive-forms';
 	import { t } from '$lib/i18n';
+	import { getFormPresentation } from '$lib/contexts/message-presentation.context';
 
 	let { message }: { message: DatabaseMessage } = $props();
 	const enabled = $derived(config().interactiveFormsEnabled === true);
@@ -18,6 +19,11 @@
 	const usable = $derived(form && form.sourceContent === message.content);
 	let View = $state<Component<{ record: InteractiveForm; enabled: boolean }> | null>(null);
 	let failed = $state(false);
+	const presentation = getFormPresentation();
+	$effect(() => {
+		if (form && usable && enabled && View && !failed)
+			return presentation?.register(message.id, form.id);
+	});
 	$effect(() => {
 		if (!enabled || !usable || View || failed) return;
 		let disposed = false;
@@ -51,7 +57,6 @@
 				form.spec,
 				form.values
 			)}</pre>
-		{#if form.status === 'submitted'}<p class="text-sm">{t('interactiveForms.submitted')}</p>{/if}
 	{:else}
 		<p role="status">{t('interactiveForms.invalid')}</p>
 	{/if}
