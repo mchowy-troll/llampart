@@ -1,4 +1,6 @@
 import { activeProcessingState } from '$lib/stores/chat.svelte';
+import { liveInferenceStore } from '$lib/stores/live-inference.svelte';
+import { activeConversation } from '$lib/stores/conversations.svelte';
 import { config } from '$lib/stores/settings.svelte';
 import { STATS_UNITS } from '$lib/constants';
 import type { ApiProcessingState, LiveProcessingStats, LiveGenerationStats } from '$lib/types';
@@ -145,10 +147,12 @@ export function useProcessingState(): UseProcessingStateReturn {
 		}
 
 		const contextPercent = Math.round((stateToUse.contextUsed / stateToUse.contextTotal) * 100);
-		const tokensPerSecond =
-			stateToUse.status === 'generating' &&
-			stateToUse.tokensPerSecond &&
-			stateToUse.tokensPerSecond > 0
+		const activeRequest = liveInferenceStore.getRate(activeConversation()?.id);
+		const tokensPerSecond = activeRequest
+			? activeRequest.tokensPerSecond
+			: stateToUse.status === 'generating' &&
+				  stateToUse.tokensPerSecond &&
+				  stateToUse.tokensPerSecond > 0
 				? stateToUse.tokensPerSecond
 				: null;
 

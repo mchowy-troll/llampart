@@ -15,6 +15,7 @@ import { SvelteMap } from 'svelte/reactivity';
 import { t } from '$lib/i18n';
 import { DatabaseService } from '$lib/services/database.service';
 import { ChatService } from '$lib/services/chat.service';
+import { liveInferenceStore } from '$lib/stores/live-inference.svelte';
 import {
 	hasFormProposal,
 	recoverFormProposal,
@@ -1079,11 +1080,18 @@ class ChatStore {
 				return { update: { content: t('interactiveForms.proposalFailed') }, isCurrent };
 			const content = formFallbackText(proposal);
 			if (content.length > 12000) return { update: { content }, isCurrent };
-			const spec = await ChatService.generateInteractiveForm(
-				proposal,
-				operationModel,
+			const spec = await liveInferenceStore.withRequest(
+				convId,
 				abortController.signal,
-				isCurrent
+				isCurrent,
+				(inference) =>
+					ChatService.generateInteractiveForm(
+						proposal,
+						operationModel,
+						abortController.signal,
+						isCurrent,
+						inference
+					)
 			);
 			if (!isCurrent()) return;
 			if (!spec) return { update: { content }, isCurrent };

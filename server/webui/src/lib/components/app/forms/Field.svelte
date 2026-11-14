@@ -95,6 +95,10 @@
 	}
 </script>
 
+{#snippet labelText()}
+	{p.label}{#if p.required}<sup class="llampart-form-required">*</sup>{/if}
+{/snippet}
+
 <div
 	class="llampart-form-field"
 	data-field={p.field}
@@ -103,12 +107,10 @@
 	{#if kind === 'Checkbox'}
 		<div class="llampart-form-field-label" aria-hidden="true"></div>
 	{:else if kind === 'RadioGroup' || kind === 'CheckboxGroup'}
-		<span class="llampart-form-field-label" id={`${id}-label`}
-			>{p.label}{p.required ? ' *' : ''}</span
-		>
+		<span class="llampart-form-field-label" id={`${id}-label`}>{@render labelText()}</span>
 	{:else}
 		<label for={id} class="llampart-form-field-label"
-			>{p.label}{p.required ? ' *' : ''}{#if kind === 'Slider'}
+			>{@render labelText()}{#if kind === 'Slider'}
 				<output class="ml-2" for={id}>{String(value)}</output>{/if}</label
 		>
 	{/if}
@@ -140,6 +142,7 @@
 				>
 					{#if kind === 'RadioGroup' || kind === 'CheckboxGroup'}
 						<fieldset
+							class:llampart-form-checkbox-group={kind === 'CheckboxGroup'}
 							role={kind === 'RadioGroup' ? 'radiogroup' : undefined}
 							aria-labelledby={`${id}-label`}
 							aria-required={kind === 'RadioGroup' ? p.required : undefined}
@@ -180,7 +183,7 @@
 								aria-invalid={!!error}
 								aria-describedby={`${id}-help ${id}-error`}
 								onchange={(e) => change(e.currentTarget.checked)}
-							/><span>{p.label}{p.required ? ' *' : ''}</span></label
+							/><span>{@render labelText()}</span></label
 						>
 					{:else}
 						{#if kind === 'Textarea'}

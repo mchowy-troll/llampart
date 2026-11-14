@@ -86,7 +86,8 @@ export class ChatService {
 		proposal: FormProposal,
 		operation: OperationModel,
 		signal: AbortSignal,
-		isCurrent: () => boolean
+		isCurrent: () => boolean,
+		inference?: Pick<SettingsChatServiceOptions, 'onTimings' | 'onProviderResult'>
 	): Promise<InteractiveFormSpec | undefined> {
 		const current = () => ChatService.isFormOperationCurrent(operation, signal, isCurrent);
 		if (!current()) return;
@@ -116,6 +117,7 @@ export class ChatService {
 					// adapters keep plain text JSON; no tool/structured-output assumption.
 					...(operation.requestContext.providerId === API_PROVIDER_IDS.LLAMA_SERVER
 						? {
+								timings_per_token: true,
 								custom: {
 									response_format: { type: 'json_object' },
 									chat_template_kwargs: { enable_thinking: false }
@@ -127,9 +129,11 @@ export class ChatService {
 						if (formBytes(raw) > 32768 || !current()) controller.abort();
 					},
 					onProviderResult: (event) => {
+						inference?.onProviderResult?.(event);
 						if (event.finishReason) finishReason = event.finishReason;
 						if (!current() || event.toolCalls?.length || event.refusal) controller.abort();
 					},
+					onTimings: inference?.onTimings,
 					onComplete: () => {
 						complete = true;
 					}

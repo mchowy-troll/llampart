@@ -491,7 +491,8 @@
 							key: SETTINGS_KEYS.INTERACTIVE_FORMS_ENABLED,
 							order: 1,
 							label: t('settings.fieldInteractiveFormsEnabled'),
-							type: SettingsFieldType.CHECKBOX
+							type: SettingsFieldType.CHECKBOX,
+							isExperimental: true
 						}
 					]
 				},

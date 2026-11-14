@@ -43,6 +43,14 @@
 	grid-row: 1;
 	min-height: 1lh;
 }
+.llampart-form-required {
+	font-size: 0.675em;
+	line-height: 0;
+	position: relative;
+	top: -0.5em;
+	vertical-align: baseline;
+	color: var(--muted-foreground);
+}
 .llampart-form-field-control {
 	grid-row: 2;
 	align-self: start;
@@ -63,6 +71,26 @@
 	flex-wrap: wrap;
 	gap: 0.75rem 1.25rem;
 	padding-block: 0.25rem;
+}
+.llampart-form-checkbox-group {
+	container: llampart-form-choices / inline-size;
+}
+.llampart-form-checkbox-group .llampart-form-choices {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+}
+.llampart-form-checkbox-group .llampart-form-choices > label {
+	min-width: 0;
+}
+@container llampart-form-choices (min-width: 26em) {
+	.llampart-form-checkbox-group .llampart-form-choices {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+@container llampart-form-choices (min-width: 40em) {
+	.llampart-form-checkbox-group .llampart-form-choices:has(> label:nth-child(3)) {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
 }
 .llampart-form-boolean {
 	padding-block: 0.25rem;
@@ -102,12 +130,16 @@
 .llampart-form-help,
 .llampart-form-error {
 	display: block;
-	font-size: 0.92em;
 	line-height: 1.5;
 	color: var(--muted-foreground);
 	overflow-wrap: anywhere;
 }
+.llampart-form-help {
+	font-size: 0.875em;
+	font-style: italic;
+}
 .llampart-form-error {
+	font-size: 0.92em;
 	color: var(--destructive);
 }
 .llampart-form-error:empty,
