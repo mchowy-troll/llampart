@@ -7,9 +7,9 @@
 	import ChatScreenProcessingInfo from '$lib/components/app/chat/ChatScreen/ChatScreenProcessingInfo.svelte';
 	import DialogEmptyFileAlert from '$lib/components/app/dialogs/DialogEmptyFileAlert.svelte';
 	import DialogChatError from '$lib/components/app/dialogs/DialogChatError.svelte';
-	import ServerLoadingSplash from '$lib/components/app/server/ServerLoadingSplash.svelte';
+	import ServerLoadingSplash from '$lib/components/app/connection/ServerLoadingSplash.svelte';
 	import DialogConfirmation from '$lib/components/app/dialogs/DialogConfirmation.svelte';
-	import ProviderConnectionNotice from '$lib/components/app/server/ProviderConnectionNotice.svelte';
+	import ProviderConnectionNotice from '$lib/components/app/connection/ProviderConnectionNotice.svelte';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import { KeyboardKey } from '$lib/enums';
 	import { createAutoScrollController } from '$lib/hooks/use-auto-scroll.svelte';
@@ -28,7 +28,7 @@
 	} from '$lib/stores/conversations.svelte';
 	import { config } from '$lib/stores/settings.svelte';
 	import { getThemeDefinition } from '$lib/themes/registry';
-	import { serverLoading, serverStore, isRouterMode } from '$lib/stores/server.svelte';
+	import { serverLoading, serverStore, isRouterMode } from '$lib/stores/backend.svelte';
 	import { providerConnectionDisconnected } from '$lib/stores/provider-connection.svelte';
 	import { modelsStore, modelOptions, selectedModelId } from '$lib/stores/models.svelte';
 	import { isFileTypeSupported, filterFilesByModalities } from '$lib/utils';

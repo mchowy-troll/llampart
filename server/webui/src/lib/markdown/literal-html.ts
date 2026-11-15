@@ -3,6 +3,12 @@ import { visit } from 'unist-util-visit';
 import type { Break, Content, Paragraph, PhrasingContent, Root, Text } from 'mdast';
 import { LINE_BREAK, NBSP, PHRASE_PARENTS, TAB_AS_SPACES } from '$lib/constants';
 
+declare module 'mdast' {
+	interface ParagraphData {
+		literalHtml?: boolean;
+	}
+}
+
 /**
  * remark plugin that rewrites raw HTML nodes into plain-text equivalents.
  *

@@ -21,7 +21,7 @@
 
 	function handleSelectModel(model: string) {
 		// Build URL with selected model, preserving other params
-		const url = new URL(page.url);
+		const url = new URL(page.url.href);
 		url.searchParams.set('model', model);
 
 		handleOpenChange(false);

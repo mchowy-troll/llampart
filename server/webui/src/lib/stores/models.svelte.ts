@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 import { toast } from 'svelte-sonner';
 import { ServerModelStatus, ModelModality } from '$lib/enums';
@@ -7,7 +7,7 @@ import { PropsService } from '$lib/services/props.service';
 import { getApiProvider } from '$lib/services/providers';
 import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers';
 import { config } from '$lib/stores/settings.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { TTLCache } from '$lib/utils/cache-ttl';
 import { getModelContextSize } from '$lib/utils/model-information';
 import { captureMessageModelInfo } from '$lib/utils/message-model-info';

@@ -8,7 +8,7 @@ import { chatStore } from '$lib/stores/chat.svelte';
 import { conversationsStore } from '$lib/stores/conversations.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { modelsStore } from '$lib/stores/models.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
 import { createCapabilitySnapshot } from '$lib/services/providers/provider-capabilities';
@@ -77,7 +77,10 @@ beforeEach(async () => {
 		target.lastModified++;
 	});
 	vi.spyOn(DatabaseService, 'updateMessage').mockImplementation(async (id, updates) => {
-		Object.assign(rows.find((item) => item.id === id)!, updates);
+		Object.assign(
+			rows.find((item) => item.id === id)!,
+			updates
+		);
 	});
 	vi.spyOn(agenticStore, 'getConfig').mockReturnValue({
 		enabled: false,
@@ -418,7 +421,10 @@ describe('conversation-owned asynchronous message writes', () => {
 				}
 			);
 			vi.spyOn(DatabaseService, 'updateConversation').mockImplementation(async (id, updates) => {
-				Object.assign(conversations.find((item) => item.id === id)!, updates);
+				Object.assign(
+					conversations.find((item) => item.id === id)!,
+					updates
+				);
 			});
 			await chatStore.sendMessage('First question');
 			assertOwned('B');

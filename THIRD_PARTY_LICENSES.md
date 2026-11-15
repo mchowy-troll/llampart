@@ -43,9 +43,9 @@ SOFTWARE.
 
 ## Mermaid diagrams
 
-The browser-only diagram renderer uses **Mermaid 12.2.0**, MIT-licensed,
+The browser-only diagram renderer uses **Mermaid 12.3.0**, MIT-licensed,
 Copyright (c) 2014–2022 Knut Sveidqvist. Mermaid source:
-<https://github.com/mermaid-js/mermaid/tree/v12.2.0>.
+<https://github.com/mermaid-js/mermaid/tree/v12.3.0>.
 
 The complete Mermaid MIT notice and the license/copyright/NOTICE files of its
 locked runtime dependency closure are preserved in
@@ -56,8 +56,9 @@ Regenerate that snapshot with `node scripts/diagram-license-notices.mjs` in
 The transitive review includes MIT, ISC, BSD-2-Clause/BSD-3-Clause and Apache-2.0
 notices; DOMPurify is used under its Apache-2.0 option. `khroma` omits a license
 metadata field but ships the MIT license text, included in the snapshot.
-`elkjs@0.9.3` is EPL-2.0: its unmodified source remains available at
-<https://github.com/kieler/elkjs/tree/v0.9.3>. ELK/elkjs is bundled by Mermaid
+`elkjs@0.12.1` offers `EPL-2.0 OR GPL-3.0-or-later`; llampart uses the
+EPL-2.0 option. Its unmodified source remains available at
+<https://github.com/kieler/elkjs/tree/v0.12.1>. ELK/elkjs is bundled by Mermaid
 and used by llampart for Flowchart and State layouts. Preserve these notices and
 source-availability information with redistributions; this does not change llampart's MIT license.
 
@@ -74,7 +75,7 @@ trademark notice is retained in `google-sans-TRADEMARKS.txt`; llampart is not
 affiliated with or endorsed by Google. Original RFNs and compression-only
 conversions are documented alongside the assets. The application remains MIT.
 
-The mathematical typefaces shipped with **KaTeX 0.18.2** are also distributed
+The mathematical typefaces shipped with **KaTeX 0.19.1** are also distributed
 locally, embedded as WOFF2 data in the generated CSS. They are licensed under
 **SIL Open Font License 1.1**, not the MIT license of the KaTeX code. Their full
 license, Design Science / Khan Academy copyright notices, Reserved Font Names,
@@ -104,26 +105,27 @@ server/webui/package-lock.json
 The exact dependency versions for this release preparation checkpoint are locked
 in `server/webui/package-lock.json`.
 
-A dependency license review was performed from the lockfile and local installed
-package metadata during release-readiness remediation. At this checkpoint:
+A dependency license review was repeated from the final Stage 9 lockfile and
+installed package license texts. At this checkpoint:
 
 - `server/webui/package.json` declared the Web UI package as MIT-licensed.
-- The lockfile contains 669 `node_modules` package entries (including optional platform packages).
-- The manifest declares 19 direct runtime dependency names and 41 direct
+- The lockfile contains 632 `node_modules` package entries (including optional platform and bundled packages).
+- The manifest declares 21 direct runtime dependency names and 40 direct
   development dependency names.
-- No package entry was marked as `unknown` or `unlicensed`.
+- No package entry was marked as `unknown` or `unlicensed`; two omit metadata but ship MIT notices.
 - The most common license fields were MIT, ISC, Apache-2.0, MPL-2.0,
   BSD-3-Clause, and BSD-2-Clause.
 
-The review was repeated after the targeted security updates to
-`@modelcontextprotocol/sdk@1.32.0` (MIT) and `vite@8.1.6` (MIT).
-The lockfile inventory above remains unchanged in size; the Vite update also
-updates its required Rolldown/platform bindings and supporting dependencies.
+Major updates to SvelteKit 3, ESLint 10, Vitest 5, Lucide 1 and Tailwind
+Variants 4 retain permissive licenses. `graceful-fs` and `minimatch` now use
+BlueOak-1.0.0, a permissive license compatible with this MIT distribution.
+ELK's new dual-license metadata adds a choice, not a GPL-only requirement;
+the existing EPL obligations and source availability remain applicable.
 
 Two package entries have no `license` field in lockfile metadata,
 but their installed package directories contain MIT LICENSE files:
 
-- `svelte-toolbelt@0.10.6`
+- `svelte-toolbelt@0.10.7`
 - `khroma@2.1.0`
 
 If `server/webui/package-lock.json` changes before release, repeat the dependency

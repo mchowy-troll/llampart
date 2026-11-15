@@ -4,7 +4,7 @@
 	import ActionIconCopyToClipboard from '$lib/components/app/actions/ActionIconCopyToClipboard.svelte';
 	import ModelId from './ModelId.svelte';
 	import { modelsStore } from '$lib/stores/models.svelte';
-	import { serverStore } from '$lib/stores/server.svelte';
+	import { serverStore } from '$lib/stores/backend.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { t } from '$lib/i18n';
 	import type { HTMLButtonAttributes } from 'svelte/elements';
@@ -36,7 +36,7 @@
 </script>
 
 {#snippet badgeContent(triggerProps: HTMLButtonAttributes = {})}
-	<BadgeInfo {...triggerProps} class="min-w-0 max-w-full {className}" {onclick} disabled={!model}>
+	<BadgeInfo {...triggerProps} class="max-w-full min-w-0 {className}" {onclick} disabled={!model}>
 		{#snippet icon()}
 			<Package class="h-3 w-3" />
 		{/snippet}

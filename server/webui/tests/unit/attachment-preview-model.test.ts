@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'svelte/server';
 import ChatForm from '$lib/components/app/chat/ChatForm/ChatForm.svelte';
 import { modelsStore } from '$lib/stores/models.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { chatStore } from '$lib/stores/chat.svelte';
 import { ServerRole } from '$lib/enums';

@@ -2,7 +2,7 @@
 	import { connectionProtocol } from '$lib/services/providers/provider-capabilities';
 	import { ChatService } from '$lib/services/chat.service';
 	import '../app.css';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { page } from '$app/state';
 	import { onMount, untrack } from 'svelte';
 	import {
@@ -16,7 +16,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import FullscreenButton from '$lib/components/app/FullscreenButton.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { isRouterMode, serverStore } from '$lib/stores/server.svelte';
+	import { isRouterMode, serverStore } from '$lib/stores/backend.svelte';
 	import { config, settingsStore, SettingsPersistenceError } from '$lib/stores/settings.svelte';
 	import { Toaster, toast } from 'svelte-sonner';
 	import { t } from '$lib/i18n';
@@ -50,8 +50,7 @@
 	let sidebarOpen = $state(false);
 	let innerHeight = $state<number | undefined>();
 	let chatSidebar:
-		| { activateSearchMode?: () => void; editActiveConversation?: () => void }
-		| undefined = $state();
+		{ activateSearchMode?: () => void; editActiveConversation?: () => void } | undefined = $state();
 
 	// Conversation title update dialog state
 	let titleUpdateDialogOpen = $state(false);

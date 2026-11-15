@@ -30,7 +30,7 @@ import { conversationsStore } from '$lib/stores/conversations.svelte';
 import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { agenticStore } from '$lib/stores/agentic.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
-import { contextSize, isRouterMode } from '$lib/stores/server.svelte';
+import { contextSize, isRouterMode } from '$lib/stores/backend.svelte';
 import { modelsStore } from '$lib/stores/models.svelte';
 import { isAbortError, withAbortSignal } from '$lib/utils/abort';
 import {
@@ -129,8 +129,7 @@ class ChatStore {
 	private addFilesHandler: ((files: File[]) => void) | null = $state(null);
 	pendingEditMessageId = $state<string | null>(null);
 	private messageUpdateCallback:
-		| ((messageId: string, updates: Partial<DatabaseMessage>) => void)
-		| null = null;
+		((messageId: string, updates: Partial<DatabaseMessage>) => void) | null = null;
 	private _pendingDraftMessage = $state<string>('');
 	private _pendingDraftFiles = $state<ChatUploadedFile[]>([]);
 
@@ -454,7 +453,7 @@ class ChatStore {
 		convId = conversationsStore.activeConversation?.id
 	): Promise<DatabaseMessage> {
 		if (!convId) throw new Error('No active conversation');
-		let parentId: string | null = null;
+		let parentId: string | null;
 		if (parent === '-1') {
 			const am =
 				conversationsStore.activeConversation?.id === convId
@@ -1722,7 +1721,7 @@ class ChatStore {
 			return;
 		}
 
-		let toolCalls: import('$lib/types/api').ApiChatCompletionToolCall[] = [];
+		let toolCalls: import('$lib/types/api').ApiChatCompletionToolCall[];
 		try {
 			toolCalls = assistantMessage.toolCalls ? JSON.parse(assistantMessage.toolCalls) : [];
 		} catch {
@@ -2488,8 +2487,7 @@ class ChatStore {
 			tokensPerSecond = (timingData.predicted_per_second as number) || 0,
 			cacheTokens = (timingData.cache_n as number) || 0;
 		const promptProgress = timingData.prompt_progress as
-			| { total: number; cache: number; processed: number; time_ms: number }
-			| undefined;
+			{ total: number; cache: number; processed: number; time_ms: number } | undefined;
 		const currentConfig = config();
 		const outputTokensMax = currentConfig.max_tokens || -1;
 		const contextUsed = promptTokens + cacheTokens + predictedTokens,

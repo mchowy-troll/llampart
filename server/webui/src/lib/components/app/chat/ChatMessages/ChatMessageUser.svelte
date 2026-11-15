@@ -92,7 +92,7 @@
 		</Card>
 	{:else}
 		{#if message.extra && message.extra.length > 0}
-			<div class="llampart-user-message-attachments mb-2 llampart-user-message-width">
+			<div class="llampart-user-message-attachments llampart-user-message-width mb-2">
 				<ChatAttachmentsList attachments={message.extra} readonly imageHeight="h-80" />
 			</div>
 		{/if}

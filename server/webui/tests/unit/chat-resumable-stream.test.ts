@@ -271,7 +271,7 @@ describe('ChatService resumable streams', () => {
 		globalThis.fetch = fetchMock;
 
 		const resuming = chatStore.resumeStreamForChat(state.conversationId);
-		let stoppedSynchronously = false;
+		let stoppedSynchronously: boolean;
 		try {
 			await vi.waitFor(() => {
 				expect(update).toHaveBeenCalledWith(

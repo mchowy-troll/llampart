@@ -16,7 +16,7 @@ import { SKIP, visit } from 'unist-util-visit';
  */
 
 function hasClassName(node: Element, className: string): boolean {
-	const classNameValue = node.properties?.className;
+	const classNameValue: unknown = node.properties?.className;
 
 	if (Array.isArray(classNameValue)) {
 		return classNameValue.includes(className);

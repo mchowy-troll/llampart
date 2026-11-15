@@ -3,7 +3,7 @@
 	import { AlertTriangle, Server } from '@lucide/svelte';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import { serverProps, serverLoading, serverError } from '$lib/stores/server.svelte';
+	import { serverProps, serverLoading, serverError } from '$lib/stores/backend.svelte';
 	import { singleModelName } from '$lib/stores/models.svelte';
 
 	interface Props {

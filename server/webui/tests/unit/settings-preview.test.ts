@@ -5,7 +5,7 @@ import {
 	GLOBAL_CONFIG_STORAGE_DEFAULT
 } from '$lib/constants';
 import { config, settingsStore } from '$lib/stores/settings.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import {
 	RESPONSE_PREFERENCES,
@@ -27,7 +27,7 @@ import {
 	setCustomFrostedGlassWallpaperSrc
 } from '$lib/themes/frosted-glass/wallpapers';
 
-vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$app/env', () => ({ browser: true }));
 const storage = vi.hoisted(() => {
 	const values = new Map<string, string>();
 	vi.stubGlobal('localStorage', {

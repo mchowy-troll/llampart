@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Root as HastRoot, RootContent as HastRootContent } from 'hast';
 	import type { Root as MdastRoot } from 'mdast';
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import { getAllContexts, onDestroy, setContext, tick } from 'svelte';
 	import { SvelteMap } from 'svelte/reactivity';
 	import * as Dialog from '$lib/components/ui/dialog';

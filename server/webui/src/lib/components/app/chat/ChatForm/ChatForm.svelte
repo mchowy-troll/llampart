@@ -26,7 +26,7 @@
 	} from '$lib/enums';
 	import { config } from '$lib/stores/settings.svelte';
 	import { modelOptions, modelsStore, selectedModelId } from '$lib/stores/models.svelte';
-	import { isRouterMode } from '$lib/stores/server.svelte';
+	import { isRouterMode } from '$lib/stores/backend.svelte';
 	import { chatStore } from '$lib/stores/chat.svelte';
 	import { mcpStore } from '$lib/stores/mcp.svelte';
 	import { mcpHasResourceAttachments } from '$lib/stores/mcp-resources.svelte';

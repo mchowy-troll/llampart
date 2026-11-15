@@ -1,18 +1,22 @@
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
+import adapter from '@sveltejs/adapter-static';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 import { defineConfig } from 'vitest/config';
 import { searchForWorkspaceRoot } from 'vite';
-import { devGateway } from './scripts/dev-gateway';
+import { devGateway } from './scripts/dev-gateway.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
 	resolve: {
 		alias: {
-			'katex-fonts': resolve('node_modules/katex/dist/fonts')
+			'katex-fonts': resolve('node_modules/katex/dist/fonts'),
+			$lib: resolve('src/lib'),
+			$styles: resolve('src/styles')
 		}
 	},
 
@@ -34,7 +38,25 @@ export default defineConfig({
 		}
 	},
 
-	plugins: [devGateway(), tailwindcss(), sveltekit()],
+	plugins: [
+		devGateway(),
+		tailwindcss(),
+		sveltekit({
+			preprocess: vitePreprocess(),
+			paths: { relative: true },
+			router: { type: 'hash' },
+			adapter: adapter({
+				pages: '../public',
+				assets: '../public',
+				fallback: '200.html',
+				precompress: false,
+				strict: true
+			}),
+			// Preserve the asset graph consumed by normalize-static-build.mjs.
+			output: { bundleStrategy: 'split' },
+			version: { name: 'llampart-webui', pollInterval: 0 }
+		})
+	],
 
 	test: {
 		onConsoleLog(log, type) {
@@ -57,7 +79,7 @@ export default defineConfig({
 		},
 		projects: [
 			{
-				extends: './vite.config.ts',
+				extends: true,
 				test: {
 					name: 'unit',
 					environment: 'node',

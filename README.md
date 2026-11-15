@@ -131,8 +131,8 @@ llampart is primarily designed for desktop use.
 
 ### Development
 
-- Node.js `>=22.13.0 <23` or `>=24.0.0`
-- npm
+- Node.js 24 LTS recommended (`^22.17.0`, `^24.0.0` or `>=26.0.0` supported)
+- npm 12.2 or newer within 12.x (install-script approvals are enforced)
 - Git
 
 ## Development

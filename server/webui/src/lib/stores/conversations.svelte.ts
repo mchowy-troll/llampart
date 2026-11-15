@@ -19,7 +19,7 @@
  */
 
 import { goto } from '$app/navigation';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { toast } from 'svelte-sonner';
 import { t } from '$lib/i18n';
 import { DatabaseService } from '$lib/services/database.service';
@@ -255,8 +255,7 @@ class ConversationsStore {
 	 * Registered by chatStore to enable cross-store updates without circular dependency.
 	 */
 	private messageUpdateCallback:
-		| ((messageId: string, updates: Partial<DatabaseMessage>) => void)
-		| null = null;
+		((messageId: string, updates: Partial<DatabaseMessage>) => void) | null = null;
 
 	/**
 	 *

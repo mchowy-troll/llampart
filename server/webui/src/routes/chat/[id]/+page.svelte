@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { formatConversationDocumentTitle } from '$lib/utils';
-	import { goto, replaceState } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { afterNavigate } from '$app/navigation';
 	import { ChatScreen, DialogModelNotAvailable } from '$lib/components/app';
@@ -34,10 +34,10 @@
 	 * Clear URL params after message is sent to prevent re-sending on refresh
 	 */
 	function clearUrlParams() {
-		const url = new URL(page.url);
+		const url = new URL(page.url.href);
 		url.searchParams.delete('q');
 		url.searchParams.delete('model');
-		replaceState(url.toString(), {});
+		void goto(url, { shallow: true, replace: true, state: {} });
 	}
 
 	async function handleUrlParams(isCurrent: () => boolean) {
@@ -117,7 +117,8 @@
 		}
 	}
 
-	afterNavigate(() => {
+	afterNavigate(({ shallow }) => {
+		if (shallow) return;
 		setTimeout(() => {
 			void selectModelFromLastAssistantResponse().catch((error) => {
 				console.error('Failed to synchronize the conversation model:', error);

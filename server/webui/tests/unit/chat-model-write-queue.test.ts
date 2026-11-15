@@ -4,7 +4,7 @@ import { DatabaseService } from '$lib/services/database.service';
 import { agenticStore } from '$lib/stores/agentic.svelte';
 import { chatStore, type GenerationModel } from '$lib/stores/chat.svelte';
 import { conversationsStore } from '$lib/stores/conversations.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { captureMessageModelInfo, modelInfoForResponse } from '$lib/utils/message-model-info';
 

@@ -220,8 +220,7 @@
 					autoResizeTextarea(e.currentTarget);
 					editCtx.setContent(e.currentTarget.value);
 				}}
-				placeholder={t('messages.editAssistantMessagePlaceholder')}
-			></textarea>
+				placeholder={t('messages.editAssistantMessagePlaceholder')}></textarea>
 
 			<div class="llampart-message-edit-controls mt-3 flex items-center justify-between gap-3">
 				<div class="llampart-message-edit-option flex items-center space-x-2">

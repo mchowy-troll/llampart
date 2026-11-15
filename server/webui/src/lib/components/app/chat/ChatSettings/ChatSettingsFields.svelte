@@ -8,7 +8,7 @@
 	import { SETTING_CONFIG_INFO, SETTINGS_KEYS } from '$lib/constants';
 	import { SettingsFieldType } from '$lib/enums/settings';
 	import { settingsStore } from '$lib/stores/settings.svelte';
-	import { serverStore } from '$lib/stores/server.svelte';
+	import { serverStore } from '$lib/stores/backend.svelte';
 	import { modelsStore, selectedModelName } from '$lib/stores/models.svelte';
 	import { normalizeFloatingPoint } from '$lib/utils/precision';
 	import ChatSettingsParameterSourceIndicator from '$lib/components/app/chat/ChatSettings/ChatSettingsParameterSourceIndicator.svelte';
@@ -530,7 +530,7 @@
 					{#if getFieldHelp(field, helpOverride, hideHelp)}
 						<p
 							id={`${field.key}-help`}
-							class="max-w-full whitespace-pre-line text-xs break-words text-muted-foreground"
+							class="max-w-full text-xs break-words whitespace-pre-line text-muted-foreground"
 						>
 							{@html getFieldHelp(field, helpOverride, hideHelp)}
 						</p>

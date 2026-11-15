@@ -119,7 +119,7 @@ you intend to discard those generated local directories.
 server/webui → vite build / adapter-static → server/public → post-build normalization
 ```
 
-`svelte.config.js` writes pages and assets directly to `../public`, uses hash routing,
+The SvelteKit plugin in `vite.config.ts` writes pages and assets directly to `../public`, uses hash routing,
 `200.html` as fallback and the **split** bundle strategy. This is not a Node/SvelteKit
 production server and does not bundle an inference backend or gateway.
 
@@ -139,6 +139,42 @@ package/lock versions, current `HEAD`, a clean source worktree (excluding genera
 `server/public/`) and the recalculated artifact digest. Editing generated files after
 normalization invalidates provenance. A dirty local build is usable for development,
 not release packaging. Packaging, releases and deployment are separate manual work.
+
+### Dependency maintenance
+
+Use Node.js 24 LTS and npm 12.2 or newer within 12.x. SvelteKit 3 requires Node.js 22.17 or newer;
+the engine ranges exclude unsupported odd-numbered Node 23/25 releases. TypeScript
+is on the supported 6.0 line: SvelteKit and the Svelte/ESLint tooling do not yet
+support TypeScript 7. Node type definitions track the selected Node 24 runtime.
+
+`npm ci` enforces the reviewed install-script policy in `package.json` and `.npmrc`.
+Only the pinned Parcel watcher install hook is approved (it builds locally only
+when explicitly requested); the optional macOS `fsevents` hook is denied. Review
+new lifecycle hooks before approving them; do not bypass peer or script checks.
+
+Four targeted resolutions remain in `overrides`:
+
+- `katex`: share the directly imported CSS/fonts and tested renderer version across
+  Mermaid and rehype; older upstream ranges would install duplicate renderers.
+- Typography's selector parser: a compatible 6.1.5+ fix for GHSA-rj75-hqrm-r3gf.
+- TypeScript ESTree's minimatch: 11.0.8 fixes GHSA-g3hv-75wg-m249; the consumed
+  `Minimatch`/`minimatch` APIs are compatible and covered by lint/type verification.
+- Runed 0.35 consumers: use 0.38, whose upstream migration adds SvelteKit 3 support.
+  Bits UI/toolbelt use the unchanged root utilities, not `runed/kit`.
+
+The remaining low-severity `deepmerge@4.3.1` advisory (GHSA-gcqx-w48m-w2h4)
+has no patched upstream release. Its only actual consumer is the Svelte Vite
+plugin merging trusted local build configuration, not model content. Keep the
+finding visible in `npm audit` and revisit when upstream releases a fix.
+
+SvelteKit 3 configuration lives in Vite. Browser-owned modules formerly named
+`server` now use `backend`/`connection`, since SvelteKit 3 reserves any `server`
+filename segment or directory for server-only code. No provider behavior changed.
+Existing `$lib`/`$styles` imports are
+ordinary Vite aliases with matching TypeScript paths, preserving import ownership
+without relying on SvelteKit's removed implicit `$lib` alias or deprecated alias
+configuration. The TypeScript include globs preserve the existing source/test
+scope; standalone browser `.mjs` drivers run separately in Chromium.
 
 ## Frontend workflow
 

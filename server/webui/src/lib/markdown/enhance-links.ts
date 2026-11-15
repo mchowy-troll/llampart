@@ -38,7 +38,7 @@ export const rehypeEnhanceLinks: Plugin<[], Root> = () => {
 			}
 
 			props.target = '_blank';
-			props.rel = 'noopener noreferrer';
+			props.rel = ['noopener', 'noreferrer'];
 		});
 	};
 };

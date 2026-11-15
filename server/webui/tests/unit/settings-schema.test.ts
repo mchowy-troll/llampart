@@ -16,7 +16,7 @@ import {
 	importApplicationSettings
 } from '$lib/utils/settings-import-export';
 import { settingsStore } from '$lib/stores/settings.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
 import { getInterfaceLanguage, isInterfaceLanguage } from '$lib/i18n';
 import {
@@ -30,7 +30,7 @@ import {
 	MCP_DEFAULT_ENABLED_LOCALSTORAGE_KEY
 } from '$lib/constants/localstorage-keys';
 
-vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$app/env', () => ({ browser: true }));
 const storage = vi.hoisted(() => {
 	const values = new Map<string, string>();
 	vi.stubGlobal('localStorage', {

@@ -3,10 +3,10 @@
 	import { chatStore } from '$lib/stores/chat.svelte';
 	import { conversationsStore, isConversationsInitialized } from '$lib/stores/conversations.svelte';
 	import { modelsStore, modelOptions } from '$lib/stores/models.svelte';
-	import { isRouterMode } from '$lib/stores/server.svelte';
+	import { isRouterMode } from '$lib/stores/backend.svelte';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { replaceState } from '$app/navigation';
+	import { goto } from '$app/navigation';
 
 	let qParam = $derived(page.url.searchParams.get('q'));
 	let modelParam = $derived(page.url.searchParams.get('model'));
@@ -21,13 +21,13 @@
 	 * Clear URL params after message is sent to prevent re-sending on refresh
 	 */
 	function clearUrlParams() {
-		const url = new URL(page.url);
+		const url = new URL(page.url.href);
 
 		url.searchParams.delete('q');
 		url.searchParams.delete('model');
 		url.searchParams.delete('new_chat');
 
-		replaceState(url.toString(), {});
+		void goto(url, { shallow: true, replace: true, state: {} });
 	}
 
 	async function handleUrlParams() {

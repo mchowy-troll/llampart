@@ -37,7 +37,7 @@ export class AudioRecorder {
 			this.recordingState = true;
 		} catch (error) {
 			console.error('Failed to start recording:', error);
-			throw new Error('Failed to access microphone. Please check permissions.');
+			throw new Error('Failed to access microphone. Please check permissions.', { cause: error });
 		}
 	}
 

@@ -198,8 +198,7 @@
 								rows="3"
 								aria-invalid={!!error}
 								aria-describedby={`${id}-help ${id}-error`}
-								oninput={(e) => textInput(e.currentTarget)}
-							></textarea>
+								oninput={(e) => textInput(e.currentTarget)}></textarea>
 						{:else if kind === 'Select'}
 							<FormSelect
 								{id}

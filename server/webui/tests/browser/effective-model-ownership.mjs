@@ -173,7 +173,7 @@ try {
 					await import('/src/lib/stores/permissions.svelte.ts');
 				const { mcpStore: mcp } = await import('/src/lib/stores/mcp.svelte.ts');
 				const { ChatService } = await import('/src/lib/services/chat.service.ts');
-				const { serverStore: server } = await import('/src/lib/stores/server.svelte.ts');
+				const { serverStore: server } = await import('/src/lib/stores/backend.svelte.ts');
 				const { validateConversationGraph } = await import('/src/lib/utils/conversation-graph.ts');
 				const state = (globalThis.own006 = {
 					...h,

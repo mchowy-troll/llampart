@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import { toast } from 'svelte-sonner';
 	import { t } from '$lib/i18n';
 	import { getChatActionsContext, setMessageEditContext } from '$lib/contexts';
@@ -129,7 +129,7 @@
 			const conversationDeleted = await chatStore.removeSystemPromptPlaceholder(message.id);
 
 			if (conversationDeleted) {
-				goto(`${base}/`);
+				goto(resolve('/'));
 			}
 
 			return;
@@ -153,7 +153,7 @@
 			const conversationDeleted = await chatStore.removeSystemPromptPlaceholder(message.id);
 
 			if (conversationDeleted) {
-				goto(`${base}/`);
+				goto(resolve('/'));
 			}
 		} else {
 			chatActions.delete(message);
@@ -213,7 +213,7 @@
 					const conversationDeleted = await chatStore.removeSystemPromptPlaceholder(messageId);
 					isEditing = false;
 					if (conversationDeleted) {
-						goto(`${base}/`);
+						goto(resolve('/'));
 					}
 					return;
 				}

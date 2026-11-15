@@ -7,7 +7,7 @@ import { chatStore } from '$lib/stores/chat.svelte';
 import { conversationsStore } from '$lib/stores/conversations.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import { modelsStore } from '$lib/stores/models.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { agenticStore } from '$lib/stores/agentic.svelte';
 
 vi.mock('$app/navigation', () => ({ goto: vi.fn().mockResolvedValue(undefined) }));
@@ -58,7 +58,10 @@ beforeEach(() => {
 		owner.currNode = node;
 	});
 	vi.spyOn(DatabaseService, 'updateMessage').mockImplementation(async (id, updates) => {
-		Object.assign(rows.find((item) => item.id === id)!, updates);
+		Object.assign(
+			rows.find((item) => item.id === id)!,
+			updates
+		);
 	});
 	vi.spyOn(DatabaseService, 'createRootMessage').mockImplementation(async () => {
 		rows.push({
@@ -83,7 +86,10 @@ beforeEach(() => {
 	});
 	vi.spyOn(DatabaseService, 'updateConversationMessage').mockImplementation(
 		async (_id, id, updates) => {
-			Object.assign(rows.find((item) => item.id === id)!, updates);
+			Object.assign(
+				rows.find((item) => item.id === id)!,
+				updates
+			);
 		}
 	);
 	vi.spyOn(ChatService, 'sendMessage').mockImplementation(async (_history, options) => {

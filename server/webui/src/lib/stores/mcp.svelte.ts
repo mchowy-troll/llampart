@@ -19,7 +19,7 @@
  * @see MCPService in services/mcp.service.ts for protocol operations
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { MCPService } from '$lib/services/mcp.service';
 import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { mcpResourceStore } from '$lib/stores/mcp-resources.svelte';
@@ -1301,14 +1301,18 @@ class MCPStore {
 				expectedConfiguration !== undefined &&
 				!this.isConnectionConfigurationCurrent(serverName, expectedConfiguration)
 			) {
-				throw new Error(`Tool connection unavailable after reconnect: ${serverName}:${toolName}`);
+				throw new Error(`Tool connection unavailable after reconnect: ${serverName}:${toolName}`, {
+					cause: error
+				});
 			}
 			if (this.getToolServer(toolName) !== serverName) {
-				throw new Error(`Tool name conflict after reconnect: ${toolName}`);
+				throw new Error(`Tool name conflict after reconnect: ${toolName}`, { cause: error });
 			}
 			const newConnection = this.connections.get(serverName);
 			if (!newConnection || !newConnection.tools.some((tool) => tool.name === toolName)) {
-				throw new Error(`Tool unavailable after reconnect: ${serverName}:${toolName}`);
+				throw new Error(`Tool unavailable after reconnect: ${serverName}:${toolName}`, {
+					cause: error
+				});
 			}
 			return MCPService.callTool(newConnection, { name: toolName, arguments: args }, signal);
 		}
@@ -1330,7 +1334,9 @@ class MCPStore {
 
 				return parsed as Record<string, unknown>;
 			} catch (error) {
-				throw new Error(`Failed to parse tool arguments as JSON: ${(error as Error).message}`);
+				throw new Error(`Failed to parse tool arguments as JSON: ${(error as Error).message}`, {
+					cause: error
+				});
 			}
 		}
 

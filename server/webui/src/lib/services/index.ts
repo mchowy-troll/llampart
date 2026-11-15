@@ -164,7 +164,7 @@ export { ModelsService } from './models.service';
  * - `GET /props?model=<id>` → Per-model props (ROUTER mode: model-specific modalities)
  * - `&autoload=false` → Prevents model auto-loading when querying props
  *
- * @see serverStore in stores/server.svelte.ts — consumes global server props
+ * @see serverStore in stores/backend.svelte.ts — consumes global server props
  * @see modelsStore in stores/models.svelte.ts — consumes per-model props for modalities
  * @see settingsStore in stores/settings.svelte.ts — syncs default generation params from props
  */

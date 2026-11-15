@@ -25,7 +25,7 @@
 				{t('common.copyToClipboard')}
 			</button>
 			<pre
-				class="max-w-full rounded-lg bg-muted/30 p-3 text-xs whitespace-pre-wrap break-words"
+				class="max-w-full rounded-lg bg-muted/30 p-3 text-xs break-words whitespace-pre-wrap"
 				data-response-instructions>{instructions}</pre>
 		{:else}
 			<p class="text-xs text-muted-foreground">{t('settings.responsePreferencesEmpty')}</p>

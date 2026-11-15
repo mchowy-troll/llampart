@@ -14,7 +14,7 @@
 	import { config } from '$lib/stores/settings.svelte';
 	import { getApiProviderCapabilities } from '$lib/services/providers';
 	import { modelsStore, modelOptions, selectedModelId } from '$lib/stores/models.svelte';
-	import { isRouterMode, serverError } from '$lib/stores/server.svelte';
+	import { isRouterMode, serverError } from '$lib/stores/backend.svelte';
 	import { chatStore } from '$lib/stores/chat.svelte';
 	import { activeMessages, conversationsStore } from '$lib/stores/conversations.svelte';
 	import { t } from '$lib/i18n';

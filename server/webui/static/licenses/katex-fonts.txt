@@ -1,12 +1,12 @@
-KaTeX 0.18.2 -- bundled mathematical typefaces
+KaTeX 0.19.1 -- bundled mathematical typefaces
 ===========================================
 
-Source release: https://github.com/KaTeX/KaTeX/tree/v0.18.2/fonts
+Source release: https://github.com/KaTeX/KaTeX/tree/v0.19.1/fonts
 License declaration and copyright source (name table records 0, 13 and 14):
-https://github.com/KaTeX/KaTeX/blob/v0.18.2/src/fonts/lib/Space.ttx
+https://github.com/KaTeX/KaTeX/blob/v0.19.1/src/fonts/lib/Space.ttx
 Full license text: https://openfontlicense.org/documents/OFL.txt
 
-These are the unmodified WOFF2 files supplied by katex@0.18.2 in dist/fonts/,
+These are the unmodified WOFF2 files supplied by katex@0.19.1 in dist/fonts/,
 byte-identical to the source release's fonts/ files. LLAMPART embeds them in
 generated CSS as data URLs; it does not subset or alter their font data.
 Internal font version: 1.1; ttfautohint (v1.8.3).

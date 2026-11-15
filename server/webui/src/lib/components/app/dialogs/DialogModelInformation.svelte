@@ -4,7 +4,7 @@
 	import BadgeModality from '$lib/components/app/badges/BadgeModality.svelte';
 	import ActionIconCopyToClipboard from '$lib/components/app/actions/ActionIconCopyToClipboard.svelte';
 	import { ChevronDown } from '@lucide/svelte';
-	import { serverStore } from '$lib/stores/server.svelte';
+	import { serverStore } from '$lib/stores/backend.svelte';
 	import { modelsStore, modelOptions, modelsLoading } from '$lib/stores/models.svelte';
 	import { formatFileSize, formatParameters, formatNumber } from '$lib/utils';
 	import type { ApiLlamaCppServerProps } from '$lib/types';

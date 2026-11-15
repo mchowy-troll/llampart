@@ -65,8 +65,4 @@ export interface ParsedClipboardContent {
 }
 
 export type MimeTypeUnion =
-	| MimeTypeAudio
-	| MimeTypeVideo
-	| MimeTypeImage
-	| MimeTypeApplication
-	| MimeTypeText;
+	MimeTypeAudio | MimeTypeVideo | MimeTypeImage | MimeTypeApplication | MimeTypeText;

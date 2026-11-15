@@ -37,18 +37,21 @@ function collect(path) {
 }
 collect(locate(root, 'mermaid'));
 entries.sort((a, b) => a.pkg.name.localeCompare(b.pkg.name));
+const elk = entries.find(({ pkg }) => pkg.name === 'elkjs');
 const notice =
 	[
 		'Mermaid and runtime dependencies — generated from installed, locked packages.',
 		'Regenerate: node scripts/diagram-license-notices.mjs',
 		'No third-party source has been modified by llampart.',
-		'ELK / elkjs (EPL-2.0) source: https://github.com/kieler/elkjs/tree/v0.9.3',
+		`ELK / elkjs is used under EPL-2.0; source: https://github.com/kieler/elkjs/tree/v${elk.pkg.version}`,
 		'DOMPurify is used under its Apache-2.0 license option.',
 		...entries.map(
 			({ pkg, notices }) =>
 				`\n${'='.repeat(72)}\n${pkg.name}@${pkg.version}\nDeclared license: ${pkg.license || 'See included license text'}\nUpstream: ${typeof pkg.repository === 'object' ? pkg.repository.url : pkg.repository || pkg.homepage || ''}\n\n${notices}`
 		)
-	].join('\n') + '\n';
+	]
+		.join('\n')
+		.trimEnd() + '\n';
 mkdirSync(join(root, 'static/licenses'), { recursive: true });
 writeFileSync(join(root, 'static/licenses/mermaid.txt'), notice);
 console.log(`Preserved ${entries.length} package notices in static/licenses/mermaid.txt`);

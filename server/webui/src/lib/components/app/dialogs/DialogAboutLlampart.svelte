@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { browser } from '$app/env';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
 	import { Checkbox } from '$lib/components/ui/checkbox';
@@ -64,7 +64,7 @@
 	>
 		<div class="grid min-h-0 flex-1 grid-cols-3 grid-rows-[minmax(0,1fr)]">
 			<div
-				class="col-span-1 flex min-h-0 min-w-0 flex-col items-center overflow-y-auto border-r border-border/30 px-3 py-6 text-center [justify-content:safe_center] md:px-8 md:py-10"
+				class="col-span-1 flex min-h-0 min-w-0 flex-col items-center [justify-content:safe_center] overflow-y-auto border-r border-border/30 px-3 py-6 text-center md:px-8 md:py-10"
 			>
 				<img
 					src="/llampart.svg"
@@ -82,7 +82,7 @@
 
 				<div class="grid w-full grid-cols-1 gap-4 text-left 2xl:grid-cols-3">
 					<div
-						class="min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 llampart-about-info-card 2xl:col-span-2"
+						class="llampart-about-info-card min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 2xl:col-span-2"
 					>
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 							{t('dialogs.aboutLlampartAuthorLabel')}
@@ -99,7 +99,7 @@
 					</div>
 
 					<div
-						class="col-span-1 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 llampart-about-info-card"
+						class="llampart-about-info-card col-span-1 min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3"
 					>
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 							{t('dialogs.aboutLlampartVersionLabel')}
@@ -108,7 +108,7 @@
 					</div>
 
 					<div
-						class="min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 llampart-about-info-card 2xl:col-span-3"
+						class="llampart-about-info-card min-w-0 overflow-hidden rounded-lg border border-border/30 bg-background px-4 py-3 2xl:col-span-3"
 					>
 						<div class="text-xs font-medium tracking-wide text-muted-foreground uppercase">
 							{t('dialogs.aboutLlampartRepositoryLabel')}

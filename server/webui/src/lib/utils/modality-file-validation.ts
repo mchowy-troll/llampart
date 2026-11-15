@@ -142,7 +142,7 @@ export function generateModalityErrorMessage(
 
 	const { hasVision, hasAudio, hasVideo } = capabilities;
 
-	let message = '';
+	let message: string;
 
 	if (unsupportedFiles.length === 1) {
 		const file = unsupportedFiles[0];

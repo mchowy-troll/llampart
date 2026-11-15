@@ -21,7 +21,7 @@ import { AttachmentType, ContentPartType, MessageRole } from '$lib/enums';
 import type { ApiChatMessageContentPart, ApiChatCompletionToolCall } from '$lib/types/api';
 import type { DatabaseMessageExtraMcpPrompt, DatabaseMessageExtraMcpResource } from '$lib/types';
 import { modelsStore } from '$lib/stores/models.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { config, settingsStore } from '$lib/stores/settings.svelte';
 import { API_STREAM } from '$lib/constants/api-endpoints';
 import { API_PROVIDER_IDS } from '$lib/constants/api-providers';

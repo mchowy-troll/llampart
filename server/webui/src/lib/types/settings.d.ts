@@ -47,11 +47,7 @@ export type SettingsFieldLayout = 'default' | 'compact-inline-number';
  * New groups should opt into a named layout instead of being inferred from their field keys.
  */
 export type SettingsFieldGroupLayout =
-	| 'default'
-	| 'two-column'
-	| 'three-column'
-	| 'sidebar'
-	| 'attachments-files';
+	'default' | 'two-column' | 'three-column' | 'sidebar' | 'attachments-files';
 
 /**
  * Describes the direction used to fill fields inside a multi-column settings group.

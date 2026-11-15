@@ -62,6 +62,5 @@
 			onInput?.();
 		}}
 		onpaste={onPaste}
-		{placeholder}
-	></textarea>
+		{placeholder}></textarea>
 </div>

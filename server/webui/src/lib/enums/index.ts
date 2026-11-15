@@ -45,7 +45,7 @@ export {
 
 export { ModelModality } from './model';
 
-export { ServerRole, ServerModelStatus } from './server';
+export { ServerRole, ServerModelStatus } from './backend';
 
 export { ParameterSource, SyncableParameterType, SettingsFieldType } from './settings';
 

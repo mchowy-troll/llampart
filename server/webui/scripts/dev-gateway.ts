@@ -12,7 +12,7 @@ import {
 	normalizeGatewaySource,
 	type GatewaySource,
 	type GatewayProviderId
-} from '../src/lib/services/providers/provider-transport';
+} from '../src/lib/services/providers/provider-transport.ts';
 
 const root = '/__llampart/api/';
 const hopHeaders = [

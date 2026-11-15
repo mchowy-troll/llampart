@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { ServerErrorSplash } from '$lib/components/app';
 
-	let error = $derived($page.error);
-	let status = $derived($page.status);
+	let error = $derived(page.error);
+	let status = $derived(page.status);
 
 	// Check if this is an API key related error
 	let isApiKeyError = $derived(

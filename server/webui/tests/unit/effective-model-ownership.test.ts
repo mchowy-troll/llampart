@@ -6,7 +6,7 @@ import { ModelsService } from '$lib/services/models.service';
 import { agenticStore } from '$lib/stores/agentic.svelte';
 import { modelsStore } from '$lib/stores/models.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { toolsStore } from '$lib/stores/tools.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { permissionsStore } from '$lib/stores/permissions.svelte';

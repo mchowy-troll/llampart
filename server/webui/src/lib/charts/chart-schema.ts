@@ -101,8 +101,7 @@ export const chartSchema = z.union([cartesian, circular]).superRefine((spec, ctx
 
 export type ChartSpec = z.infer<typeof chartSchema>;
 export type ChartResult =
-	| { success: true; spec: ChartSpec }
-	| { success: false; diagnostic: VisualizationDiagnostic };
+	{ success: true; spec: ChartSpec } | { success: false; diagnostic: VisualizationDiagnostic };
 
 function failure(code: VisualizationCode, path?: string, limit?: number): ChartResult {
 	return { success: false, diagnostic: diagnostic(code, { path, limit }) };

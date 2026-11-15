@@ -95,13 +95,11 @@ function installMcp(serverId: string, definitions: OpenAIToolDefinition[]): void
 		JSON.stringify([...servers, { id: serverId, enabled: true, url: `https://${serverId}.test` }])
 	);
 	mcpHarness.serverConfigs.set(serverId, buildMcpServerConfig(mcpStore.getServerById(serverId)!)!);
-	const tools = definitions.map(
-		(tool): Tool => ({
-			name: tool.function.name,
-			description: tool.function.description,
-			inputSchema: tool.function.parameters
-		})
-	);
+	const tools = definitions.map((tool): Tool => ({
+		name: tool.function.name,
+		description: tool.function.description,
+		inputSchema: tool.function.parameters
+	}));
 	mcpHarness.connections.set(serverId, {
 		serverName: serverId,
 		tools

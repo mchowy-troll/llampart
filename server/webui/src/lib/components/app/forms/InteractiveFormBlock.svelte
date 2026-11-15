@@ -53,7 +53,7 @@
 		{/key}
 	{:else if form}
 		{#if !usable || failed}<p role="status">{t('interactiveForms.invalid')}</p>{/if}
-		<pre class="font-inherit text-sm whitespace-pre-wrap break-words">{formAnswerText(
+		<pre class="font-inherit text-sm break-words whitespace-pre-wrap">{formAnswerText(
 				form.spec,
 				form.values
 			)}</pre>

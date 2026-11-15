@@ -282,7 +282,7 @@ try {
 	const fetchProps = () =>
 		page.evaluate(async () => {
 			globalThis.abcFailArmed = true;
-			await (await import('/src/lib/stores/server.svelte.ts')).serverStore.fetch();
+			await (await import('/src/lib/stores/backend.svelte.ts')).serverStore.fetch();
 		});
 	await fetchProps();
 	await page
@@ -406,7 +406,7 @@ try {
 		JSON.stringify(
 			await page.evaluate(async () => {
 				const { settings } = await import('/tests/browser/charts-harness.ts');
-				const { serverStore } = await import('/src/lib/stores/server.svelte.ts');
+				const { serverStore } = await import('/src/lib/stores/backend.svelte.ts');
 				return {
 					failedWrites: globalThis.abcFailedWrites,
 					props: serverStore.props,

@@ -115,8 +115,7 @@
 				class="min-h-[60px] w-full resize-none rounded-2xl px-3 py-2 text-sm {INPUT_CLASSES}"
 				onkeydown={handleEditKeydown}
 				oninput={(e) => editCtx.setContent(e.currentTarget.value)}
-				placeholder={t('messages.editSystemMessagePlaceholder')}
-			></textarea>
+				placeholder={t('messages.editSystemMessagePlaceholder')}></textarea>
 
 			<div class="mt-2 flex justify-end gap-2">
 				<Button

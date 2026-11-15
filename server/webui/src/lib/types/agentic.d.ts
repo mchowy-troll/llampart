@@ -12,12 +12,7 @@ import type { DatabaseMessage, DatabaseMessageExtra, McpServerOverride } from '.
 import type { ProviderRequestContext } from './provider';
 
 export type ToolExecutionStatus =
-	| 'not_started'
-	| 'denied'
-	| 'started'
-	| 'completed'
-	| 'error'
-	| 'interrupted_unknown';
+	'not_started' | 'denied' | 'started' | 'completed' | 'error' | 'interrupted_unknown';
 
 export type AgenticTerminalReason = 'completed' | 'limit' | 'stopped' | 'error';
 

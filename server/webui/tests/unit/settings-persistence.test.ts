@@ -6,7 +6,7 @@ import {
 	GLOBAL_CONFIG_STORAGE_DEFAULT
 } from '$lib/constants';
 import { config, settingsStore, SettingsPersistenceError } from '$lib/stores/settings.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { mcpStore } from '$lib/stores/mcp.svelte';
 import { HealthCheckStatus } from '$lib/enums';
 import { ParameterSyncService } from '$lib/services/parameter-sync.service';
@@ -14,7 +14,7 @@ import { parseSettingsStorage } from '$lib/utils/settings-schema';
 import { importApplicationSettings } from '$lib/utils/settings-import-export';
 import type { MCPConnection } from '$lib/types';
 
-vi.mock('$app/environment', () => ({ browser: true }));
+vi.mock('$app/env', () => ({ browser: true }));
 const storage = vi.hoisted(() => {
 	const values = new Map<string, string>();
 	vi.stubGlobal('localStorage', {

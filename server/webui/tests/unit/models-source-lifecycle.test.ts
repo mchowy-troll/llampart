@@ -4,7 +4,7 @@ import { ServerModelStatus, ServerRole } from '$lib/enums';
 import { ModelsService } from '$lib/services/models.service';
 import { PropsService } from '$lib/services/props.service';
 import { modelsStore } from '$lib/stores/models.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 import type { ProviderConnectionContext } from '$lib/types/provider';
 

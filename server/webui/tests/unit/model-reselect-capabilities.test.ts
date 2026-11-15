@@ -3,7 +3,7 @@ import { ModelsService } from '$lib/services/models.service';
 import { ChatService } from '$lib/services/chat.service';
 import * as capabilities from '$lib/services/providers/provider-capabilities';
 import { modelsStore } from '$lib/stores/models.svelte';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { settingsStore } from '$lib/stores/settings.svelte';
 
 const originalConfig = { ...settingsStore.config };

@@ -31,7 +31,7 @@
  * - Advanced options (seed, penalties, context handling)
  */
 
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 import { RESPONSE_PREFERENCES } from '$lib/utils/response-preferences';
 import { SvelteSet } from 'svelte/reactivity';
 import {
@@ -46,7 +46,7 @@ import { API_PROVIDER_IDS, isApiProviderId } from '$lib/constants/api-providers'
 import type { ApiProviderId } from '$lib/constants/api-providers';
 import { ParameterSyncService } from '$lib/services/parameter-sync.service';
 import { validateGatewayConnection } from '$lib/services/providers/provider-transport';
-import { serverStore } from '$lib/stores/server.svelte';
+import { serverStore } from '$lib/stores/backend.svelte';
 import { normalizeThemeId, THEME_REGISTRY } from '$lib/themes/registry';
 import type { ThemePreviewCommitResult, ThemeSettingsPreview } from '$lib/themes/types';
 import { configToParameterRecord, getConfigValue, setConfigValue } from '$lib/utils/config-helpers';
