@@ -184,12 +184,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-timestamp
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-title,
-html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-action-button,
-html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-timestamp-badge {
-	text-shadow: 0 1px 0 rgb(255 255 255 / 0.22);
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-action-button,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-timestamp-badge {
 	text-shadow: 0 1px 0 rgb(255 255 255 / 0.22);
 }
@@ -258,7 +252,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 			.conversation-title,
 			.conversation-action-button,
 			.llampart-sidebar-select-checkbox
-		) {
+		):not(:where(.conversation-card-action-trigger, .conversation-card-action-trigger *)) {
 		transition-property: background-color, border-color, box-shadow, color, text-shadow;
 		transition-duration: 180ms;
 		transition-timing-function: ease;

@@ -187,12 +187,12 @@
 				{/if}
 			{:else}
 				<Tooltip.Root>
-					<Tooltip.Trigger>
+					<Tooltip.Trigger class="conversation-card-action-trigger">
 						<button
 							aria-label={conversation.pinned
 								? t('sidebar.unpinConversation')
 								: t('sidebar.pinConversation')}
-							class="conversation-pin-button flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+							class="conversation-pin-button flex h-6 w-6 items-center justify-center"
 							type="button"
 							onclick={handlePinnedClick}
 						>
@@ -228,10 +228,10 @@
 				</Tooltip.Root>
 			{:else}
 				<Tooltip.Root>
-					<Tooltip.Trigger>
+					<Tooltip.Trigger class="conversation-card-action-trigger">
 						<button
 							aria-label={t('common.edit')}
-							class="conversation-action-button flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+							class="conversation-action-button flex h-6 w-6 items-center justify-center"
 							type="button"
 							onclick={handleEdit}
 						>
@@ -245,10 +245,10 @@
 				</Tooltip.Root>
 
 				<Tooltip.Root>
-					<Tooltip.Trigger>
+					<Tooltip.Trigger class="conversation-card-action-trigger">
 						<button
 							aria-label={t('common.export')}
-							class="conversation-action-button flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:outline-none"
+							class="conversation-action-button flex h-6 w-6 items-center justify-center"
 							type="button"
 							onclick={handleExport}
 						>
@@ -266,8 +266,6 @@
 </div>
 
 <style>
-	.conversation-item:is(:hover, :focus-visible) :global(.conversation-action-button),
-	.conversation-item:is(:hover, :focus-visible) .conversation-pin-button,
 	.conversation-item:is(:hover, :focus-visible) .conversation-timestamp-badge,
 	.conversation-item:is(:hover, :focus-visible) .conversation-parent-link {
 		color: var(--llampart-sidebar-conversation-control-foreground);
@@ -296,9 +294,34 @@
 		min-height: 4.5rem;
 	}
 
-	.conversation-card-actions :global(.conversation-action-button),
+	/* Match message-footer bare actions without suppressing keyboard focus. */
+	:global(.conversation-card-action-trigger),
+	:global(.conversation-card-action-trigger *) {
+		transition: none;
+	}
+
+	.conversation-action-button,
 	.conversation-pin-button {
+		border: 0;
+		background: transparent;
 		color: var(--llampart-sidebar-conversation-control-foreground);
+		box-shadow: none;
+		outline: none;
+		text-shadow: none;
+		backdrop-filter: none;
+		transform: none;
+		animation: none;
+	}
+
+	.conversation-action-button:where(:hover, :focus-visible),
+	.conversation-pin-button:where(:hover, :focus-visible) {
+		color: var(--foreground);
+	}
+
+	.conversation-action-button:focus-visible,
+	.conversation-pin-button:focus-visible {
+		outline: 2px solid currentColor;
+		outline-offset: 2px;
 	}
 
 	.conversation-timestamp-badge,
@@ -317,9 +340,5 @@
 		border-style: solid !important;
 		border-radius: 0.75rem !important;
 		overflow: hidden !important;
-	}
-
-	:global(.conversation-item button) {
-		border-radius: 0.75rem !important;
 	}
 </style>

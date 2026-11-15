@@ -105,11 +105,8 @@
 	min-width: 0;
 }
 .llampart-form-group {
-	border-color: transparent;
 	display: grid;
 	gap: 1.25rem;
-	background: var(--llampart-form-surface);
-	background: rgb(from var(--llampart-form-surface) r g b / calc(alpha * 1.25));
 }
 .llampart-form-heading,
 .llampart-form-group-title {
