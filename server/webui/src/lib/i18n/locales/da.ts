@@ -113,6 +113,8 @@ export const da: TranslationDictionary = {
 		noContentAvailable: 'Intet indhold tilgængeligt',
 		confirm: 'Bekræft',
 		toggleSidebar: 'Vis eller skjul sidepanel',
+		enterFullscreen: 'Åbn fuld skærm',
+		exitFullscreen: 'Afslut fuld skærm',
 		sidebar: 'Sidepanel',
 		untitledConversation: 'Samtale uden titel',
 		conversationName: 'Samtalens navn',

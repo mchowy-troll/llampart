@@ -114,6 +114,8 @@ export const hr: TranslationDictionary = {
 		noContentAvailable: 'Nema dostupnog sadržaja',
 		confirm: 'Potvrdi',
 		toggleSidebar: 'Prikaži ili sakrij bočnu traku',
+		enterFullscreen: 'Uključi cijeli zaslon',
+		exitFullscreen: 'Izađi iz cijelog zaslona',
 		sidebar: 'Bočna traka',
 		untitledConversation: 'Razgovor bez naslova',
 		conversationName: 'Naziv razgovora',

@@ -113,6 +113,8 @@ export const lv: TranslationDictionary = {
 		noContentAvailable: 'Saturs nav pieejams',
 		confirm: 'Apstiprināt',
 		toggleSidebar: 'Rādīt vai slēpt sānjoslu',
+		enterFullscreen: 'Ieslēgt pilnekrāna režīmu',
+		exitFullscreen: 'Iziet no pilnekrāna režīma',
 		sidebar: 'Sānjosla',
 		untitledConversation: 'Saruna bez nosaukuma',
 		conversationName: 'Sarunas nosaukums',

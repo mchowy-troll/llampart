@@ -125,6 +125,8 @@ export const en: TranslationDictionary = {
 		noContentAvailable: 'No content available',
 		confirm: 'Confirm',
 		toggleSidebar: 'Toggle Sidebar',
+		enterFullscreen: 'Enter fullscreen',
+		exitFullscreen: 'Exit fullscreen',
 		sidebar: 'Sidebar',
 		untitledConversation: 'Untitled conversation',
 		conversationName: 'Conversation Name',

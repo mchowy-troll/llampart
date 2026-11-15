@@ -114,6 +114,8 @@ export const el: TranslationDictionary = {
 		noContentAvailable: 'Δεν υπάρχει διαθέσιμο περιεχόμενο',
 		confirm: 'Επιβεβαίωση',
 		toggleSidebar: 'Εμφάνιση ή απόκρυψη πλευρικής στήλης',
+		enterFullscreen: 'Είσοδος σε πλήρη οθόνη',
+		exitFullscreen: 'Έξοδος από πλήρη οθόνη',
 		sidebar: 'Πλευρική στήλη',
 		untitledConversation: 'Συνομιλία χωρίς τίτλο',
 		conversationName: 'Όνομα συνομιλίας',

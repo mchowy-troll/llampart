@@ -114,6 +114,8 @@ export const sl: TranslationDictionary = {
 		noContentAvailable: 'Ni razpoložljive vsebine',
 		confirm: 'Potrdi',
 		toggleSidebar: 'Pokaži ali skrij stransko vrstico',
+		enterFullscreen: 'Vklopi celozaslonski način',
+		exitFullscreen: 'Izhod iz celozaslonskega načina',
 		sidebar: 'Stranska vrstica',
 		untitledConversation: 'Pogovor brez naslova',
 		conversationName: 'Ime pogovora',

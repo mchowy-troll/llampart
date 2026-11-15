@@ -116,6 +116,8 @@ export const de: TranslationDictionary = {
 		noContentAvailable: 'Kein Inhalt verfügbar',
 		confirm: 'Bestätigen',
 		toggleSidebar: 'Seitenleiste umschalten',
+		enterFullscreen: 'Vollbildmodus aktivieren',
+		exitFullscreen: 'Vollbildmodus verlassen',
 		sidebar: 'Seitenleiste',
 		untitledConversation: 'Unbenannte Unterhaltung',
 		conversationName: 'Unterhaltungsname',

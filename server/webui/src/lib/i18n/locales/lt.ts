@@ -113,6 +113,8 @@ export const lt: TranslationDictionary = {
 		noContentAvailable: 'Nėra turinio',
 		confirm: 'Patvirtinti',
 		toggleSidebar: 'Rodyti arba slėpti šoninę juostą',
+		enterFullscreen: 'Įjungti visą ekraną',
+		exitFullscreen: 'Išeiti iš viso ekrano',
 		sidebar: 'Šoninė juosta',
 		untitledConversation: 'Pokalbis be pavadinimo',
 		conversationName: 'Pokalbio pavadinimas',

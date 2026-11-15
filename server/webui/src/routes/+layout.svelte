@@ -14,6 +14,7 @@
 	import { chatStore, isLoading } from '$lib/stores/chat.svelte';
 	import { conversationsStore, activeMessages } from '$lib/stores/conversations.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import FullscreenButton from '$lib/components/app/FullscreenButton.svelte';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { isRouterMode, serverStore } from '$lib/stores/server.svelte';
 	import { config, settingsStore, SettingsPersistenceError } from '$lib/stores/settings.svelte';
@@ -396,6 +397,7 @@
 			</Sidebar.Root>
 
 			<Sidebar.Trigger class="absolute top-5 left-8 z-[900] md:top-5 md:left-8" />
+			<FullscreenButton class="absolute top-5 right-8 z-[900] md:top-5 md:right-8" />
 
 			<Sidebar.Inset class="flex flex-1 flex-col overflow-hidden">
 				{@render children?.()}

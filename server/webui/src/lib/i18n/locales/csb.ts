@@ -114,6 +114,8 @@ export const csb: TranslationDictionary = {
 		noContentAvailable: 'Felënk przistãpny zamkłoscë',
 		confirm: 'Pòcwierdzë',
 		toggleSidebar: 'Pòkôż abò zatacë bòczny panel',
+		enterFullscreen: 'Włączë fùlekranowi trib',
+		exitFullscreen: 'Wëłączë fùlekranowi trib',
 		sidebar: 'Bòczny panel',
 		untitledConversation: 'Rozmòwa bez titla',
 		conversationName: 'Miono rozmòwë',

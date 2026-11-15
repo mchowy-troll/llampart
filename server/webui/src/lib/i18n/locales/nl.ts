@@ -114,6 +114,8 @@ export const nl: TranslationDictionary = {
 		noContentAvailable: 'Geen inhoud beschikbaar',
 		confirm: 'Bevestigen',
 		toggleSidebar: 'Zijbalk tonen of verbergen',
+		enterFullscreen: 'Volledig scherm openen',
+		exitFullscreen: 'Volledig scherm verlaten',
 		sidebar: 'Zijbalk',
 		untitledConversation: 'Gesprek zonder titel',
 		conversationName: 'Gespreksnaam',

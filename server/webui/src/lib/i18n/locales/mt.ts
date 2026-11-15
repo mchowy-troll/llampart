@@ -114,6 +114,8 @@ export const mt: TranslationDictionary = {
 		noContentAvailable: 'M’hemm l-ebda kontenut disponibbli',
 		confirm: 'Ikkonferma',
 		toggleSidebar: 'Uri jew aħbi l-istrixxa tal-ġenb',
+		enterFullscreen: 'Idħol fl-iskrin sħiħ',
+		exitFullscreen: 'Oħroġ mill-iskrin sħiħ',
 		sidebar: 'Strixxa tal-ġenb',
 		untitledConversation: 'Konversazzjoni bla titlu',
 		conversationName: 'Isem il-konversazzjoni',

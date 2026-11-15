@@ -115,6 +115,8 @@ export const it: TranslationDictionary = {
 		noContentAvailable: 'Nessun contenuto disponibile',
 		confirm: 'Conferma',
 		toggleSidebar: 'Attiva/disattiva barra laterale',
+		enterFullscreen: 'Attiva schermo intero',
+		exitFullscreen: 'Esci da schermo intero',
 		sidebar: 'Barra laterale',
 		untitledConversation: 'Conversazione senza titolo',
 		conversationName: 'Nome conversazione',

@@ -112,6 +112,8 @@ export const ro: TranslationDictionary = {
 		noContentAvailable: 'Nu există conținut disponibil',
 		confirm: 'Confirmă',
 		toggleSidebar: 'Afișează sau ascunde bara laterală',
+		enterFullscreen: 'Activează ecranul complet',
+		exitFullscreen: 'Ieși din ecranul complet',
 		sidebar: 'Bară laterală',
 		untitledConversation: 'Conversație fără titlu',
 		conversationName: 'Numele conversației',

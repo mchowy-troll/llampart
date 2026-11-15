@@ -327,10 +327,9 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	}
 }
 
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-corner-button,
 html[data-theme='frosted-glass'].has-frosted-glass-theme
-	[data-sidebar='trigger'].llampart-sidebar-v-trigger,
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	[data-sidebar='trigger'].llampart-sidebar-v-trigger:is(:hover, :focus-visible, :active) {
+	.llampart-corner-button:is(:hover, :focus-visible, :active) {
 	border: 0;
 	background: transparent;
 	box-shadow: none;
@@ -521,14 +520,14 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	color: rgb(60 60 60 / 0.44) !important;
 }
 
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-v-trigger {
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-corner-button {
 	color: #111111 !important;
 }
 
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-v-trigger-closed,
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-v-trigger-closed:hover,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-corner-button-surface,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-corner-button-surface:hover,
 html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-v-trigger-closed:focus-visible {
+	.llampart-corner-button-surface:focus-visible {
 	background: var(--llampart-glass-white-230, rgba(255, 255, 255, 0.23)) !important;
 	backdrop-filter: var(--llampart-glass-filter-14-128, blur(14px) saturate(128%)) !important;
 	-webkit-backdrop-filter: var(
@@ -537,10 +536,10 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	) !important;
 }
 
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-v-trigger-open,
-html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-v-trigger-open:hover,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-corner-button-subtle,
+html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-corner-button-subtle:hover,
 html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-v-trigger-open:focus-visible {
+	.llampart-corner-button-subtle:focus-visible {
 	background: transparent !important;
 	background-color: transparent !important;
 	background-image: none !important;

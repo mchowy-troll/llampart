@@ -112,6 +112,8 @@ export const et: TranslationDictionary = {
 		noContentAvailable: 'Sisu pole saadaval',
 		confirm: 'Kinnita',
 		toggleSidebar: 'Näita või peida külgriba',
+		enterFullscreen: 'Ava täisekraan',
+		exitFullscreen: 'Välju täisekraanilt',
 		sidebar: 'Külgriba',
 		untitledConversation: 'Pealkirjata vestlus',
 		conversationName: 'Vestluse nimi',

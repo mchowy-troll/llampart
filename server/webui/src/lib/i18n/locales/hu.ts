@@ -114,6 +114,8 @@ export const hu: TranslationDictionary = {
 		noContentAvailable: 'Nincs elérhető tartalom',
 		confirm: 'Megerősítés',
 		toggleSidebar: 'Oldalsáv megjelenítése vagy elrejtése',
+		enterFullscreen: 'Teljes képernyő bekapcsolása',
+		exitFullscreen: 'Kilépés a teljes képernyőből',
 		sidebar: 'Oldalsáv',
 		untitledConversation: 'Névtelen beszélgetés',
 		conversationName: 'Beszélgetés neve',

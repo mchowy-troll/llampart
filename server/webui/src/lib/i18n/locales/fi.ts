@@ -112,6 +112,8 @@ export const fi: TranslationDictionary = {
 		noContentAvailable: 'Sisältöä ei ole saatavilla',
 		confirm: 'Vahvista',
 		toggleSidebar: 'Näytä tai piilota sivupalkki',
+		enterFullscreen: 'Siirry koko näyttöön',
+		exitFullscreen: 'Poistu koko näytöstä',
 		sidebar: 'Sivupalkki',
 		untitledConversation: 'Nimetön keskustelu',
 		conversationName: 'Keskustelun nimi',

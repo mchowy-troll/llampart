@@ -111,6 +111,8 @@ export const cs: TranslationDictionary = {
 		noContentAvailable: 'Není k dispozici žádný obsah',
 		confirm: 'Potvrdit',
 		toggleSidebar: 'Zobrazit nebo skrýt postranní panel',
+		enterFullscreen: 'Zapnout celou obrazovku',
+		exitFullscreen: 'Ukončit celou obrazovku',
 		sidebar: 'Postranní panel',
 		untitledConversation: 'Konverzace bez názvu',
 		conversationName: 'Název konverzace',

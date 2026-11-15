@@ -115,6 +115,8 @@ export const ga: TranslationDictionary = {
 		noContentAvailable: 'Níl aon ábhar ar fáil',
 		confirm: 'Deimhnigh',
 		toggleSidebar: 'Taispeáin nó folaigh an barra taoibh',
+		enterFullscreen: 'Téigh go lánscáileán',
+		exitFullscreen: 'Scoir den lánscáileán',
 		sidebar: 'Barra taoibh',
 		untitledConversation: 'Comhrá gan teideal',
 		conversationName: 'Ainm an chomhrá',

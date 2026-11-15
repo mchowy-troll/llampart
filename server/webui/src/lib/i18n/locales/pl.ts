@@ -126,6 +126,8 @@ export const pl: TranslationDictionary = {
 		noContentAvailable: 'Brak dostępnej zawartości',
 		confirm: 'Potwierdź',
 		toggleSidebar: 'Przełącz pasek boczny',
+		enterFullscreen: 'Włącz tryb pełnoekranowy',
+		exitFullscreen: 'Wyłącz tryb pełnoekranowy',
 		sidebar: 'Pasek boczny',
 		untitledConversation: 'Rozmowa bez tytułu',
 		conversationName: 'Nazwa rozmowy',

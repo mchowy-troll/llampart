@@ -113,6 +113,8 @@ export const bg: TranslationDictionary = {
 		noContentAvailable: 'Няма налично съдържание',
 		confirm: 'Потвърждаване',
 		toggleSidebar: 'Показване/скриване на страничната лента',
+		enterFullscreen: 'Включване на цял екран',
+		exitFullscreen: 'Изход от цял екран',
 		sidebar: 'Странична лента',
 		untitledConversation: 'Разговор без заглавие',
 		conversationName: 'Име на разговора',

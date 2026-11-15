@@ -112,6 +112,8 @@ export const sv: TranslationDictionary = {
 		noContentAvailable: 'Inget innehåll tillgängligt',
 		confirm: 'Bekräfta',
 		toggleSidebar: 'Visa eller dölj sidofält',
+		enterFullscreen: 'Öppna helskärm',
+		exitFullscreen: 'Avsluta helskärm',
 		sidebar: 'Sidofält',
 		untitledConversation: 'Samtal utan titel',
 		conversationName: 'Samtalsnamn',
