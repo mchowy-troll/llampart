@@ -15,23 +15,17 @@
 html[data-theme='frosted-glass'].has-frosted-glass-theme #llampart-theme-preload-background {
 	display: block;
 }
-/* llampart-frosted-glass-user-input-text-glow
-   app.css owns Frosted Glass input/textbox selectors.
-   Theme-owned input glow values live in lib/styles/themes.css. */
 html[data-theme='frosted-glass'].has-frosted-glass-theme textarea,
 html[data-theme='frosted-glass'].has-frosted-glass-theme [contenteditable='true'],
 html[data-theme='frosted-glass'].has-frosted-glass-theme [role='textbox'] {
 	color: var(--llampart-frosted-input-text-color, #000000) !important;
-	text-shadow: var(--llampart-frosted-input-text-shadow) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme textarea::placeholder,
 html[data-theme='frosted-glass'].has-frosted-glass-theme input::placeholder {
 	color: var(--llampart-frosted-input-placeholder-color, rgba(0, 0, 0, 0.48)) !important;
-	text-shadow: var(--llampart-frosted-input-placeholder-text-shadow) !important;
 }
 
-/* llampart-frosted-glass-new-chat-subtitle-color-only */
 html[data-theme='frosted-glass'].has-frosted-glass-theme h1 + p,
 html[data-theme='frosted-glass'].has-frosted-glass-theme [data-llampart-new-chat-subtitle],
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-new-chat-subtitle {
@@ -89,5 +83,3 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	visibility: visible !important;
 }
 /* /llampart-frosted-glass-shared-checkbox-checked-state */
-
-/* Global wallpaper, page and notification surfaces owned by Frosted Glass. */

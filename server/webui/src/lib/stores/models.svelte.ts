@@ -49,8 +49,6 @@ function normalizeModelModalities(props?: ApiLlamaCppServerProps | null): ModelM
  * - Available models list
  * - Selected model for new conversations
  * - Loaded models tracking (ROUTER mode)
- * - Model usage tracking per conversation
- * - Automatic unloading of unused models
  *
  * **Architecture & Relationships:**
  * - **ModelsService**: Stateless service for model API communication
@@ -66,18 +64,9 @@ function normalizeModelModalities(props?: ApiLlamaCppServerProps | null): ModelM
  * **Key Features:**
  * - **MODEL mode**: Single model, always loaded
  * - **ROUTER mode**: Multi-model with load/unload capability
- * - **Auto-unload**: Automatically unloads models not used by any conversation
  * - **Lazy loading**: ensureModelLoaded() loads models on demand
  */
 class ModelsStore {
-	/**
-	 *
-	 *
-	 * State
-	 *
-	 *
-	 */
-
 	models = $state<ModelOption[]>([]);
 	routerModels = $state<ApiModelDataEntry[]>([]);
 	loading = $state(false);
@@ -1369,13 +1358,8 @@ export const modelOptions = () => modelsStore.models;
 export const routerModels = () => modelsStore.routerModels;
 export const modelsLoading = () => modelsStore.loading;
 export const modelsUpdating = () => modelsStore.updating;
-export const modelsError = () => modelsStore.error;
 export const selectedModelId = () => modelsStore.selectedModelId;
 export const selectedModelName = () => modelsStore.selectedModelName;
-export const selectedModelOption = () => modelsStore.selectedModel;
 export const loadedModelIds = () => modelsStore.loadedModelIds;
-export const loadingModelIds = () => modelsStore.loadingModelIds;
-export const propsCacheVersion = () => modelsStore.propsCacheVersion;
 export const singleModelName = () => modelsStore.singleModelName;
-export const selectedModelContextSize = () => modelsStore.selectedModelContextSize;
 export const favoriteModelIds = () => modelsStore.favoriteModelIds;

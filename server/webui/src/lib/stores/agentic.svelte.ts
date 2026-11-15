@@ -911,30 +911,6 @@ class AgenticStore {
 
 export const agenticStore = new AgenticStore();
 
-export function agenticIsRunning(conversationId: string) {
-	return agenticStore.isRunning(conversationId);
-}
-
-export function agenticCurrentTurn(conversationId: string) {
-	return agenticStore.currentTurn(conversationId);
-}
-
-export function agenticTotalToolCalls(conversationId: string) {
-	return agenticStore.totalToolCalls(conversationId);
-}
-
-export function agenticLastError(conversationId: string) {
-	return agenticStore.lastError(conversationId);
-}
-
-export function agenticStreamingToolCall(conversationId: string) {
-	return agenticStore.streamingToolCall(conversationId);
-}
-
-export function agenticIsAnyRunning() {
-	return agenticStore.isAnyRunning;
-}
-
 export function agenticPendingPermissionRequest(conversationId: string) {
 	return agenticStore.pendingPermissionRequest(conversationId);
 }

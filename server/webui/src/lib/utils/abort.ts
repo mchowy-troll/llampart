@@ -58,58 +58,6 @@ export function isAbortError(error: unknown): boolean {
 }
 
 /**
- * Creates a new AbortController that is linked to one or more parent signals.
- * When any parent signal aborts, the returned controller also aborts.
- *
- * Useful for creating child operations that should be cancelled when
- * either the parent operation or their own timeout/condition triggers.
- *
- * @param signals - Parent signals to link to (undefined signals are ignored)
- * @returns A new AbortController linked to all provided signals
- *
- * @example
- * ```ts
- * // Link to user's abort signal and add a timeout
- * const linked = createLinkedController(userSignal, timeoutSignal);
- * await fetch(url, { signal: linked.signal });
- * ```
- */
-export function createLinkedController(...signals: (AbortSignal | undefined)[]): AbortController {
-	const controller = new AbortController();
-
-	for (const signal of signals) {
-		if (!signal) continue;
-
-		// If already aborted, abort immediately
-		if (signal.aborted) {
-			controller.abort(signal.reason);
-			return controller;
-		}
-
-		// Link to parent signal
-		signal.addEventListener('abort', () => controller.abort(signal.reason), { once: true });
-	}
-
-	return controller;
-}
-
-/**
- * Creates an AbortSignal that times out after the specified duration.
- *
- * @param ms - Timeout duration in milliseconds
- * @returns AbortSignal that will abort after the timeout
- *
- * @example
- * ```ts
- * const signal = createTimeoutSignal(5000); // 5 second timeout
- * await fetch(url, { signal });
- * ```
- */
-export function createTimeoutSignal(ms: number): AbortSignal {
-	return AbortSignal.timeout(ms);
-}
-
-/**
  * Wraps a promise to reject if the signal is aborted.
  * Useful for making non-abortable promises respect an AbortSignal.
  *

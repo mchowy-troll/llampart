@@ -43,11 +43,7 @@ export {
 	findMessageById,
 	findLeafNode,
 	findDescendantMessages,
-	getMessageSiblings,
-	getMessageDisplayList,
-	hasMessageSiblings,
-	getNextSibling,
-	getPreviousSibling
+	getMessageSiblings
 } from './branching';
 
 // Code
@@ -196,7 +192,7 @@ export { generateAssistantResponseFilename, getMessageResponseContent } from './
 export { runLegacyMigration, isMigrationNeeded } from './legacy-migration';
 
 // Cache utilities
-export { TTLCache, ReactiveTTLMap, type TTLCacheOptions } from './cache-ttl';
+export { TTLCache, type TTLCacheOptions } from './cache-ttl';
 
 // Redaction utilities
 export { redactValue } from './redact';
@@ -213,13 +209,7 @@ export {
 } from './request-helpers';
 
 // Abort signal utilities
-export {
-	throwIfAborted,
-	isAbortError,
-	createLinkedController,
-	createTimeoutSignal,
-	withAbortSignal
-} from './abort';
+export { throwIfAborted, isAbortError, withAbortSignal } from './abort';
 export { getReconnectDelay, sleepWithAbort, type SleepTimer } from './retry';
 
 // Cryptography utilities

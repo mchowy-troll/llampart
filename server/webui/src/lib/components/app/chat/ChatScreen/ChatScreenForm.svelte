@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
-	import ChatFormHelperText from '$lib/components/app/chat/ChatForm/ChatFormHelperText.svelte';
 	import ChatForm from '$lib/components/app/chat/ChatForm/ChatForm.svelte';
 	import { onMount } from 'svelte';
 
@@ -14,7 +13,6 @@
 		onSend?: (message: string, files?: ChatUploadedFile[]) => Promise<boolean>;
 		onStop?: () => void;
 		onSystemPromptAdd?: (draft: { message: string; files: ChatUploadedFile[] }) => void;
-		showHelperText?: boolean;
 		uploadedFiles?: ChatUploadedFile[];
 	}
 
@@ -28,7 +26,6 @@
 		onSend,
 		onStop,
 		onSystemPromptAdd,
-		showHelperText = true,
 		uploadedFiles = $bindable([])
 	}: Props = $props();
 
@@ -119,5 +116,3 @@
 		onUploadedFileRemove={handleUploadedFileRemove}
 	/>
 </div>
-
-<ChatFormHelperText show={showHelperText} />

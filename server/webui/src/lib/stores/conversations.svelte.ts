@@ -187,14 +187,6 @@ class ConversationsStore {
 
 	private loadGeneration = 0;
 	private nameUpdateVersions = new Map<string, number>();
-	/**
-	 *
-	 *
-	 * State
-	 *
-	 *
-	 */
-
 	/** List of all conversations */
 	conversations = $state<DatabaseConversation[]>([]);
 
@@ -275,7 +267,7 @@ class ConversationsStore {
 
 		try {
 			// @deprecated Legacy migration for old marker-based messages.
-			// Remove once all users have migrated to the structured format.
+			// Recheck persisted history: returning users can still have legacy marker messages.
 			await runLegacyMigration();
 
 			await this.loadConversations();

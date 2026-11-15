@@ -1,4 +1,3 @@
-/* llampart Frosted Glass sidebar initial pass */
 html[data-theme='frosted-glass'].has-frosted-glass-theme.has-frosted-glass-opaque
 	.conversation-item:not(.conversation-item-selected) {
 	border-color: rgb(120 120 120 / 0.3);
@@ -121,7 +120,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme [data-slot='sidebar-group-label'] {
 	color: rgb(40 40 40 / 0.72);
-	text-shadow: 0 1px 0 rgb(255 255 255 / 0.3);
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-item {
@@ -183,11 +181,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-timestamp
 	border-color: rgb(255 255 255 / 0.22);
 }
 
-html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-title,
-html[data-theme='frosted-glass'].has-frosted-glass-theme .conversation-timestamp-badge {
-	text-shadow: 0 1px 0 rgb(255 255 255 / 0.22);
-}
-
 html[data-theme='frosted-glass'].has-frosted-glass-theme [data-sidebar='trigger'] {
 	border-color: transparent;
 	background: transparent;
@@ -204,7 +197,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	-webkit-backdrop-filter: none;
 	backdrop-filter: none;
 }
-/* /llampart Frosted Glass sidebar initial pass */
 @media (min-width: 768px) {
 	/* Frosted Glass: avoid opacity on the backdrop-filter path. */
 	html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -264,19 +256,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
 		)[data-state='collapsed']
 		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
-		.llampart-sidebar-conversations-frame {
-		border-color: transparent !important;
-		background: transparent !important;
-		box-shadow: none !important;
-		-webkit-backdrop-filter: none !important;
-		backdrop-filter: none !important;
-	}
-
-	html[data-theme='frosted-glass'].has-frosted-glass-theme
-		[data-slot='sidebar']:has(
-			> [data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
-		)[data-state='collapsed']
-		[data-slot='sidebar-container'].llampart-redesigned-sidebar-shell
 		.llampart-sidebar-conversations-frame
 		:where(
 			h2,
@@ -296,7 +275,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 		background: transparent !important;
 		box-shadow: none !important;
 		color: transparent !important;
-		text-shadow: none !important;
 		caret-color: transparent !important;
 	}
 
@@ -343,9 +321,8 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	box-shadow: none !important;
 	-webkit-backdrop-filter: none !important;
 	backdrop-filter: none !important;
-	text-shadow: none !important;
 }
-/* llampart-frosted-glass-collapsed-sidebar-blur-cleanup */
+/* Hidden frames must stop painting their backdrop, not just their contents. */
 @media (min-width: 768px) {
 	html[data-theme='frosted-glass'].has-frosted-glass-theme
 		[data-slot='sidebar']:has(
@@ -383,7 +360,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 		-webkit-backdrop-filter: none !important;
 		backdrop-filter: none !important;
 		filter: none !important;
-		text-shadow: none !important;
 	}
 }
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-primary-action {
@@ -397,17 +373,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-sidebar-primary-action
 	.llampart-sidebar-primary-action-icon {
 	color: #000000 !important;
-	text-shadow:
-		0 0 2px rgba(255, 255, 255, 0.64),
-		0 0 8px rgba(255, 255, 255, 0.5),
-		0 0 16px rgba(255, 255, 255, 0.34) !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-primary-action
-	.llampart-sidebar-primary-action-icon {
-	filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.64))
-		drop-shadow(0 0 8px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.34)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-bulk-action,
@@ -415,10 +380,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-bulk-
 	border-color: transparent !important;
 	background: transparent !important;
 	color: #1a1a1a !important;
-	text-shadow:
-		0 0 2px rgba(255, 255, 255, 0.64),
-		0 0 8px rgba(255, 255, 255, 0.5),
-		0 0 16px rgba(255, 255, 255, 0.34) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -430,8 +391,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-bulk-action svg {
 	color: currentColor !important;
-	filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.64))
-		drop-shadow(0 0 8px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.34)) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -439,21 +398,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-sidebar-frame-header
 	h2 {
 	color: #000000 !important;
-	text-shadow:
-		0 0 2px rgba(255, 255, 255, 0.64),
-		0 0 8px rgba(255, 255, 255, 0.5),
-		0 0 16px rgba(255, 255, 255, 0.34) !important;
 }
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.llampart-sidebar-conversations-frame
-	.llampart-sidebar-frame-footer
-	svg {
-	filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.64))
-		drop-shadow(0 0 8px rgba(255, 255, 255, 0.5)) drop-shadow(0 0 16px rgba(255, 255, 255, 0.34)) !important;
-}
-
-/* Sidebar surfaces owned by Frosted Glass. */
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-header-separator {
 	background: rgba(0, 0, 0, 0.1) !important;
@@ -473,8 +418,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-actio
 		blur(24px) saturate(135%)
 	) !important;
 }
-
-/* Frosted Glass sidebar frame surface values are owned by src/app.css shared surface primitives. */
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-frame-header button,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .llampart-sidebar-frame-header input {

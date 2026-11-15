@@ -1,11 +1,10 @@
 import { DEFAULT_CACHE_TTL_MS, DEFAULT_CACHE_MAX_ENTRIES } from '$lib/constants';
-import { SvelteMap } from 'svelte/reactivity';
 
 /**
  * TTL Cache - Time-To-Live cache implementation for memory optimization
  *
- * Provides automatic expiration of cached entries to prevent memory bloat
- * in long-running sessions.
+ * Expires entries on access or explicit pruning; evicts least-recently-accessed
+ * entries when the capacity is reached. No background timer is created.
  *
  * @example
  * ```ts
@@ -18,9 +17,9 @@ import { SvelteMap } from 'svelte/reactivity';
 export interface TTLCacheOptions {
 	/** Time-to-live in milliseconds. Default: 5 minutes */
 	ttlMs?: number;
-	/** Maximum number of entries. Oldest entries are evicted when exceeded. Default: 100 */
+	/** Maximum number of entries; evicts the least recently accessed. Default: 100 */
 	maxEntries?: number;
-	/** Callback when an entry expires or is evicted */
+	/** Called on expiry, capacity eviction, explicit deletion, and clearing. */
 	onEvict?: (key: string, value: unknown) => void;
 }
 
@@ -54,16 +53,11 @@ export class TTLCache<K extends string, V> {
 			return null;
 		}
 
-		// Update last accessed time for LRU-like behavior
 		entry.lastAccessed = Date.now();
 		return entry.value;
 	}
 
-	/**
-	 * Set a value in cache with TTL.
-	 */
 	set(key: K, value: V, customTtlMs?: number): void {
-		// Evict oldest entries if at capacity
 		if (this.cache.size >= this.maxEntries && !this.cache.has(key)) {
 			this.evictOldest();
 		}
@@ -93,9 +87,6 @@ export class TTLCache<K extends string, V> {
 		return true;
 	}
 
-	/**
-	 * Delete a specific key from cache.
-	 */
 	delete(key: K): boolean {
 		const entry = this.cache.get(key);
 		if (entry && this.onEvict) {
@@ -104,9 +95,6 @@ export class TTLCache<K extends string, V> {
 		return this.cache.delete(key);
 	}
 
-	/**
-	 * Clear all entries from cache.
-	 */
 	clear(): void {
 		if (this.onEvict) {
 			for (const [key, entry] of this.cache) {
@@ -192,102 +180,5 @@ export class TTLCache<K extends string, V> {
 		entry.expiresAt = now + this.ttlMs;
 		entry.lastAccessed = now;
 		return true;
-	}
-}
-
-/**
- * Reactive TTL Map for Svelte stores
- * Wraps SvelteMap with TTL functionality
- */
-export class ReactiveTTLMap<K extends string, V> {
-	private entries = new SvelteMap<K, CacheEntry<V>>();
-	private readonly ttlMs: number;
-	private readonly maxEntries: number;
-
-	constructor(options: TTLCacheOptions = {}) {
-		this.ttlMs = options.ttlMs ?? DEFAULT_CACHE_TTL_MS;
-		this.maxEntries = options.maxEntries ?? DEFAULT_CACHE_MAX_ENTRIES;
-	}
-
-	get(key: K): V | null {
-		const entry = this.entries.get(key);
-		if (!entry) return null;
-
-		if (Date.now() > entry.expiresAt) {
-			this.entries.delete(key);
-			return null;
-		}
-
-		entry.lastAccessed = Date.now();
-		return entry.value;
-	}
-
-	set(key: K, value: V, customTtlMs?: number): void {
-		if (this.entries.size >= this.maxEntries && !this.entries.has(key)) {
-			this.evictOldest();
-		}
-
-		const ttl = customTtlMs ?? this.ttlMs;
-		const now = Date.now();
-
-		this.entries.set(key, {
-			value,
-			expiresAt: now + ttl,
-			lastAccessed: now
-		});
-	}
-
-	has(key: K): boolean {
-		const entry = this.entries.get(key);
-		if (!entry) return false;
-
-		if (Date.now() > entry.expiresAt) {
-			this.entries.delete(key);
-			return false;
-		}
-
-		return true;
-	}
-
-	delete(key: K): boolean {
-		return this.entries.delete(key);
-	}
-
-	clear(): void {
-		this.entries.clear();
-	}
-
-	get size(): number {
-		return this.entries.size;
-	}
-
-	prune(): number {
-		const now = Date.now();
-		let pruned = 0;
-
-		for (const [key, entry] of this.entries) {
-			if (now > entry.expiresAt) {
-				this.entries.delete(key);
-				pruned++;
-			}
-		}
-
-		return pruned;
-	}
-
-	private evictOldest(): void {
-		let oldestKey: K | null = null;
-		let oldestTime = Infinity;
-
-		for (const [key, entry] of this.entries) {
-			if (entry.lastAccessed < oldestTime) {
-				oldestTime = entry.lastAccessed;
-				oldestKey = key;
-			}
-		}
-
-		if (oldestKey !== null) {
-			this.entries.delete(oldestKey);
-		}
 	}
 }

@@ -24,14 +24,6 @@ import { backendIdentity } from '$lib/utils/backend-identity';
  * - **Default Params**: Server-wide generation defaults
  */
 class ServerStore {
-	/**
-	 *
-	 *
-	 * State
-	 *
-	 *
-	 */
-
 	props = $state<ApiLlamaCppServerProps | null>(null);
 	loading = $state(false);
 	error = $state<string | null>(null);
@@ -230,7 +222,6 @@ export const serverStore = new ServerStore();
 export const serverProps = () => serverStore.props;
 export const serverLoading = () => serverStore.loading;
 export const serverError = () => serverStore.error;
-export const serverRole = () => serverStore.role;
 export const defaultParams = () => serverStore.defaultParams;
 export const contextSize = () => serverStore.contextSize;
 export const isRouterMode = () => serverStore.isRouterMode;

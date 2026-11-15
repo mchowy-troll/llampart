@@ -88,14 +88,6 @@ export type SettingsPreviewCommitResult =
 class SettingsStore {
 	/** Request invalidation only; not another persisted setting or per-token effect. */
 	interactiveFormsEpoch = 0;
-	/**
-	 *
-	 *
-	 * State
-	 *
-	 *
-	 */
-
 	config = $state<SettingsConfigType>({ ...SETTING_CONFIG_DEFAULT });
 	isInitialized = $state(false);
 	userOverrides = new SvelteSet<string>();

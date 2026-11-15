@@ -33,9 +33,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme {
 	--llampart-frosted-message-surface-shadow: var(--llampart-frosted-surface-shadow);
 	--llampart-frosted-surface-filter: var(--llampart-glass-filter-18-116, blur(18px) saturate(116%));
 	--llampart-frosted-surface-text: #000000;
-	--llampart-frosted-surface-text-shadow:
-		0 0 2px rgba(255, 255, 255, 0.64), 0 0 8px rgba(255, 255, 255, 0.5),
-		0 0 16px rgba(255, 255, 255, 0.34);
 	--llampart-composer-processing-stats-radius: var(
 		--llampart-frosted-glass-composer-radius,
 		1.5rem
@@ -58,13 +55,9 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme {
 	);
 	--llampart-composer-processing-stats-foreground: #000000;
 	--llampart-composer-processing-stats-separator: #000000;
-	--llampart-composer-processing-stats-text-shadow:
-		0 0 2px rgba(255, 255, 255, 0.64), 0 0 8px rgba(255, 255, 255, 0.5),
-		0 0 16px rgba(255, 255, 255, 0.34);
 	--llampart-composer-processing-stats-font-weight: 400;
 	--llampart-sidebar-conversation-title-foreground: #444444;
 	--llampart-sidebar-conversation-timestamp-foreground: #444444;
-	--llampart-mcp-prompt-picker-shadow: var(--llampart-frosted-glass-composer-menu-shadow);
 	--llampart-model-info-template-border: var(--border);
 	--llampart-model-info-template-background: color-mix(
 		in oklch,
@@ -90,9 +83,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme {
 		blur(18px) saturate(116%)
 	);
 	--llampart-frosted-user-message-foreground: #000000;
-	--llampart-frosted-user-message-text-shadow:
-		0 0 2px rgba(255, 255, 255, 0.64), 0 0 8px rgba(255, 255, 255, 0.5),
-		0 0 16px rgba(255, 255, 255, 0.34);
 	--llampart-frosted-user-message-code-background: var(
 		--llampart-glass-white-100,
 		rgba(255, 255, 255, 0.1)
@@ -109,13 +99,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme {
 		blur(16px) saturate(112%)
 	);
 	--llampart-frosted-input-text-color: #000000;
-	--llampart-frosted-input-text-shadow:
-		0 0 2px rgba(255, 255, 255, 0.64), 0 0 8px rgba(255, 255, 255, 0.5),
-		0 0 16px rgba(255, 255, 255, 0.34);
 	--llampart-frosted-input-placeholder-color: rgba(0, 0, 0, 0.48);
-	--llampart-frosted-input-placeholder-text-shadow:
-		0 0 2px rgba(255, 255, 255, 0.5), 0 0 7px rgba(255, 255, 255, 0.36),
-		0 0 12px rgba(255, 255, 255, 0.22);
 	--llampart-composer-fade-height: clamp(3.91rem, 7.735vh, 5.2275rem);
 	--llampart-composer-fade-start-inset: 2.25rem;
 	--llampart-frosted-glass-composer-radius: 0.75rem;
@@ -148,7 +132,5 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme {
 	--llampart-frosted-preview-inline-background: color-mix(in oklch, var(--muted) 50%, transparent);
 	--llampart-frosted-preview-inline-foreground: var(--foreground);
 	--llampart-frosted-preview-inline-backdrop-filter: none;
-	--llampart-frosted-preview-inline-text-shadow: none;
 	--llampart-frosted-preview-surface-backdrop-filter: none;
-	--llampart-frosted-preview-surface-text-shadow: none;
 }

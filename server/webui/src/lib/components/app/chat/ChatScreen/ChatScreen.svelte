@@ -2,7 +2,6 @@
 	import { afterNavigate } from '$app/navigation';
 	import { t } from '$lib/i18n';
 	import ChatScreenForm from '$lib/components/app/chat/ChatScreen/ChatScreenForm.svelte';
-	import ChatScreenHeader from '$lib/components/app/chat/ChatScreen/ChatScreenHeader.svelte';
 	import ChatMessages from '$lib/components/app/chat/ChatMessages/ChatMessages.svelte';
 	import ChatScreenProcessingInfo from '$lib/components/app/chat/ChatScreen/ChatScreenProcessingInfo.svelte';
 	import DialogEmptyFileAlert from '$lib/components/app/dialogs/DialogEmptyFileAlert.svelte';
@@ -363,8 +362,6 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<ChatScreenHeader />
-
 {#if !isEmpty}
 	<div
 		bind:this={chatScrollContainer}
@@ -417,7 +414,6 @@
 						onSend={handleSendMessage}
 						onStop={() => chatStore.stopGeneration()}
 						onSystemPromptAdd={handleSystemPromptAdd}
-						showHelperText={false}
 						bind:uploadedFiles
 					/>
 				</div>
@@ -468,7 +464,6 @@
 					onSend={handleSendMessage}
 					onStop={() => chatStore.stopGeneration()}
 					onSystemPromptAdd={handleSystemPromptAdd}
-					showHelperText
 					bind:uploadedFiles
 				/>
 			</div>

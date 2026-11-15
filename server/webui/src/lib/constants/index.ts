@@ -39,7 +39,6 @@ export * from './supported-file-types';
 export * from './table-html-restorer';
 export * from './title-generation';
 export * from './tooltip-config';
-export * from './upstream-icon-parity';
 export * from './tools';
 export * from './ui';
 export * from './uri-template';

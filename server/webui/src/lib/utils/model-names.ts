@@ -10,7 +10,7 @@
  * @returns The normalized model name
  *
  * @example
- * normalizeModelName('models/llama-3.1-8b') // Returns: 'llama-3.1-8b' (multiple slashes -> filename)
+ * normalizeModelName('/models/llama-3.1-8b') // Returns: 'llama-3.1-8b' (multiple slashes -> filename)
  * normalizeModelName('C:\\Models\\gpt-4') // Returns: 'gpt-4' (multiple slashes -> filename)
  * normalizeModelName('meta-llama/Llama-3.1-8B') // Returns: 'meta-llama/Llama-3.1-8B' (Hugging Face format)
  * normalizeModelName('simple-model') // Returns: 'simple-model' (no slash)

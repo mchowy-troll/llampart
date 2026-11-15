@@ -104,5 +104,4 @@ export class ProviderConnectionStore {
 
 export const providerConnectionStore = new ProviderConnectionStore();
 export const providerConnectionStatus = () => providerConnectionStore.status;
-export const providerConnectionError = () => providerConnectionStore.errorMessage;
 export const providerConnectionDisconnected = () => providerConnectionStore.hasDisconnected;

@@ -15,36 +15,7 @@ export const DEFAULT_AGENTIC_CONFIG: AgenticConfig = {
 	maxToolPreviewLines: 25
 } as const;
 
-export const REASONING_TAGS = {
-	START: '<think>',
-	END: '</think>'
-} as const;
-
-/**
- * @deprecated Legacy marker tags - only used for migration of old stored messages.
- * New messages use structured fields (reasoningContent, toolCalls, toolCallId).
- */
-export const LEGACY_AGENTIC_TAGS = {
-	TOOL_CALL_START: '<<<AGENTIC_TOOL_CALL_START>>>',
-	TOOL_CALL_END: '<<<AGENTIC_TOOL_CALL_END>>>',
-	TOOL_NAME_PREFIX: '<<<TOOL_NAME:',
-	TOOL_ARGS_START: '<<<TOOL_ARGS_START>>>',
-	TOOL_ARGS_END: '<<<TOOL_ARGS_END>>>',
-	TAG_SUFFIX: '>>>'
-} as const;
-
-/**
- * @deprecated Legacy reasoning tags - only used for migration of old stored messages.
- * New messages use the dedicated reasoningContent field.
- */
-export const LEGACY_REASONING_TAGS = {
-	START: '<<<reasoning_content_start>>>',
-	END: '<<<reasoning_content_end>>>'
-} as const;
-
-/**
- * @deprecated Legacy regex patterns - only used for migration of old stored messages.
- */
+/** Persisted legacy messages still need parsing; new messages use structured fields. */
 export const LEGACY_AGENTIC_REGEX = {
 	COMPLETED_TOOL_CALL:
 		/<<<AGENTIC_TOOL_CALL_START>>>\n<<<TOOL_NAME:(.+?)>>>\n<<<TOOL_ARGS_START>>>([\s\S]*?)<<<TOOL_ARGS_END>>>([\s\S]*?)<<<AGENTIC_TOOL_CALL_END>>>/g,

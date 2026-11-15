@@ -2688,15 +2688,10 @@ class ChatStore {
 export const chatStore = new ChatStore();
 
 export const activeProcessingState = () => chatStore.activeProcessingState;
-export const currentResponse = () => chatStore.currentResponse;
 export const errorDialog = () => chatStore.errorDialogState;
 export const getAddFilesHandler = () => chatStore.getAddFilesHandler();
 export const getAllLoadingChats = () => chatStore.getAllLoadingChats();
-export const getAllStreamingChats = () => chatStore.getAllStreamingChats();
-export const getChatStreaming = (convId: string) => chatStore.getChatStreamingPublic(convId);
-export const isChatLoading = (convId: string) => chatStore.isChatLoadingPublic(convId);
 export const isChatStreaming = () => chatStore.isStreaming();
 export const isEditing = () => chatStore.isEditing();
 export const isLoading = () => chatStore.isLoading;
-export const isReasoning = () => chatStore.isReasoning;
 export const pendingEditMessageId = () => chatStore.pendingEditMessageId;

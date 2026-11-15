@@ -1,4 +1,3 @@
-/* llampart-dialog-original-light-style-size-only */
 /*
  * Model information and table preview keep their enlarged bounds,
  * but use the regular light-theme dialog/table styling in Frosted Glass.
@@ -40,7 +39,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	[data-slot='select-item'] {
 	background: transparent !important;
 	color: inherit !important;
-	text-shadow: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -73,7 +71,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	[data-slot='select-item'] {
 	background: transparent !important;
 	color: oklch(0.145 0 0) !important;
-	text-shadow: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -98,19 +95,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	svg:not([class*='text-']) {
 	color: oklch(0.556 0 0) !important;
 }
-/* llampart-frosted-glass-stage1-milky-overlays-dialog-shells */
-html[data-theme='frosted-glass'].has-frosted-glass-theme body [data-slot='dialog-overlay'],
-html[data-theme='frosted-glass'].has-frosted-glass-theme body [data-slot='alert-dialog-overlay'],
-html[data-theme='frosted-glass'].has-frosted-glass-theme body [data-slot='sheet-overlay'] {
-	background: rgba(246, 249, 247, 0.38) !important;
-	background-color: rgba(246, 249, 247, 0.38) !important;
-	background-image:
-		radial-gradient(circle at 20% 12%, rgba(255, 255, 255, 0.34), transparent 32%),
-		linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(235, 242, 238, 0.12)) !important;
-	-webkit-backdrop-filter: blur(8px) saturate(108%) !important;
-	backdrop-filter: blur(8px) saturate(108%) !important;
-}
-
 /* llampart-frosted-glass-translucent-dialog-surfaces
    Frosted Glass translucent dialog shell owner.
    Preview and solid dialog classes are intentionally excluded here because preview uses
@@ -157,9 +141,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	[data-slot='sheet-content']:not(.llampart-composer-menu-content)
 	:is([data-slot='sheet-title'], [data-slot='sheet-description']) {
 	color: #111111 !important;
-	text-shadow:
-		0 0 0.35px rgba(255, 255, 255, 0.42),
-		0 0 8px rgba(255, 255, 255, 0.16) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -195,7 +176,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	box-shadow: none !important;
 	-webkit-backdrop-filter: none !important;
 	backdrop-filter: none !important;
-	text-shadow: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -212,98 +192,13 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	color: hsl(var(--destructive-foreground)) !important;
 }
 
-/* llampart-frosted-glass-stage3-sonner-toasts */
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast] {
-	border: 1px solid rgba(255, 255, 255, 0.54) !important;
-	border-radius: 0.875rem !important;
-	background: var(--llampart-glass-mint-740, rgba(246, 249, 247, 0.74)) !important;
-	background-color: var(--llampart-glass-mint-740, rgba(246, 249, 247, 0.74)) !important;
-	background-image:
-		linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.1)),
-		linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(229, 237, 232, 0.08)) !important;
-	color: #111111 !important;
-	box-shadow:
-		inset 0 1px 0 rgba(255, 255, 255, 0.48),
-		0 12px 34px rgba(15, 23, 42, 0.12),
-		0 4px 14px rgba(15, 23, 42, 0.06) !important;
-	-webkit-backdrop-filter: var(
-		--llampart-glass-filter-22-122,
-		blur(22px) saturate(122%)
-	) !important;
-	backdrop-filter: var(--llampart-glass-filter-22-122, blur(22px) saturate(122%)) !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast][data-type='success'],
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast][data-type='error'],
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast][data-type='warning'],
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast][data-type='info'],
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast][data-type='loading'] {
-	border-color: rgba(255, 255, 255, 0.54) !important;
-	background: rgba(246, 249, 247, 0.74) !important;
-	background-color: rgba(246, 249, 247, 0.74) !important;
-	color: #111111 !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast]
-	[data-title],
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast]
-	[data-description],
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast]
-	[data-content] {
-	color: currentColor !important;
-	text-shadow:
-		0 0 0.35px rgba(255, 255, 255, 0.4),
-		0 0 8px rgba(255, 255, 255, 0.14) !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast]
-	[data-description] {
-	opacity: 0.76 !important;
-}
-
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	body
 	[data-sonner-toaster]
 	[data-sonner-toast]
 	[data-icon] {
-	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: auto !important;
-	height: auto !important;
-	min-width: 1rem !important;
-	min-height: 1rem !important;
-	padding: 0 !important;
 	border: 0 !important;
 	border-radius: 0 !important;
 	background: transparent !important;
@@ -329,49 +224,9 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	height: 1rem !important;
 	color: rgba(17, 17, 17, 0.68) !important;
 	stroke: rgba(17, 17, 17, 0.68) !important;
-	filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.16))
-		drop-shadow(0 0 4px rgba(255, 255, 255, 0.08)) !important;
 }
 
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast]
-	[data-close-button],
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast]
-	button {
-	border: 1px solid rgba(255, 255, 255, 0.44) !important;
-	background: var(--llampart-glass-white-340, rgba(255, 255, 255, 0.34)) !important;
-	background-color: var(--llampart-glass-white-340, rgba(255, 255, 255, 0.34)) !important;
-	background-image: none !important;
-	color: rgba(17, 17, 17, 0.82) !important;
-	box-shadow: none !important;
-	-webkit-backdrop-filter: var(
-		--llampart-glass-filter-10-112,
-		blur(10px) saturate(112%)
-	) !important;
-	backdrop-filter: var(--llampart-glass-filter-10-112, blur(10px) saturate(112%)) !important;
-}
-
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast]
-	[data-close-button]:is(:hover, :focus-visible),
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	body
-	[data-sonner-toaster]
-	[data-sonner-toast]
-	button:is(:hover, :focus-visible) {
-	background: rgba(255, 255, 255, 0.48) !important;
-	background-color: rgba(255, 255, 255, 0.48) !important;
-	color: #111111 !important;
-}
-
-/* llampart-frosted-glass-stage3d-sonner-hide-icons */
+/* Toast icons stay hidden without changing the library's content layout. */
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	body
 	[data-sonner-toaster]
@@ -403,7 +258,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	display: none !important;
 }
 
-/* llampart-frosted-glass-stage3e-sonner-composer-surface */
+/* Toasts share the composer's glass material. */
 html[data-theme='frosted-glass'].has-frosted-glass-theme
 	body
 	[data-sonner-toaster]
@@ -458,9 +313,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	[data-sonner-toast]
 	[data-content] {
 	color: #111111 !important;
-	text-shadow:
-		0 0 2px rgba(255, 255, 255, 0.42),
-		0 0 8px rgba(255, 255, 255, 0.22) !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -507,7 +359,7 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	color: #111111 !important;
 }
 
-/* llampart-frosted-glass-stage3f-sonner-composer-border */
+/* Sonner reads these variables for its status-specific borders. */
 html[data-theme='frosted-glass'].has-frosted-glass-theme body [data-sonner-toaster] {
 	--normal-border: rgba(255, 255, 255, 0.34) !important;
 	--success-border: rgba(255, 255, 255, 0.34) !important;
@@ -577,7 +429,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	color: var(--foreground) !important;
 	backdrop-filter: none !important;
 	-webkit-backdrop-filter: none !important;
-	text-shadow: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -592,7 +443,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 		[data-slot='sheet-description']
 	) {
 	color: var(--foreground) !important;
-	text-shadow: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -600,7 +450,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	:is([data-slot='dialog-content'], [data-slot='alert-dialog-content'], [data-slot='sheet-content'])
 	.text-muted-foreground {
 	color: var(--muted-foreground) !important;
-	text-shadow: none !important;
 }
 
 /* llampart-frosted-glass-solid-preview-parity-surfaces
@@ -676,7 +525,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme body .llampart-solid-di
 		0 4px 16px rgba(0, 0, 0, 0.12) !important;
 	backdrop-filter: none !important;
 	-webkit-backdrop-filter: none !important;
-	text-shadow: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -692,7 +540,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-solid-dialog-content
 	:is([data-slot='alert-dialog-title'], [data-slot='alert-dialog-description']) {
 	color: var(--foreground) !important;
-	text-shadow: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -700,7 +547,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme
 	.llampart-solid-dialog-content
 	.text-muted-foreground {
 	color: var(--muted-foreground) !important;
-	text-shadow: none !important;
 }
 
 html[data-theme='frosted-glass'].has-frosted-glass-theme
@@ -737,7 +583,6 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .markdown-rendered-prev
 	background-color: #ffffff !important;
 	background-image: none !important;
 	color: #111111 !important;
-	text-shadow: none !important;
 	box-shadow: none;
 	backdrop-filter: none !important;
 	-webkit-backdrop-filter: none !important;
@@ -760,20 +605,12 @@ html[data-theme='frosted-glass'].has-frosted-glass-theme .markdown-rendered-prev
 	box-shadow: none !important;
 }
 
-html[data-theme='frosted-glass'].has-frosted-glass-theme .markdown-rendered-preview-wrapper *,
-html[data-theme='frosted-glass'].has-frosted-glass-theme
-	.markdown-rendered-preview-dialog
-	.table-preview-title {
-	text-shadow: none !important;
-}
-
 html[data-theme='frosted-glass'].has-frosted-glass-theme .table-preview-dialog-content,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .table-preview-dialog,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .table-preview-header,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .table-preview-body,
 html[data-theme='frosted-glass'].has-frosted-glass-theme .table-preview-wrapper {
 	background-image: none !important;
-	text-shadow: none !important;
 	backdrop-filter: none !important;
 	-webkit-backdrop-filter: none !important;
 }

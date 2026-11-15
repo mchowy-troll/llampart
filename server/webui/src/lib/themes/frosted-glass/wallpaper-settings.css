@@ -1,0 +1,143 @@
+/* WallpaperSettings.svelte owns these hooks, including the root UI-scale inputs.
+   Keep them global so dynamically assembled preview classes retain their specificity. */
+:root {
+	--llampart-settings-wallpaper-preview-width: clamp(9.5rem, 10.5vw, 13rem);
+	--llampart-settings-wallpaper-preview-height: clamp(5.75rem, 6.25vw, 7.25rem);
+	--llampart-settings-wallpaper-preview-radius: 1rem;
+	--llampart-settings-wallpaper-preview-selected-scale: 1.1;
+	--llampart-settings-wallpaper-preview-gap: 1rem;
+	--llampart-settings-wallpaper-user-action-gap: 0.375rem;
+	--llampart-settings-wallpaper-user-action-offset: 0;
+	--llampart-settings-wallpaper-user-actions-width: max-content;
+}
+
+/* Larger rem caps at 110% need more room around the selected preview. */
+html[data-llampart-ui-scale='110'] {
+	--llampart-settings-wallpaper-preview-width: clamp(8.75rem, 9.5vw, 11.75rem);
+	--llampart-settings-wallpaper-preview-height: clamp(5.35rem, 5.65vw, 6.55rem);
+	--llampart-settings-wallpaper-preview-selected-scale: 1.06;
+	--llampart-settings-wallpaper-preview-gap: 1.125rem;
+}
+
+.llampart-settings-wallpaper-selector {
+	display: grid;
+	grid-template-columns: repeat(6, var(--llampart-settings-wallpaper-preview-width));
+	align-items: start;
+	justify-content: space-between;
+	gap: var(--llampart-settings-wallpaper-preview-gap);
+	box-sizing: border-box;
+	inline-size: 100%;
+	max-inline-size: 100%;
+	overflow-x: auto;
+	overflow-y: visible;
+	overscroll-behavior-x: contain;
+	scrollbar-gutter: stable;
+	scroll-padding-inline: 1rem;
+	padding: 0.5rem 1rem 0.75rem;
+}
+
+.llampart-settings-wallpaper-preview {
+	position: relative;
+	display: grid;
+	width: var(--llampart-settings-wallpaper-preview-width);
+	height: var(--llampart-settings-wallpaper-preview-height);
+	place-items: center;
+	overflow: hidden;
+	border: 1px solid hsl(var(--border) / 0.24);
+	border-radius: var(--llampart-settings-wallpaper-preview-radius);
+	box-shadow: 0 0.5rem 1rem hsl(var(--foreground) / 0.08);
+	transform-origin: center;
+	transition:
+		transform 200ms ease,
+		border-color 200ms ease,
+		box-shadow 200ms ease,
+		background-color 200ms ease;
+}
+
+.llampart-settings-wallpaper-preview.is-selected {
+	z-index: 1;
+	transform: scale(var(--llampart-settings-wallpaper-preview-selected-scale));
+}
+
+.llampart-settings-wallpaper-user-slot {
+	display: grid;
+	width: var(--llampart-settings-wallpaper-preview-width);
+	justify-items: center;
+	gap: 0.625rem;
+	padding-top: var(--llampart-settings-wallpaper-user-action-offset);
+}
+
+.llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper):not(.is-selected) {
+	border: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	color: hsl(var(--muted-foreground));
+}
+
+.llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper):not(.is-selected)::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border: 1.5px dashed #cecece;
+	border-radius: inherit;
+	pointer-events: none;
+}
+
+.llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper):not(.is-selected):is(
+		:hover,
+		:focus-visible
+	) {
+	background: hsl(var(--muted) / 0.35) !important;
+	color: hsl(var(--foreground));
+}
+
+.llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper):not(.is-selected):is(
+		:hover,
+		:focus-visible
+	)::after {
+	border-color: hsl(var(--foreground) / 0.45);
+}
+
+.llampart-settings-wallpaper-user-actions {
+	display: flex;
+	width: var(--llampart-settings-wallpaper-user-actions-width);
+	max-width: none;
+	flex-wrap: nowrap;
+	justify-content: center;
+	gap: var(--llampart-settings-wallpaper-user-action-gap);
+	white-space: nowrap;
+}
+
+.llampart-settings-wallpaper-user-action {
+	border-radius: calc(var(--radius) - 2px);
+	border: 1px solid hsl(var(--border));
+	background: hsl(var(--background));
+	padding: 0.375rem 0.625rem;
+	font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
+	font-weight: 500;
+	line-height: 1;
+	transition:
+		background-color 150ms ease,
+		color 150ms ease,
+		border-color 150ms ease;
+}
+
+.llampart-settings-wallpaper-user-action:is(:hover, :focus-visible) {
+	background: hsl(var(--muted));
+}
+
+.llampart-settings-wallpaper-user-action:focus-visible {
+	outline: 2px solid hsl(var(--ring));
+	outline-offset: 2px;
+}
+
+.llampart-settings-wallpaper-user-action-muted {
+	border-color: transparent;
+	background: transparent;
+	color: hsl(var(--muted-foreground));
+}
+
+.llampart-settings-wallpaper-user-action-muted:is(:hover, :focus-visible) {
+	background: hsl(var(--muted));
+	color: hsl(var(--foreground));
+}

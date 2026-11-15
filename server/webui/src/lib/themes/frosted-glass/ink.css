@@ -1,4 +1,4 @@
-/* Important declarations in a named layer outrank legacy unlayered glow rules.
+/* Important declarations in a named layer enforce the shared no-glow ink policy.
    Only ink is affected: material shadows, masks, blur and focus rings are untouched. */
 @layer llampart-glass-ink {
 	html[data-theme='frosted-glass'].has-frosted-glass-theme body,

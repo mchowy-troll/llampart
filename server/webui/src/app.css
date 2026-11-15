@@ -29,13 +29,8 @@ body {
 	font-size: var(--llampart-text-unit, 1rem);
 }
 
-/* llampart-desktop-fluid-ui-scale
-   Punkt odniesienia: 5K z systemowym skalowaniem 200% daje 2560 CSS px.
-   1920 CSS px pozostaje bazą 1080p bez zmiany rozmiaru.
-   2560 CSS px i więcej celuje w 90% poprzedniego desktopowego maksimum.
-   Opcjonalny preset użytkownika 90% / 100% / 110% jest mnożnikiem na tej bazie.
-   Skalujemy rem-y globalnie, więc Tailwindowe fonty, odstępy, ikony i kafelki
-   zachowują proporcje bez ręcznego zmieniania pojedynczych komponentów. */
+/* Desktop UI scale adjusts root rem geometry. Text size is independently owned
+   by --llampart-text-unit, including the Tailwind text tokens above. */
 :root {
 	--llampart-user-ui-scale-min-font-size: var(--llampart-ui-scale-min-font-size);
 	--llampart-user-ui-scale-fluid-font-size: var(--llampart-ui-scale-fluid-font-size);
@@ -75,18 +70,13 @@ html[data-llampart-ui-scale='110'] {
 		);
 	}
 }
-/* /llampart-desktop-fluid-ui-scale */
 
-/* llampart-desktop-sidebar-width-scale
-   5K przy systemowym skalowaniu 200% daje 2560 CSS px, więc 25vw = 640px.
-   Na 1080p przeglądarka ma 1920 CSS px, więc wymuszamy tę samą szerokość sidebara,
-   żeby dwie kolumny kafelków miały taką samą logikę jak na 5K. */
+/* Keep the noncompact sidebar's two-column layout stable below 2560 CSS px. */
 @media (min-width: 1024px) and (max-width: 2559.98px) {
 	html:not(.llampart-compact-sidebar) [data-slot='sidebar-wrapper'] {
 		--sidebar-width: var(--llampart-desktop-sidebar-width) !important;
 	}
 }
-/* /llampart-desktop-sidebar-width-scale */
 
 /* llampart-inline-processing-status-primitives
    Shared owner for small inline processing windows used by streaming math and
@@ -138,11 +128,8 @@ html[data-llampart-ui-scale='110'] {
 		animation: none !important;
 	}
 }
-/* /llampart-inline-processing-status-primitives */
 
-/* llampart-chat-layout-scale-primitives
-   CSS classes consume tokenized chat/composer widths and spacing so the UI scale redesign can tune layout values in one owner layer.
-   Initial values intentionally preserve the current rendered layout. */
+/* Shared chat geometry consumes layout tokens; themes own the materials. */
 .llampart-chat-scroll-container {
 	padding-inline: var(--llampart-chat-scroll-inline-padding);
 }
@@ -226,12 +213,9 @@ html[data-llampart-ui-scale='110'] {
 		margin-bottom: var(--llampart-chat-messages-bottom-margin-md);
 	}
 }
-/* /llampart-chat-layout-scale-primitives */
 
-/* llampart-composer-processing-stats-layout-primitives
-   app.css owns the shared geometry for the llama-server composer stats micro frame.
-   Theme-specific visual values live in lib/styles/themes.css and the component only
-   consumes these primitives while rendering translated labels and values. */
+/* Shared geometry for the llama-server composer's processing statistics.
+   Base materials live in lib/styles/themes.css; theme modules override them. */
 :root {
 	--llampart-composer-processing-stats-min-height: 2.25rem;
 	--llampart-composer-processing-stats-bottom-gap: 1.0625rem;
@@ -257,159 +241,6 @@ html[data-llampart-ui-scale='110'] {
 		--llampart-composer-processing-stats-speed-value-width: 7.25ch;
 	}
 }
-/* /llampart-composer-processing-stats-layout-primitives */
-
-/* llampart-settings-wallpaper-selector-primitives
-   app.css currently owns shared layout/style primitives until the style layer is split.
-   The settings wallpaper component consumes these semantic hooks instead of hard-coding
-   preview dimensions, selected scale, and user-wallpaper action styling locally. */
-:root {
-	--llampart-settings-wallpaper-preview-width: clamp(9.5rem, 10.5vw, 13rem);
-	--llampart-settings-wallpaper-preview-height: clamp(5.75rem, 6.25vw, 7.25rem);
-	--llampart-settings-wallpaper-preview-radius: 1rem;
-	--llampart-settings-wallpaper-preview-selected-scale: 1.1;
-	--llampart-settings-wallpaper-preview-gap: 1rem;
-	--llampart-settings-wallpaper-user-action-gap: 0.375rem;
-	--llampart-settings-wallpaper-user-action-offset: 0;
-	--llampart-settings-wallpaper-user-actions-width: max-content;
-}
-
-/* llampart-settings-wallpaper-scale-110-fit
-   UI scale 110 increases rem-based preview caps. Keep the selector close to the
-   visual density of the 90-100% layouts and reserve more room for selected cards. */
-html[data-llampart-ui-scale='110'] {
-	--llampart-settings-wallpaper-preview-width: clamp(8.75rem, 9.5vw, 11.75rem);
-	--llampart-settings-wallpaper-preview-height: clamp(5.35rem, 5.65vw, 6.55rem);
-	--llampart-settings-wallpaper-preview-selected-scale: 1.06;
-	--llampart-settings-wallpaper-preview-gap: 1.125rem;
-}
-
-/* /llampart-settings-wallpaper-scale-110-fit */
-
-.llampart-settings-wallpaper-selector {
-	display: grid;
-	grid-template-columns: repeat(6, var(--llampart-settings-wallpaper-preview-width));
-	align-items: start;
-	justify-content: space-between;
-	gap: var(--llampart-settings-wallpaper-preview-gap);
-	box-sizing: border-box;
-	inline-size: 100%;
-	max-inline-size: 100%;
-	overflow-x: auto;
-	overflow-y: visible;
-	overscroll-behavior-x: contain;
-	scrollbar-gutter: stable;
-	scroll-padding-inline: 1rem;
-	padding: 0.5rem 1rem 0.75rem;
-}
-
-.llampart-settings-wallpaper-preview {
-	position: relative;
-	display: grid;
-	width: var(--llampart-settings-wallpaper-preview-width);
-	height: var(--llampart-settings-wallpaper-preview-height);
-	place-items: center;
-	overflow: hidden;
-	border: 1px solid hsl(var(--border) / 0.24);
-	border-radius: var(--llampart-settings-wallpaper-preview-radius);
-	box-shadow: 0 0.5rem 1rem hsl(var(--foreground) / 0.08);
-	transform-origin: center;
-	transition:
-		transform 200ms ease,
-		border-color 200ms ease,
-		box-shadow 200ms ease,
-		background-color 200ms ease;
-}
-
-.llampart-settings-wallpaper-preview.is-selected {
-	z-index: 1;
-	transform: scale(var(--llampart-settings-wallpaper-preview-selected-scale));
-}
-
-.llampart-settings-wallpaper-user-slot {
-	display: grid;
-	width: var(--llampart-settings-wallpaper-preview-width);
-	justify-items: center;
-	gap: 0.625rem;
-	padding-top: var(--llampart-settings-wallpaper-user-action-offset);
-}
-
-.llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper):not(.is-selected) {
-	border: 0 !important;
-	background: transparent !important;
-	box-shadow: none !important;
-	color: hsl(var(--muted-foreground));
-}
-
-.llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper):not(.is-selected)::after {
-	content: '';
-	position: absolute;
-	inset: 0;
-	border: 1.5px dashed #cecece;
-	border-radius: inherit;
-	pointer-events: none;
-}
-
-.llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper):not(.is-selected):is(
-		:hover,
-		:focus-visible
-	) {
-	background: hsl(var(--muted) / 0.35) !important;
-	color: hsl(var(--foreground));
-}
-
-.llampart-settings-wallpaper-user-preview:not(.has-custom-wallpaper):not(.is-selected):is(
-		:hover,
-		:focus-visible
-	)::after {
-	border-color: hsl(var(--foreground) / 0.45);
-}
-
-.llampart-settings-wallpaper-user-actions {
-	display: flex;
-	width: var(--llampart-settings-wallpaper-user-actions-width);
-	max-width: none;
-	flex-wrap: nowrap;
-	justify-content: center;
-	gap: var(--llampart-settings-wallpaper-user-action-gap);
-	white-space: nowrap;
-}
-
-.llampart-settings-wallpaper-user-action {
-	border-radius: calc(var(--radius) - 2px);
-	border: 1px solid hsl(var(--border));
-	background: hsl(var(--background));
-	padding: 0.375rem 0.625rem;
-	font-size: calc(var(--llampart-text-unit, 1rem) * 0.75);
-	font-weight: 500;
-	line-height: 1;
-	transition:
-		background-color 150ms ease,
-		color 150ms ease,
-		border-color 150ms ease;
-}
-
-.llampart-settings-wallpaper-user-action:is(:hover, :focus-visible) {
-	background: hsl(var(--muted));
-}
-
-.llampart-settings-wallpaper-user-action:focus-visible {
-	outline: 2px solid hsl(var(--ring));
-	outline-offset: 2px;
-}
-
-.llampart-settings-wallpaper-user-action-muted {
-	border-color: transparent;
-	background: transparent;
-	color: hsl(var(--muted-foreground));
-}
-
-.llampart-settings-wallpaper-user-action-muted:is(:hover, :focus-visible) {
-	background: hsl(var(--muted));
-	color: hsl(var(--foreground));
-}
-
-/* /llampart-settings-wallpaper-selector-primitives */
 
 /* llampart-settings-import-export-layout-primitives
    Data Import / Export uses container-based breakpoints so the grid responds to
@@ -435,7 +266,6 @@ html[data-llampart-ui-scale='110'] {
 		grid-template-columns: repeat(4, minmax(0, 1fr));
 	}
 }
-/* /llampart-settings-import-export-layout-primitives */
 
 @theme inline {
 	--radius-sm: calc(var(--radius) - 4px);
@@ -526,7 +356,6 @@ html body [data-sonner-toaster] [data-sonner-toast][data-type='info'],
 html body [data-sonner-toaster] [data-sonner-toast][data-type='loading'] {
 	box-shadow: none !important;
 }
-/* /llampart-toast-shadow-reset-owner */
 
 /* llampart-toast-action-layout-owner
    Sonner action toasts currently power the PDF vision suggestion. Keep the text
@@ -633,7 +462,6 @@ html
 	padding: 0 !important;
 	transform: none !important;
 }
-/* /llampart-message-shell-action-layout-primitives */
 
 /* llampart sidebar redesign: clear the legacy desktop sidebar shell */
 @media (min-width: 768px) {
@@ -701,7 +529,6 @@ html
 		grid-template-columns: minmax(0, 1fr) !important;
 	}
 }
-/* /llampart-compact-sidebar-layout-primitives */
 
 /* llampart sidebar redesign: split light/dark fade from Frosted Glass blur path */
 @media (min-width: 768px) {
@@ -758,7 +585,7 @@ html
 	text-decoration: none;
 }
 
-/* llampart-sidebar-primary-actions-alignment-and-user-glow */
+/* Sidebar primary-action alignment; themes own the ink. */
 .llampart-sidebar-action-band {
 	flex-shrink: 0;
 }
